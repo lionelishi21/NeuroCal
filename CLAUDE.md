@@ -41,6 +41,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - **Backend (`/backend`):**
   - `cd backend && npm run build` - Compile TypeScript to `/backend/dist`
   - `cd backend && npm run test` - Execute Jest unit test suite
+  - `cd backend && npm run db:generate` - Generate a SQL migration from `schema.ts` into `backend/drizzle/`
   - `cd backend && npm run dev` - Run local serverless environment (not set up yet, Phase 3)
 - **Web POC (`/web-poc`):**
   - `cd web-poc && npm run dev` - Run Next.js local dev server

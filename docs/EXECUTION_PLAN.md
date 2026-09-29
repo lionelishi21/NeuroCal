@@ -155,10 +155,14 @@ Mobile — Today                  Desktop — Today
 - PWA install, offline queue for meal logs
 
 ### Phase 3 — Backend on AWS
-- [ ] Domain entities (ARCHITECTURE §3); Drizzle schema + migrations incl. `pgvector` HNSW index (§4)
-- [ ] Ports and repositories exactly as in §5 (`IRepositories.ts`, `IAiVisionProvider.ts`, …)
-- [ ] `LogMealUseCase` + OpenAI vision adapter (§6.1–6.2, §7.1)
-- [ ] `RecommendRecipeUseCase` + Claude reasoning adapter + Google Custom Search adapter (§6.6, §7.2)
+- [x] Domain entities (ARCHITECTURE §3); Drizzle schema + first migration for the core tables (§4)
+- [ ] Planned tables incl. `pgvector` HNSW indexes (§4)
+- [x] Ports for the built use cases (§5); in-memory fakes in `backend/src/application/testing`
+- [ ] Drizzle repository adapters + integration tests against Postgres
+- [x] AnalyzeMealPhoto, LogMeal, DeleteMeal, RecordCheckIn, GetBioState use cases (§6.1–6.5)
+- [ ] OpenAI vision adapter (§7.1)
+- [x] `RecommendRecipeUseCase` (§6.6)
+- [ ] Claude reasoning adapter + Google Custom Search adapter (§7.2)
 - [ ] Focus Score use case; embeddings + vector recommendation use case (§6.8–6.9, §7.3)
 - [ ] Lambda handlers + API Gateway; S3 presigned photo upload; auth
 - [ ] Local dev environment (`npm run dev` in `backend`, e.g. SST or Serverless Offline)

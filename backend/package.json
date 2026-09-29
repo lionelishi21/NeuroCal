@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p .",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@neurocal/contracts": "*",

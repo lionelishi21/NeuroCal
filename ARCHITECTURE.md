@@ -1,6 +1,6 @@
 # NeuroCal AI — Architecture
 
-_Last updated: 2026-09-29. This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
+_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.6 (with Jest tests). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
 
 **Sources of truth**
 - API shapes: `packages/contracts/src/index.ts` (Zod). This document refers to those types by name and does not redefine them.
@@ -222,7 +222,11 @@ export interface IEmbeddingProvider {
 }
 
 // ISearchEngineAdapter.ts
-export interface RecipeSearchHit { title: string; url: string; sourceName: string; snippet: string; imageUrl?: string }
+export interface RecipeSearchHit {
+  title: string; url: string; sourceName: string; snippet: string; imageUrl?: string;
+  // From the page's schema.org Recipe data when the result carries it
+  minutes?: number; calories?: number; macros?: Macros;
+}
 export interface ISearchEngineAdapter {
   searchRecipes(query: string, opts: { allowedDomains: string[]; limit: number }): Promise<RecipeSearchHit[]>;
 }
@@ -259,7 +263,7 @@ export interface IMealRepository {
 export interface ICheckInRepository {
   create(userId: string, checkIn: NewCheckIn): Promise<CheckIn>;
   latestForDay(userId: string, day: LocalDay): Promise<CheckIn | null>;
-  listBetween(userId: string, from: Date, to: Date): Promise<CheckIn[]>;
+  listBetween(userId: string, from: Date, to: Date): Promise<CheckIn[]>;   // planned, for Focus Score
 }
 export interface ITelemetryRepository {                          // planned
   upsertSleep(userId: string, sessions: SleepSession[]): Promise<number>;
@@ -272,7 +276,7 @@ export interface IFocusScoreRepository {                         // planned
   put(score: FocusScore): Promise<void>;
 }
 export interface IRecommendationRepository {
-  saveRecipes(userId: string, recs: RecipeRecommendation[]): Promise<void>;
+  saveRecipes(userId: string, recs: NewRecipeRecommendation[]): Promise<RecipeRecommendation[]>;   // assigns ids
   nearestProtocols(embedding: number[], limit: number): Promise<Protocol[]>;   // planned, HNSW
   nearestProducts(embedding: number[], limit: number): Promise<Product[]>;     // planned, HNSW
 }
@@ -320,7 +324,7 @@ Ports: `IProfileRepository`, `IMealRepository`, `ICheckInRepository`, `IAiReason
 1. `ComputeBioState` for today → `BioStateContext { caloriesRemaining, macroFocus, cognitiveFlags, dietaryPreference }`.
 2. `generateRecipeSearchQuery(context)` → `{ searchQuery, contextualReasoning }` (Claude, §7.2).
 3. `searchRecipes(searchQuery, { allowedDomains, limit: 10 })` (Google Custom Search restricted to the allow-list).
-4. Rank the hits: drop anything outside the dietary preference or over `caloriesRemaining` when nutrition is known, then keep the top 3.
+4. Rank the hits: keep only allowed domains (checked again, not just trusted to search) and hits with full nutrition (the contract requires minutes, calories and macros); drop anything over `caloriesRemaining` when calories are left; sort by protein per calorie; keep the top 3. The dietary preference is enforced by the query itself.
 5. Attach `contextualReasoning` as each recipe's `reasoning`, save, and return `NextRecommendationsResponse { searchQuery, recipes }`.
 
 If the reasoning call fails after one retry: `502`. If search returns nothing: `200` with `recipes: []`, and the UI says so.
