@@ -59,6 +59,13 @@ npm run build
 - `/` — Today: bio-state dial, meals, check-in, what to eat next
 - `/lab` — component states for design review
 
-Set `NEXT_PUBLIC_API_URL` in `web-poc/.env.local` to use a real API instead of the mocks.
+To run the web app against the real backend locally:
+
+```sh
+npm run dev -w @neurocal/backend                          # API on http://localhost:4000
+NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev     # web on http://localhost:3000
+```
+
+The backend dev server uses an in-memory Postgres and stub AI responses unless you set keys (see `backend/.env.example`).
 
 Roadmap and design direction: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md).

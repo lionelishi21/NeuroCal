@@ -6,17 +6,24 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p .",
-    "test": "jest --passWithNoTests",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --passWithNoTests",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "dev": "tsx watch src/presentation/devServer.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "@neurocal/contracts": "*",
     "drizzle-orm": "^0.45.3",
-    "pg": "^8.23.0"
+    "openai": "^7.23.0",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@jest/globals": "^30.5.0",
+    "@types/aws-lambda": "^8.10.164",
+    "@types/node": "^22.20.4",
     "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.11",
     "jest": "^30.5.2",

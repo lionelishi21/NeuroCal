@@ -9,7 +9,12 @@ import type {
   RecipeRecommendation,
 } from "../../domain/types";
 
-/** Every method is scoped to one user; implementations must filter by userId (ARCHITECTURE §10). */
+/** Maps the identity provider's subject (Cognito `sub`) to our user id, creating the user on first sign-in. */
+export interface IUserRepository {
+  findOrCreateByAuthSubject(subject: string, email: string): Promise<string>;
+}
+
+/** Every method below is scoped to one user; implementations must filter by userId (ARCHITECTURE §10). */
 
 export interface IProfileRepository {
   get(userId: string): Promise<Profile | null>;

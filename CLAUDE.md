@@ -42,9 +42,10 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
   - `cd backend && npm run build` - Compile TypeScript to `/backend/dist`
   - `cd backend && npm run test` - Execute Jest unit test suite
   - `cd backend && npm run db:generate` - Generate a SQL migration from `schema.ts` into `backend/drizzle/`
-  - `cd backend && npm run dev` - Run local serverless environment (not set up yet, Phase 3)
+  - `cd backend && npm run dev` - Local API on :4000 (in-memory Postgres + stub AI unless `backend/.env` sets keys; see `backend/.env.example`)
+  - Backend tests run Jest with `--experimental-vm-modules` so repository tests can use PGlite (in-process Postgres)
 - **Web POC (`/web-poc`):**
-  - `cd web-poc && npm run dev` - Run Next.js local dev server
+  - `cd web-poc && npm run dev` - Run Next.js local dev server (mock API); `NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev` to use the local backend
   - `cd web-poc && npm run test` - Vitest + Testing Library (Vitest, not Jest, because MSW is ESM-only)
 - **Mobile App (`/mobile-app`):**
   - `cd mobile-app && flutter run` - Run Flutter app on emulator/device

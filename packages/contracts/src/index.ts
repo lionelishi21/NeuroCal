@@ -42,6 +42,8 @@ export type Macros = z.infer<typeof Macros>;
 export const Profile = z.object({
   id: Id,
   displayName: z.string().min(1),
+  /** IANA time zone that defines the user's day, e.g. "America/Chicago". Defaults to UTC. */
+  timeZone: z.string().min(1).optional(),
   dietaryPreference: DietaryPreference,
   cognitiveGoals: z.array(CognitiveGoal),
   dailyCalorieTarget: z.number().int().positive(),

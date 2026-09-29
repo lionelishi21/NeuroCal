@@ -1,6 +1,6 @@
 # NeuroCal AI — Architecture
 
-_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.6 (with Jest tests). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
+_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.6, §7.1–7.2 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
 
 **Sources of truth**
 - API shapes: `packages/contracts/src/index.ts` (Zod). This document refers to those types by name and does not redefine them.
@@ -250,6 +250,9 @@ export interface IClock { now(): Date }
 ### Repositories (`IRepositories.ts`)
 
 ```ts
+export interface IUserRepository {                               // Cognito sub → our user id, created on first sign-in
+  findOrCreateByAuthSubject(subject: string, email: string): Promise<string>;
+}
 export interface IProfileRepository {
   get(userId: string): Promise<Profile | null>;
   save(profile: Profile): Promise<void>;
@@ -435,7 +438,7 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | Method | Path | Request | Response | Use case |
 |---|---|---|---|---|
 | GET | `/me` | — | `Profile` | profile read |
-| PUT | `/me/profile` | `UpdateProfileRequest` | `Profile` | profile update |
+| PUT | `/me/profile` | `UpdateProfileRequest` | `Profile` | creates the profile on first save (all required fields), then partial updates; `timeZone` defaults to UTC |
 | GET | `/bio-state?date=` | — | `BioState` | 6.5 |
 | POST | `/check-ins` | `CreateCheckInRequest` | `CheckIn` | 6.4 |
 | POST | `/meals/analyze` | multipart `photo` | `AnalyzeMealResponse` | 6.1 |
