@@ -363,6 +363,7 @@ export function createDb(options: { newUser?: boolean } = {}) {
           url: "https://example.com/mock-partner/sunrise-alarm",
           affiliate: true,
           ownBrand: false,
+          supplement: false,
           match: 0.71,
         },
         {
@@ -371,6 +372,7 @@ export function createDb(options: { newUser?: boolean } = {}) {
           description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
           affiliate: false,
           ownBrand: false,
+          supplement: false,
           match: 0.66,
         },
         {
@@ -380,7 +382,18 @@ export function createDb(options: { newUser?: boolean } = {}) {
           url: "https://www.mitoproof.com/products",
           affiliate: false,
           ownBrand: true,
+          supplement: false,
           match: 0.63,
+        },
+        {
+          id: "mitoproof-acv-capsules",
+          name: "MitoProof apple cider vinegar capsules",
+          description: "Apple cider vinegar in capsule form, for people who would rather not drink it. Take with a meal as the label directs.",
+          url: "https://www.mitoproof.com/products",
+          affiliate: false,
+          ownBrand: true,
+          supplement: true,
+          match: 0.6,
         },
       ],
     };

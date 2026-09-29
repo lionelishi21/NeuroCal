@@ -70,6 +70,7 @@ export const toProtocols = (m: ProtocolMatches): C.ProtocolsResponse => ({
     ...(item.url ? { url: item.url } : {}),
     affiliate: item.affiliate,
     ownBrand: item.ownBrand,
+    supplement: item.supplement,
     match: match(similarity),
   })),
 });

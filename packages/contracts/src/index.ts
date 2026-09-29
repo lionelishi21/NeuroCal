@@ -241,6 +241,8 @@ export const ProductRecommendation = z.object({
   affiliate: z.boolean(),
   /** Sold by a store run by NeuroCal's makers (MitoProof); clients must label these visibly. */
   ownBrand: z.boolean(),
+  /** A dietary supplement; clients show a check-with-your-doctor note alongside it. */
+  supplement: z.boolean(),
   match: z.number().min(0).max(1),
 });
 export type ProductRecommendation = z.infer<typeof ProductRecommendation>;

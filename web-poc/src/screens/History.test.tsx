@@ -50,8 +50,15 @@ describe("History", () => {
     const help = await screen.findByRole("region", { name: "What could help" });
     const link = await within(help).findByRole("link", { name: "View the mitoproof protocol" });
     expect(link).toHaveAttribute("rel", expect.stringContaining("sponsored"));
-    expect(within(help).getByText("Our brand")).toBeInTheDocument();
+    expect(within(help).getAllByText("Our brand").length).toBeGreaterThan(0);
     expect(within(help).getByText(/run by the people who make NeuroCal/)).toBeInTheDocument();
+  });
+
+  it("adds a safety note when a supplement is suggested", async () => {
+    renderHistory();
+    const help = await screen.findByRole("region", { name: "What could help" });
+    expect(await within(help).findByText("MitoProof apple cider vinegar capsules")).toBeInTheDocument();
+    expect(within(help).getByText(/Check with your doctor or pharmacist/)).toBeInTheDocument();
   });
 
   it("switches the readout to the chosen day", async () => {

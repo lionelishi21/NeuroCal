@@ -83,7 +83,7 @@ Names below are domain types in `backend/src/domain/`. Where a contract type has
 | **FocusScore** (planned) | userId, date, score (0–100), components{sleep, timing, glycemic, stress}, explanation, modelVersion | One per user per day; recomputing replaces it |
 | **RecipeRecommendation** | id, title, sourceName, sourceUrl, imageUrl?, minutes, calories, macros, reasoning, searchQuery | `sourceUrl` host must be on the recipe allow-list (§11) |
 | **Protocol** (planned) | id, title, body, tags[], embedding | Content is authored by NeuroCal, not generated |
-| **Product** (planned) | id, name, url, affiliate (bool), ownBrand (bool), tags[], embedding | Affiliate and own-brand (MitoProof) products must be labelled as such wherever shown (§10) |
+| **Product** (planned) | id, name, url, affiliate (bool), ownBrand (bool), supplement (bool), tags[], embedding | Affiliate and own-brand (MitoProof) products must be labelled as such wherever shown (§10) |
 
 `glycemicLoad` (`"low" \| "medium" \| "high"`) is **planned** for `FoodItem` in contracts, so the vision step's high-glycemic flag (README) can reach the UI.
 
@@ -165,7 +165,7 @@ protocols                                   catalog, synced from backend/src/inf
   embedding vector(1536) not null, content_hash text, updated_at
 
 products                                    catalog, same source
-  id text pk, name, description text, url text, affiliate boolean not null default false, own_brand boolean not null default false,
+  id text pk, name, description text, url text, affiliate boolean not null default false, own_brand boolean not null default false, supplement boolean not null default false,
   tags text[], embedding vector(1536) not null, content_hash text, updated_at
 
 user_embeddings                             planned (cache; not needed at current volume)
@@ -496,7 +496,7 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 - **Health data is sensitive:** encryption at rest (Aurora + S3 with KMS), TLS everywhere, S3 buckets private with presigned URLs only, least-privilege IAM per Lambda.
 - **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in Secrets Manager, loaded once per cold start; never in env files or the repo.
 - **LLM safety:** schema-validated outputs (§7); user notes are passed as data, never as instructions; no medical claims in generated text.
-- **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client.
+- **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client. When any suggested product has `supplement = true`, clients add a one-line note to check with a doctor or pharmacist first.
 - **Deletion:** account deletion removes rows, S3 objects and embeddings (§4 retention).
 
 ---

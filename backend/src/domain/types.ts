@@ -154,6 +154,8 @@ export interface Product {
   affiliate: boolean;
   /** Sold by a store run by NeuroCal's makers. Labelled like affiliate items. */
   ownBrand: boolean;
+  /** Dietary supplement: clients add a safety note. */
+  supplement: boolean;
   tags: string[];
 }
 

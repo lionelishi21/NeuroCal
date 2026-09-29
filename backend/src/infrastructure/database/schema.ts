@@ -244,6 +244,7 @@ export const products = pgTable(
     url: text("url"),
     affiliate: boolean("affiliate").notNull().default(false),
     ownBrand: boolean("own_brand").notNull().default(false),
+    supplement: boolean("supplement").notNull().default(false),
     tags: text("tags").array().notNull(),
     embedding: embedding(),
     contentHash: text("content_hash").notNull(),

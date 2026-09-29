@@ -77,6 +77,11 @@ export function WhatHelps() {
                   NeuroCal may earn a commission from links marked as affiliate. It doesn't change what we suggest: tools are matched to your week the same way as the habits above.
                 </p>
               )}
+              {protocols.data.products.some((p) => p.supplement) && (
+                <p className="mt-3 mb-0 max-w-[var(--measure)] text-sm text-ink-soft">
+                  Supplements aren't a substitute for the habits above. Check with your doctor or pharmacist first if you take medication, are pregnant or have a health condition.
+                </p>
+              )}
               {protocols.data.products.some((p) => p.ownBrand) && (
                 <p className="mt-3 mb-0 max-w-[var(--measure)] text-sm text-ink-soft">
                   Items marked "Our brand" are sold by MitoProof, which is run by the people who make NeuroCal. They are matched to your week the same way as everything else here.

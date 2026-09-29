@@ -34,13 +34,13 @@ describe("DrizzleCatalogRepository (pgvector)", () => {
     expect(products[0]!.item).not.toHaveProperty("url");
   });
 
-  it("keeps affiliate, own-brand and url, and drops entries removed from the source", async () => {
+  it("keeps affiliate, own-brand, supplement and url, and drops entries removed from the source", async () => {
     const repo = new DrizzleCatalogRepository(db);
-    const partner = { ...PRODUCTS[0]!, url: "https://example.com/alarm", affiliate: true, ownBrand: true };
+    const partner = { ...PRODUCTS[0]!, url: "https://example.com/alarm", affiliate: true, ownBrand: true, supplement: true };
     await new SyncCatalogUseCase(repo, new FakeEmbedder()).execute({ protocols: PROTOCOLS.slice(0, 2), products: [partner] });
     const [query] = await new FakeEmbedder().embed([partner.description]);
     expect((await repo.nearestProducts(query!, 5)).map((p) => p.item)).toEqual([
-      expect.objectContaining({ id: partner.id, affiliate: true, ownBrand: true, url: "https://example.com/alarm" }),
+      expect.objectContaining({ id: partner.id, affiliate: true, ownBrand: true, supplement: true, url: "https://example.com/alarm" }),
     ]);
     expect((await repo.hashes()).protocols.size).toBe(2);
   });

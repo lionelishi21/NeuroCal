@@ -5,6 +5,7 @@
  * Most products are generic categories. When a partner agreement exists, add its
  * `url` and set `affiliate: true`. MitoProof (mitoproof.com) is run by NeuroCal's
  * makers, so its items set `ownBrand: true`. Every client labels both visibly.
+ * Set `supplement: true` on dietary supplements: clients add a check-with-your-doctor note.
  * Keep wording practical and free of medical claims.
  */
 import type { Product, Protocol } from "../../domain/types";
@@ -111,6 +112,7 @@ export const PRODUCTS: Product[] = [
     description: "Brightens gradually before your alarm so waking at a fixed time feels easier, and keeps your phone out of the bedroom.",
     affiliate: false,
     ownBrand: false,
+    supplement: false,
     tags: ["sleep", "wake time", "circadian rhythm", "screens", "morning light"],
   },
   {
@@ -119,6 +121,7 @@ export const PRODUCTS: Product[] = [
     description: "Blocks light in a room that doesn't get fully dark, for longer and less broken sleep.",
     affiliate: false,
     ownBrand: false,
+    supplement: false,
     tags: ["sleep", "short sleep", "light sleep", "bedroom"],
   },
   {
@@ -127,6 +130,7 @@ export const PRODUCTS: Product[] = [
     description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
     affiliate: false,
     ownBrand: false,
+    supplement: false,
     tags: ["late-night screens", "screen time", "focus", "evening routine"],
   },
   {
@@ -135,6 +139,7 @@ export const PRODUCTS: Product[] = [
     description: "Divided containers that make a half-vegetable, quarter-protein, quarter-grain plate the easy default.",
     affiliate: false,
     ownBrand: false,
+    supplement: false,
     tags: ["high-glycemic meals", "glycemic load", "steady energy", "meal planning"],
   },
   {
@@ -143,6 +148,7 @@ export const PRODUCTS: Product[] = [
     description: "A physical countdown timer for focus blocks, without reaching for your phone.",
     affiliate: false,
     ownBrand: false,
+    supplement: false,
     tags: ["low focus", "stress", "focus blocks", "productivity"],
   },
   {
@@ -153,6 +159,7 @@ export const PRODUCTS: Product[] = [
     url: "https://www.mitoproof.com/products",
     affiliate: false,
     ownBrand: true,
+    supplement: false,
     tags: ["sleep", "energy", "circadian rhythm", "timing", "late eating", "nutrition", "routine"],
   },
   {
@@ -162,6 +169,7 @@ export const PRODUCTS: Product[] = [
     url: "https://www.mitoproof.com/products",
     affiliate: false,
     ownBrand: true,
+    supplement: true,
     tags: ["meals", "high-glycemic meals", "steady energy", "supplements"],
   },
 ];
