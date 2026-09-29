@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "@fontsource-variable/schibsted-grotesk";
+@import "@fontsource-variable/fraunces/full.css";
+@import "./tokens.css";
+
+/* Expose tokens as Tailwind utilities (bg-mist, text-ink, p-4, rounded-sheet …). */
+@theme inline {
+  --color-*: initial;
+  --color-mist: var(--mist);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-chlorophyll: var(--chlorophyll);
+  --color-glucose: var(--glucose);
+  --color-glucose-ink: var(--glucose-ink);
+  --color-oil: var(--oil);
+  --color-synapse: var(--synapse);
+  --color-beet: var(--beet);
+  --color-on-accent: var(--on-accent);
+  --color-transparent: transparent;
+
+  --font-*: initial;
+  --font-ui: var(--font-ui);
+  --font-figure: var(--font-figure);
+
+  --text-*: initial;
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+  --text-figure: var(--text-figure);
+
+  --radius-*: initial;
+  --radius-control: var(--radius-control);
+  --radius-pill: var(--radius-pill);
+  --radius-sheet: var(--radius-sheet);
+
+  --shadow-*: initial;
+  --shadow-float: var(--shadow-float);
+
+  --ease-settle: var(--ease-settle);
+  --spacing: 0.25rem;
+}
+
+@layer base {
+  html {
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 100%;
+    line-height: var(--leading-body);
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background: var(--mist);
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    line-height: var(--leading-tight);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--synapse);
+    outline-offset: 3px;
+  }
+}
+
+/* Radix sheet motion: answers the user's tap, so it stays. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(0.75rem);
+    opacity: 0;
+  }
+}

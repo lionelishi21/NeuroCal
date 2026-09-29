@@ -1,0 +1,103 @@
+/*
+ * NeuroCal design tokens — "field notes from the body".
+ * Every colour, size and duration in the app comes from here.
+ */
+:root {
+  /* Palette */
+  --mist: #e9eef0; /* page: cool paper, deliberately not cream */
+  --paper: #f6f8f9; /* raised surfaces: sheets, inputs */
+  --ink: #1c2438; /* text and structure */
+  --ink-soft: #4b546b; /* secondary text */
+  --rule: #c7d0d6; /* ruled lines, empty dial ticks */
+  --chlorophyll: #2e7a57; /* primary action, protein */
+  --glucose: #e9a93a; /* energy: calories, carbs */
+  --glucose-ink: #8a5a09; /* glucose when used as text */
+  --oil: #9a8440; /* fats */
+  --synapse: #6b5bd6; /* cognitive flags and AI reasoning */
+  --beet: #b23a5b; /* over budget, errors */
+  --on-accent: #f6f8f9;
+
+  /* Type */
+  --font-ui: "Schibsted Grotesk Variable", system-ui, sans-serif;
+  --font-figure: "Fraunces Variable", Georgia, serif;
+  /* 1.25 modular scale on 16px */
+  --text-xs: 0.8rem;
+  --text-sm: 0.9rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5625rem;
+  --text-2xl: 1.953rem;
+  --text-figure: 3.815rem;
+  --leading-body: 1.45;
+  --leading-tight: 1.15;
+  --measure: 34rem;
+
+  /* Space (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Shape: radius follows hierarchy, rows have none */
+  --radius-control: 0.75rem;
+  --radius-pill: 999px;
+  --radius-sheet: 1.75rem;
+
+  /* The only elevation: things that float over the page */
+  --shadow-float: 0 -1px 0 color-mix(in oklab, var(--ink) 8%, transparent),
+    0 18px 48px -12px color-mix(in oklab, var(--ink) 35%, transparent);
+
+  /* Motion */
+  --ease-settle: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-quick: 160ms;
+  --duration-sheet: 280ms;
+  --duration-dial: 900ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mist: #151b2c;
+    --paper: #1d2438;
+    --ink: #e3e8ee;
+    --ink-soft: #a7b0c2;
+    --rule: #354060;
+    --chlorophyll: #57b387;
+    --glucose: #f0b95a;
+    --glucose-ink: #f0b95a;
+    --oil: #c9b36b;
+    --synapse: #9c90f0;
+    --beet: #e2718f;
+    --on-accent: #151b2c;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --mist: #151b2c;
+  --paper: #1d2438;
+  --ink: #e3e8ee;
+  --ink-soft: #a7b0c2;
+  --rule: #354060;
+  --chlorophyll: #57b387;
+  --glucose: #f0b95a;
+  --glucose-ink: #f0b95a;
+  --oil: #c9b36b;
+  --synapse: #9c90f0;
+  --beet: #e2718f;
+  --on-accent: #151b2c;
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-quick: 0ms;
+    --duration-sheet: 0ms;
+    --duration-dial: 0ms;
+  }
+}

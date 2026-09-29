@@ -1,5 +1,13 @@
 {
+  "name": "@neurocal/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
   "dependencies": {
+    "@neurocal/contracts": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "pg": "^8.23.0"
   },

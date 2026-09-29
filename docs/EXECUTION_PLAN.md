@@ -128,21 +128,23 @@ Mobile — Today                  Desktop — Today
 ### Phase 0 — Foundations (1–2 days)
 - [x] `.gitignore`; untrack `node_modules` and `.DS_Store`
 - [x] Vendor `frontend-design` skill; fill `CLAUDE.md`
-- [ ] Convert to pnpm workspace (`apps/web`, `backend`, `packages/contracts`)
-- [ ] Shared `tsconfig`, ESLint, Prettier, Vitest; GitHub Actions CI (lint, typecheck, test)
-- [ ] `packages/contracts`: Zod schemas for `Profile`, `FoodItem`, `Meal`, `BioState`, `CognitiveFlag`, `RecipeRecommendation` and request/response shapes for the endpoints in §6
+- [x] Convert to pnpm workspace (`apps/web`, `backend`, `packages/contracts`)
+- [x] Shared `tsconfig`, Vitest; GitHub Actions CI (typecheck, test, build)
+- [ ] ESLint + Prettier
+- [x] `packages/contracts`: Zod schemas for `Profile`, `FoodItem`, `Meal`, `BioState`, `CognitiveFlag`, `RecipeRecommendation` and request/response shapes for the endpoints in §6
 
 ### Phase 1 — Design system (3–4 days)
-- [ ] Run the `frontend-design` two-pass process on the direction above; revise anything that reads as a default
-- [ ] Tokens as CSS variables (color, type scale, spacing, radius, elevation, motion) + dark theme
-- [ ] Core components on Radix: Button, Sheet, Field, Segmented control, Toast, Meal row, Macro bar, **BioStateDial**
-- [ ] Component playground route (`/_lab`) with Playwright screenshots for visual review
+- [x] Run the `frontend-design` two-pass process on the direction above. Revision: meals became a ruled, time-in-the-margin timeline instead of a card stack (avoids the SaaS card kit); radius follows hierarchy; one elevation, for sheets only
+- [x] Tokens as CSS variables (`apps/web/src/styles/tokens.css`) + dark theme, exposed as Tailwind utilities
+- [x] Components: Button, Sheet (Radix Dialog), Toast, MealTimeline, MacroLegend, FlagSummary, SuggestedMeal, **BioStateDial**
+- [x] Component lab at `/lab`
+- [ ] Playwright screenshot tests of `/lab` and Today
 
 ### Phase 2 — Frontend screens on mock API (2–3 weeks)
 1. **Onboarding** — goals, dietary preference, typical cognitive goals (focus, calm, energy)
-2. **Today** — dial, meals list, suggested next meal
-3. **Log a meal** — camera/upload → AI result with editable items → confirm (optimistic update). Manual search entry as fallback
-4. **Check-in** — quick cognitive flags ("How's your head?") that feed the bio-state
+2. ✅ **Today** — dial, meals list, suggested next meal
+3. ✅ **Log a meal** — camera/upload → AI result with editable items → confirm. _To do: manual search entry as fallback_
+4. ✅ **Check-in** — quick cognitive flags ("How's your head?") that feed the bio-state
 5. **Recommendations** — recipe detail with the AI's reasoning shown plainly
 6. **History** — week view, trends of energy/focus vs intake
 7. **Settings / profile**
