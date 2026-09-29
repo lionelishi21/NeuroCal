@@ -4,6 +4,10 @@ import {
   CheckIn,
   CreateCheckInRequest,
   CreateMealRequest,
+  FocusScore,
+  IngestResponse,
+  IngestScreenTimeRequest,
+  IngestSleepRequest,
   Meal,
   NextRecommendationsResponse,
   Profile,
@@ -14,13 +18,15 @@ import { z } from "zod";
 import type { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
 import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import type { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
+import type { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
+import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import { DomainError } from "../domain/errors";
-import { toAnalysis, toBioState, toCheckIn, toMeal, toProfile, toRecommendations } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toRecommendations } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -48,6 +54,8 @@ export interface UseCases {
   listMeals: ListMealsUseCase;
   deleteMeal: DeleteMealUseCase;
   recommendRecipe: RecommendRecipeUseCase;
+  ingestTelemetry: IngestTelemetryUseCase;
+  getFocusScore: GetFocusScoreUseCase;
 }
 
 class BadRequest extends Error {}
@@ -144,6 +152,36 @@ export function createApi(uc: UseCases) {
       "GET",
       /^\/recommendations\/next$/,
       async (req) => ok(NextRecommendationsResponse, toRecommendations(await uc.recommendRecipe.execute(req))),
+    ],
+    ["GET", /^\/focus-score$/, async (req) => ok(FocusScore, toFocusScore(await uc.getFocusScore.execute({ userId: req.userId, date: date(req) })))],
+    [
+      "POST",
+      /^\/telemetry\/sleep$/,
+      async (req) => {
+        const { sessions } = json(req, IngestSleepRequest);
+        const accepted = await uc.ingestTelemetry.sleep({
+          userId: req.userId,
+          sessions: sessions.map((s) => ({
+            start: new Date(s.start),
+            end: new Date(s.end),
+            source: s.source,
+            ...(s.deepMinutes === undefined ? {} : { deepMinutes: s.deepMinutes }),
+          })),
+        });
+        return ok(IngestResponse, { accepted });
+      },
+    ],
+    [
+      "POST",
+      /^\/telemetry\/screen-time$/,
+      async (req) => {
+        const { samples } = json(req, IngestScreenTimeRequest);
+        const accepted = await uc.ingestTelemetry.screenTime({
+          userId: req.userId,
+          samples: samples.map((s) => ({ windowStart: new Date(s.windowStart), windowEnd: new Date(s.windowEnd), minutes: s.minutes, source: s.source })),
+        });
+        return ok(IngestResponse, { accepted });
+      },
     ],
   ];
 

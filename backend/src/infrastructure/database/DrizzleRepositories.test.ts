@@ -2,9 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
 import type { Database } from "./client";
 import {
   DrizzleCheckInRepository,
+  DrizzleFocusScoreRepository,
   DrizzleMealRepository,
   DrizzleProfileRepository,
   DrizzleRecommendationRepository,
+  DrizzleTelemetryRepository,
   DrizzleUserRepository,
 } from "./DrizzleRepositories";
 import { createPgliteDatabase } from "./pglite";
@@ -78,6 +80,8 @@ describe("DrizzleCheckInRepository", () => {
     await repo.create(bob, { at: new Date("2026-09-29T21:00:00Z"), flags: ["sharp"] });
     const latest = await repo.latestForDay(alice, { date: "2026-09-29", timeZone: "America/Chicago" });
     expect(latest).toMatchObject({ flags: ["low_focus", "low_energy"], note: "long meeting" });
+    const all = await repo.listForDay(alice, { date: "2026-09-29", timeZone: "America/Chicago" });
+    expect(all.map((c) => c.flags[0])).toEqual(["brain_fog", "low_focus"]);
   });
 });
 
@@ -98,5 +102,50 @@ describe("DrizzleRecommendationRepository", () => {
     ]);
     expect(saved.map((r) => r.title)).toEqual(["A", "B"]);
     expect(new Set(saved.map((r) => r.id)).size).toBe(2);
+  });
+});
+
+describe("DrizzleTelemetryRepository", () => {
+  const day = { date: "2026-09-29", timeZone: "America/Chicago" };
+
+  it("replaces overlapping sleep from the same source and reads sleep that ended on the local day", async () => {
+    const repo = new DrizzleTelemetryRepository(db);
+    const night = { start: new Date("2026-09-29T04:00:00Z"), end: new Date("2026-09-29T11:00:00Z"), source: "manual" as const };
+    const corrected = { start: new Date("2026-09-29T05:00:00Z"), end: new Date("2026-09-29T12:00:00Z"), source: "manual" as const, deepMinutes: 70 };
+    await repo.upsertSleep(alice, [night]);
+    await repo.upsertSleep(alice, [corrected]);
+    await repo.upsertSleep(bob, [night]);
+    expect(await repo.sleepEndingOn(alice, day)).toEqual([corrected]);
+  });
+
+  it("reads screen time by local start date", async () => {
+    const repo = new DrizzleTelemetryRepository(db);
+    const sample = (iso: string) => ({
+      windowStart: new Date(iso),
+      windowEnd: new Date(new Date(iso).getTime() + 3_600_000),
+      minutes: 30,
+      source: "wearable" as const,
+    });
+    await repo.upsertScreenTime(alice, [sample("2026-09-29T04:00:00Z"), sample("2026-09-27T04:00:00Z")]); // 23:00 on the 28th; the 26th
+    const rows = await repo.screenTimeStartingOn(alice, ["2026-09-28", "2026-09-29"], "America/Chicago");
+    expect(rows.map((r) => r.windowStart.toISOString())).toEqual(["2026-09-29T04:00:00.000Z"]);
+  });
+});
+
+describe("DrizzleFocusScoreRepository", () => {
+  it("stores one score per user and day, including empty components", async () => {
+    const repo = new DrizzleFocusScoreRepository(db);
+    const score = {
+      userId: alice,
+      date: "2026-09-29",
+      score: 65,
+      components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null },
+      explanation: "Sleep matters most today.",
+      modelVersion: "v0",
+    };
+    await repo.put(score);
+    await repo.put({ ...score, score: 70 });
+    expect(await repo.get(alice, "2026-09-29")).toEqual({ ...score, score: 70 });
+    expect(await repo.get(bob, "2026-09-29")).toBeNull();
   });
 });

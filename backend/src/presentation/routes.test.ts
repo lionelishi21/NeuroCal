@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import {
+  FakeExplainer,
   FakeReasoning,
   FakeSearch,
   FakeVision,
   FixedClock,
   InMemoryCheckIns,
+  InMemoryFocusScores,
   InMemoryMeals,
   InMemoryProfiles,
   InMemoryRecommendations,
+  InMemoryTelemetry,
   item,
   profile,
 } from "../application/testing/fakes";
@@ -29,6 +32,9 @@ beforeEach(async () => {
       meals,
       checkIns: new InMemoryCheckIns(),
       recommendations: new InMemoryRecommendations(),
+      telemetry: new InMemoryTelemetry(),
+      focusScores: new InMemoryFocusScores(),
+      explainer: new FakeExplainer("Short sleep is holding you back."),
       vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
       reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
       search: new FakeSearch([
@@ -93,7 +99,7 @@ describe("API routes", () => {
     });
   });
 
-  it("POST /meals/analyze reads a multipart photo and hides internal fields", async () => {
+  it("POST /meals/analyze reads a multipart photo and returns contract items", async () => {
     const form = new FormData();
     form.append("photo", new Blob([new Uint8Array([1, 2, 3])], { type: "image/jpeg" }), "plate.jpg");
     const request = new Request("http://x", { method: "POST", body: form });
@@ -106,7 +112,9 @@ describe("API routes", () => {
       userId: "u1",
     });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ items: [{ name: "Quinoa", portion: "1 serving", calories: 166, macros: expect.any(Object), confidence: 0.8 }] });
+    expect(res.body).toEqual({
+      items: [{ name: "Quinoa", portion: "1 serving", calories: 166, macros: expect.any(Object), confidence: 0.8, glycemicLoad: "medium" }],
+    });
   });
 
   it("GET /recommendations/next returns recipes without internal fields", async () => {
@@ -121,6 +129,31 @@ describe("API routes", () => {
   it("PUT /me/profile applies a partial update", async () => {
     const res = await call("PUT", "/me/profile", { dailyCalorieTarget: 2000 });
     expect(res.body).toMatchObject({ dailyCalorieTarget: 2000, displayName: "Lionel" });
+  });
+
+  it("POST /telemetry/sleep feeds GET /focus-score", async () => {
+    expect((await call("GET", "/focus-score")).body).toEqual({
+      date: "2026-09-29",
+      score: null,
+      components: { sleep: null, timing: null, glycemic: null, stress: null },
+      explanation: expect.stringMatching(/Log last night's sleep/),
+    });
+    const ingest = await call("POST", "/telemetry/sleep", {
+      sessions: [{ start: "2026-09-28T23:00:00-05:00", end: "2026-09-29T05:00:00-05:00", source: "manual" }],
+    });
+    expect(ingest).toEqual({ status: 200, body: { accepted: 1 } });
+    expect((await call("GET", "/focus-score")).body).toMatchObject({
+      score: 75,
+      components: { sleep: 0.75 },
+      explanation: "Short sleep is holding you back.",
+    });
+  });
+
+  it("POST /telemetry/screen-time validates the window", async () => {
+    const res = await call("POST", "/telemetry/screen-time", {
+      samples: [{ windowStart: "2026-09-28T22:00:00-05:00", windowEnd: "2026-09-28T23:00:00-05:00", minutes: 90, source: "wearable" }],
+    });
+    expect(res).toMatchObject({ status: 400, body: { code: "invalid_request" } });
   });
 
   it("answers bad JSON, unknown paths and wrong methods clearly", async () => {

@@ -5,19 +5,22 @@
  */
 import { createServer } from "node:http";
 import type { Database } from "../infrastructure/database/client";
+import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
 import {
   DrizzleCheckInRepository,
+  DrizzleFocusScoreRepository,
   DrizzleMealRepository,
   DrizzleProfileRepository,
   DrizzleRecommendationRepository,
+  DrizzleTelemetryRepository,
   DrizzleUserRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { createPgliteDatabase } from "../infrastructure/database/pglite";
-import { stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
 import { GoogleRecipeSearch } from "../infrastructure/search/GoogleRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
@@ -53,6 +56,9 @@ async function seed(db: Database, userId: string) {
     ],
   });
   await new DrizzleCheckInRepository(db).create(userId, { at: today(14, 5), flags: ["low_focus", "low_energy"] });
+  const bedtime = today(23, 15);
+  bedtime.setDate(bedtime.getDate() - 1);
+  await new DrizzleTelemetryRepository(db).upsertSleep(userId, [{ start: bedtime, end: today(5, 45), source: "manual" }]);
 }
 
 async function main() {
@@ -64,6 +70,7 @@ async function main() {
 
   const vision = config.openAiApiKey ? new OpenAiVisionProvider({ apiKey: config.openAiApiKey }) : stubVision;
   const reasoning = config.anthropicApiKey ? new ClaudeReasoningProvider({ apiKey: config.anthropicApiKey }) : stubReasoning;
+  const explainer = config.anthropicApiKey ? new ClaudeFocusExplainer({ apiKey: config.anthropicApiKey }) : stubExplainer;
   const search =
     config.googleSearchApiKey && config.googleSearchEngineId
       ? new GoogleRecipeSearch({ apiKey: config.googleSearchApiKey, engineId: config.googleSearchEngineId })
@@ -75,7 +82,10 @@ async function main() {
       meals: new DrizzleMealRepository(db),
       checkIns: new DrizzleCheckInRepository(db),
       recommendations: new DrizzleRecommendationRepository(db),
+      telemetry: new DrizzleTelemetryRepository(db),
+      focusScores: new DrizzleFocusScoreRepository(db),
       vision,
+      explainer,
       reasoning,
       search,
       clock: systemClock,

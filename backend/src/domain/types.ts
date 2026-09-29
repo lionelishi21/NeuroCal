@@ -100,3 +100,38 @@ export interface RecipeRecommendation {
 }
 
 export type NewRecipeRecommendation = Omit<RecipeRecommendation, "id">;
+
+export const TELEMETRY_SOURCES = ["manual", "apple_health", "health_connect", "wearable"] as const;
+export type TelemetrySource = (typeof TELEMETRY_SOURCES)[number];
+
+export interface SleepSession {
+  start: Date;
+  end: Date;
+  source: TelemetrySource;
+  deepMinutes?: number;
+}
+
+export interface ScreenTimeSample {
+  windowStart: Date;
+  windowEnd: Date;
+  minutes: number;
+  source: TelemetrySource;
+}
+
+/** Each 0–1, or null when there was no data for it. */
+export interface FocusComponents {
+  sleep: number | null;
+  timing: number | null;
+  glycemic: number | null;
+  stress: number | null;
+}
+
+export interface FocusScore {
+  userId: string;
+  date: string;
+  /** 0–100, or null when no component has data. */
+  score: number | null;
+  components: FocusComponents;
+  explanation: string;
+  modelVersion: string;
+}

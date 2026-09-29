@@ -2,7 +2,7 @@
 import type * as C from "@neurocal/contracts";
 import type { MealPhotoAnalysis } from "../application/interfaces/IAiVisionProvider";
 import type { RecipeRecommendations } from "../application/use-cases/RecommendRecipeUseCase";
-import type { BioState, CheckIn, FoodItem, Meal, Profile } from "../domain/types";
+import type { BioState, CheckIn, FocusScore, FoodItem, Meal, Profile } from "../domain/types";
 
 export const toProfile = (p: Profile): C.Profile => ({
   id: p.userId,
@@ -20,6 +20,7 @@ const toFoodItem = (i: FoodItem): C.FoodItem => ({
   calories: i.calories,
   macros: i.macros,
   ...(i.confidence === undefined ? {} : { confidence: i.confidence }),
+  ...(i.glycemicLoad === undefined ? {} : { glycemicLoad: i.glycemicLoad }),
 });
 
 export const toMeal = (m: Meal): C.Meal => ({
@@ -41,6 +42,13 @@ export const toBioState = (s: BioState): C.BioState => ({ ...s });
 export const toAnalysis = (a: MealPhotoAnalysis): C.AnalyzeMealResponse => ({
   items: a.items.map(toFoodItem),
   ...(a.problem ? { problem: a.problem } : {}),
+});
+
+export const toFocusScore = (f: FocusScore): C.FocusScore => ({
+  date: f.date,
+  score: f.score,
+  components: f.components,
+  explanation: f.explanation,
 });
 
 export const toRecommendations = (r: RecipeRecommendations): C.NextRecommendationsResponse => ({

@@ -1,8 +1,12 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
-import { isOnLocalDay } from "../../domain/localDay";
+import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type {
   CheckIn,
+  FocusComponents,
+  FocusScore,
   FoodItem,
+  ScreenTimeSample,
+  SleepSession,
   LocalDay,
   Meal,
   NewCheckIn,
@@ -14,11 +18,14 @@ import type {
 import type { BioStateContext, IAiReasoningProvider, RecipeQueryOutput } from "../interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider, MealPhoto, MealPhotoAnalysis } from "../interfaces/IAiVisionProvider";
 import type { IClock } from "../interfaces/IClock";
+import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
 import type {
   ICheckInRepository,
+  IFocusScoreRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
+  ITelemetryRepository,
 } from "../interfaces/IRepositories";
 import type { ISearchEngineAdapter, RecipeSearchHit } from "../interfaces/ISearchEngineAdapter";
 
@@ -74,6 +81,57 @@ export class InMemoryCheckIns implements ICheckInRepository {
   async latestForDay(userId: string, day: LocalDay) {
     const onDay = this.rows.filter((c) => c.userId === userId && isOnLocalDay(c.at, day));
     return onDay.sort((a, b) => b.at.getTime() - a.at.getTime())[0] ?? null;
+  }
+  async listForDay(userId: string, day: LocalDay) {
+    return this.rows.filter((c) => c.userId === userId && isOnLocalDay(c.at, day)).sort((a, b) => a.at.getTime() - b.at.getTime());
+  }
+}
+
+export class InMemoryTelemetry implements ITelemetryRepository {
+  readonly sleep = new Map<string, SleepSession & { userId: string }>();
+  readonly screen = new Map<string, ScreenTimeSample & { userId: string }>();
+  async upsertSleep(userId: string, sessions: SleepSession[]) {
+    for (const s of sessions) {
+      for (const [key, existing] of this.sleep) {
+        if (existing.userId === userId && existing.source === s.source && existing.start < s.end && existing.end > s.start) {
+          this.sleep.delete(key);
+        }
+      }
+      this.sleep.set(`${userId}|${s.source}|${s.start.toISOString()}`, { ...s, userId });
+    }
+    return sessions.length;
+  }
+  async upsertScreenTime(userId: string, samples: ScreenTimeSample[]) {
+    for (const s of samples) this.screen.set(`${userId}|${s.source}|${s.windowStart.toISOString()}`, { ...s, userId });
+    return samples.length;
+  }
+  async sleepEndingOn(userId: string, day: LocalDay) {
+    return [...this.sleep.values()].filter((s) => s.userId === userId && isOnLocalDay(s.end, day)).map(({ userId: _, ...s }) => s);
+  }
+  async screenTimeStartingOn(userId: string, dates: string[], timeZone: string) {
+    return [...this.screen.values()]
+      .filter((s) => s.userId === userId && dates.includes(localDateOf(s.windowStart, timeZone)))
+      .map(({ userId: _, ...s }) => s);
+  }
+}
+
+export class InMemoryFocusScores implements IFocusScoreRepository {
+  readonly rows = new Map<string, FocusScore>();
+  async get(userId: string, date: string) {
+    return this.rows.get(`${userId}|${date}`) ?? null;
+  }
+  async put(score: FocusScore) {
+    this.rows.set(`${score.userId}|${score.date}`, score);
+  }
+}
+
+export class FakeExplainer implements IFocusExplainer {
+  calls: { score: number; components: FocusComponents }[] = [];
+  constructor(private readonly result: string | Error = "Sleep is the main thing holding you back today.") {}
+  async explain(input: { score: number; components: FocusComponents }) {
+    this.calls.push(input);
+    if (this.result instanceof Error) throw this.result;
+    return this.result;
   }
 }
 

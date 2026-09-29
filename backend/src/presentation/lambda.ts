@@ -1,13 +1,16 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
+import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
 import {
   DrizzleCheckInRepository,
+  DrizzleFocusScoreRepository,
   DrizzleMealRepository,
   DrizzleProfileRepository,
   DrizzleRecommendationRepository,
+  DrizzleTelemetryRepository,
   DrizzleUserRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { GoogleRecipeSearch } from "../infrastructure/search/GoogleRecipeSearch";
@@ -32,7 +35,10 @@ const api = createApi(
     meals: new DrizzleMealRepository(db),
     checkIns: new DrizzleCheckInRepository(db),
     recommendations: new DrizzleRecommendationRepository(db),
+    telemetry: new DrizzleTelemetryRepository(db),
+    focusScores: new DrizzleFocusScoreRepository(db),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     search: new GoogleRecipeSearch({
       apiKey: required("GOOGLE_CSE_API_KEY", config.googleSearchApiKey),

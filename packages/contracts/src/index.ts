@@ -61,6 +61,8 @@ export const FoodItem = z.object({
   macros: Macros,
   /** 0–1 confidence from photo analysis; absent for manual entries. */
   confidence: z.number().min(0).max(1).optional(),
+  /** Estimated glycemic load from photo analysis; feeds the Focus Score. */
+  glycemicLoad: z.enum(["low", "medium", "high"]).optional(),
 });
 export type FoodItem = z.infer<typeof FoodItem>;
 
@@ -129,6 +131,64 @@ export const NextRecommendationsResponse = z.object({
 });
 export type NextRecommendationsResponse = z.infer<typeof NextRecommendationsResponse>;
 
+export const TelemetrySource = z.enum(["manual", "apple_health", "health_connect", "wearable"]);
+export type TelemetrySource = z.infer<typeof TelemetrySource>;
+
+export const SleepSession = z
+  .object({
+    start: IsoDateTime,
+    end: IsoDateTime,
+    source: TelemetrySource,
+    /** Minutes of deep sleep, when the source measures it. */
+    deepMinutes: z.number().int().nonnegative().optional(),
+  })
+  .refine((s) => Date.parse(s.end) > Date.parse(s.start), { message: "Sleep must end after it starts", path: ["end"] })
+  .refine((s) => Date.parse(s.end) - Date.parse(s.start) <= 24 * 3_600_000, {
+    message: "A sleep session can't be longer than 24 hours",
+    path: ["end"],
+  });
+export type SleepSession = z.infer<typeof SleepSession>;
+
+export const ScreenTimeSample = z
+  .object({
+    windowStart: IsoDateTime,
+    windowEnd: IsoDateTime,
+    minutes: z.number().int().nonnegative(),
+    source: TelemetrySource,
+  })
+  .refine((s) => s.minutes <= (Date.parse(s.windowEnd) - Date.parse(s.windowStart)) / 60_000, {
+    message: "Minutes can't exceed the window length",
+    path: ["minutes"],
+  });
+export type ScreenTimeSample = z.infer<typeof ScreenTimeSample>;
+
+export const IngestSleepRequest = z.object({ sessions: z.array(SleepSession).min(1).max(100) });
+export type IngestSleepRequest = z.infer<typeof IngestSleepRequest>;
+
+export const IngestScreenTimeRequest = z.object({ samples: z.array(ScreenTimeSample).min(1).max(500) });
+export type IngestScreenTimeRequest = z.infer<typeof IngestScreenTimeRequest>;
+
+export const IngestResponse = z.object({ accepted: z.number().int().nonnegative() });
+export type IngestResponse = z.infer<typeof IngestResponse>;
+
+/** 0–1 per input; null when there was no data for it today. */
+const Component = z.number().min(0).max(1).nullable();
+
+export const FocusScore = z.object({
+  date: IsoDate,
+  /** 0–100; null when no input has data yet. */
+  score: z.number().int().min(0).max(100).nullable(),
+  components: z.object({
+    sleep: Component,
+    timing: Component,
+    glycemic: Component,
+    stress: Component,
+  }),
+  /** Plain-language summary of what drives the score. */
+  explanation: z.string(),
+});
+export type FocusScore = z.infer<typeof FocusScore>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -146,6 +206,9 @@ export const endpoints = {
   listMeals: { method: "GET", path: "/meals", response: z.array(Meal) },
   deleteMeal: { method: "DELETE", path: "/meals/:id" },
   nextRecommendations: { method: "GET", path: "/recommendations/next", response: NextRecommendationsResponse },
+  getFocusScore: { method: "GET", path: "/focus-score", response: FocusScore },
+  ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
+  ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
 } as const;
 
 export function mealCalories(meal: Pick<Meal, "items">): number {

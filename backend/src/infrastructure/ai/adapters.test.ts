@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT } from "./prompts";
@@ -77,5 +78,27 @@ describe("OpenAiVisionProvider", () => {
     ["negative calories", { finish_reason: "stop", message: { parsed: { items: [{ name: "x", portion: "1", calories: -5, proteinG: 0, carbsG: 0, fatG: 0, confidence: 1, glycemicLoad: "low" }], problem: null }, refusal: null } }],
   ])("rejects %s", async (_, choice) => {
     await expect(openAiWith(choice).provider.analyzeMealPhoto(photo)).rejects.toThrow();
+  });
+});
+
+describe("ClaudeFocusExplainer", () => {
+  const input = { score: 65, components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null } };
+
+  it("sends only the score and components and returns the explanation", async () => {
+    const parse = jest.fn(async (_params: unknown) => ({
+      usage: { input_tokens: 90, output_tokens: 40 },
+      stop_reason: "end_turn",
+      parsed_output: { explanation: "Good sleep helps; yesterday's sugary food holds you back." },
+    }));
+    const explainer = new ClaudeFocusExplainer({ messages: { parse } as unknown as ParseMessage });
+    await expect(explainer.explain(input)).resolves.toBe("Good sleep helps; yesterday's sugary food holds you back.");
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe("claude-haiku-4-5");
+    expect(JSON.parse(params.messages[0].content)).toEqual(input);
+  });
+
+  it("rejects an explanation over 300 characters", async () => {
+    const parse = jest.fn(async () => ({ usage: { input_tokens: 1, output_tokens: 1 }, stop_reason: "end_turn", parsed_output: { explanation: "x".repeat(301) } }));
+    await expect(new ClaudeFocusExplainer({ messages: { parse } as unknown as ParseMessage }).explain(input)).rejects.toThrow();
   });
 });

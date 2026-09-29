@@ -5,6 +5,7 @@
 import type { IAiReasoningProvider } from "../../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionProvider";
 import type { ISearchEngineAdapter } from "../../application/interfaces/ISearchEngineAdapter";
+import type { IFocusExplainer } from "../../application/interfaces/IFocusExplainer";
 
 export const stubVision: IAiVisionProvider = {
   async analyzeMealPhoto() {
@@ -50,5 +51,14 @@ export const stubSearch: ISearchEngineAdapter = {
         macros: { proteinG: 32, carbsG: 48, fatG: 20 },
       },
     ];
+  },
+};
+
+export const stubExplainer: IFocusExplainer = {
+  async explain({ components }) {
+    const weakest = (Object.entries(components) as [string, number | null][])
+      .filter(([, v]) => v !== null)
+      .sort((a, b) => a[1]! - b[1]!)[0]?.[0];
+    return `Stub explanation: ${weakest ?? "nothing"} is the input holding your focus back most today.`;
   },
 };

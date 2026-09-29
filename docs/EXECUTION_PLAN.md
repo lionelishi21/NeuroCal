@@ -147,8 +147,8 @@ Mobile — Today                  Desktop — Today
 2. ✅ **Today** — dial, meals, check-in, what to eat next
 3. ✅ **Log a meal** — photo → editable items → confirm. _To do: manual entry fallback; show high-glycemic flags_
 4. ✅ **Check-in** — cognitive flags that feed recommendations
-5. **Focus Score** — daily score with the inputs behind it (new contract: `FocusScore`, formula in ARCHITECTURE §6.8)
-6. **Sleep & circadian** — sleep and screen-time telemetry, late-eating insights (new contracts)
+5. ✅ **Focus Score** — daily score with the inputs behind it, plus a "Log sleep" sheet (ARCHITECTURE §6.7–6.8)
+6. **Sleep & circadian** — history view of sleep and screen time, late-eating insights (telemetry contracts and ingest are done)
 7. **Protocols & products** — vector-matched recommendations, clearly labelled when affiliate
 8. **History** — week view, focus vs. intake
 9. **Settings / profile**
@@ -163,9 +163,10 @@ Mobile — Today                  Desktop — Today
 - [x] OpenAI vision adapter (§7.1)
 - [x] `RecommendRecipeUseCase` (§6.6)
 - [x] Claude reasoning adapter + Google Custom Search adapter (§7.2)
-- [ ] Focus Score use case; embeddings + vector recommendation use case (§6.8–6.9, §7.3)
+- [x] Telemetry ingest + Focus Score use case with Claude explanation (§6.7–6.8, §7.4)
+- [ ] Embeddings + vector recommendation use case (§6.9, §7.3)
 - [x] HTTP routes for all 9 endpoints + Lambda entry point (JWT claims from API Gateway)
-- [ ] Infrastructure as code (API Gateway, Lambda bundling, Aurora, Cognito); S3 presigned photo upload
+- [ ] _Deferred:_ infrastructure as code (API Gateway, Lambda bundling, Aurora, Cognito, EventBridge schedules); S3 presigned photo upload
 - [x] Local dev server (`npm run dev` in `backend`); web-poc runs against it end to end
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres
 

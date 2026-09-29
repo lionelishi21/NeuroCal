@@ -1,16 +1,21 @@
 import type { IAiReasoningProvider } from "../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../application/interfaces/IAiVisionProvider";
 import type { IClock } from "../application/interfaces/IClock";
+import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type {
   ICheckInRepository,
+  IFocusScoreRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
+  ITelemetryRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
 import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
+import { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
+import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -23,7 +28,10 @@ export interface Ports {
   meals: IMealRepository;
   checkIns: ICheckInRepository;
   recommendations: IRecommendationRepository;
+  telemetry: ITelemetryRepository;
+  focusScores: IFocusScoreRepository;
   vision: IAiVisionProvider;
+  explainer: IFocusExplainer;
   reasoning: IAiReasoningProvider;
   search: ISearchEngineAdapter;
   clock: IClock;
@@ -45,6 +53,8 @@ export function buildUseCases(p: Ports): UseCases {
     recommendRecipe: new RecommendRecipeUseCase(p.profiles, getBioState, p.reasoning, p.search, p.recommendations, {
       allowedDomains: p.recipeDomains,
     }),
+    ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
+    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock),
   };
 }
 

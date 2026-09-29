@@ -1,5 +1,8 @@
 import {
   type BioState,
+  type FocusScore,
+  type IngestScreenTimeRequest,
+  type IngestSleepRequest,
   type CheckIn,
   type CreateCheckInRequest,
   type CreateMealRequest,
@@ -67,6 +70,12 @@ export function createDb() {
   ];
 
   const checkIns: CheckIn[] = [{ id: "c1", at: at(14, 5), flags: ["low_focus", "low_energy"] }];
+
+  // Last night: 23:15 → 05:45, six and a half hours.
+  const bedtime = new Date(at(23, 15));
+  bedtime.setDate(bedtime.getDate() - 1);
+  const sleep: IngestSleepRequest["sessions"] = [{ start: bedtime.toISOString(), end: at(5, 45), source: "manual" }];
+  const screenTime: IngestScreenTimeRequest["samples"] = [];
 
   const sumMacros = (list: Meal[]): Macros =>
     list
@@ -162,7 +171,79 @@ export function createDb() {
     [item("Avocado toast", "1 slice sourdough", 290, 7, 30, 16, 0.9), item("Poached egg", "1 large", 72, 6.3, 0.4, 4.8, 0.86)],
   ];
 
+  /** Mirrors backend/src/domain/focusScore.ts closely enough for the UI; the backend is the source of truth. */
+  function focusScore(date: string): FocusScore {
+    const clamp = (n: number) => Math.min(1, Math.max(0, n));
+    const round = (n: number | null) => (n === null ? null : Math.round(n * 100) / 100);
+    const d = new Date(`${date}T12:00:00`);
+    d.setDate(d.getDate() - 1);
+    const yesterday = todayIso(d);
+
+    const nights = sleep.filter((s) => todayIso(new Date(s.end)) === date);
+    // Overlapping sessions count once.
+    let sleepMin = 0;
+    let coveredUntil = -Infinity;
+    for (const s of [...nights].sort((a, b) => Date.parse(a.start) - Date.parse(b.start))) {
+      const start = Math.max(Date.parse(s.start), coveredUntil);
+      if (Date.parse(s.end) > start) sleepMin += (Date.parse(s.end) - start) / 60_000;
+      coveredUntil = Math.max(coveredUntil, Date.parse(s.end));
+    }
+    const sleepC = nights.length ? clamp(sleepMin / 480) : null;
+
+    const yMeals = mealsOn(yesterday);
+    const lateEating = Math.max(0, ...yMeals.map((m) => (new Date(m.eatenAt).getHours() - 21) * 60 + new Date(m.eatenAt).getMinutes()));
+    const lateScreen = screenTime
+      .filter((s) => {
+        const start = new Date(s.windowStart);
+        return (todayIso(start) === yesterday && start.getHours() >= 22) || (todayIso(start) === date && start.getHours() < 4);
+      })
+      .reduce((sum, s) => sum + s.minutes, 0);
+    const timingC = yMeals.length || screenTime.length ? clamp(1 - clamp(lateEating / 120) - 0.5 * clamp(lateScreen / 120)) : null;
+
+    const yCalories = yMeals.reduce((sum, m) => sum + mealCalories(m), 0);
+    const high = yMeals.flatMap((m) => m.items).filter((i) => i.glycemicLoad === "high").reduce((sum, i) => sum + i.calories, 0);
+    const glycemicC = yCalories > 0 ? clamp(1 - high / yCalories) : null;
+
+    const recent = checkIns.filter((c) => [yesterday, date].includes(todayIso(new Date(c.at))));
+    const negatives = new Set(recent.flatMap((c) => c.flags).filter((f) => ["stressed", "brain_fog", "low_focus", "wired"].includes(f)));
+    const stressC = recent.length ? clamp(1 - 0.25 * negatives.size) : null;
+
+    const components = { sleep: round(sleepC), timing: round(timingC), glycemic: round(glycemicC), stress: round(stressC) };
+    const weights = { sleep: 0.4, timing: 0.2, glycemic: 0.2, stress: 0.2 } as const;
+    let weighted = 0;
+    let total = 0;
+    for (const key of Object.keys(weights) as (keyof typeof weights)[]) {
+      const value = components[key];
+      if (value === null) continue;
+      weighted += weights[key] * value;
+      total += weights[key];
+    }
+    const score = total ? Math.round((100 * weighted) / total) : null;
+    const explanation =
+      score === null
+        ? "Log last night's sleep or a check-in to get today's Focus Score."
+        : components.sleep !== null && components.sleep < 0.9
+          ? `About ${Math.round(sleepMin / 6) / 10} hours of sleep is holding your focus back most. A short walk in daylight before lunch can help.`
+          : "Your inputs look steady today. Keep dinner before 9pm to protect tomorrow's score.";
+    return { date, score, components, explanation };
+  }
+
   return {
+    focusScore,
+    addSleep(sessions: IngestSleepRequest["sessions"]) {
+      for (const s of sessions) {
+        // A new session replaces any overlapping one from the same source.
+        const overlaps = (x: (typeof sleep)[number]) =>
+          x.source === s.source && Date.parse(x.start) < Date.parse(s.end) && Date.parse(x.end) > Date.parse(s.start);
+        for (let i = sleep.length - 1; i >= 0; i--) if (overlaps(sleep[i]!)) sleep.splice(i, 1);
+        sleep.push(s);
+      }
+      return sessions.length;
+    },
+    addScreenTime(samples: IngestScreenTimeRequest["samples"]) {
+      screenTime.push(...samples);
+      return samples.length;
+    },
     profile: () => profile,
     updateProfile(patch: Partial<Profile>) {
       Object.assign(profile, patch);

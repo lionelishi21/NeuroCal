@@ -4,6 +4,9 @@ import {
   AnalyzeMealResponse,
   BioState,
   CheckIn,
+  FocusScore,
+  IngestResponse,
+  type IngestSleepRequest,
   type CreateCheckInRequest,
   type CreateMealRequest,
   Meal,
@@ -18,6 +21,7 @@ export const keys = {
   bioState: (date: string) => ["bio-state", date] as const,
   meals: (date: string) => ["meals", date] as const,
   recommendations: ["recommendations", "next"] as const,
+  focusScore: (date: string) => ["focus-score", date] as const,
 };
 
 export function useProfile() {
@@ -45,6 +49,13 @@ export function useNextRecommendations() {
   });
 }
 
+export function useFocusScore(date = todayIso()) {
+  return useQuery({
+    queryKey: keys.focusScore(date),
+    queryFn: () => request(`/focus-score?date=${date}`, FocusScore),
+  });
+}
+
 export function useAnalyzeMeal() {
   return useMutation({
     mutationFn: (photo: File) => {
@@ -63,6 +74,7 @@ function useInvalidateDay() {
       client.invalidateQueries({ queryKey: ["bio-state"] }),
       client.invalidateQueries({ queryKey: ["meals"] }),
       client.invalidateQueries({ queryKey: keys.recommendations }),
+      client.invalidateQueries({ queryKey: ["focus-score"] }),
     ]);
 }
 
@@ -88,6 +100,15 @@ export function useCreateCheckIn() {
   return useMutation({
     mutationFn: (checkIn: CreateCheckInRequest) =>
       request("/check-ins", CheckIn, { method: "POST", body: JSON.stringify(checkIn) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useLogSleep() {
+  const invalidate = useInvalidateDay();
+  return useMutation({
+    mutationFn: (sessions: IngestSleepRequest["sessions"]) =>
+      request("/telemetry/sleep", IngestResponse, { method: "POST", body: JSON.stringify({ sessions }) }),
     onSuccess: invalidate,
   });
 }

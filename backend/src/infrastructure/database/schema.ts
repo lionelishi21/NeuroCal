@@ -1,12 +1,14 @@
 /**
  * Drizzle schema for Aurora PostgreSQL (ARCHITECTURE §4).
- * Tables for planned features (telemetry, focus scores, protocols, products,
- * embeddings) are added when their use cases are built.
+ * Tables for planned features (protocols, products, embeddings) are added when
+ * their use cases are built.
  */
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
+  primaryKey,
   integer,
   numeric,
   pgTable,
@@ -151,4 +153,65 @@ export const recipeRecommendations = pgTable(
     createdAt: timestamps.createdAt,
   },
   (t) => [index("recipe_recommendations_user_created_idx").on(t.userId, t.createdAt.desc())],
+);
+
+export const sleepSessions = pgTable(
+  "sleep_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    source: text("source").notNull(),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    endAt: timestamp("end_at", { withTimezone: true }).notNull(),
+    deepMinutes: integer("deep_minutes"),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    unique("sleep_sessions_user_source_start_unique").on(t.userId, t.source, t.startAt),
+    index("sleep_sessions_user_end_idx").on(t.userId, t.endAt.desc()),
+    check("sleep_sessions_end_after_start", sql`${t.endAt} > ${t.startAt}`),
+  ],
+);
+
+export const screenTimeSamples = pgTable(
+  "screen_time_samples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    source: text("source").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    windowEnd: timestamp("window_end", { withTimezone: true }).notNull(),
+    minutes: integer("minutes").notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    unique("screen_time_user_source_window_unique").on(t.userId, t.source, t.windowStart),
+    check("screen_time_minutes_fit_window", sql`${t.minutes} >= 0 and ${t.windowEnd} > ${t.windowStart}`),
+  ],
+);
+
+export const focusScores = pgTable(
+  "focus_scores",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: date("date", { mode: "string" }).notNull(),
+    score: smallint("score"),
+    sleepComponent: real("sleep_component"),
+    timingComponent: real("timing_component"),
+    glycemicComponent: real("glycemic_component"),
+    stressComponent: real("stress_component"),
+    explanation: text("explanation").notNull(),
+    modelVersion: text("model_version").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.date] }),
+    check("focus_scores_score_range", sql`${t.score} is null or ${t.score} between 0 and 100`),
+  ],
 );

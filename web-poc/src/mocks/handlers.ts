@@ -1,5 +1,11 @@
 import { HttpResponse, delay, http } from "msw";
-import { CreateCheckInRequest, CreateMealRequest, UpdateProfileRequest } from "@neurocal/contracts";
+import {
+  CreateCheckInRequest,
+  CreateMealRequest,
+  IngestScreenTimeRequest,
+  IngestSleepRequest,
+  UpdateProfileRequest,
+} from "@neurocal/contracts";
 import { createDb } from "./db";
 import { todayIso } from "../lib/format";
 
@@ -52,6 +58,21 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       if (!body.success) return invalid("Pick at least one way you feel.");
       await delay(latency);
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
+    }),
+    http.get(url("/focus-score"), async ({ request }) => {
+      await delay(latency);
+      return HttpResponse.json(db.focusScore(dateParam(request)));
+    }),
+    http.post(url("/telemetry/sleep"), async ({ request }) => {
+      const body = IngestSleepRequest.safeParse(await request.json());
+      if (!body.success) return invalid(body.error.issues[0]?.message ?? "That sleep entry isn't valid.");
+      await delay(latency);
+      return HttpResponse.json({ accepted: db.addSleep(body.data.sessions) });
+    }),
+    http.post(url("/telemetry/screen-time"), async ({ request }) => {
+      const body = IngestScreenTimeRequest.safeParse(await request.json());
+      if (!body.success) return invalid("That screen-time entry isn't valid.");
+      return HttpResponse.json({ accepted: db.addScreenTime(body.data.samples) });
     }),
     http.get(url("/recommendations/next"), async () => {
       await delay(latency * 2);

@@ -8,6 +8,13 @@
       "when": 1790670227629,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790687907538,
+      "tag": "0001_telemetry_focus",
+      "breakpoints": true
     }
   ]
 }

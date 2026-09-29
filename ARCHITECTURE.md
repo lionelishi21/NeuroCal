@@ -1,6 +1,6 @@
 # NeuroCal AI — Architecture
 
-_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.6, §7.1–7.2 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
+_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.8, §7.1, §7.2, §7.4 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
 
 **Sources of truth**
 - API shapes: `packages/contracts/src/index.ts` (Zod). This document refers to those types by name and does not redefine them.
@@ -332,14 +332,22 @@ Ports: `IProfileRepository`, `IMealRepository`, `ICheckInRepository`, `IAiReason
 
 If the reasoning call fails after one retry: `502`. If search returns nothing: `200` with `recipes: []`, and the UI says so.
 
-### 6.7 IngestTelemetry — planned `POST /telemetry/sleep`, `POST /telemetry/screen-time`
-Idempotent upserts keyed on `(user, source, start)`. Emits `telemetry.ingested`.
+### 6.7 IngestTelemetry — `POST /telemetry/sleep`, `POST /telemetry/screen-time`
+A sleep session replaces any stored session **from the same source that overlaps it**, so re-syncs and manual corrections don't pile up. Screen-time samples upsert on `(user, source, windowStart)`. Rejects sleep that ends before it starts, lasts over 24 h, ends in the future, or has more deep sleep than sleep. Emitting `telemetry.ingested` is planned with the EventBridge work.
 
-### 6.8 ComputeFocusScore — planned; EventBridge, nightly per user time zone, plus on `checkin.recorded`
+### 6.8 ComputeFocusScore — `GET /focus-score?date=`
+Computed on read and stored in `focus_scores`; the AI explanation is only requested when the score or a component changed, and a plain fallback sentence is used if the explainer fails. Nightly precomputation via EventBridge is planned with the deploy work.
+
+The score for day D is a **morning baseline**:
+- sleep ← sessions that ended on D (overlapping sessions from different sources count once)
+- timing ← the last meal of D−1 after 21:00, and screen time starting 22:00–04:00 on the evening of D−1
+- glycemic ← D−1's meals
+- stress ← check-ins on D−1 and D
+
 v0 is a **deterministic** formula; the AI only writes the explanation. Weights are a **proposal** to validate with real data:
 
 ```
-sleep     = clamp(totalSleepMin / 480) × 0.7 + clamp(deepMin / 90) × 0.3
+sleep     = clamp(totalSleepMin / 480) × 0.7 + clamp(deepMin / 90) × 0.3   (duration only when a session lacks deep-sleep data)
 timing    = 1 − clamp(minutes eaten after 21:00 local / 120) − clamp(screen minutes after 22:00 / 120) × 0.5
 glycemic  = 1 − share of the day's calories from items with glycemicLoad = "high"
 stress    = 1 − 0.25 × count of {stressed, brain_fog, low_focus, wired} in the day's check-ins (floor 0)
@@ -426,14 +434,14 @@ const RecipeQuerySchema = z.object({
 ### 7.3 Embeddings — OpenAI `text-embedding-3-small`
 Adapter: `infrastructure/ai/OpenAiEmbeddingProvider.ts` implements `IEmbeddingProvider`. 1536 dimensions; batch up to 100 texts per call. Protocol and product embeddings are recomputed only when their text changes.
 
-### 7.4 Focus Score explanation — `claude-haiku-4-5` (planned)
+### 7.4 Focus Score explanation — `claude-haiku-4-5`
 Input: the score and its components only. Output: `{ explanation: string (≤ 300 chars) }`, same rules as §7.2.
 
 ---
 
 ## 8. API surface
 
-Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served today by the web mock:
+Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served by the backend and the web mock:
 
 | Method | Path | Request | Response | Use case |
 |---|---|---|---|---|
@@ -446,15 +454,15 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | GET | `/meals?date=` | — | `Meal[]` | meal list |
 | DELETE | `/meals/:id` | — | 204 | 6.3 |
 | GET | `/recommendations/next` | — | `NextRecommendationsResponse` | 6.6 |
+| GET | `/focus-score?date=` | — | `FocusScore` | 6.8 |
+| POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
+| POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
 
 Planned — add to contracts first:
 
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/uploads/meal-photo` | Presigned S3 URL; `/meals/analyze` then takes `{ photoKey }` instead of multipart |
-| GET | `/focus-score?date=` | `FocusScore` with components and explanation |
-| POST | `/telemetry/sleep` | Batch of `SleepSession` |
-| POST | `/telemetry/screen-time` | Batch of `ScreenTimeSample` |
 | GET | `/recommendations/protocols` | Vector-matched protocols and products (affiliate flag) |
 
 Errors always use the `ApiError` shape `{ code, message }`, with messages written for the user ("A meal needs at least one item.").

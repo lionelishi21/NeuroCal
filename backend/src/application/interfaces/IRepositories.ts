@@ -1,5 +1,8 @@
 import type {
   CheckIn,
+  FocusScore,
+  ScreenTimeSample,
+  SleepSession,
   LocalDay,
   Meal,
   NewCheckIn,
@@ -33,6 +36,22 @@ export interface IMealRepository {
 export interface ICheckInRepository {
   create(userId: string, checkIn: NewCheckIn): Promise<CheckIn>;
   latestForDay(userId: string, day: LocalDay): Promise<CheckIn | null>;
+  listForDay(userId: string, day: LocalDay): Promise<CheckIn[]>;
+}
+
+export interface ITelemetryRepository {
+  /** A session replaces any stored session from the same source that overlaps it (re-syncs and corrections). Returns how many were stored. */
+  upsertSleep(userId: string, sessions: SleepSession[]): Promise<number>;
+  /** Idempotent on (source, windowStart). */
+  upsertScreenTime(userId: string, samples: ScreenTimeSample[]): Promise<number>;
+  sleepEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]>;
+  /** Samples whose window starts on any of the given local dates. */
+  screenTimeStartingOn(userId: string, dates: string[], timeZone: string): Promise<ScreenTimeSample[]>;
+}
+
+export interface IFocusScoreRepository {
+  get(userId: string, date: string): Promise<FocusScore | null>;
+  put(score: FocusScore): Promise<void>;
 }
 
 export interface IRecommendationRepository {

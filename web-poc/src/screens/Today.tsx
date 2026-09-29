@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useBioState, useDeleteMeal, useMeals, useNextRecommendations } from "../api/queries";
+import { useBioState, useDeleteMeal, useFocusScore, useMeals, useNextRecommendations } from "../api/queries";
 import { BioStateDial } from "../components/BioStateDial";
 import { Button } from "../components/Button";
 import { FlagSummary } from "../components/FlagSummary";
+import { FocusSummary } from "../components/FocusSummary";
 import { MacroLegend } from "../components/MacroLegend";
 import { MealTimeline } from "../components/MealTimeline";
 import { SuggestedMeal } from "../components/SuggestedMeal";
 import { useToast } from "../components/Toast";
 import { CheckInSheet } from "../features/check-in/CheckInSheet";
+import { LogSleepSheet } from "../features/log-sleep/LogSleepSheet";
 import { LogMealSheet } from "../features/log-meal/LogMealSheet";
 import { formatDay } from "../lib/format";
 
@@ -17,10 +19,12 @@ export function Today() {
   const bio = useBioState();
   const meals = useMeals();
   const recs = useNextRecommendations();
+  const focus = useFocusScore();
   const removeMeal = useDeleteMeal();
   const toast = useToast();
   const [logging, setLogging] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [loggingSleep, setLoggingSleep] = useState(false);
 
   const [first, ...more] = recs.data?.recipes ?? [];
 
@@ -71,6 +75,15 @@ export function Today() {
         </section>
 
         <div className="mt-10 flex flex-col gap-10 lg:mt-0">
+          <section aria-labelledby="focus">
+            <h2 id="focus" className="mt-0 mb-3 text-xl">
+              Focus today
+            </h2>
+            {focus.isPending && <p className="m-0 text-ink-soft">Working out today's Focus Score…</p>}
+            {focus.isError && <p className="m-0 text-beet">The Focus Score didn't load. Try again shortly.</p>}
+            {focus.data && <FocusSummary focus={focus.data} onLogSleep={() => setLoggingSleep(true)} />}
+          </section>
+
           <section aria-labelledby="meals">
             <h2 id="meals" className="mt-0 mb-3 text-xl">
               Meals today
@@ -120,6 +133,7 @@ export function Today() {
 
       <LogMealSheet open={logging} onOpenChange={setLogging} />
       <CheckInSheet open={checkingIn} onOpenChange={setCheckingIn} />
+      <LogSleepSheet open={loggingSleep} onOpenChange={setLoggingSleep} />
     </>
   );
 }

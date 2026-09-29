@@ -1,9 +1,11 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
+  IFocusScoreRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
+  ITelemetryRepository,
   IUserRepository,
 } from "../../application/interfaces/IRepositories";
 import type {
@@ -11,6 +13,7 @@ import type {
   CognitiveFlag,
   CognitiveGoal,
   DietaryPreference,
+  FocusScore,
   FoodItem,
   GlycemicLoad,
   LocalDay,
@@ -21,12 +24,26 @@ import type {
   NewRecipeRecommendation,
   Profile,
   RecipeRecommendation,
+  ScreenTimeSample,
+  SleepSession,
+  TelemetrySource,
 } from "../../domain/types";
 import type { Database } from "./client";
-import { checkIns, mealItems, meals, profiles, recipeRecommendations, users } from "./schema";
+import {
+  checkIns,
+  focusScores,
+  mealItems,
+  meals,
+  profiles,
+  recipeRecommendations,
+  screenTimeSamples,
+  sleepSessions,
+  users,
+} from "./schema";
 
 /** Rows from a user's local calendar day, whatever time zone the database runs in. */
-const onLocalDay = (column: typeof meals.eatenAt | typeof checkIns.at, day: LocalDay) =>
+type TimestampColumn = typeof meals.eatenAt | typeof checkIns.at | typeof sleepSessions.endAt;
+const onLocalDay = (column: TimestampColumn, day: LocalDay) =>
   sql`(${column} at time zone ${day.timeZone})::date = ${day.date}::date`;
 
 export class DrizzleUserRepository implements IUserRepository {
@@ -183,6 +200,15 @@ export class DrizzleCheckInRepository implements ICheckInRepository {
       .limit(1);
     return row ? toCheckIn(row) : null;
   }
+
+  async listForDay(userId: string, day: LocalDay): Promise<CheckIn[]> {
+    const rows = await this.db
+      .select()
+      .from(checkIns)
+      .where(and(eq(checkIns.userId, userId), isNull(checkIns.deletedAt), onLocalDay(checkIns.at, day)))
+      .orderBy(asc(checkIns.at));
+    return rows.map(toCheckIn);
+  }
 }
 
 function toCheckIn(row: typeof checkIns.$inferSelect): CheckIn {
@@ -219,5 +245,107 @@ export class DrizzleRecommendationRepository implements IRecommendationRepositor
       )
       .returning({ id: recipeRecommendations.id });
     return recipes.map((r, i) => ({ ...r, id: rows[i]!.id }));
+  }
+}
+
+export class DrizzleTelemetryRepository implements ITelemetryRepository {
+  constructor(private readonly db: Database) {}
+
+  async upsertSleep(userId: string, sessions: SleepSession[]): Promise<number> {
+    if (sessions.length === 0) return 0;
+    return this.db.transaction(async (tx) => {
+      for (const s of sessions) {
+        await tx
+          .delete(sleepSessions)
+          .where(
+            and(
+              eq(sleepSessions.userId, userId),
+              eq(sleepSessions.source, s.source),
+              lt(sleepSessions.startAt, s.end),
+              gt(sleepSessions.endAt, s.start),
+            ),
+          );
+        await tx
+          .insert(sleepSessions)
+          .values({ userId, source: s.source, startAt: s.start, endAt: s.end, deepMinutes: s.deepMinutes ?? null });
+      }
+      return sessions.length;
+    });
+  }
+
+  async upsertScreenTime(userId: string, samples: ScreenTimeSample[]): Promise<number> {
+    if (samples.length === 0) return 0;
+    const rows = await this.db
+      .insert(screenTimeSamples)
+      .values(samples.map((s) => ({ userId, source: s.source, windowStart: s.windowStart, windowEnd: s.windowEnd, minutes: s.minutes })))
+      .onConflictDoUpdate({
+        target: [screenTimeSamples.userId, screenTimeSamples.source, screenTimeSamples.windowStart],
+        set: { windowEnd: sql`excluded.window_end`, minutes: sql`excluded.minutes` },
+      })
+      .returning({ id: screenTimeSamples.id });
+    return rows.length;
+  }
+
+  async sleepEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]> {
+    const rows = await this.db
+      .select()
+      .from(sleepSessions)
+      .where(and(eq(sleepSessions.userId, userId), onLocalDay(sleepSessions.endAt, day)))
+      .orderBy(asc(sleepSessions.startAt));
+    return rows.map((r) => ({
+      start: r.startAt,
+      end: r.endAt,
+      source: r.source as TelemetrySource,
+      ...(r.deepMinutes === null ? {} : { deepMinutes: r.deepMinutes }),
+    }));
+  }
+
+  async screenTimeStartingOn(userId: string, dates: string[], timeZone: string): Promise<ScreenTimeSample[]> {
+    if (dates.length === 0) return [];
+    const rows = await this.db
+      .select()
+      .from(screenTimeSamples)
+      .where(
+        and(
+          eq(screenTimeSamples.userId, userId),
+          inArray(sql`(${screenTimeSamples.windowStart} at time zone ${timeZone})::date::text`, dates),
+        ),
+      )
+      .orderBy(asc(screenTimeSamples.windowStart));
+    return rows.map((r) => ({ windowStart: r.windowStart, windowEnd: r.windowEnd, minutes: r.minutes, source: r.source as TelemetrySource }));
+  }
+}
+
+export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
+  constructor(private readonly db: Database) {}
+
+  async get(userId: string, date: string): Promise<FocusScore | null> {
+    const [row] = await this.db.select().from(focusScores).where(and(eq(focusScores.userId, userId), eq(focusScores.date, date)));
+    if (!row) return null;
+    return {
+      userId: row.userId,
+      date: row.date,
+      score: row.score,
+      components: { sleep: row.sleepComponent, timing: row.timingComponent, glycemic: row.glycemicComponent, stress: row.stressComponent },
+      explanation: row.explanation,
+      modelVersion: row.modelVersion,
+    };
+  }
+
+  async put(score: FocusScore): Promise<void> {
+    const values = {
+      score: score.score,
+      sleepComponent: score.components.sleep,
+      timingComponent: score.components.timing,
+      glycemicComponent: score.components.glycemic,
+      stressComponent: score.components.stress,
+      explanation: score.explanation,
+      modelVersion: score.modelVersion,
+      computedAt: new Date(),
+    };
+    await this.db
+      .insert(focusScores)
+      .values({ userId: score.userId, date: score.date, ...values })
+      .onConflictDoUpdate({ target: [focusScores.userId, focusScores.date], set: values });
   }
 }

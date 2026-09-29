@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { BioState, CreateMealRequest, caloriesRemaining, mealCalories } from "./index";
+import { BioState, CreateMealRequest, FocusScore, ScreenTimeSample, SleepSession, caloriesRemaining, mealCalories } from "./index";
 
 const item = { name: "Greek yogurt", portion: "200 g", calories: 190, macros: { proteinG: 20, carbsG: 8, fatG: 9 } };
 
@@ -25,5 +25,25 @@ describe("contracts", () => {
       dietaryPreference: "omnivore",
     });
     expect(caloriesRemaining(state)).toBe(-150);
+  });
+});
+
+describe("telemetry and focus score contracts", () => {
+  it("rejects sleep that ends before it starts or runs past 24 hours", () => {
+    const ok = { start: "2026-09-28T23:00:00-05:00", end: "2026-09-29T07:00:00-05:00", source: "manual" };
+    expect(SleepSession.safeParse(ok).success).toBe(true);
+    expect(SleepSession.safeParse({ ...ok, end: "2026-09-28T22:00:00-05:00" }).success).toBe(false);
+    expect(SleepSession.safeParse({ ...ok, end: "2026-09-30T07:00:00-05:00" }).success).toBe(false);
+  });
+
+  it("rejects screen time longer than its window", () => {
+    const sample = { windowStart: "2026-09-28T22:00:00Z", windowEnd: "2026-09-28T23:00:00Z", source: "wearable" };
+    expect(ScreenTimeSample.safeParse({ ...sample, minutes: 45 }).success).toBe(true);
+    expect(ScreenTimeSample.safeParse({ ...sample, minutes: 61 }).success).toBe(false);
+  });
+
+  it("allows a focus score with no data yet", () => {
+    const empty = { date: "2026-09-29", score: null, components: { sleep: null, timing: null, glycemic: null, stress: null }, explanation: "" };
+    expect(FocusScore.safeParse(empty).success).toBe(true);
   });
 });
