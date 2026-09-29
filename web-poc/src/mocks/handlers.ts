@@ -66,6 +66,11 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
     }),
+    http.get(url("/recommendations/protocols"), async () => {
+      if (!db.profile()) return noProfile();
+      await delay(latency);
+      return HttpResponse.json(db.protocols());
+    }),
     http.get(url("/history"), async ({ request }) => {
       if (!db.profile()) return noProfile();
       const days = Number(new URL(request.url).searchParams.get("days") ?? 7);

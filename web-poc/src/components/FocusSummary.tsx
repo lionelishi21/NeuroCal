@@ -1,4 +1,5 @@
 import type { FocusScore } from "@neurocal/contracts";
+import Link from "next/link";
 import { Button } from "./Button";
 
 const rows: { key: keyof FocusScore["components"]; label: string; hint: string }[] = [
@@ -57,9 +58,14 @@ export function FocusSummary({ focus, onLogSleep }: Props) {
         {focus.explanation}
       </p>
 
-      <Button variant="text" className="mt-2 -ml-1 text-sm" onClick={onLogSleep}>
-        {focus.components.sleep === null ? "Log last night's sleep" : "Log sleep"}
-      </Button>
+      <p className="mt-2 mb-0 flex flex-wrap gap-x-5 text-sm">
+        <Button variant="text" className="-ml-1" onClick={onLogSleep}>
+          {focus.components.sleep === null ? "Log last night's sleep" : "Log sleep"}
+        </Button>
+        <Link href="/history#help" className="px-1 py-1 text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink hover:decoration-ink">
+          See what helps
+        </Link>
+      </p>
     </div>
   );
 }

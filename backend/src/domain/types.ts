@@ -135,3 +135,30 @@ export interface FocusScore {
   explanation: string;
   modelVersion: string;
 }
+
+/** NeuroCal-authored habit protocol (ARCHITECTURE §3). Content lives in the repo, not generated. */
+export interface Protocol {
+  id: string;
+  title: string;
+  summary: string;
+  steps: string[];
+  tags: string[];
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  url?: string;
+  /** Must be labelled as such wherever shown (ARCHITECTURE §10). */
+  affiliate: boolean;
+  tags: string[];
+}
+
+export type FocusComponentName = keyof FocusComponents;
+
+export interface WeakPoint {
+  component: FocusComponentName;
+  label: string;
+  average: number;
+}

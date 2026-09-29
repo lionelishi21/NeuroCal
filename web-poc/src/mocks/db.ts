@@ -1,6 +1,8 @@
 import {
   type BioState,
   type HistoryDay,
+  type ProtocolsResponse,
+  type WeakPoint,
   type FocusScore,
   type IngestScreenTimeRequest,
   type IngestSleepRequest,
@@ -300,7 +302,81 @@ export function createDb(options: { newUser?: boolean } = {}) {
     });
   }
 
+  /** A small stand-in for the pgvector match: weak points from the mock week, protocols picked by component. */
+  function protocols(): ProtocolsResponse {
+    const labels: Record<WeakPoint["component"], string> = {
+      sleep: "short or light sleep",
+      timing: "late eating and late-night screens",
+      glycemic: "high-glycemic meals",
+      stress: "stress and low focus",
+    };
+    const week = history(7).map((d) => focusScore(d.date).components);
+    const weakPoints = (Object.keys(labels) as WeakPoint["component"][])
+      .map((component) => {
+        const values = week.map((c) => c[component]).filter((v): v is number => v !== null);
+        return { component, label: labels[component], average: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 1 };
+      })
+      .filter((w) => w.average < 0.75)
+      .sort((a, b) => a.average - b.average)
+      .slice(0, 2)
+      .map((w) => ({ ...w, average: Math.round(w.average * 100) / 100 }));
+
+    const library: Record<WeakPoint["component"], ProtocolsResponse["protocols"][number]> = {
+      sleep: {
+        id: "wind-down-hour",
+        title: "A wind-down hour before bed",
+        summary: "Give your brain a slow runway into sleep so you fall asleep sooner and sleep longer.",
+        steps: ["Set an alarm one hour before bedtime.", "Dim the lights and put screens on charge outside the bedroom.", "Do something calm and analogue.", "Keep the bedroom cool and dark."],
+        match: 0.82,
+      },
+      timing: {
+        id: "kitchen-closes-at-eight",
+        title: "The kitchen closes three hours before bed",
+        summary: "Finishing dinner earlier gives digestion time to settle before sleep and cuts late-night snacking.",
+        steps: ["Set a kitchen-closed time three hours before bedtime.", "Plan dinner to finish by then.", "After closing, stick to water or herbal tea."],
+        match: 0.79,
+      },
+      glycemic: {
+        id: "steady-plate",
+        title: "Build a steady-energy plate",
+        summary: "Pairing carbs with protein, fibre and fat smooths out energy dips after meals.",
+        steps: ["Half vegetables, a quarter protein, a quarter whole grains.", "Swap white carbs for wholegrain a few times a week.", "Take a 10-minute walk after your largest meal."],
+        match: 0.77,
+      },
+      stress: {
+        id: "box-breathing",
+        title: "Two minutes of box breathing",
+        summary: "A short, structured breathing break helps you reset when you feel stressed, wired or scattered.",
+        steps: ["Breathe in for four counts.", "Hold for four.", "Breathe out for four.", "Hold for four, and repeat for two minutes."],
+        match: 0.74,
+      },
+    };
+    const picked = (weakPoints.length ? weakPoints.map((w) => w.component) : (["sleep", "glycemic"] as const)).map((c) => library[c]);
+    return {
+      weakPoints,
+      protocols: picked,
+      products: [
+        {
+          id: "sunrise-alarm",
+          name: "Sunrise alarm clock",
+          description: "Brightens gradually before your alarm so waking at a fixed time feels easier.",
+          url: "https://example.com/mock-partner/sunrise-alarm",
+          affiliate: true,
+          match: 0.71,
+        },
+        {
+          id: "phone-lockbox",
+          name: "Timed phone lockbox",
+          description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
+          affiliate: false,
+          match: 0.66,
+        },
+      ],
+    };
+  }
+
   return {
+    protocols,
     history,
     focusScore,
     addSleep(sessions: IngestSleepRequest["sessions"]) {

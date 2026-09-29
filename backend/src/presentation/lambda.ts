@@ -1,9 +1,11 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
+import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
+import { DrizzleCatalogRepository } from "../infrastructure/database/DrizzleCatalogRepository";
 import {
   DrizzleCheckInRepository,
   DrizzleFocusScoreRepository,
@@ -37,6 +39,8 @@ const api = createApi(
     recommendations: new DrizzleRecommendationRepository(db),
     telemetry: new DrizzleTelemetryRepository(db),
     focusScores: new DrizzleFocusScoreRepository(db),
+    catalog: new DrizzleCatalogRepository(db),
+    embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),

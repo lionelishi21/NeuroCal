@@ -6,6 +6,7 @@ import {
   CheckIn,
   FocusScore,
   HistoryResponse,
+  ProtocolsResponse,
   IngestResponse,
   type IngestSleepRequest,
   type UpdateProfileRequest,
@@ -25,6 +26,7 @@ export const keys = {
   recommendations: ["recommendations", "next"] as const,
   focusScore: (date: string) => ["focus-score", date] as const,
   history: (days: number) => ["history", days] as const,
+  protocols: ["recommendations", "protocols"] as const,
 };
 
 export function useProfile() {
@@ -63,6 +65,14 @@ export function useHistory(days = 7) {
   return useQuery({
     queryKey: keys.history(days),
     queryFn: () => request(`/history?days=${days}`, HistoryResponse),
+  });
+}
+
+export function useProtocols() {
+  return useQuery({
+    queryKey: keys.protocols,
+    queryFn: () => request("/recommendations/protocols", ProtocolsResponse),
+    staleTime: 5 * 60_000,
   });
 }
 

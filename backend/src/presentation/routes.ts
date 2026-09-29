@@ -6,6 +6,7 @@ import {
   CreateMealRequest,
   FocusScore,
   HistoryResponse,
+  ProtocolsResponse,
   IngestResponse,
   IngestScreenTimeRequest,
   IngestSleepRequest,
@@ -21,6 +22,7 @@ import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCa
 import type { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import type { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
 import type { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
+import type { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -28,7 +30,7 @@ import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import { DomainError } from "../domain/errors";
-import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toRecommendations } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -59,6 +61,7 @@ export interface UseCases {
   ingestTelemetry: IngestTelemetryUseCase;
   getFocusScore: GetFocusScoreUseCase;
   getHistory: GetHistoryUseCase;
+  getProtocols: GetProtocolsUseCase;
 }
 
 class BadRequest extends Error {}
@@ -155,6 +158,11 @@ export function createApi(uc: UseCases) {
       "GET",
       /^\/recommendations\/next$/,
       async (req) => ok(NextRecommendationsResponse, toRecommendations(await uc.recommendRecipe.execute(req))),
+    ],
+    [
+      "GET",
+      /^\/recommendations\/protocols$/,
+      async (req) => ok(ProtocolsResponse, toProtocols(await uc.getProtocols.execute({ userId: req.userId }))),
     ],
     [
       "GET",

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
+import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT } from "./prompts";
@@ -100,5 +101,23 @@ describe("ClaudeFocusExplainer", () => {
   it("rejects an explanation over 300 characters", async () => {
     const parse = jest.fn(async () => ({ usage: { input_tokens: 1, output_tokens: 1 }, stop_reason: "end_turn", parsed_output: { explanation: "x".repeat(301) } }));
     await expect(new ClaudeFocusExplainer({ messages: { parse } as unknown as ParseMessage }).explain(input)).rejects.toThrow();
+  });
+});
+
+describe("OpenAiEmbeddingProvider", () => {
+  it("embeds in order and length-checks every vector", async () => {
+    const create = jest.fn(async (params: { input: string[]; model?: string }) => ({
+      data: params.input.map((_, index) => ({ index, embedding: new Array(1536).fill(index) })).reverse(),
+      usage: { total_tokens: 12 },
+    }));
+    const provider = new OpenAiEmbeddingProvider({ embeddings: { create } as unknown as CreateEmbeddings });
+    const vectors = await provider.embed(["a", "b"]);
+    expect(vectors.map((v) => v[0])).toEqual([0, 1]);
+    expect(create.mock.calls[0]![0].model).toBe("text-embedding-3-small");
+  });
+
+  it("rejects vectors of the wrong size", async () => {
+    const create = jest.fn(async () => ({ data: [{ index: 0, embedding: [1, 2, 3] }] }));
+    await expect(new OpenAiEmbeddingProvider({ embeddings: { create } as unknown as CreateEmbeddings }).embed(["a"])).rejects.toThrow();
   });
 });

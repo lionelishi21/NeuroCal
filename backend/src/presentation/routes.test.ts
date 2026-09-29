@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
+import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
+import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import {
+  FakeEmbedder,
   FakeExplainer,
   FakeReasoning,
   FakeSearch,
   FakeVision,
   FixedClock,
+  InMemoryCatalog,
   InMemoryCheckIns,
   InMemoryFocusScores,
   InMemoryMeals,
@@ -26,6 +30,11 @@ beforeEach(async () => {
   const meals = new InMemoryMeals();
   await profiles.save(profile());
   await meals.create("u1", { kind: "breakfast", eatenAt: new Date("2026-09-29T13:10:00Z"), items: [item("Oats", 440, 12.8, 67, 15)] });
+  const catalog = new InMemoryCatalog();
+  await new SyncCatalogUseCase(catalog, new FakeEmbedder()).execute({
+    protocols: PROTOCOLS,
+    products: [{ ...PRODUCTS[0]!, affiliate: true, url: "https://example.com/alarm" }, ...PRODUCTS.slice(1)],
+  });
   api = createApi(
     buildUseCases({
       profiles,
@@ -34,6 +43,8 @@ beforeEach(async () => {
       recommendations: new InMemoryRecommendations(),
       telemetry: new InMemoryTelemetry(),
       focusScores: new InMemoryFocusScores(),
+      catalog,
+      embedder: new FakeEmbedder(),
       explainer: new FakeExplainer("Short sleep is holding you back."),
       vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
       reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
@@ -162,6 +173,17 @@ describe("API routes", () => {
     expect((res.body as { days: { date: string }[] }).days.map((d) => d.date)).toEqual(["2026-09-28", "2026-09-29"]);
     expect((res.body as { days: object[] }).days[1]).toMatchObject({ caloriesEaten: 440, lastMealAt: "08:10" });
     expect((await call("GET", "/history?days=abc")).status).toBe(400);
+  });
+
+  it("GET /recommendations/protocols returns matches with the affiliate flag intact", async () => {
+    const res = await call("GET", "/recommendations/protocols");
+    expect(res.status).toBe(200);
+    const body = res.body as { protocols: { steps: string[]; match: number }[]; products: { affiliate: boolean; url?: string }[] };
+    expect(body.protocols).toHaveLength(2);
+    expect(body.protocols[0]!.steps.length).toBeGreaterThan(0);
+    expect(body.products.every((p) => typeof p.affiliate === "boolean")).toBe(true);
+    const partner = body.products.find((p) => p.affiliate);
+    if (partner) expect(partner.url).toBe("https://example.com/alarm");
   });
 
   it("answers bad JSON, unknown paths and wrong methods clearly", async () => {

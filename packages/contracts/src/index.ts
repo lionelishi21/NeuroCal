@@ -208,6 +208,48 @@ export type HistoryDay = z.infer<typeof HistoryDay>;
 export const HistoryResponse = z.object({ days: z.array(HistoryDay) });
 export type HistoryResponse = z.infer<typeof HistoryResponse>;
 
+export const FocusComponentName = z.enum(["sleep", "timing", "glycemic", "stress"]);
+export type FocusComponentName = z.infer<typeof FocusComponentName>;
+
+/** A Focus Score input that averaged below par over the past week. */
+export const WeakPoint = z.object({
+  component: FocusComponentName,
+  /** Plain description, e.g. "short or light sleep". */
+  label: z.string(),
+  /** 7-day average, 0–1. */
+  average: z.number().min(0).max(1),
+});
+export type WeakPoint = z.infer<typeof WeakPoint>;
+
+export const ProtocolRecommendation = z.object({
+  id: Id,
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  /** Ordered steps to follow. */
+  steps: z.array(z.string().min(1)).min(1),
+  /** 0–1 similarity to the user's weak points. */
+  match: z.number().min(0).max(1),
+});
+export type ProtocolRecommendation = z.infer<typeof ProtocolRecommendation>;
+
+export const ProductRecommendation = z.object({
+  id: Id,
+  name: z.string().min(1),
+  description: z.string().min(1),
+  url: z.url().optional(),
+  /** NeuroCal may earn a commission; clients must label these visibly. */
+  affiliate: z.boolean(),
+  match: z.number().min(0).max(1),
+});
+export type ProductRecommendation = z.infer<typeof ProductRecommendation>;
+
+export const ProtocolsResponse = z.object({
+  weakPoints: z.array(WeakPoint),
+  protocols: z.array(ProtocolRecommendation),
+  products: z.array(ProductRecommendation),
+});
+export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -228,6 +270,8 @@ export const endpoints = {
   getFocusScore: { method: "GET", path: "/focus-score", response: FocusScore },
   /** ?days=7 (1–31), oldest first, ending today in the user's time zone. */
   getHistory: { method: "GET", path: "/history", response: HistoryResponse },
+  /** Protocols and products matched (pgvector) to the past week's weakest Focus Score inputs. */
+  getProtocols: { method: "GET", path: "/recommendations/protocols", response: ProtocolsResponse },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
 } as const;

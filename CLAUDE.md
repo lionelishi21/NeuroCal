@@ -42,6 +42,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
   - `cd backend && npm run build` - Compile TypeScript to `/backend/dist`
   - `cd backend && npm run test` - Execute Jest unit test suite
   - `cd backend && npm run db:generate` - Generate a SQL migration from `schema.ts` into `backend/drizzle/`
+  - `cd backend && npm run catalog:sync` - Embed new or edited protocols/products from `src/infrastructure/catalog/catalog.ts` into `DATABASE_URL` (needs `OPENAI_API_KEY`)
   - `cd backend && npm run dev` - Local API on :4000 (in-memory Postgres + stub AI unless `backend/.env` sets keys; see `backend/.env.example`)
   - Backend tests run Jest with `--experimental-vm-modules` so repository tests can use PGlite (in-process Postgres)
 - **Web POC (`/web-poc`):**

@@ -1,6 +1,7 @@
 /** Domain → wire format (packages/contracts). The only place both vocabularies meet. */
 import type * as C from "@neurocal/contracts";
 import type { MealPhotoAnalysis } from "../application/interfaces/IAiVisionProvider";
+import type { ProtocolMatches } from "../application/use-cases/GetProtocolsUseCase";
 import type { RecipeRecommendations } from "../application/use-cases/RecommendRecipeUseCase";
 import type { BioState, CheckIn, FocusScore, FoodItem, Meal, Profile } from "../domain/types";
 
@@ -49,6 +50,27 @@ export const toFocusScore = (f: FocusScore): C.FocusScore => ({
   score: f.score,
   components: f.components,
   explanation: f.explanation,
+});
+
+const match = (similarity: number) => Math.round(similarity * 100) / 100;
+
+export const toProtocols = (m: ProtocolMatches): C.ProtocolsResponse => ({
+  weakPoints: m.weakPoints,
+  protocols: m.protocols.map(({ item, similarity }) => ({
+    id: item.id,
+    title: item.title,
+    summary: item.summary,
+    steps: item.steps,
+    match: match(similarity),
+  })),
+  products: m.products.map(({ item, similarity }) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    ...(item.url ? { url: item.url } : {}),
+    affiliate: item.affiliate,
+    match: match(similarity),
+  })),
 });
 
 export const toRecommendations = (r: RecipeRecommendations): C.NextRecommendationsResponse => ({

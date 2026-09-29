@@ -33,6 +33,18 @@ describe("History", () => {
     expect(screen.getByRole("button", { name: /Today|^\w+day/, pressed: true })).toBeInTheDocument();
   });
 
+  it("suggests protocols for the week's weak points and labels affiliate links", async () => {
+    renderHistory();
+    const help = await screen.findByRole("region", { name: "What could help" });
+    expect(await within(help).findByText(/held your Focus Score back most/)).toBeInTheDocument();
+    expect(within(help).getAllByRole("article").length).toBeGreaterThan(0);
+    expect(within(help).getAllByRole("listitem").length).toBeGreaterThan(2); // steps and tools
+    const link = within(help).getByRole("link", { name: "View sunrise alarm clock" });
+    expect(link).toHaveAttribute("rel", expect.stringContaining("sponsored"));
+    expect(within(help).getByText("Affiliate link")).toBeInTheDocument();
+    expect(within(help).getByText(/may earn a commission/)).toBeInTheDocument();
+  });
+
   it("switches the readout to the chosen day", async () => {
     const user = userEvent.setup();
     renderHistory();

@@ -6,10 +6,12 @@
 import { createServer } from "node:http";
 import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
+import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
+import { DrizzleCatalogRepository } from "../infrastructure/database/DrizzleCatalogRepository";
 import {
   DrizzleCheckInRepository,
   DrizzleFocusScoreRepository,
@@ -20,6 +22,9 @@ import {
   DrizzleUserRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { createPgliteDatabase } from "../infrastructure/database/pglite";
+import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
+import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
+import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
 import { GoogleRecipeSearch } from "../infrastructure/search/GoogleRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
@@ -119,6 +124,8 @@ async function main() {
   const vision = config.openAiApiKey ? new OpenAiVisionProvider({ apiKey: config.openAiApiKey }) : stubVision;
   const reasoning = config.anthropicApiKey ? new ClaudeReasoningProvider({ apiKey: config.anthropicApiKey }) : stubReasoning;
   const explainer = config.anthropicApiKey ? new ClaudeFocusExplainer({ apiKey: config.anthropicApiKey }) : stubExplainer;
+  const embedder = config.openAiApiKey ? new OpenAiEmbeddingProvider({ apiKey: config.openAiApiKey }) : keywordEmbedder;
+  const synced = await new SyncCatalogUseCase(new DrizzleCatalogRepository(db), embedder).execute({ protocols: PROTOCOLS, products: PRODUCTS });
   const search =
     config.googleSearchApiKey && config.googleSearchEngineId
       ? new GoogleRecipeSearch({ apiKey: config.googleSearchApiKey, engineId: config.googleSearchEngineId })
@@ -132,6 +139,8 @@ async function main() {
       recommendations: new DrizzleRecommendationRepository(db),
       telemetry: new DrizzleTelemetryRepository(db),
       focusScores: new DrizzleFocusScoreRepository(db),
+      catalog: new DrizzleCatalogRepository(db),
+      embedder,
       vision,
       explainer,
       reasoning,
@@ -164,7 +173,8 @@ async function main() {
     const mode = (real: boolean) => (real ? "real" : "stub");
     console.log(`NeuroCal API on http://localhost:${PORT}`);
     console.log(`  database: ${config.databaseUrl ? "DATABASE_URL" : FRESH_USER ? "in-memory (new user, no profile)" : "in-memory (seeded)"}`);
-    console.log(`  vision: ${mode(vision !== stubVision)}, reasoning: ${mode(reasoning !== stubReasoning)}, search: ${mode(search !== stubSearch)}`);
+    console.log(`  vision: ${mode(vision !== stubVision)}, reasoning: ${mode(reasoning !== stubReasoning)}, search: ${mode(search !== stubSearch)}, embeddings: ${mode(embedder !== keywordEmbedder)}`);
+    console.log(`  catalog: ${synced.embedded} entries embedded`);
   });
 }
 

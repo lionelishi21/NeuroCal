@@ -1,7 +1,6 @@
 /**
- * Drizzle schema for Aurora PostgreSQL (ARCHITECTURE §4).
- * Tables for planned features (protocols, products, embeddings) are added when
- * their use cases are built.
+ * Drizzle schema for Aurora PostgreSQL + pgvector (ARCHITECTURE §4).
+ * Migration 0002 enables the `vector` extension before the catalog tables use it.
  */
 import { sql } from "drizzle-orm";
 import {
@@ -19,6 +18,8 @@ import {
   unique,
   uuid,
   varchar,
+  vector,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -214,4 +215,38 @@ export const focusScores = pgTable(
     primaryKey({ columns: [t.userId, t.date] }),
     check("focus_scores_score_range", sql`${t.score} is null or ${t.score} between 0 and 100`),
   ],
+);
+
+/** Matches EMBEDDING_DIMENSIONS (text-embedding-3-small). */
+const embedding = () => vector("embedding", { dimensions: 1536 }).notNull();
+
+export const protocols = pgTable(
+  "protocols",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    steps: text("steps").array().notNull(),
+    tags: text("tags").array().notNull(),
+    embedding: embedding(),
+    contentHash: text("content_hash").notNull(),
+    updatedAt: timestamps.updatedAt,
+  },
+  (t) => [index("protocols_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],
+);
+
+export const products = pgTable(
+  "products",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    url: text("url"),
+    affiliate: boolean("affiliate").notNull().default(false),
+    tags: text("tags").array().notNull(),
+    embedding: embedding(),
+    contentHash: text("content_hash").notNull(),
+    updatedAt: timestamps.updatedAt,
+  },
+  (t) => [index("products_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],
 );

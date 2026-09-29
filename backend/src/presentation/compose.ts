@@ -1,6 +1,8 @@
 import type { IAiReasoningProvider } from "../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../application/interfaces/IAiVisionProvider";
+import type { ICatalogRepository } from "../application/interfaces/ICatalogRepository";
 import type { IClock } from "../application/interfaces/IClock";
+import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type {
   ICheckInRepository,
@@ -16,6 +18,7 @@ import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
 import { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
+import { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -31,6 +34,8 @@ export interface Ports {
   recommendations: IRecommendationRepository;
   telemetry: ITelemetryRepository;
   focusScores: IFocusScoreRepository;
+  catalog: ICatalogRepository;
+  embedder: IEmbeddingProvider;
   vision: IAiVisionProvider;
   explainer: IFocusExplainer;
   reasoning: IAiReasoningProvider;
@@ -57,6 +62,7 @@ export function buildUseCases(p: Ports): UseCases {
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock),
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock),
+    getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock),
   };
 }
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useHistory } from "../api/queries";
 import { DayColumns } from "../components/DayColumns";
+import { WhatHelps } from "../components/WhatHelps";
 import { flagLabel, kcal } from "../lib/format";
 
 const weekday = (date: string, style: "short" | "long" = "short") =>
@@ -114,6 +115,8 @@ export function History() {
               </button>
             ))}
           </div>
+
+          <WhatHelps />
 
           <section aria-labelledby="table-title" className="mt-12">
             <h2 id="table-title" className="mt-0 mb-3 text-xl">

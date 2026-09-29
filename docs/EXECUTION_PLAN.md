@@ -149,7 +149,7 @@ Mobile — Today                  Desktop — Today
 4. ✅ **Check-in** — cognitive flags that feed recommendations
 5. ✅ **Focus Score** — daily score with the inputs behind it, plus a "Log sleep" sheet (ARCHITECTURE §6.7–6.8)
 6. **Sleep & circadian** — history view of sleep and screen time, late-eating insights (telemetry contracts and ingest are done)
-7. **Protocols & products** — vector-matched recommendations, clearly labelled when affiliate
+7. ✅ **Protocols & products** — matched to the week's weak points with pgvector; affiliate links labelled ("What could help" on `/history`)
 8. ✅ **History** — the past week as aligned Focus Score / calories / sleep charts with a day-by-day table (`/history`)
 9. **Settings / profile**
 - PWA install, offline queue for meal logs
@@ -164,7 +164,8 @@ Mobile — Today                  Desktop — Today
 - [x] `RecommendRecipeUseCase` (§6.6)
 - [x] Claude reasoning adapter + Google Custom Search adapter (§7.2)
 - [x] Telemetry ingest + Focus Score use case with Claude explanation (§6.7–6.8, §7.4)
-- [ ] Embeddings + vector recommendation use case (§6.9, §7.3)
+- [x] Embeddings + vector recommendation use case, catalog sync, pgvector HNSW (§6.9, §7.3)
+- [ ] Real protocol/product content and partner links (catalog.ts)
 - [x] HTTP routes for all 9 endpoints + Lambda entry point (JWT claims from API Gateway)
 - [ ] _Deferred:_ infrastructure as code (API Gateway, Lambda bundling, Aurora, Cognito, EventBridge schedules); S3 presigned photo upload
 - [x] Local dev server (`npm run dev` in `backend`); web-poc runs against it end to end

@@ -160,20 +160,19 @@ recipe_recommendations
   reasoning text not null, created_at
   index (user_id, created_at desc)
 
-protocols                                   planned
-  id uuid pk, title text, body text, tags text[], embedding vector(1536), updated_at
+protocols                                   catalog, synced from backend/src/infrastructure/catalog/catalog.ts
+  id text pk, title, summary text, steps text[], tags text[],
+  embedding vector(1536) not null, content_hash text, updated_at
 
-products                                    planned
-  id uuid pk, name text, url text, affiliate boolean not null, tags text[],
-  embedding vector(1536), updated_at
+products                                    catalog, same source
+  id text pk, name, description text, url text, affiliate boolean not null default false,
+  tags text[], embedding vector(1536) not null, content_hash text, updated_at
 
-user_embeddings                             planned
-  user_id fk, kind text                     -- e.g. 'weak_points'
-  embedding vector(1536), source_text text, computed_at
-  primary key (user_id, kind)
+user_embeddings                             planned (cache; not needed at current volume)
+  user_id fk, kind text, embedding vector(1536), source_text text, computed_at
 ```
 
-Vector indexes (planned):
+Migration 0002 runs `CREATE EXTENSION IF NOT EXISTS vector` before the catalog tables. Vector indexes:
 
 ```sql
 create index on protocols using hnsw (embedding vector_cosine_ops);
@@ -356,11 +355,13 @@ score     = round(100 × (0.40·sleep + 0.20·timing + 0.20·glycemic + 0.20·st
 
 Missing inputs drop out and the remaining weights are renormalised; the stored `components` show what was used. The explanation is generated from the components, not from raw data, and is validated like every LLM output.
 
-### 6.9 RecommendProtocols — planned `GET /recommendations/protocols`
-1. Describe the user's weak points as text from the lowest Focus Score components (e.g. "poor deep sleep, late eating").
-2. `embed([text])` → vector (cached in `user_embeddings`).
-3. `nearestProtocols` / `nearestProducts` (HNSW cosine), limit 5 each.
-4. Return them with the `affiliate` flag intact; the UI must label affiliate products.
+### 6.9 RecommendProtocols — `GET /recommendations/protocols`
+1. Weak points: Focus Score components averaged over the last 7 days; below 0.75 counts; the two lowest are used.
+2. One text per weak point (e.g. "Help with stress and low focus. Goals: focus."), embedded in one batched call.
+3. `nearestProtocols` / `nearestProducts` per text (HNSW cosine), taken **round-robin** so every weak point gets its own best match; 2 protocols and 2 products in total. With no weak points, one "maintain steady focus…" query.
+4. Return them with the `affiliate` flag intact; clients label affiliate links next to the link and use `rel="sponsored"`.
+
+**Catalog.** Protocols and products are authored in the repo (`catalog.ts`), never generated. `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist.
 
 ### 6.10 SendDailySummary — planned; EventBridge, morning per user time zone
 Yesterday's intake, Focus Score and one suggestion, sent via `IEmailProvider` (Resend). Opt-in only.
@@ -455,6 +456,7 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | DELETE | `/meals/:id` | — | 204 | 6.3 |
 | GET | `/recommendations/next` | — | `NextRecommendationsResponse` | 6.6 |
 | GET | `/focus-score?date=` | — | `FocusScore` | 6.8 |
+| GET | `/recommendations/protocols` | — | `ProtocolsResponse` | 6.9 |
 | GET | `/history?days=` | — | `HistoryResponse` | the last 1–31 days, oldest first; Focus Scores recomputed without the AI explanation |
 | POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
 | POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
@@ -464,7 +466,6 @@ Planned — add to contracts first:
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/uploads/meal-photo` | Presigned S3 URL; `/meals/analyze` then takes `{ photoKey }` instead of multipart |
-| GET | `/recommendations/protocols` | Vector-matched protocols and products (affiliate flag) |
 
 Errors always use the `ApiError` shape `{ code, message }`, with messages written for the user ("A meal needs at least one item.").
 

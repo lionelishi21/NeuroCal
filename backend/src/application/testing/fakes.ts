@@ -1,6 +1,8 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type {
+  Product,
+  Protocol,
   CheckIn,
   FocusComponents,
   FocusScore,
@@ -17,7 +19,9 @@ import type {
 } from "../../domain/types";
 import type { BioStateContext, IAiReasoningProvider, RecipeQueryOutput } from "../interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider, MealPhoto, MealPhotoAnalysis } from "../interfaces/IAiVisionProvider";
+import type { Embedded, ICatalogRepository } from "../interfaces/ICatalogRepository";
 import type { IClock } from "../interfaces/IClock";
+import { EMBEDDING_DIMENSIONS, type IEmbeddingProvider } from "../interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
 import type {
   ICheckInRepository,
@@ -191,3 +195,54 @@ export const profile = (overrides: Partial<Profile> = {}): Profile => ({
   macroTargets: { proteinG: 130, carbsG: 240, fatG: 75 },
   ...overrides,
 });
+
+/** Bag-of-words embedding: texts sharing words point the same way. Enough to test nearest-neighbour logic. */
+export class FakeEmbedder implements IEmbeddingProvider {
+  calls: string[][] = [];
+  async embed(texts: string[]) {
+    this.calls.push(texts);
+    return texts.map((text) => {
+      const v = new Array<number>(EMBEDDING_DIMENSIONS).fill(0);
+      for (const word of text.toLowerCase().match(/[a-z]{4,}/g) ?? []) {
+        let h = 0;
+        for (const ch of word.slice(0, 5)) h = (h * 31 + ch.charCodeAt(0)) % EMBEDDING_DIMENSIONS;
+        v[h]! += 1;
+      }
+      const norm = Math.hypot(...v) || 1;
+      return v.map((x) => x / norm);
+    });
+  }
+}
+
+const cosine = (a: number[], b: number[]) => a.reduce((sum, x, i) => sum + x * b[i]!, 0);
+
+export class InMemoryCatalog implements ICatalogRepository {
+  readonly protocols = new Map<string, Embedded<Protocol>>();
+  readonly products = new Map<string, Embedded<Product>>();
+  async hashes() {
+    const hashes = <T>(m: Map<string, Embedded<T>>) => new Map([...m].map(([id, e]) => [id, e.contentHash]));
+    return { protocols: hashes(this.protocols), products: hashes(this.products) };
+  }
+  async upsertProtocols(items: Embedded<Protocol>[]) {
+    for (const e of items) this.protocols.set(e.item.id, e);
+  }
+  async upsertProducts(items: Embedded<Product>[]) {
+    for (const e of items) this.products.set(e.item.id, e);
+  }
+  async retain(ids: { protocols: string[]; products: string[] }) {
+    for (const id of this.protocols.keys()) if (!ids.protocols.includes(id)) this.protocols.delete(id);
+    for (const id of this.products.keys()) if (!ids.products.includes(id)) this.products.delete(id);
+  }
+  private nearest<T>(m: Map<string, Embedded<T>>, embedding: number[], limit: number) {
+    return [...m.values()]
+      .map((e) => ({ item: e.item, similarity: cosine(e.embedding, embedding) }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
+  }
+  async nearestProtocols(embedding: number[], limit: number) {
+    return this.nearest(this.protocols, embedding, limit);
+  }
+  async nearestProducts(embedding: number[], limit: number) {
+    return this.nearest(this.products, embedding, limit);
+  }
+}
