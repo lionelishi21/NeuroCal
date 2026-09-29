@@ -5,6 +5,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - `/backend`: Node.js Serverless API (Hexagonal / Clean Architecture)
 - `/web-poc`: Next.js (React) Web Proof of Concept
 - `/mobile-app`: Flutter Mobile Application (iOS & Android)
+- `/infra`: AWS CDK stack (TypeScript) that deploys the backend; see `infra/README.md`
 - `/packages/contracts`: Zod schemas for every API request/response, shared by backend and web. Change the contract first, then both sides.
 
 ## Core Tech Stack
@@ -48,6 +49,9 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - **Web POC (`/web-poc`):**
   - `cd web-poc && npm run dev` - Run Next.js local dev server (mock API); `NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev` to use the local backend
   - `cd web-poc && npm run test` - Vitest + Testing Library (Vitest, not Jest, because MSW is ESM-only)
+- **Infra (`/infra`):**
+  - `cd infra && npm run synth` - Bundle the Lambdas and synthesize the stack (no AWS account needed)
+  - `cd infra && npm run deploy -- -c stage=dev` - Deploy a stage (needs AWS credentials); secrets and catalog sync steps are in `infra/README.md`
 - **Mobile App (`/mobile-app`):**
   - `cd mobile-app && flutter run` - Run Flutter app on emulator/device
 

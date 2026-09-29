@@ -1,0 +1,72 @@
+# NeuroCal infrastructure (AWS CDK)
+
+One stack per stage deploys the backend: HTTP API with a Cognito JWT authorizer, the API Lambda, Aurora PostgreSQL Serverless v2 with pgvector, Secrets Manager, a migration Lambda that runs on deploy, a catalog-sync Lambda and a private meal-photo bucket. Design notes: `ARCHITECTURE.md` §12.
+
+## Commands
+
+Run from `infra/` (or add `-w @neurocal/infra` from the repo root).
+
+| Command | What it does |
+|---|---|
+| `npm test` | Checks the stack's security and data-retention settings (no bundling, no AWS account) |
+| `npm run synth` | Bundles the three Lambdas with esbuild and writes the templates to `cdk.out/` |
+| `npm run diff -- -c stage=dev` | Shows what a deploy would change |
+| `npm run deploy -- -c stage=dev` | Deploys `NeuroCal-dev` |
+
+Context options:
+- `stage`: `dev` (the default) or `prod`. Any other name behaves like `dev`.
+- `webOrigins`: comma-separated origins allowed by CORS. Defaults to `http://localhost:3000`.
+
+## First deploy
+
+1. **AWS credentials and region.** Run `aws configure`, or export a profile. CDK reads `CDK_DEFAULT_ACCOUNT` and `CDK_DEFAULT_REGION` from it.
+2. **Bootstrap once per account and region:** `npx cdk bootstrap`.
+3. **Deploy:**
+   ```sh
+   npm run deploy -- -c stage=dev -c webOrigins=http://localhost:3000
+   ```
+   This takes about 15 minutes, mostly for Aurora. Migrations run automatically at the end. The outputs print `ApiUrl`, `UserPoolId`, `UserPoolClientId`, `AppSecretArn` and `CatalogSyncFunctionName`.
+4. **Add the API keys.** The secret is created with `set-me` placeholders, and later deploys don't overwrite what you put there:
+   ```sh
+   aws secretsmanager put-secret-value --secret-id <AppSecretArn> --secret-string '{
+     "OPENAI_API_KEY": "sk-…",
+     "ANTHROPIC_API_KEY": "sk-ant-…",
+     "GOOGLE_CSE_API_KEY": "…",
+     "GOOGLE_CSE_ID": "…"
+   }'
+   ```
+   Lambdas read the secret once per cold start. After changing keys, force new containers, for example by redeploying or updating any environment value.
+5. **Embed the catalog.** Repeat this after every change to `backend/src/infrastructure/catalog/catalog.ts`:
+   ```sh
+   aws lambda invoke --function-name <CatalogSyncFunctionName> /dev/stdout
+   ```
+
+## Calling the API
+
+Every route needs a Cognito token in the `Authorization` header. The web app has no sign-in screen yet, so to try the API by hand, create a user and get a token:
+
+```sh
+aws cognito-idp sign-up --client-id <UserPoolClientId> --username you@example.com --password '<10+ chars>'
+aws cognito-idp admin-confirm-sign-up --user-pool-id <UserPoolId> --username you@example.com
+```
+
+The client only allows SRP sign-in, which is what the web and mobile SDKs (Amplify Auth and similar) use.
+
+## What it costs (rough, us-east-1)
+
+| Item | Dev | Prod |
+|---|---|---|
+| NAT gateway (needed for OpenAI, Anthropic, Google) | ~$33/month + data | same |
+| Aurora Serverless v2 | storage only while paused; wakes on the first query (~15 s) | ≥ 0.5 ACU always on, ~$45/month + storage |
+| Secrets Manager | 2 × $0.40/month | same |
+| Lambda, API Gateway, S3, Cognito | pennies at POC traffic | usage-based |
+
+`npx cdk destroy -c stage=dev` removes a dev stage completely. Prod keeps a database snapshot and retains the secret, user pool and bucket.
+
+## Not included yet
+
+- EventBridge schedules and SQS fan-out (ARCHITECTURE §9)
+- Presigned photo upload (the bucket exists; the route and the Lambda's permission don't)
+- Resend email
+- Alarms and dashboards
+- A custom API domain

@@ -4,7 +4,8 @@
   "workspaces": [
     "packages/*",
     "backend",
-    "web-poc"
+    "web-poc",
+    "infra"
   ],
   "scripts": {
     "dev": "npm run dev -w web-poc",

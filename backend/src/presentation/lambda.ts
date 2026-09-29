@@ -3,6 +3,7 @@ import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer"
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
+import { applyAwsSecrets } from "../infrastructure/aws/secrets";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
 import { DrizzleCatalogRepository } from "../infrastructure/database/DrizzleCatalogRepository";
@@ -22,8 +23,9 @@ import { createApi } from "./routes";
 /**
  * API Gateway (HTTP API) entry point. Built once per cold start. Auth is the
  * gateway's JWT authorizer (Cognito proposed, ARCHITECTURE §10); we only read
- * the verified claims.
+ * the verified claims. Secrets come from Secrets Manager (infra stack sets the ARNs).
  */
+await applyAwsSecrets();
 const config = loadConfig();
 const required = (name: string, value: string | undefined) => {
   if (!value) throw new Error(`Missing required setting ${name}`);

@@ -1,6 +1,6 @@
 # NeuroCal AI — Architecture
 
-_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.8, §7.1, §7.2, §7.4 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
+_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.8, §7.1, §7.2, §7.4 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server), §12 deployment stack (`infra/`, not yet deployed). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
 
 **Sources of truth**
 - API shapes: `packages/contracts/src/index.ts` (Zod). This document refers to those types by name and does not redefine them.
@@ -491,10 +491,10 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 
 ## 10. Security & privacy
 
-- **Auth:** Amazon Cognito user pools with a JWT authorizer on API Gateway (**proposed**, see §11). Handlers take `userId` only from the verified token, never from the request.
+- **Auth:** Amazon Cognito user pool with a JWT authorizer on API Gateway (in `infra/`; web and mobile sign-in **planned**). Handlers take `userId` only from the verified token, never from the request.
 - **Per-user scoping:** every repository method takes `userId` and puts it in the `WHERE` clause. Integration tests assert that user A cannot read or delete user B's rows.
 - **Health data is sensitive:** encryption at rest (Aurora + S3 with KMS), TLS everywhere, S3 buckets private with presigned URLs only, least-privilege IAM per Lambda.
-- **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in Secrets Manager, loaded once per cold start; never in env files or the repo.
+- **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in one Secrets Manager JSON secret and Aurora's credentials in its generated secret. Lambdas get only the ARNs and read them once per cold start (`infrastructure/aws/secrets.ts`); never in env files or the repo.
 - **LLM safety:** schema-validated outputs (§7); user notes are passed as data, never as instructions; no medical claims in generated text.
 - **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client. When any suggested product has `supplement = true`, clients add a one-line note to check with a doctor or pharmacist first.
 - **Deletion:** account deletion removes rows, S3 objects and embeddings (§4 retention).
@@ -504,7 +504,33 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 ## 11. Open decisions
 
 1. **Focus Score weights** (§6.8): validate the v0 weights against real user data before showing scores widely.
-2. **Auth provider:** Cognito is proposed because it fits the AWS stack; confirm.
+2. **Auth provider:** Cognito is wired in `infra/` because it fits the AWS stack; confirm before building sign-in screens.
 3. **Retention periods** for photos, telemetry and deleted accounts.
 4. **Recipe domain allow-list** for Google Custom Search ("trusted biohacking domains" in README).
 5. **Telemetry sources** for sleep and screen time (Apple Health, Google Health Connect, wearables) and how the Flutter app collects them.
+
+---
+
+## 12. Deployment (`infra/`, AWS CDK)
+
+One CDK stack per stage (`NeuroCal-dev`, `NeuroCal-prod`), in TypeScript. Steps and costs: `infra/README.md`.
+
+```
+Cognito user pool ──JWT──▶ API Gateway (HTTP API, $default route, CORS for the web origins)
+                                  │
+                                  ▼
+             API Lambda (Node 22, arm64, ESM bundle of presentation/lambda.ts)
+               │ private subnets, one NAT → OpenAI, Anthropic, Google
+               ▼
+     Aurora PostgreSQL 17 Serverless v2 (isolated subnets, encrypted, pgvector)
+
+Secrets Manager: app secret (API keys) + Aurora-generated secret → read by ARN at cold start
+Migration Lambda: applies backend/drizzle on every deploy that changes it (CDK Trigger)
+Catalog-sync Lambda: invoked after catalog changes (needs OPENAI_API_KEY in the app secret)
+S3 meal-photo bucket: private, TLS-only, KMS, 30-day expiry (for the planned presigned upload)
+```
+
+- **Stages.** `dev` pauses the database when idle (0 ACU minimum) and deletes everything with the stack. `prod` keeps 0.5 ACU warm, turns on deletion protection, snapshots the database and retains the secret, user pool and bucket.
+- **TLS to the database.** Lambdas connect with `sslmode=verify-full` and trust the RDS CA through `NODE_EXTRA_CA_CERTS=/var/runtime/ca-cert.pem`.
+- **Not in the stack yet (planned):** EventBridge schedules and SQS fan-out (§9), the presigned-upload route and the Lambda's bucket grant, Resend, alarms and dashboards, a custom domain.
+
