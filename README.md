@@ -57,6 +57,7 @@ npm run build
 ```
 
 - `/` — Today: bio-state dial, meals, check-in, what to eat next
+- `/welcome` — first-run setup; also where you edit your profile
 - `/lab` — component states for design review
 
 To run the web app against the real backend locally:
@@ -66,6 +67,6 @@ npm run dev -w @neurocal/backend                          # API on http://localh
 NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev     # web on http://localhost:3000
 ```
 
-The backend dev server uses an in-memory Postgres and stub AI responses unless you set keys (see `backend/.env.example`).
+The backend dev server uses an in-memory Postgres and stub AI responses unless you set keys (see `backend/.env.example`). Start it with `DEV_FRESH_USER=1` to begin as a new user and go through onboarding.
 
 Roadmap and design direction: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md).

@@ -7,6 +7,7 @@ import {
   FocusScore,
   IngestResponse,
   type IngestSleepRequest,
+  type UpdateProfileRequest,
   type CreateCheckInRequest,
   type CreateMealRequest,
   Meal,
@@ -110,5 +111,18 @@ export function useLogSleep() {
     mutationFn: (sessions: IngestSleepRequest["sessions"]) =>
       request("/telemetry/sleep", IngestResponse, { method: "POST", body: JSON.stringify({ sessions }) }),
     onSuccess: invalidate,
+  });
+}
+
+export function useUpdateProfile() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateProfileRequest) =>
+      request("/me/profile", Profile, { method: "PUT", body: JSON.stringify(patch) }),
+    onSuccess: (profile) => {
+      client.setQueryData(keys.me, profile);
+      // Targets and time zone change every derived number.
+      return client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "me" });
+    },
   });
 }

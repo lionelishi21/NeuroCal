@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useBioState, useDeleteMeal, useFocusScore, useMeals, useNextRecommendations } from "../api/queries";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { RequestFailed } from "../api/client";
+import { useBioState, useDeleteMeal, useFocusScore, useMeals, useNextRecommendations, useProfile } from "../api/queries";
 import { BioStateDial } from "../components/BioStateDial";
 import { Button } from "../components/Button";
 import { FlagSummary } from "../components/FlagSummary";
@@ -16,6 +19,13 @@ import { LogMealSheet } from "../features/log-meal/LogMealSheet";
 import { formatDay } from "../lib/format";
 
 export function Today() {
+  const router = useRouter();
+  const profile = useProfile();
+  const needsSetup = profile.error instanceof RequestFailed && profile.error.status === 404;
+  useEffect(() => {
+    if (needsSetup) router.replace("/welcome");
+  }, [needsSetup, router]);
+
   const bio = useBioState();
   const meals = useMeals();
   const recs = useNextRecommendations();
@@ -27,6 +37,7 @@ export function Today() {
   const [loggingSleep, setLoggingSleep] = useState(false);
 
   const [first, ...more] = recs.data?.recipes ?? [];
+  if (needsSetup) return null;
 
   const actions = (
     <>
@@ -43,9 +54,14 @@ export function Today() {
     <>
       <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-32 sm:px-8 lg:grid lg:grid-cols-[22rem_1fr] lg:gap-16 lg:pt-12 lg:pb-16">
         <section aria-labelledby="day" className="flex flex-col items-center gap-5 lg:sticky lg:top-12 lg:items-start lg:self-start">
-          <h1 id="day" className="m-0 self-start text-lg font-semibold">
-            {formatDay()}
-          </h1>
+          <div className="flex w-full items-baseline justify-between gap-4">
+            <h1 id="day" className="m-0 text-lg font-semibold">
+              {formatDay()}
+            </h1>
+            <Link href="/welcome" className="text-sm text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
+              Edit profile
+            </Link>
+          </div>
 
           {bio.isPending && <p className="m-0 self-start text-ink-soft">Loading your day…</p>}
           {bio.isError && (

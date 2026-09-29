@@ -26,7 +26,9 @@ import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
 
 const PORT = Number(process.env.PORT ?? 4000);
-const DEV_SUBJECT = "dev-user";
+/** DEV_FRESH_USER=1 starts as a brand-new user with no profile, to try onboarding. */
+const FRESH_USER = process.env.DEV_FRESH_USER === "1";
+const DEV_SUBJECT = FRESH_USER ? "dev-fresh-user" : "dev-user";
 
 async function seed(db: Database, userId: string) {
   const profiles = new DrizzleProfileRepository(db);
@@ -66,7 +68,7 @@ async function main() {
   const db = config.databaseUrl ? createDatabase(config.databaseUrl) : (await createPgliteDatabase()).db;
   const users = new DrizzleUserRepository(db);
   const devUserId = await users.findOrCreateByAuthSubject(DEV_SUBJECT, "dev@localhost");
-  if (!config.databaseUrl) await seed(db, devUserId);
+  if (!config.databaseUrl && !FRESH_USER) await seed(db, devUserId);
 
   const vision = config.openAiApiKey ? new OpenAiVisionProvider({ apiKey: config.openAiApiKey }) : stubVision;
   const reasoning = config.anthropicApiKey ? new ClaudeReasoningProvider({ apiKey: config.anthropicApiKey }) : stubReasoning;
@@ -115,7 +117,7 @@ async function main() {
   }).listen(PORT, () => {
     const mode = (real: boolean) => (real ? "real" : "stub");
     console.log(`NeuroCal API on http://localhost:${PORT}`);
-    console.log(`  database: ${config.databaseUrl ? "DATABASE_URL" : "in-memory (seeded)"}`);
+    console.log(`  database: ${config.databaseUrl ? "DATABASE_URL" : FRESH_USER ? "in-memory (new user, no profile)" : "in-memory (seeded)"}`);
     console.log(`  vision: ${mode(vision !== stubVision)}, reasoning: ${mode(reasoning !== stubReasoning)}, search: ${mode(search !== stubSearch)}`);
   });
 }

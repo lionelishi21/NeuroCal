@@ -10,6 +10,7 @@ import { createDb } from "./db";
 import { todayIso } from "../lib/format";
 
 const invalid = (message: string) => HttpResponse.json({ code: "invalid_request", message }, { status: 400 });
+const noProfile = () => HttpResponse.json({ code: "not_found", message: "Set up your profile first." }, { status: 404 });
 
 export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   const url = (path: string) => `${base}${path}`;
@@ -18,18 +19,24 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   return [
     http.get(url("/me"), async () => {
       await delay(latency);
-      return HttpResponse.json(db.profile());
+      return db.profile() ? HttpResponse.json(db.profile()) : noProfile();
     }),
     http.put(url("/me/profile"), async ({ request }) => {
       const body = UpdateProfileRequest.safeParse(await request.json());
       if (!body.success) return invalid("Profile update is not valid.");
-      return HttpResponse.json(db.updateProfile(body.data));
+      await delay(latency);
+      const result = db.updateProfile(body.data);
+      return "missing" in result
+        ? invalid(`To set up your profile, also send: ${result.missing.join(", ")}.`)
+        : HttpResponse.json(result);
     }),
     http.get(url("/bio-state"), async ({ request }) => {
+      if (!db.profile()) return noProfile();
       await delay(latency);
       return HttpResponse.json(db.bioState(dateParam(request)));
     }),
     http.get(url("/meals"), async ({ request }) => {
+      if (!db.profile()) return noProfile();
       await delay(latency);
       return HttpResponse.json(db.mealsOn(dateParam(request)));
     }),
@@ -60,6 +67,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
     }),
     http.get(url("/focus-score"), async ({ request }) => {
+      if (!db.profile()) return noProfile();
       await delay(latency);
       return HttpResponse.json(db.focusScore(dateParam(request)));
     }),
@@ -75,6 +83,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       return HttpResponse.json({ accepted: db.addScreenTime(body.data.samples) });
     }),
     http.get(url("/recommendations/next"), async () => {
+      if (!db.profile()) return noProfile();
       await delay(latency * 2);
       return HttpResponse.json(db.recommendations());
     }),

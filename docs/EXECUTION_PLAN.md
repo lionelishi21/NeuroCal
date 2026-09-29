@@ -143,7 +143,7 @@ Mobile — Today                  Desktop — Today
 - [ ] Playwright screenshot tests of `/lab` and Today in CI
 
 ### Phase 2 — Web POC screens on the mock API
-1. **Onboarding** — goals, dietary preference, cognitive goals
+1. ✅ **Onboarding** — name, time zone, dietary preference, cognitive goals, calorie and macro targets (`/welcome`, also used to edit the profile)
 2. ✅ **Today** — dial, meals, check-in, what to eat next
 3. ✅ **Log a meal** — photo → editable items → confirm. _To do: manual entry fallback; show high-glycemic flags_
 4. ✅ **Check-in** — cognitive flags that feed recommendations

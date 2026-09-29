@@ -36,9 +36,9 @@ const item = (name: string, portion: string, calories: number, p: number, c: num
   ...(confidence === undefined ? {} : { confidence }),
 });
 
-export function createDb() {
+export function createDb(options: { newUser?: boolean } = {}) {
   let nextId = 100;
-  const profile: Profile = {
+  let profile: Profile | null = options.newUser ? null : {
     id: "u1",
     displayName: "Lionel",
     dietaryPreference: "pescatarian",
@@ -104,7 +104,14 @@ export function createDb() {
     return meals.filter((m) => todayIso(new Date(m.eatenAt)) === date).sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
   }
 
+  /** Handlers answer 404 before calling anything that needs a profile. */
+  const me = () => {
+    if (!profile) throw new Error("No profile: handlers must check db.profile() first");
+    return profile;
+  };
+
   function bioState(date: string): BioState {
+    const profile = me();
     const day = mealsOn(date);
     const macrosEaten = sumMacros(day);
     const latest = checkIns.filter((c) => todayIso(new Date(c.at)) === date).at(-1);
@@ -245,8 +252,16 @@ export function createDb() {
       return samples.length;
     },
     profile: () => profile,
-    updateProfile(patch: Partial<Profile>) {
-      Object.assign(profile, patch);
+    /** Mirrors the backend: the first save needs every required field; later saves can be partial. */
+    updateProfile(patch: Partial<Omit<Profile, "id">>): Profile | { missing: string[] } {
+      if (!profile) {
+        const required = ["displayName", "dietaryPreference", "dailyCalorieTarget", "macroTargets"] as const;
+        const missing = required.filter((key) => patch[key] === undefined);
+        if (missing.length) return { missing };
+        profile = { id: "u1", timeZone: "UTC", ...(patch as Omit<Profile, "id">), cognitiveGoals: patch.cognitiveGoals ?? [] };
+        return profile;
+      }
+      profile = { ...profile, ...patch };
       return profile;
     },
     mealsOn,
