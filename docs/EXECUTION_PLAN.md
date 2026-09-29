@@ -150,7 +150,7 @@ Mobile — Today                  Desktop — Today
 5. ✅ **Focus Score** — daily score with the inputs behind it, plus a "Log sleep" sheet (ARCHITECTURE §6.7–6.8)
 6. **Sleep & circadian** — history view of sleep and screen time, late-eating insights (telemetry contracts and ingest are done)
 7. **Protocols & products** — vector-matched recommendations, clearly labelled when affiliate
-8. **History** — week view, focus vs. intake
+8. ✅ **History** — the past week as aligned Focus Score / calories / sleep charts with a day-by-day table (`/history`)
 9. **Settings / profile**
 - PWA install, offline queue for meal logs
 

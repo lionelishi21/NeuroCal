@@ -5,6 +5,7 @@ import {
   CreateCheckInRequest,
   CreateMealRequest,
   FocusScore,
+  HistoryResponse,
   IngestResponse,
   IngestScreenTimeRequest,
   IngestSleepRequest,
@@ -19,6 +20,7 @@ import type { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMe
 import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import type { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import type { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
+import type { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
 import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -56,6 +58,7 @@ export interface UseCases {
   recommendRecipe: RecommendRecipeUseCase;
   ingestTelemetry: IngestTelemetryUseCase;
   getFocusScore: GetFocusScoreUseCase;
+  getHistory: GetHistoryUseCase;
 }
 
 class BadRequest extends Error {}
@@ -152,6 +155,15 @@ export function createApi(uc: UseCases) {
       "GET",
       /^\/recommendations\/next$/,
       async (req) => ok(NextRecommendationsResponse, toRecommendations(await uc.recommendRecipe.execute(req))),
+    ],
+    [
+      "GET",
+      /^\/history$/,
+      async (req) => {
+        const raw = req.query.get("days");
+        const days = raw === null ? undefined : Number(raw);
+        return ok(HistoryResponse, { days: await uc.getHistory.execute({ userId: req.userId, days }) });
+      },
     ],
     ["GET", /^\/focus-score$/, async (req) => ok(FocusScore, toFocusScore(await uc.getFocusScore.execute({ userId: req.userId, date: date(req) })))],
     [

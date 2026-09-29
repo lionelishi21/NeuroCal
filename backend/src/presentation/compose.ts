@@ -15,6 +15,7 @@ import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPho
 import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
+import { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
 import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -55,6 +56,7 @@ export function buildUseCases(p: Ports): UseCases {
     }),
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock),
+    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock),
   };
 }
 

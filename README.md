@@ -57,6 +57,7 @@ npm run build
 ```
 
 - `/` — Today: bio-state dial, meals, check-in, what to eat next
+- `/history` — the past week: Focus Score, calories and sleep, day by day
 - `/welcome` — first-run setup; also where you edit your profile
 - `/lab` — component states for design review
 

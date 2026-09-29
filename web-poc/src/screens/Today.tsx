@@ -58,9 +58,14 @@ export function Today() {
             <h1 id="day" className="m-0 text-lg font-semibold">
               {formatDay()}
             </h1>
-            <Link href="/welcome" className="text-sm text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
-              Edit profile
-            </Link>
+            <nav aria-label="More" className="flex gap-4 text-sm">
+              <Link href="/history" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
+                This week
+              </Link>
+              <Link href="/welcome" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
+                Edit profile
+              </Link>
+            </nav>
           </div>
 
           {bio.isPending && <p className="m-0 self-start text-ink-soft">Loading your day…</p>}

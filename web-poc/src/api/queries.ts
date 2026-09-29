@@ -5,6 +5,7 @@ import {
   BioState,
   CheckIn,
   FocusScore,
+  HistoryResponse,
   IngestResponse,
   type IngestSleepRequest,
   type UpdateProfileRequest,
@@ -23,6 +24,7 @@ export const keys = {
   meals: (date: string) => ["meals", date] as const,
   recommendations: ["recommendations", "next"] as const,
   focusScore: (date: string) => ["focus-score", date] as const,
+  history: (days: number) => ["history", days] as const,
 };
 
 export function useProfile() {
@@ -57,6 +59,13 @@ export function useFocusScore(date = todayIso()) {
   });
 }
 
+export function useHistory(days = 7) {
+  return useQuery({
+    queryKey: keys.history(days),
+    queryFn: () => request(`/history?days=${days}`, HistoryResponse),
+  });
+}
+
 export function useAnalyzeMeal() {
   return useMutation({
     mutationFn: (photo: File) => {
@@ -76,6 +85,7 @@ function useInvalidateDay() {
       client.invalidateQueries({ queryKey: ["meals"] }),
       client.invalidateQueries({ queryKey: keys.recommendations }),
       client.invalidateQueries({ queryKey: ["focus-score"] }),
+      client.invalidateQueries({ queryKey: ["history"] }),
     ]);
 }
 

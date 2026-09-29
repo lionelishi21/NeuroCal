@@ -71,7 +71,8 @@ describe("Today", () => {
     const focus = await screen.findByRole("region", { name: "Focus today" });
     expect(await within(focus).findByText("out of 100")).toBeInTheDocument();
     expect(within(focus).getByText("Sleep")).toBeInTheDocument();
-    expect(within(focus).getAllByText("No data")).toHaveLength(2); // timing and glycemic: nothing logged yesterday
+    expect(within(focus).queryAllByText("No data")).toHaveLength(0); // the seeded week gives every input data
+    expect(within(focus).getByText("Evening timing")).toBeInTheDocument();
     expect(within(focus).getByText(/holding your focus back/)).toBeInTheDocument();
   });
 

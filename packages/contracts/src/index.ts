@@ -189,6 +189,25 @@ export const FocusScore = z.object({
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 
+export const HistoryDay = z.object({
+  date: IsoDate,
+  calorieTarget: z.number().int().positive(),
+  caloriesEaten: z.number().nonnegative(),
+  proteinG: z.number().nonnegative(),
+  /** That day's Focus Score, or null without data. */
+  focusScore: z.number().int().min(0).max(100).nullable(),
+  /** Sleep that ended that morning, or null without data. */
+  sleepMinutes: z.number().int().nonnegative().nullable(),
+  /** Local time of the last meal ("21:40"), or null if nothing was logged. */
+  lastMealAt: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+  /** Every distinct flag from that day's check-ins. */
+  flags: z.array(CognitiveFlag),
+});
+export type HistoryDay = z.infer<typeof HistoryDay>;
+
+export const HistoryResponse = z.object({ days: z.array(HistoryDay) });
+export type HistoryResponse = z.infer<typeof HistoryResponse>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -207,6 +226,8 @@ export const endpoints = {
   deleteMeal: { method: "DELETE", path: "/meals/:id" },
   nextRecommendations: { method: "GET", path: "/recommendations/next", response: NextRecommendationsResponse },
   getFocusScore: { method: "GET", path: "/focus-score", response: FocusScore },
+  /** ?days=7 (1–31), oldest first, ending today in the user's time zone. */
+  getHistory: { method: "GET", path: "/history", response: HistoryResponse },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
 } as const;

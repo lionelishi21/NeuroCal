@@ -24,7 +24,7 @@ export function FocusSummary({ focus, onLogSleep }: Props) {
       <p className="m-0 flex items-baseline gap-2">
         {hasScore ? (
           <>
-            <span className="text-2xl font-semibold text-synapse tabular-nums">{focus.score}</span>
+            <span className="text-2xl font-semibold text-synapse">{focus.score}</span>
             <span className="text-sm text-ink-soft">out of 100</span>
           </>
         ) : (

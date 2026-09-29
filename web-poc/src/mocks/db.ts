@@ -1,5 +1,6 @@
 import {
   type BioState,
+  type HistoryDay,
   type FocusScore,
   type IngestScreenTimeRequest,
   type IngestSleepRequest,
@@ -76,6 +77,43 @@ export function createDb(options: { newUser?: boolean } = {}) {
   bedtime.setDate(bedtime.getDate() - 1);
   const sleep: IngestSleepRequest["sessions"] = [{ start: bedtime.toISOString(), end: at(5, 45), source: "manual" }];
   const screenTime: IngestScreenTimeRequest["samples"] = [];
+
+  // Six earlier days with varied sleep, dinner times and feelings (mirrors the backend dev seed).
+  if (!options.newUser) {
+    const plan = [
+      { sleep: 7.5, dinner: [19, 0], high: false, flags: ["sharp"] },
+      { sleep: 6, dinner: [21, 45], high: true, flags: ["low_focus", "wired"] },
+      { sleep: 5.5, dinner: [22, 10], high: true, flags: ["brain_fog", "stressed"] },
+      { sleep: 8, dinner: [18, 45], high: false, flags: ["calm"] },
+      { sleep: 7, dinner: [20, 15], high: false, flags: ["sharp"] },
+      { sleep: 6.5, dinner: [21, 30], high: true, flags: ["low_energy"] },
+    ] as const;
+    plan.forEach((day, i) => {
+      const back = plan.length - i;
+      const on = (h: number, m: number) => {
+        const d = new Date(at(h, m));
+        d.setDate(d.getDate() - back);
+        return d;
+      };
+      const wake = on(6, 30);
+      sleep.push({ start: new Date(wake.getTime() - day.sleep * 3_600_000).toISOString(), end: wake.toISOString(), source: "manual" });
+      meals.push(
+        { id: `h${i}b`, kind: "breakfast", eatenAt: on(8, 0).toISOString(), items: [item("Greek yogurt and berries", "1 bowl", 320, 22, 35, 9)] },
+        { id: `h${i}l`, kind: "lunch", eatenAt: on(12, 45).toISOString(), items: [item("Grain bowl", "1 bowl", 640, 32, 70, 22)] },
+        {
+          id: `h${i}d`,
+          kind: "dinner",
+          eatenAt: on(day.dinner[0], day.dinner[1]).toISOString(),
+          items: [
+            day.high
+              ? { ...item("Pasta and garlic bread", "1 plate", 980, 28, 140, 30), glycemicLoad: "high" as const }
+              : { ...item("Salmon, greens and quinoa", "1 plate", 720, 45, 50, 30), glycemicLoad: "low" as const },
+          ],
+        },
+      );
+      checkIns.push({ id: `hc${i}`, at: on(15, 0).toISOString(), flags: [...day.flags] });
+    });
+  }
 
   const sumMacros = (list: Meal[]): Macros =>
     list
@@ -235,7 +273,35 @@ export function createDb(options: { newUser?: boolean } = {}) {
     return { date, score, components, explanation };
   }
 
+  function history(days: number): HistoryDay[] {
+    const dates: string[] = [];
+    for (let back = days - 1; back >= 0; back--) {
+      const d = new Date();
+      d.setDate(d.getDate() - back);
+      dates.push(todayIso(d));
+    }
+    return dates.map((date) => {
+      const state = bioState(date);
+      const day = mealsOn(date);
+      const last = day.at(-1);
+      const nights = sleep.filter((s) => todayIso(new Date(s.end)) === date);
+      const minutes = nights.reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60_000, 0);
+      const lastAt = last ? new Date(last.eatenAt) : null;
+      return {
+        date,
+        calorieTarget: state.calorieTarget,
+        caloriesEaten: state.caloriesEaten,
+        proteinG: Math.round(state.macrosEaten.proteinG),
+        focusScore: focusScore(date).score,
+        sleepMinutes: nights.length ? Math.round(minutes) : null,
+        lastMealAt: lastAt ? `${String(lastAt.getHours()).padStart(2, "0")}:${String(lastAt.getMinutes()).padStart(2, "0")}` : null,
+        flags: [...new Set(checkIns.filter((c) => todayIso(new Date(c.at)) === date).flatMap((c) => c.flags))],
+      };
+    });
+  }
+
   return {
+    history,
     focusScore,
     addSleep(sessions: IngestSleepRequest["sessions"]) {
       for (const s of sessions) {

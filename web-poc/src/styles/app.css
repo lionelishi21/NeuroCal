@@ -16,6 +16,9 @@
   --color-synapse: var(--synapse);
   --color-beet: var(--beet);
   --color-on-accent: var(--on-accent);
+  --color-chart-focus: var(--chart-focus);
+  --color-chart-calories: var(--chart-calories);
+  --color-chart-sleep: var(--chart-sleep);
   --color-transparent: transparent;
 
   --font-*: initial;

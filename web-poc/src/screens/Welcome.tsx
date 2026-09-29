@@ -326,7 +326,7 @@ function StepTargets({ draft, update }: StepProps) {
           ))}
         </div>
         <p className={`mt-2 mb-0 text-sm ${drift > 150 ? "text-beet" : "text-ink-soft"}`}>
-          These add up to <span className="tabular-nums">{fromMacros.toLocaleString()}</span> kcal
+          These add up to {fromMacros.toLocaleString()} kcal
           {drift > 150 ? `, ${drift.toLocaleString()} away from your calorie target.` : "."}
         </p>
         {draft.macrosEdited && (

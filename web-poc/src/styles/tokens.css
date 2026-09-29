@@ -17,6 +17,12 @@
   --beet: #b23a5b; /* over budget, errors */
   --on-accent: #f6f8f9;
 
+  /* Chart marks (History). Validated with the dataviz palette checker against --mist:
+     lightness band, chroma, CVD and normal-vision separation, >= 3:1 contrast. */
+  --chart-focus: #5b4bc9;
+  --chart-calories: #b86e0c;
+  --chart-sleep: #1f7fa8;
+
   /* Type */
   --font-ui: var(--font-schibsted), system-ui, sans-serif;
   --font-figure: var(--font-fraunces), Georgia, serif;
@@ -74,6 +80,9 @@
     --synapse: #9c90f0;
     --beet: #e2718f;
     --on-accent: #151b2c;
+    --chart-focus: #7f6fe3;
+    --chart-calories: #c4801f;
+    --chart-sleep: #27a196;
     color-scheme: dark;
   }
 }
@@ -91,6 +100,9 @@
   --synapse: #9c90f0;
   --beet: #e2718f;
   --on-accent: #151b2c;
+  --chart-focus: #7f6fe3;
+  --chart-calories: #c4801f;
+  --chart-sleep: #27a196;
   color-scheme: dark;
 }
 

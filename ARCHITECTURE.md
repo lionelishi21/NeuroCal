@@ -455,6 +455,7 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | DELETE | `/meals/:id` | — | 204 | 6.3 |
 | GET | `/recommendations/next` | — | `NextRecommendationsResponse` | 6.6 |
 | GET | `/focus-score?date=` | — | `FocusScore` | 6.8 |
+| GET | `/history?days=` | — | `HistoryResponse` | the last 1–31 days, oldest first; Focus Scores recomputed without the AI explanation |
 | POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
 | POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
 

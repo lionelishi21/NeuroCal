@@ -156,6 +156,14 @@ describe("API routes", () => {
     expect(res).toMatchObject({ status: 400, body: { code: "invalid_request" } });
   });
 
+  it("GET /history returns the last N days in contract shape", async () => {
+    const res = await call("GET", "/history?days=2");
+    expect(res.status).toBe(200);
+    expect((res.body as { days: { date: string }[] }).days.map((d) => d.date)).toEqual(["2026-09-28", "2026-09-29"]);
+    expect((res.body as { days: object[] }).days[1]).toMatchObject({ caloriesEaten: 440, lastMealAt: "08:10" });
+    expect((await call("GET", "/history?days=abc")).status).toBe(400);
+  });
+
   it("answers bad JSON, unknown paths and wrong methods clearly", async () => {
     expect((await call("POST", "/meals", "{nope")).body).toEqual({ code: "invalid_request", message: "The request body isn't valid JSON." });
     expect((await call("GET", "/nothing")).status).toBe(404);

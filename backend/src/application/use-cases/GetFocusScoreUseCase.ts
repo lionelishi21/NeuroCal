@@ -4,9 +4,10 @@ import {
   computeFocusComponents,
   fallbackExplanation,
   focusScoreFrom,
+  type FocusInputs,
 } from "../../domain/focusScore";
 import { isIsoDate, localDateOf, previousDate } from "../../domain/localDay";
-import type { FocusComponents, FocusScore } from "../../domain/types";
+import type { FocusComponents, FocusScore, Profile } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
 import type {
@@ -38,26 +39,14 @@ export class GetFocusScoreUseCase {
     if (!profile) throw new NotFoundError("Set up your profile first.");
     if (input.date !== undefined && !isIsoDate(input.date)) throw new InvalidError("Use a date like 2026-09-29.");
 
-    const { userId, timeZone } = profile;
-    const date = input.date ?? localDateOf(this.clock.now(), timeZone);
-    const yesterday = previousDate(date);
-    const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, stored] = await Promise.all([
-      this.telemetry.sleepEndingOn(userId, { date, timeZone }),
-      this.meals.listForDay(userId, { date: yesterday, timeZone }),
-      this.telemetry.screenTimeStartingOn(userId, [yesterday, date], timeZone),
-      this.checkIns.listForDay(userId, { date: yesterday, timeZone }),
-      this.checkIns.listForDay(userId, { date, timeZone }),
+    const { userId } = profile;
+    const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
+    const [inputs, stored] = await Promise.all([
+      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry }, profile, date),
       this.scores.get(userId, date),
     ]);
 
-    const components = computeFocusComponents({
-      date,
-      timeZone,
-      sleep,
-      previousDayMeals,
-      screenTime,
-      checkIns: [...checkInsYesterday, ...checkInsToday],
-    });
+    const components = computeFocusComponents(inputs);
     const score = focusScoreFrom(components);
 
     if (stored && stored.score === score && sameComponents(stored.components, components)) return stored;
@@ -86,3 +75,21 @@ export class GetFocusScoreUseCase {
 
 const sameComponents = (a: FocusComponents, b: FocusComponents) =>
   a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress;
+
+/** Everything the Focus Score for `date` reads (ARCHITECTURE §6.8). Shared with GetHistoryUseCase. */
+export async function loadFocusInputs(
+  repos: { meals: IMealRepository; checkIns: ICheckInRepository; telemetry: ITelemetryRepository },
+  profile: Profile,
+  date: string,
+): Promise<FocusInputs> {
+  const { userId, timeZone } = profile;
+  const yesterday = previousDate(date);
+  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday] = await Promise.all([
+    repos.telemetry.sleepEndingOn(userId, { date, timeZone }),
+    repos.meals.listForDay(userId, { date: yesterday, timeZone }),
+    repos.telemetry.screenTimeStartingOn(userId, [yesterday, date], timeZone),
+    repos.checkIns.listForDay(userId, { date: yesterday, timeZone }),
+    repos.checkIns.listForDay(userId, { date, timeZone }),
+  ]);
+  return { date, timeZone, sleep, previousDayMeals, screenTime, checkIns: [...checkInsYesterday, ...checkInsToday] };
+}

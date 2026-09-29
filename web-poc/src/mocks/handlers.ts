@@ -66,6 +66,13 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
     }),
+    http.get(url("/history"), async ({ request }) => {
+      if (!db.profile()) return noProfile();
+      const days = Number(new URL(request.url).searchParams.get("days") ?? 7);
+      if (!Number.isInteger(days) || days < 1 || days > 31) return invalid("Ask for between 1 and 31 days.");
+      await delay(latency);
+      return HttpResponse.json({ days: db.history(days) });
+    }),
     http.get(url("/focus-score"), async ({ request }) => {
       if (!db.profile()) return noProfile();
       await delay(latency);

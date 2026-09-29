@@ -61,6 +61,52 @@ async function seed(db: Database, userId: string) {
   const bedtime = today(23, 15);
   bedtime.setDate(bedtime.getDate() - 1);
   await new DrizzleTelemetryRepository(db).upsertSleep(userId, [{ start: bedtime, end: today(5, 45), source: "manual" }]);
+  await seedPastWeek(db, userId, today);
+}
+
+/** Six earlier days with varied sleep, dinner times and feelings, so History has a story to show. */
+async function seedPastWeek(db: Database, userId: string, today: (h: number, m: number) => Date) {
+  const meals = new DrizzleMealRepository(db);
+  const checkIns = new DrizzleCheckInRepository(db);
+  const telemetry = new DrizzleTelemetryRepository(db);
+  const plan = [
+    { sleep: 7.5, dinner: [19, 0], high: false, flags: ["sharp"] },
+    { sleep: 6, dinner: [21, 45], high: true, flags: ["low_focus", "wired"] },
+    { sleep: 5.5, dinner: [22, 10], high: true, flags: ["brain_fog", "stressed"] },
+    { sleep: 8, dinner: [18, 45], high: false, flags: ["calm"] },
+    { sleep: 7, dinner: [20, 15], high: false, flags: ["sharp"] },
+    { sleep: 6.5, dinner: [21, 30], high: true, flags: ["low_energy"] },
+  ] as const;
+  for (const [i, day] of plan.entries()) {
+    const back = plan.length - i; // 6 … 1 days ago
+    const at = (h: number, m: number) => {
+      const d = today(h, m);
+      d.setDate(d.getDate() - back);
+      return d;
+    };
+    const wake = at(6, 30);
+    await telemetry.upsertSleep(userId, [{ start: new Date(wake.getTime() - day.sleep * 3_600_000), end: wake, source: "manual" }]);
+    await meals.create(userId, {
+      kind: "breakfast",
+      eatenAt: at(8, 0),
+      items: [{ name: "Greek yogurt and berries", portion: "1 bowl", calories: 320, macros: { proteinG: 22, carbsG: 35, fatG: 9 } }],
+    });
+    await meals.create(userId, {
+      kind: "lunch",
+      eatenAt: at(12, 45),
+      items: [{ name: "Grain bowl", portion: "1 bowl", calories: 640, macros: { proteinG: 32, carbsG: 70, fatG: 22 } }],
+    });
+    await meals.create(userId, {
+      kind: "dinner",
+      eatenAt: at(day.dinner[0], day.dinner[1]),
+      items: [
+        day.high
+          ? { name: "Pasta and garlic bread", portion: "1 plate", calories: 980, macros: { proteinG: 28, carbsG: 140, fatG: 30 }, glycemicLoad: "high" }
+          : { name: "Salmon, greens and quinoa", portion: "1 plate", calories: 720, macros: { proteinG: 45, carbsG: 50, fatG: 30 }, glycemicLoad: "low" },
+      ],
+    });
+    await checkIns.create(userId, { at: at(15, 0), flags: [...day.flags] });
+  }
 }
 
 async function main() {
