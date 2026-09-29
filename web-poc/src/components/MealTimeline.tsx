@@ -28,7 +28,7 @@ export function MealTimeline({ meals, onRemove, removingId }: Props) {
           <div className="min-w-0">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="m-0 text-base font-semibold">{mealKindLabel[meal.kind]}</h3>
-              <span className="shrink-0 text-sm text-glucose-ink">{kcal(mealCalories(meal))} kcal</span>
+              <span className="shrink-0 text-sm text-glucose-ink tabular-nums">{kcal(mealCalories(meal))} kcal</span>
             </div>
             <ul className="mt-1 mb-0 list-none p-0 text-sm text-ink-soft">
               {meal.items.map((item, i) => (

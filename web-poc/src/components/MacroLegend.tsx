@@ -19,7 +19,7 @@ export function MacroLegend({ eaten, targets }: Props) {
         <div key={row.key} className="contents">
           <span aria-hidden className={`h-1.5 w-5 rounded-pill ${row.color}`} />
           <dt className="text-ink">{row.label}</dt>
-          <dd className="m-0 text-ink-soft">
+          <dd className="m-0 text-ink-soft tabular-nums">
             {Math.round(eaten[row.key])} of {targets[row.key]} g
           </dd>
         </div>

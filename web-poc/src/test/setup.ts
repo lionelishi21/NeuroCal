@@ -4,6 +4,6 @@ import { afterEach } from "vitest";
 
 afterEach(cleanup);
 
-// jsdom has no object URLs; the log-meal preview needs them.
-URL.createObjectURL ??= () => "blob:test";
-URL.revokeObjectURL ??= () => {};
+// The log-meal preview needs object URLs; jsdom's shim can't read test Files.
+URL.createObjectURL = () => "blob:test";
+URL.revokeObjectURL = () => {};

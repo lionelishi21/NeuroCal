@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource-variable/schibsted-grotesk";
-@import "@fontsource-variable/fraunces/full.css";
 @import "./tokens.css";
 
 /* Expose tokens as Tailwind utilities (bg-mist, text-ink, p-4, rounded-sheet …). */
@@ -52,7 +50,6 @@
     font-family: var(--font-ui);
     font-size: 100%;
     line-height: var(--leading-body);
-    font-feature-settings: "tnum" 1;
     -webkit-font-smoothing: antialiased;
   }
 

@@ -4,19 +4,21 @@ _Last updated: 2026-09-29_
 
 ## 1. Where the project is today
 
+The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal AI connects metabolic tracking (calories and macros) with cognitive performance:
+
+- **Calorie & macro vision:** meal photo → items, calories, macros, high-glycemic flags (OpenAI `gpt-4o`)
+- **Focus Score engine:** a daily score from sleep telemetry, diet and self-reported stress
+- **Circadian telemetry:** late-night screen time and late eating vs. melatonin and weight plateaus
+- **Dynamic recipe routing:** macro gaps → search query (Anthropic Claude) → recipes from trusted domains (Google Custom Search)
+- **Vector recommendations:** `pgvector` matches a user's weak points (e.g. "poor deep sleep") to protocols and products
+
 | Area | State |
 |---|---|
-| `README.md`, `CLAUDE.md`, `ARCHITECTURE.md` | Empty / title only |
-| `backend/` | Clean-architecture skeleton (`application/`, `infrastructure/`). Only `IAiReasoningProvider.ts` has code; every other file is 0 bytes |
-| Dependencies | `drizzle-orm`, `pg`, `drizzle-kit`, `tsx` — no HTTP framework, no TypeScript config, no tests |
-| Frontend | Does not exist |
-| Repo hygiene | `backend/node_modules` (macOS binaries) and `.DS_Store` were committed — now untracked via `.gitignore` |
-
-What the skeleton tells us about the product:
-
-- **Log a meal** (`LogMealUseCase`, `IAiVisionProvider`) — the user snaps a photo, AI vision identifies foods and estimates calories/macros.
-- **Recommend a recipe** (`RecommendRecipeUseCase`, `IAiReasoningProvider`, `ISearchEngineAdapter`) — AI reasons over the user's *bio-state* (calories remaining, macro focus, **cognitive flags** such as "brain fog" or "low focus", dietary preference), builds a search query, and a search engine returns real recipes with an explanation of why.
-- The differentiator is the **"neuro"** part: nutrition framed around how you want to *think and feel*, not only weight.
+| `packages/contracts` | Zod schemas for 9 endpoints, 3 Jest tests |
+| `web-poc/` | Next.js app: Today screen, log-meal and check-in flows on a mock API, 7 Vitest tests |
+| `backend/` | Hexagonal skeleton; only `IAiReasoningProvider.ts` has code |
+| `mobile-app/` | Not started (Flutter) |
+| `ARCHITECTURE.md` | Empty, although `CLAUDE.md` points to it for schemas and prompts |
 
 ## 2. Recommendation: frontend-first, contract-driven
 
@@ -33,43 +35,41 @@ Why not backend first? The backend is almost empty, and the product's value is f
 
 ## 3. Target architecture
 
-Monorepo with pnpm workspaces:
+Monorepo with npm workspaces:
 
 ```
-neurocal/
-├── apps/
-│   └── web/                 # React PWA (mobile-first, installable, camera access)
-├── backend/                 # existing clean-architecture API (kept, filled in)
+neurocal-workspace/
+├── backend/                 # AWS Lambda + API Gateway, hexagonal architecture
 │   └── src/
-│       ├── domain/          # entities + value objects (Meal, FoodItem, BioState, Recipe)
-│       ├── application/     # use-cases + interfaces (already scaffolded)
-│       ├── infrastructure/  # drizzle schema/repos, Claude vision+reasoning, search adapter
-│       └── interface/http/  # routes, validation, auth middleware
+│       ├── domain/          # entities + value objects, no external deps
+│       ├── application/     # use cases + ports (IAiVisionProvider, IRepositories, …)
+│       ├── infrastructure/  # Drizzle schema/repos, OpenAI + Claude adapters, search, email
+│       └── presentation/    # Lambda handlers, API Gateway DTOs
+├── web-poc/                 # Next.js web proof of concept (mobile-first PWA)
+├── mobile-app/              # Flutter (iOS + Android)
 └── packages/
-    └── contracts/           # Zod schemas → TS types + OpenAPI; single source of truth
+    └── contracts/           # Zod schemas: single source of truth for the API
 ```
 
-### Frontend stack
+`packages/contracts` stays the source of truth for every request and response. The backend validates with it, `web-poc` parses with it, and an OpenAPI document generated from it will give Flutter a typed Dart client.
+
+### Web POC stack
 | Concern | Choice | Why |
 |---|---|---|
-| Build | **Vite + React 19 + TypeScript** | Separate backend already exists; a SPA/PWA is leaner than Next.js here |
-| Routing | **TanStack Router** | Type-safe routes and search params |
-| Server state | **TanStack Query** | Caching, optimistic meal logging, offline retry |
-| Styling | **Tailwind CSS v4** with our own design tokens (CSS variables) | Speed, but tokens are ours — no stock theme |
-| Primitives | **Radix UI** (unstyled) | Accessible dialogs/sheets/menus without inheriting someone else's look |
-| Motion | **Motion** (framer) | One signature moment + action feedback only |
-| Charts | **visx** or hand-rolled SVG | The bio-state dial is custom; no dashboard-kit charts |
-| Mocks | **MSW** | Frontend runs fully without the backend |
-| PWA | `vite-plugin-pwa` | Install to home screen, camera, offline queue |
-| Tests | Vitest + Testing Library + Playwright | Unit + E2E; Playwright doubles as screenshot review |
+| Framework | **Next.js 16 (App Router) + React 19 + TypeScript** | Chosen on `main` |
+| Server state | **TanStack Query** | Caching, refetch after logging, offline retry |
+| Styling | **Tailwind CSS v4** mapped to our own design tokens | Speed, but the look is ours |
+| Primitives | **Radix UI** (unstyled) | Accessible sheets and dialogs without a stock look |
+| Fonts | `next/font/google`: Schibsted Grotesk + Fraunces | Self-hosted at build, no layout shift |
+| Mocks | **MSW** (browser only, loaded with `ssr: false`) | Runs fully without the backend |
+| Tests | Vitest + Testing Library (+ Playwright for screenshots) | MSW is ESM-only, which Jest handles poorly |
 
-### Backend stack (when we get there)
-- **Hono** (or Fastify) on Node 22, Zod validation from `packages/contracts`
-- **Drizzle + Postgres** (already chosen) — tables: `users`, `profiles`, `meals`, `meal_items`, `daily_bio_state`, `recipe_recommendations`
-- **AI**: Claude for both vision (meal photo → items/macros, structured JSON output) and reasoning (bio-state → search query + explanation); implement behind the existing `IAiVisionProvider` / `IAiReasoningProvider` interfaces so providers stay swappable
-- **Search**: `ISearchEngineAdapter` → a recipe API (Spoonacular / Edamam) or web search
-- **Auth**: Better Auth or Clerk
-- Object storage for meal photos (S3/R2)
+### Backend stack
+- **AWS Serverless:** Lambda, API Gateway, S3 (meal photos), EventBridge (scheduled Focus Score and telemetry jobs)
+- **Aurora PostgreSQL Serverless v2 + `pgvector`** via Drizzle
+- **AI:** OpenAI `gpt-4o` (vision) and `text-embedding-3-small` (vectors); Anthropic Claude (recipe search queries). All behind the existing ports; every LLM output is validated against a schema
+- **Search / email:** Google Custom Search, Resend
+- **Tests:** Jest with fake providers for use cases
 
 ## 4. Design approach — no templates
 
@@ -125,45 +125,50 @@ Mobile — Today                  Desktop — Today
 
 ## 5. Phased execution
 
-### Phase 0 — Foundations (1–2 days)
+### Phase 0 — Foundations
 - [x] `.gitignore`; untrack `node_modules` and `.DS_Store`
 - [x] Vendor `frontend-design` skill; fill `CLAUDE.md`
-- [x] Convert to pnpm workspace (`apps/web`, `backend`, `packages/contracts`)
-- [x] Shared `tsconfig`, Vitest; GitHub Actions CI (typecheck, test, build)
+- [x] npm workspaces (`backend`, `web-poc`, `packages/contracts`); shared `tsconfig.base.json`
+- [x] Jest for backend and contracts, Vitest for web; GitHub Actions CI (typecheck, test, build)
+- [x] `packages/contracts`: Zod schemas for the endpoints in §6
 - [ ] ESLint + Prettier
-- [x] `packages/contracts`: Zod schemas for `Profile`, `FoodItem`, `Meal`, `BioState`, `CognitiveFlag`, `RecipeRecommendation` and request/response shapes for the endpoints in §6
+- [ ] Generate OpenAPI from `packages/contracts` (for Flutter codegen)
+- [ ] Write `ARCHITECTURE.md` (schemas, ports, system prompts)
 
-### Phase 1 — Design system (3–4 days)
-- [x] Run the `frontend-design` two-pass process on the direction above. Revision: meals became a ruled, time-in-the-margin timeline instead of a card stack (avoids the SaaS card kit); radius follows hierarchy; one elevation, for sheets only
-- [x] Tokens as CSS variables (`apps/web/src/styles/tokens.css`) + dark theme, exposed as Tailwind utilities
-- [x] Components: Button, Sheet (Radix Dialog), Toast, MealTimeline, MacroLegend, FlagSummary, SuggestedMeal, **BioStateDial**
+### Phase 1 — Design system
+- [x] `frontend-design` two-pass review. Revision: meals are a ruled timeline with times in the margin instead of a card stack; corner radius follows hierarchy; one elevation, for sheets only
+- [x] Tokens (`web-poc/src/styles/tokens.css`) + dark theme, exposed as Tailwind utilities
+- [x] Components: Button, Sheet, Toast, MealTimeline, MacroLegend, FlagSummary, SuggestedMeal, **BioStateDial**
 - [x] Component lab at `/lab`
-- [ ] Playwright screenshot tests of `/lab` and Today
+- [ ] Playwright screenshot tests of `/lab` and Today in CI
 
-### Phase 2 — Frontend screens on mock API (2–3 weeks)
-1. **Onboarding** — goals, dietary preference, typical cognitive goals (focus, calm, energy)
-2. ✅ **Today** — dial, meals list, suggested next meal
-3. ✅ **Log a meal** — camera/upload → AI result with editable items → confirm. _To do: manual search entry as fallback_
-4. ✅ **Check-in** — quick cognitive flags ("How's your head?") that feed the bio-state
-5. **Recommendations** — recipe detail with the AI's reasoning shown plainly
-6. **History** — week view, trends of energy/focus vs intake
-7. **Settings / profile**
-- MSW handlers return realistic fixture data from `packages/contracts`
+### Phase 2 — Web POC screens on the mock API
+1. **Onboarding** — goals, dietary preference, cognitive goals
+2. ✅ **Today** — dial, meals, check-in, what to eat next
+3. ✅ **Log a meal** — photo → editable items → confirm. _To do: manual entry fallback; show high-glycemic flags_
+4. ✅ **Check-in** — cognitive flags that feed recommendations
+5. **Focus Score** — daily score with the inputs behind it (new contract: `FocusScore`)
+6. **Sleep & circadian** — sleep and screen-time telemetry, late-eating insights (new contracts)
+7. **Protocols & products** — vector-matched recommendations, clearly labelled when affiliate
+8. **History** — week view, focus vs. intake
+9. **Settings / profile**
 - PWA install, offline queue for meal logs
 
-### Phase 3 — Backend API (2–3 weeks, can start mid-Phase 2)
-- [ ] Domain entities + Drizzle schema + migrations
+### Phase 3 — Backend on AWS
+- [ ] Domain entities; Drizzle schema + migrations (incl. `pgvector` HNSW index)
 - [ ] Repositories (`IRepositories.ts`)
-- [ ] `LogMealUseCase` + Claude vision adapter (structured JSON output, confidence per item)
-- [ ] `RecommendRecipeUseCase` + Claude reasoning adapter + recipe search adapter
-- [ ] HTTP layer (Hono), auth, photo upload, rate limiting
-- [ ] Use-case unit tests with fake providers; integration tests against Postgres (Testcontainers)
+- [ ] `LogMealUseCase` + OpenAI vision adapter (schema-validated JSON, confidence per item)
+- [ ] `RecommendRecipeUseCase` + Claude reasoning adapter + Google Custom Search adapter
+- [ ] Focus Score use case; embeddings + vector recommendation use case
+- [ ] Lambda handlers + API Gateway; S3 presigned photo upload; auth
+- [ ] Local dev environment (`npm run dev` in `backend`, e.g. SST or Serverless Offline)
+- [ ] Jest use-case tests with fake providers; integration tests against Postgres
 
-### Phase 4 — Integration & launch
-- [ ] Swap MSW for the real API behind an env flag; E2E on the critical path (onboard → log meal → get recommendation)
-- [ ] Accessibility pass (keyboard, contrast, reduced motion), performance budget (LCP < 2s on mid-range phone)
-- [ ] Deploy: web to Vercel/Cloudflare Pages, API + Postgres to Fly/Railway/Neon
-- [ ] Observability (Sentry), AI cost tracking per request
+### Phase 4 — Mobile, integration and launch
+- [ ] Flutter app on the same API (Dart client generated from OpenAPI)
+- [ ] Point `web-poc` at the real API (`NEXT_PUBLIC_API_URL`); E2E on the critical path
+- [ ] Accessibility and performance pass
+- [ ] Observability and AI cost tracking per request
 
 ## 6. First API contract (drives mocks and backend)
 
@@ -179,8 +184,8 @@ Mobile — Today                  Desktop — Today
 | `DELETE` | `/meals/:id` | Remove a meal |
 | `GET` | `/recommendations/next` | Recipe suggestions + reasoning for current bio-state |
 
-## 7. Decisions needed from you
-1. **Platform:** web PWA first (recommended) vs native mobile (React Native/Expo). The plan assumes PWA; the contracts and backend are identical either way.
-2. **Design direction:** approve, tweak, or reject the "field notes from the body" direction before Phase 1 starts.
-3. **Recipe source:** paid recipe API (structured nutrition data) vs web search (broader, messier).
-4. **Auth provider:** Better Auth (self-hosted, free) vs Clerk (hosted, faster).
+## 7. Open questions
+1. **Anthropic model:** `main` names `claude-3-5-haiku`. The current Haiku is `claude-haiku-4-5`; confirm which to use before building the reasoning adapter.
+2. **Design direction:** the "field notes from the body" direction is built on Today; approve or adjust before more screens follow it.
+3. **Auth provider** for the API (Cognito fits the AWS stack).
+4. **Affiliate recommendations:** how they are disclosed in the UI.

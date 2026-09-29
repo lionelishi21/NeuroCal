@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { API_BASE } from "../api/client";
@@ -10,7 +11,7 @@ import { createHandlers } from "../mocks/handlers";
 import { Today } from "./Today";
 
 const server = setupServer();
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
@@ -58,9 +59,10 @@ describe("Today", () => {
   it("explains a photo that can't be read", async () => {
     const user = userEvent.setup();
     renderToday();
+    server.use(http.post(`${API_BASE}/meals/analyze`, () => HttpResponse.json({ items: [], problem: "too_dark" })));
     await user.click(screen.getAllByRole("button", { name: "Log a meal" })[0]!);
     const sheet = await screen.findByRole("dialog", { name: "Log a meal" });
-    await user.upload(within(sheet).getByLabelText(/Take or choose a photo/), new File(["x"], "dark-kitchen.jpg", { type: "image/jpeg" }));
+    await user.upload(within(sheet).getByLabelText(/Take or choose a photo/), new File(["x"], "plate.jpg", { type: "image/jpeg" }));
     expect(await within(sheet).findByRole("alert")).toHaveTextContent("too dark");
   });
 

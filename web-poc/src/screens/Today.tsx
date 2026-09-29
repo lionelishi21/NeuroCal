@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { useBioState, useDeleteMeal, useMeals, useNextRecommendations } from "../api/queries";
 import { BioStateDial } from "../components/BioStateDial";

@@ -30,7 +30,8 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     http.post(url("/meals/analyze"), async ({ request }) => {
       const form = await request.formData();
       const photo = form.get("photo");
-      if (!(photo instanceof File)) return invalid("Attach a photo of the meal.");
+      // Not `instanceof File`: in tests the File comes from jsdom, not Node.
+      if (!photo || typeof photo === "string") return invalid("Attach a photo of the meal.");
       await delay(latency * 4);
       return HttpResponse.json(db.analyze(photo.name));
     }),

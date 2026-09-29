@@ -18,8 +18,8 @@
   --on-accent: #f6f8f9;
 
   /* Type */
-  --font-ui: "Schibsted Grotesk Variable", system-ui, sans-serif;
-  --font-figure: "Fraunces Variable", Georgia, serif;
+  --font-ui: var(--font-schibsted), system-ui, sans-serif;
+  --font-figure: var(--font-fraunces), Georgia, serif;
   /* 1.25 modular scale on 16px */
   --text-xs: 0.8rem;
   --text-sm: 0.9rem;

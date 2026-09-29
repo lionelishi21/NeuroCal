@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import type { Macros } from "@neurocal/contracts";
 import { kcal } from "../lib/format";

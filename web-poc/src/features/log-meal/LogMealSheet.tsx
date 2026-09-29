@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useId, useState } from "react";
 import { type AnalyzeMealResponse, type FoodItem, MealKind } from "@neurocal/contracts";
 import { useAnalyzeMeal, useCreateMeal } from "../../api/queries";
@@ -134,7 +136,7 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
                         {item.confidence !== undefined && item.confidence < 0.85 && ", best guess — check the portion"}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm text-glucose-ink">{kcal(item.calories)} kcal</span>
+                    <span className="shrink-0 text-sm text-glucose-ink tabular-nums">{kcal(item.calories)} kcal</span>
                   </label>
                 </li>
               ))}

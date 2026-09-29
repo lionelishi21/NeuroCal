@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { CognitiveFlag } from "@neurocal/contracts";
 import { useCreateCheckIn } from "../../api/queries";
