@@ -10,9 +10,14 @@
   },
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "vitest run"
+    "test": "jest"
   },
   "dependencies": {
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14"
   }
 }

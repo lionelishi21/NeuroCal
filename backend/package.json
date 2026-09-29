@@ -4,16 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p ."
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p .",
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "@neurocal/contracts": "workspace:*",
+    "@neurocal/contracts": "*",
     "drizzle-orm": "^0.45.3",
     "pg": "^8.23.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.5.0",
     "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.11",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
     "tsx": "^4.23.15"
   }
 }
