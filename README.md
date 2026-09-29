@@ -11,7 +11,7 @@ By analyzing food intake via AI computer vision, tracking circadian rhythms, and
 - **📸 Calorie & Macro Vision AI:** Frictionless meal logging using OpenAI `gpt-4o` to estimate macros, calories, and flag high glycemic loads from a single photo.
 - **🧠 Cognitive & Stress Scoring Engine:** An AI agent that analyzes sleep telemetry, diet, and self-reported stress to generate a daily baseline Focus Score.
 - **🌙 Circadian Telemetry:** Correlates late-night screen time and delayed eating with melatonin suppression and weight plateaus.
-- **🥗 Dynamic Recipe Routing:** Evaluates daily macro gaps and uses Anthropic's `Claude 3.5 Haiku` to generate optimized search queries, fetching perfectly matched recipes from trusted biohacking domains.
+- **🥗 Dynamic Recipe Routing:** Evaluates daily macro gaps and uses Anthropic's `Claude Haiku 4.5` to generate optimized search queries, fetching perfectly matched recipes from trusted biohacking domains.
 - **🧬 Vector-Based Recommendations:** Uses PostgreSQL `pgvector` (HNSW) to mathematically match user biological failure points (e.g., "poor deep sleep") to specific digital protocols or affiliate hardware (e.g., Eight Sleep, MitoProof supplements).
 
 ---

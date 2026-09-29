@@ -18,7 +18,7 @@ The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal
 | `web-poc/` | Next.js app: Today screen, log-meal and check-in flows on a mock API, 7 Vitest tests |
 | `backend/` | Hexagonal skeleton; only `IAiReasoningProvider.ts` has code |
 | `mobile-app/` | Not started (Flutter) |
-| `ARCHITECTURE.md` | Empty, although `CLAUDE.md` points to it for schemas and prompts |
+| `ARCHITECTURE.md` | Build spec: layers, domain model, DB schema, ports, use cases, AI prompts, API surface |
 
 ## 2. Recommendation: frontend-first, contract-driven
 
@@ -67,7 +67,7 @@ neurocal-workspace/
 ### Backend stack
 - **AWS Serverless:** Lambda, API Gateway, S3 (meal photos), EventBridge (scheduled Focus Score and telemetry jobs)
 - **Aurora PostgreSQL Serverless v2 + `pgvector`** via Drizzle
-- **AI:** OpenAI `gpt-4o` (vision) and `text-embedding-3-small` (vectors); Anthropic Claude (recipe search queries). All behind the existing ports; every LLM output is validated against a schema
+- **AI:** OpenAI `gpt-4o` (vision) and `text-embedding-3-small` (vectors); Anthropic `claude-haiku-4-5` (recipe search queries). All behind the existing ports; every LLM output is validated against a schema
 - **Search / email:** Google Custom Search, Resend
 - **Tests:** Jest with fake providers for use cases
 
@@ -133,7 +133,7 @@ Mobile — Today                  Desktop — Today
 - [x] `packages/contracts`: Zod schemas for the endpoints in §6
 - [ ] ESLint + Prettier
 - [ ] Generate OpenAPI from `packages/contracts` (for Flutter codegen)
-- [ ] Write `ARCHITECTURE.md` (schemas, ports, system prompts)
+- [x] Write `ARCHITECTURE.md` (schemas, ports, system prompts)
 
 ### Phase 1 — Design system
 - [x] `frontend-design` two-pass review. Revision: meals are a ruled timeline with times in the margin instead of a card stack; corner radius follows hierarchy; one elevation, for sheets only
@@ -147,7 +147,7 @@ Mobile — Today                  Desktop — Today
 2. ✅ **Today** — dial, meals, check-in, what to eat next
 3. ✅ **Log a meal** — photo → editable items → confirm. _To do: manual entry fallback; show high-glycemic flags_
 4. ✅ **Check-in** — cognitive flags that feed recommendations
-5. **Focus Score** — daily score with the inputs behind it (new contract: `FocusScore`)
+5. **Focus Score** — daily score with the inputs behind it (new contract: `FocusScore`, formula in ARCHITECTURE §6.8)
 6. **Sleep & circadian** — sleep and screen-time telemetry, late-eating insights (new contracts)
 7. **Protocols & products** — vector-matched recommendations, clearly labelled when affiliate
 8. **History** — week view, focus vs. intake
@@ -155,11 +155,11 @@ Mobile — Today                  Desktop — Today
 - PWA install, offline queue for meal logs
 
 ### Phase 3 — Backend on AWS
-- [ ] Domain entities; Drizzle schema + migrations (incl. `pgvector` HNSW index)
-- [ ] Repositories (`IRepositories.ts`)
-- [ ] `LogMealUseCase` + OpenAI vision adapter (schema-validated JSON, confidence per item)
-- [ ] `RecommendRecipeUseCase` + Claude reasoning adapter + Google Custom Search adapter
-- [ ] Focus Score use case; embeddings + vector recommendation use case
+- [ ] Domain entities (ARCHITECTURE §3); Drizzle schema + migrations incl. `pgvector` HNSW index (§4)
+- [ ] Ports and repositories exactly as in §5 (`IRepositories.ts`, `IAiVisionProvider.ts`, …)
+- [ ] `LogMealUseCase` + OpenAI vision adapter (§6.1–6.2, §7.1)
+- [ ] `RecommendRecipeUseCase` + Claude reasoning adapter + Google Custom Search adapter (§6.6, §7.2)
+- [ ] Focus Score use case; embeddings + vector recommendation use case (§6.8–6.9, §7.3)
 - [ ] Lambda handlers + API Gateway; S3 presigned photo upload; auth
 - [ ] Local dev environment (`npm run dev` in `backend`, e.g. SST or Serverless Offline)
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres
@@ -185,7 +185,7 @@ Mobile — Today                  Desktop — Today
 | `GET` | `/recommendations/next` | Recipe suggestions + reasoning for current bio-state |
 
 ## 7. Open questions
-1. **Anthropic model:** `main` names `claude-3-5-haiku`. The current Haiku is `claude-haiku-4-5`; confirm which to use before building the reasoning adapter.
+1. **Anthropic model:** decided: `claude-haiku-4-5` for recipe queries and Focus Score explanations (ARCHITECTURE §7).
 2. **Design direction:** the "field notes from the body" direction is built on Today; approve or adjust before more screens follow it.
-3. **Auth provider** for the API (Cognito fits the AWS stack).
+3. **Auth provider** for the API (Cognito proposed in ARCHITECTURE §10).
 4. **Affiliate recommendations:** how they are disclosed in the UI.

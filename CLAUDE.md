@@ -10,7 +10,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 ## Core Tech Stack
 - **Backend:** Node.js (v20+ LTS), TypeScript (Strict Mode), AWS Serverless (Lambda, API Gateway, S3, EventBridge)
 - **Database:** PostgreSQL (AWS Aurora Serverless v2) + `pgvector` extension via Drizzle ORM
-- **Inference & APIs:** OpenAI (`gpt-4o`, `text-embedding-3-small`), Anthropic (`claude-3-5-haiku`), Resend API, Google Custom Search API
+- **Inference & APIs:** OpenAI (`gpt-4o`, `text-embedding-3-small`), Anthropic (`claude-haiku-4-5`), Resend API, Google Custom Search API
 - **Web & Mobile:** Next.js / React (Web POC) & Flutter (Mobile App)
 
 ## Backend Architecture & Rules (`/backend`)
