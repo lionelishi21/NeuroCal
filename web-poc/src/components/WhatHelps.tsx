@@ -11,7 +11,7 @@ const intro = (labels: string[]) =>
 /**
  * Protocols and products matched to the week's weakest Focus Score inputs.
  * Protocols are NeuroCal-authored habits; products are secondary and every
- * affiliate link is labelled next to the link itself (ARCHITECTURE §10).
+ * affiliate or own-brand link is labelled next to the link itself (ARCHITECTURE §10).
  */
 export function WhatHelps() {
   const protocols = useProtocols();
@@ -60,14 +60,13 @@ export function WhatHelps() {
                         <a
                           href={product.url}
                           target="_blank"
-                          rel={product.affiliate ? "sponsored noopener noreferrer" : "noopener noreferrer"}
+                          rel={product.affiliate || product.ownBrand ? "sponsored noopener noreferrer" : "noopener noreferrer"}
                           className="text-ink underline decoration-rule underline-offset-4 hover:decoration-ink"
                         >
                           View {product.name.toLowerCase()}
                         </a>
-                        {product.affiliate && (
-                          <span className="rounded-pill px-2 py-0.5 text-xs text-ink-soft ring-1 ring-rule ring-inset">Affiliate link</span>
-                        )}
+                        {product.affiliate && <Tag>Affiliate link</Tag>}
+                        {product.ownBrand && <Tag>Our brand</Tag>}
                       </p>
                     )}
                   </li>
@@ -78,10 +77,19 @@ export function WhatHelps() {
                   NeuroCal may earn a commission from links marked as affiliate. It doesn't change what we suggest: tools are matched to your week the same way as the habits above.
                 </p>
               )}
+              {protocols.data.products.some((p) => p.ownBrand) && (
+                <p className="mt-3 mb-0 max-w-[var(--measure)] text-sm text-ink-soft">
+                  Items marked "Our brand" are sold by MitoProof, which is run by the people who make NeuroCal. They are matched to your week the same way as everything else here.
+                </p>
+              )}
             </div>
           )}
         </>
       )}
     </section>
   );
+}
+
+function Tag({ children }: { children: string }) {
+  return <span className="rounded-pill px-2 py-0.5 text-xs text-ink-soft ring-1 ring-rule ring-inset">{children}</span>;
 }

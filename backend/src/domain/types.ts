@@ -152,6 +152,8 @@ export interface Product {
   url?: string;
   /** Must be labelled as such wherever shown (ARCHITECTURE §10). */
   affiliate: boolean;
+  /** Sold by a store run by NeuroCal's makers. Labelled like affiliate items. */
+  ownBrand: boolean;
   tags: string[];
 }
 

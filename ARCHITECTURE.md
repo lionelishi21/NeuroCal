@@ -83,7 +83,7 @@ Names below are domain types in `backend/src/domain/`. Where a contract type has
 | **FocusScore** (planned) | userId, date, score (0–100), components{sleep, timing, glycemic, stress}, explanation, modelVersion | One per user per day; recomputing replaces it |
 | **RecipeRecommendation** | id, title, sourceName, sourceUrl, imageUrl?, minutes, calories, macros, reasoning, searchQuery | `sourceUrl` host must be on the recipe allow-list (§11) |
 | **Protocol** (planned) | id, title, body, tags[], embedding | Content is authored by NeuroCal, not generated |
-| **Product** (planned) | id, name, url, affiliate (bool), tags[], embedding | Affiliate products must be labelled as such wherever shown (§10) |
+| **Product** (planned) | id, name, url, affiliate (bool), ownBrand (bool), tags[], embedding | Affiliate and own-brand (MitoProof) products must be labelled as such wherever shown (§10) |
 
 `glycemicLoad` (`"low" \| "medium" \| "high"`) is **planned** for `FoodItem` in contracts, so the vision step's high-glycemic flag (README) can reach the UI.
 
@@ -165,7 +165,7 @@ protocols                                   catalog, synced from backend/src/inf
   embedding vector(1536) not null, content_hash text, updated_at
 
 products                                    catalog, same source
-  id text pk, name, description text, url text, affiliate boolean not null default false,
+  id text pk, name, description text, url text, affiliate boolean not null default false, own_brand boolean not null default false,
   tags text[], embedding vector(1536) not null, content_hash text, updated_at
 
 user_embeddings                             planned (cache; not needed at current volume)
@@ -359,9 +359,9 @@ Missing inputs drop out and the remaining weights are renormalised; the stored `
 1. Weak points: Focus Score components averaged over the last 7 days; below 0.75 counts; the two lowest are used.
 2. One text per weak point (e.g. "Help with stress and low focus. Goals: focus."), embedded in one batched call.
 3. `nearestProtocols` / `nearestProducts` per text (HNSW cosine), taken **round-robin** so every weak point gets its own best match; 2 protocols and 2 products in total. With no weak points, one "maintain steady focus…" query.
-4. Return them with the `affiliate` flag intact; clients label affiliate links next to the link and use `rel="sponsored"`.
+4. Return them with the `affiliate` and `ownBrand` flags intact; clients label those links ("Affiliate link", "Our brand") next to the link and use `rel="sponsored"`.
 
-**Catalog.** Protocols and products are authored in the repo (`catalog.ts`), never generated. `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist.
+**Catalog.** Protocols and products are authored in the repo (`catalog.ts`), never generated. `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist, plus MitoProof's own items (`ownBrand: true`; MitoProof is run by NeuroCal's makers).
 
 ### 6.10 SendDailySummary — planned; EventBridge, morning per user time zone
 Yesterday's intake, Focus Score and one suggestion, sent via `IEmailProvider` (Resend). Opt-in only.
@@ -496,7 +496,7 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 - **Health data is sensitive:** encryption at rest (Aurora + S3 with KMS), TLS everywhere, S3 buckets private with presigned URLs only, least-privilege IAM per Lambda.
 - **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in Secrets Manager, loaded once per cold start; never in env files or the repo.
 - **LLM safety:** schema-validated outputs (§7); user notes are passed as data, never as instructions; no medical claims in generated text.
-- **Affiliate disclosure:** products with `affiliate = true` carry a visible label in every client.
+- **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client.
 - **Deletion:** account deletion removes rows, S3 objects and embeddings (§4 retention).
 
 ---

@@ -2,8 +2,9 @@
  * The protocol and product catalog (ARCHITECTURE §3: authored by NeuroCal, never generated).
  * Edit freely: SyncCatalogUseCase re-embeds only entries whose text changed.
  *
- * Products are generic categories for now. When a partner agreement exists, add its
- * `url` and set `affiliate: true` — every client labels affiliate items visibly.
+ * Most products are generic categories. When a partner agreement exists, add its
+ * `url` and set `affiliate: true`. MitoProof (mitoproof.com) is run by NeuroCal's
+ * makers, so its items set `ownBrand: true`. Every client labels both visibly.
  * Keep wording practical and free of medical claims.
  */
 import type { Product, Protocol } from "../../domain/types";
@@ -109,6 +110,7 @@ export const PRODUCTS: Product[] = [
     name: "Sunrise alarm clock",
     description: "Brightens gradually before your alarm so waking at a fixed time feels easier, and keeps your phone out of the bedroom.",
     affiliate: false,
+    ownBrand: false,
     tags: ["sleep", "wake time", "circadian rhythm", "screens", "morning light"],
   },
   {
@@ -116,6 +118,7 @@ export const PRODUCTS: Product[] = [
     name: "Contoured sleep mask",
     description: "Blocks light in a room that doesn't get fully dark, for longer and less broken sleep.",
     affiliate: false,
+    ownBrand: false,
     tags: ["sleep", "short sleep", "light sleep", "bedroom"],
   },
   {
@@ -123,6 +126,7 @@ export const PRODUCTS: Product[] = [
     name: "Timed phone lockbox",
     description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
     affiliate: false,
+    ownBrand: false,
     tags: ["late-night screens", "screen time", "focus", "evening routine"],
   },
   {
@@ -130,6 +134,7 @@ export const PRODUCTS: Product[] = [
     name: "Portioned meal-prep containers",
     description: "Divided containers that make a half-vegetable, quarter-protein, quarter-grain plate the easy default.",
     affiliate: false,
+    ownBrand: false,
     tags: ["high-glycemic meals", "glycemic load", "steady energy", "meal planning"],
   },
   {
@@ -137,6 +142,26 @@ export const PRODUCTS: Product[] = [
     name: "Desk focus timer",
     description: "A physical countdown timer for focus blocks, without reaching for your phone.",
     affiliate: false,
+    ownBrand: false,
     tags: ["low focus", "stress", "focus blocks", "productivity"],
+  },
+  {
+    id: "mitoproof-protocol",
+    name: "The Mitoproof Protocol",
+    description:
+      "A 30-day guide from MitoProof that puts sleep, meal timing, nutrition and supplement timing into one daily routine. A PDF with a resource pack.",
+    url: "https://www.mitoproof.com/products",
+    affiliate: false,
+    ownBrand: true,
+    tags: ["sleep", "energy", "circadian rhythm", "timing", "late eating", "nutrition", "routine"],
+  },
+  {
+    id: "mitoproof-acv-capsules",
+    name: "MitoProof apple cider vinegar capsules",
+    description: "Apple cider vinegar in capsule form, for people who would rather not drink it. Take with a meal as the label directs.",
+    url: "https://www.mitoproof.com/products",
+    affiliate: false,
+    ownBrand: true,
+    tags: ["meals", "high-glycemic meals", "steady energy", "supplements"],
   },
 ];

@@ -239,6 +239,8 @@ export const ProductRecommendation = z.object({
   url: z.url().optional(),
   /** NeuroCal may earn a commission; clients must label these visibly. */
   affiliate: z.boolean(),
+  /** Sold by a store run by NeuroCal's makers (MitoProof); clients must label these visibly. */
+  ownBrand: z.boolean(),
   match: z.number().min(0).max(1),
 });
 export type ProductRecommendation = z.infer<typeof ProductRecommendation>;

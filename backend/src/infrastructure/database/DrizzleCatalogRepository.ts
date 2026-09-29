@@ -56,6 +56,7 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
           description: item.description,
           url: item.url ?? null,
           affiliate: item.affiliate,
+          ownBrand: item.ownBrand,
           tags: item.tags,
           embedding,
           contentHash,
@@ -68,6 +69,7 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
           description: sql`excluded.description`,
           url: sql`excluded.url`,
           affiliate: sql`excluded.affiliate`,
+          ownBrand: sql`excluded.own_brand`,
           tags: sql`excluded.tags`,
           embedding: sql`excluded.embedding`,
           contentHash: sql`excluded.content_hash`,
@@ -109,6 +111,7 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
         description: products.description,
         url: products.url,
         affiliate: products.affiliate,
+        ownBrand: products.ownBrand,
         tags: products.tags,
         distance,
       })

@@ -362,6 +362,7 @@ export function createDb(options: { newUser?: boolean } = {}) {
           description: "Brightens gradually before your alarm so waking at a fixed time feels easier.",
           url: "https://example.com/mock-partner/sunrise-alarm",
           affiliate: true,
+          ownBrand: false,
           match: 0.71,
         },
         {
@@ -369,7 +370,17 @@ export function createDb(options: { newUser?: boolean } = {}) {
           name: "Timed phone lockbox",
           description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
           affiliate: false,
+          ownBrand: false,
           match: 0.66,
+        },
+        {
+          id: "mitoproof-protocol",
+          name: "The Mitoproof Protocol",
+          description: "A 30-day guide from MitoProof that puts sleep, meal timing, nutrition and supplement timing into one daily routine. A PDF with a resource pack.",
+          url: "https://www.mitoproof.com/products",
+          affiliate: false,
+          ownBrand: true,
+          match: 0.63,
         },
       ],
     };

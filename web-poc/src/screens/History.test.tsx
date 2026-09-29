@@ -45,6 +45,15 @@ describe("History", () => {
     expect(within(help).getByText(/may earn a commission/)).toBeInTheDocument();
   });
 
+  it("labels products from NeuroCal's own brand", async () => {
+    renderHistory();
+    const help = await screen.findByRole("region", { name: "What could help" });
+    const link = await within(help).findByRole("link", { name: "View the mitoproof protocol" });
+    expect(link).toHaveAttribute("rel", expect.stringContaining("sponsored"));
+    expect(within(help).getByText("Our brand")).toBeInTheDocument();
+    expect(within(help).getByText(/run by the people who make NeuroCal/)).toBeInTheDocument();
+  });
+
   it("switches the readout to the chosen day", async () => {
     const user = userEvent.setup();
     renderHistory();
