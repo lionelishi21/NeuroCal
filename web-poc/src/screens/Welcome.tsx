@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { RequestFailed } from "../api/client";
 import { useProfile, useUpdateProfile } from "../api/queries";
 import { Button } from "../components/Button";
+import { fieldClass } from "../components/fields";
 import { useToast } from "../components/Toast";
 import { browserTimeZone, macroCalories, suggestMacros, timeZones } from "../lib/targets";
 
@@ -171,8 +172,6 @@ interface StepProps {
   update: (patch: Partial<Draft>) => void;
 }
 
-const fieldClass =
-  "mt-1.5 block w-full rounded-control bg-paper px-3.5 py-3 text-lg text-ink ring-1 ring-rule ring-inset focus:outline-none focus-visible:ring-2 focus-visible:ring-synapse";
 
 function StepYou({ draft, update }: StepProps) {
   const nameId = useId();

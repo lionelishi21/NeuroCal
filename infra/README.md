@@ -43,14 +43,17 @@ Context options:
 
 ## Calling the API
 
-Every route needs a Cognito token in the `Authorization` header. The web app has no sign-in screen yet, so to try the API by hand, create a user and get a token:
+Every route needs a Cognito ID token in the `Authorization` header. The web app handles this: point it at the stage and sign up in the app (Cognito emails the verification code).
 
 ```sh
-aws cognito-idp sign-up --client-id <UserPoolClientId> --username you@example.com --password '<10+ chars>'
-aws cognito-idp admin-confirm-sign-up --user-pool-id <UserPoolId> --username you@example.com
+cd web-poc
+NEXT_PUBLIC_API_URL=<ApiUrl> \
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=<UserPoolId> \
+NEXT_PUBLIC_COGNITO_CLIENT_ID=<UserPoolClientId> \
+npm run dev
 ```
 
-The client only allows SRP sign-in, which is what the web and mobile SDKs (Amplify Auth and similar) use.
+The API only accepts calls from the origins in `webOrigins`, so deploy with the web app's origin (for example `http://localhost:3000`). The client only allows SRP sign-in, which is what Amplify Auth (web) and the mobile SDKs use.
 
 ## What it costs (rough, us-east-1)
 

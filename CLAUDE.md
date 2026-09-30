@@ -30,6 +30,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - Mobile-first; visible keyboard focus; respect `prefers-reduced-motion`.
 - Copy: sentence case, plain verbs, same action name through a flow ("Log a meal" → "Meal logged").
 - Without `NEXT_PUBLIC_API_URL`, the app runs on the MSW mock API in `web-poc/src/mocks`, built from `packages/contracts`.
+- Without `NEXT_PUBLIC_COGNITO_USER_POOL_ID` / `NEXT_PUBLIC_COGNITO_CLIENT_ID`, sign-in uses the local mock in `web-poc/src/auth` (every code is 123456).
 
 ## Key Reference Docs
 - See `ARCHITECTURE.md` at the root for full database schemas, TypeScript interfaces, system prompts, and use cases.

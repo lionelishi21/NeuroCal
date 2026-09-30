@@ -11,6 +11,7 @@ import { FlagSummary } from "../components/FlagSummary";
 import { FocusSummary } from "../components/FocusSummary";
 import { MacroLegend } from "../components/MacroLegend";
 import { MealTimeline } from "../components/MealTimeline";
+import { SignOutLink } from "../components/SignOutLink";
 import { SuggestedMeal } from "../components/SuggestedMeal";
 import { useToast } from "../components/Toast";
 import { CheckInSheet } from "../features/check-in/CheckInSheet";
@@ -65,6 +66,7 @@ export function Today() {
               <Link href="/welcome" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
                 Edit profile
               </Link>
+              <SignOutLink />
             </nav>
           </div>
 

@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useState, type ReactNode } from "react";
+import { AuthProvider, RequireAuth } from "../auth/AuthProvider";
 import { ToastProvider } from "../components/Toast";
 
 // Without a real API, the app runs on the MSW mock API (browser-only, never bundled for the server).
@@ -15,7 +16,11 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{MockGate ? <MockGate>{children}</MockGate> : children}</ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <RequireAuth>{MockGate ? <MockGate>{children}</MockGate> : children}</RequireAuth>
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

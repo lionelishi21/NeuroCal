@@ -168,7 +168,8 @@ Mobile — Today                  Desktop — Today
 - [ ] Real protocol/product content and partner links (catalog.ts)
 - [x] HTTP routes for all 9 endpoints + Lambda entry point (JWT claims from API Gateway)
 - [x] Infrastructure as code in `infra/` (CDK): HTTP API + Cognito JWT authorizer, Lambda bundling, Aurora Serverless v2 + pgvector, Secrets Manager, migrations on deploy, catalog-sync Lambda, photo bucket (ARCHITECTURE §12)
-- [ ] First deploy to a `dev` stage; web sign-in with Cognito so the web app can call the deployed API
+- [x] Web sign-in: create account, email code, sign in and out (Cognito via Amplify; local mock without it)
+- [ ] First deploy to a `dev` stage
 - [ ] EventBridge schedules (nightly Focus Score, daily summary) and S3 presigned photo upload
 - [x] Local dev server (`npm run dev` in `backend`); web-poc runs against it end to end
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres

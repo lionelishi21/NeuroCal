@@ -491,7 +491,7 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 
 ## 10. Security & privacy
 
-- **Auth:** Amazon Cognito user pool with a JWT authorizer on API Gateway (in `infra/`; web and mobile sign-in **planned**). Handlers take `userId` only from the verified token, never from the request.
+- **Auth:** Amazon Cognito user pool with a JWT authorizer on API Gateway (in `infra/`). The web app signs in with Amplify Auth (SRP) and sends the ID token; without Cognito settings it uses a local mock (`web-poc/src/auth`). Mobile sign-in **planned**. Handlers take `userId` only from the verified token, never from the request.
 - **Per-user scoping:** every repository method takes `userId` and puts it in the `WHERE` clause. Integration tests assert that user A cannot read or delete user B's rows.
 - **Health data is sensitive:** encryption at rest (Aurora + S3 with KMS), TLS everywhere, S3 buckets private with presigned URLs only, least-privilege IAM per Lambda.
 - **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in one Secrets Manager JSON secret and Aurora's credentials in its generated secret. Lambdas get only the ARNs and read them once per cold start (`infrastructure/aws/secrets.ts`); never in env files or the repo.
