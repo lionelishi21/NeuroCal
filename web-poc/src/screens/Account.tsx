@@ -8,6 +8,7 @@ import { MOCK_CODE } from "../auth/mockAuth";
 import { AuthError, PASSWORD_MIN_LENGTH } from "../auth/types";
 import { Button } from "../components/Button";
 import { fieldClass } from "../components/fields";
+import { Logo } from "../components/Logo";
 import { useToast } from "../components/Toast";
 
 const linkClass = "text-ink underline decoration-rule underline-offset-4 hover:decoration-ink";
@@ -22,9 +23,8 @@ function Frame({ children, intro }: { children: ReactNode; intro?: ReactNode }) 
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(28rem_22rem_at_85%_0%,color-mix(in_oklab,var(--synapse)_28%,transparent),transparent_70%),radial-gradient(24rem_20rem_at_0%_35%,color-mix(in_oklab,var(--ion)_16%,transparent),transparent_70%)]"
       />
       <main className="mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pt-10 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:pt-16">
-        <p className="m-0 flex items-center gap-2 text-sm font-semibold tracking-[0.08em] text-ink">
-          <span aria-hidden className="size-4 rounded-full bg-[conic-gradient(var(--synapse),var(--ion),var(--synapse))] shadow-[0_0_14px_var(--synapse)]" />
-          NEUROCAL
+        <p className="m-0">
+          <Logo />
         </p>
         {intro}
         <div className="mt-8">{children}</div>

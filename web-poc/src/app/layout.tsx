@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Sora } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "./providers";
 import "../styles/app.css";
 
-const sora = Sora({ subsets: ["latin"], variable: "--font-sora", display: "swap" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 
 export const metadata: Metadata = {
   title: "NeuroCal",
   description: "Log meals from a photo and see what to eat next for how you want to think and feel.",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/apple-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={sora.variable}>
+    <html lang="en" className={jakarta.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

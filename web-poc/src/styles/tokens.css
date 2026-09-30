@@ -27,8 +27,8 @@
   --chart-sleep: #2b5fdc;
 
   /* Type */
-  --font-ui: var(--font-sora), system-ui, sans-serif;
-  --font-figure: var(--font-sora), system-ui, sans-serif;
+  --font-ui: var(--font-jakarta), system-ui, sans-serif;
+  --font-figure: var(--font-jakarta), system-ui, sans-serif;
   /* 1.25 modular scale on 16px */
   --text-xs: 0.8rem;
   --text-sm: 0.9rem;

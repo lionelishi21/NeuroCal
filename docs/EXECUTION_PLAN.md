@@ -60,7 +60,7 @@ neurocal-workspace/
 | Server state | **TanStack Query** | Caching, refetch after logging, offline retry |
 | Styling | **Tailwind CSS v4** mapped to our own design tokens | Speed, but the look is ours |
 | Primitives | **Radix UI** (unstyled) | Accessible sheets and dialogs without a stock look |
-| Fonts | `next/font/google`: Sora | Self-hosted at build, no layout shift |
+| Fonts | `next/font/google`: Plus Jakarta Sans | Self-hosted at build, no layout shift |
 | Mocks | **MSW** (browser only, loaded with `ssr: false`) | Runs fully without the backend |
 | Tests | Vitest + Testing Library (+ Playwright for screenshots) | MSW is ESM-only, which Jest handles poorly |
 
@@ -89,8 +89,8 @@ Complementary, optional: the Anthropic **Design** plugin (accessibility review, 
 **Colour means a body system**, in both modes (tokens in `web-poc/src/styles/tokens.css`):
 | Token | Dark | Light | Meaning |
 |---|---|---|---|
-| `synapse` | `#9D86FF` | `#6A4FE0` | Focus, AI reasoning; primary action starts here |
-| `ion` | `#43D9C8` | `#0C9D8F` | Primary action and Focus ring end |
+| `synapse` | `#9D86FF` | `#6A4FE0` | Focus, AI reasoning, primary buttons (solid) |
+| `ion` | `#43D9C8` | `#0C9D8F` | Focus ring end, the logo's spark |
 | `sleep` | `#5B8DFF` | `#2B5FDC` | Sleep |
 | `glucose` | `#F4B24C` | `#D8962C` | Energy: calories, carbs |
 | `chlorophyll` | `#4FD49F` | `#13875A` | Protein, good |
@@ -98,7 +98,7 @@ Complementary, optional: the Anthropic **Design** plugin (accessibility review, 
 
 Surfaces: `mist` page (`#0C1324` / `#F3F5FA`), `paper` panels, `rule` hairlines, `glow` for the ambient light behind heroes.
 
-**Type.** **Sora** for everything (headings, numbers, UI), bold weights for figures, tabular numerals for data. Sentence case, no all-caps labels except the NEUROCAL mark.
+**Type.** **Plus Jakarta Sans** for everything (headings, numbers, UI), bold weights for figures, tabular numerals for data. Sentence case, no all-caps labels except the NEUROCAL mark.
 
 **Signature element — the Focus ring.** Today opens with the Focus Score in a violet-to-teal ring with a soft glow, its four inputs (sleep, evening timing, glycemic load, stress) as colour-coded bars underneath, and the AI explanation in a panel. Energy (the bio-state dial), what to eat next and meals sit in panels beside it.
 
@@ -197,6 +197,6 @@ Mobile — Today                  Desktop — Today
 
 ## 7. Open questions
 1. **Anthropic model:** decided: `claude-haiku-4-5` for recipe queries and Focus Score explanations (ARCHITECTURE §7).
-2. **Design direction:** decided — "instrument panel", dark and light, Sora (see Design direction).
+2. **Design direction:** decided — "instrument panel", dark and light, Plus Jakarta Sans (see Design direction).
 3. **Auth provider** for the API (Cognito proposed in ARCHITECTURE §10).
 4. **Affiliate recommendations:** how they are disclosed in the UI.
