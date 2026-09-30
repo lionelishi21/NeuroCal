@@ -1,6 +1,6 @@
 import path from "node:path";
 import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, type StackProps } from "aws-cdk-lib";
-import { HttpApi, CorsHttpMethod } from "aws-cdk-lib/aws-apigatewayv2";
+import { CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cognito from "aws-cdk-lib/aws-cognito";
@@ -171,6 +171,16 @@ export class NeuroCalStack extends Stack {
         allowHeaders: ["authorization", "content-type"],
         maxAge: Duration.hours(1),
       },
+    });
+
+    // Browsers send CORS preflights without the token. Without this route they hit the JWT
+    // authorizer on $default and get 401, so every cross-origin call fails. API Gateway
+    // answers these OPTIONS requests itself with the CORS headers configured above.
+    httpApi.addRoutes({
+      path: "/{proxy+}",
+      methods: [HttpMethod.OPTIONS],
+      integration: new HttpLambdaIntegration("PreflightIntegration", api),
+      authorizer: new HttpNoneAuthorizer(),
     });
 
     new CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint, description: "NEXT_PUBLIC_API_URL for the web app" });

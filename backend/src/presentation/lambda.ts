@@ -57,6 +57,8 @@ const api = createApi(
 const userIds = new Map<string, string>();
 
 export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
+  // CORS preflight carries no token; API Gateway adds the CORS headers.
+  if (event.requestContext.http.method === "OPTIONS") return { statusCode: 204 };
   const claims = event.requestContext.authorizer?.jwt?.claims ?? {};
   const subject = typeof claims.sub === "string" ? claims.sub : undefined;
   if (!subject) return { statusCode: 401, body: JSON.stringify({ code: "unauthorized", message: "Sign in again." }) };

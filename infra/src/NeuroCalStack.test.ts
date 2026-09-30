@@ -46,6 +46,10 @@ describe("NeuroCalStack", () => {
   it("puts a Cognito JWT authorizer in front of every API route", () => {
     dev.hasResourceProperties("AWS::ApiGatewayV2::Authorizer", { AuthorizerType: "JWT", IdentitySource: ["$request.header.Authorization"] });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "$default", AuthorizationType: "JWT" });
+    // Preflights carry no token, so they must skip the authorizer or browsers block every call.
+    dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "OPTIONS /{proxy+}", AuthorizationType: "NONE" });
+    const routes = Object.values(dev.findResources("AWS::ApiGatewayV2::Route")) as { Properties: { RouteKey: string; AuthorizationType: string } }[];
+    expect(routes.filter((r) => r.Properties.AuthorizationType === "NONE").map((r) => r.Properties.RouteKey)).toEqual(["OPTIONS /{proxy+}"]);
     dev.hasResourceProperties("AWS::ApiGatewayV2::Api", {
       CorsConfiguration: Match.objectLike({ AllowOrigins: ["https://app.example.com"] }),
     });
