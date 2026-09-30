@@ -1,31 +1,34 @@
 /*
- * NeuroCal design tokens — "field notes from the body".
+ * NeuroCal design tokens — "instrument panel": dark and light, one glowing hero per screen.
  * Every colour, size and duration in the app comes from here.
  */
 :root {
-  /* Palette */
-  --mist: #e9eef0; /* page: cool paper, deliberately not cream */
-  --paper: #f6f8f9; /* raised surfaces: sheets, inputs */
-  --ink: #1c2438; /* text and structure */
-  --ink-soft: #4b546b; /* secondary text */
-  --rule: #c7d0d6; /* ruled lines, empty dial ticks */
-  --chlorophyll: #2e7a57; /* primary action, protein */
-  --glucose: #e9a93a; /* energy: calories, carbs */
-  --glucose-ink: #8a5a09; /* glucose when used as text */
-  --oil: #9a8440; /* fats */
-  --synapse: #6b5bd6; /* cognitive flags and AI reasoning */
-  --beet: #b23a5b; /* over budget, errors */
-  --on-accent: #f6f8f9;
+  /* Palette — "instrument panel". Colour always names a body system:
+     synapse = focus, sleep = sleep, glucose = energy/carbs, chlorophyll = protein, oil = fat. */
+  --mist: #f3f5fa; /* page */
+  --paper: #ffffff; /* raised surfaces: cards, sheets, inputs */
+  --ink: #121a2e; /* text and structure */
+  --ink-soft: #59627c; /* secondary text */
+  --rule: #dce1ee; /* hairlines, empty tracks */
+  --chlorophyll: #13875a; /* protein, good */
+  --glucose: #d8962c; /* energy: calories, carbs */
+  --glucose-ink: #9a5f08; /* glucose when used as text */
+  --oil: #8a6d2a; /* fats */
+  --synapse: #6a4fe0; /* focus, AI reasoning, primary action start */
+  --ion: #0c9d8f; /* primary action end, focus ring end */
+  --sleep: #2b5fdc;
+  --beet: #d0385a; /* over budget, errors */
+  --on-accent: #ffffff;
+  --glow: #e1e3fb; /* ambient light behind hero elements */
 
-  /* Chart marks (History). Validated with the dataviz palette checker against --mist:
-     lightness band, chroma, CVD and normal-vision separation, >= 3:1 contrast. */
-  --chart-focus: #5b4bc9;
-  --chart-calories: #b86e0c;
-  --chart-sleep: #1f7fa8;
+  /* Chart marks (History) */
+  --chart-focus: #6a4fe0;
+  --chart-calories: #b8700a;
+  --chart-sleep: #2b5fdc;
 
   /* Type */
-  --font-ui: var(--font-schibsted), system-ui, sans-serif;
-  --font-figure: var(--font-fraunces), Georgia, serif;
+  --font-ui: var(--font-sora), system-ui, sans-serif;
+  --font-figure: var(--font-sora), system-ui, sans-serif;
   /* 1.25 modular scale on 16px */
   --text-xs: 0.8rem;
   --text-sm: 0.9rem;
@@ -49,13 +52,15 @@
   --space-8: 4rem;
 
   /* Shape: radius follows hierarchy, rows have none */
-  --radius-control: 0.75rem;
+  --radius-control: 1rem;
   --radius-pill: 999px;
   --radius-sheet: 1.75rem;
+  --radius-card: 1.375rem;
 
   /* The only elevation: things that float over the page */
   --shadow-float: 0 -1px 0 color-mix(in oklab, var(--ink) 8%, transparent),
-    0 18px 48px -12px color-mix(in oklab, var(--ink) 35%, transparent);
+    0 24px 60px -16px color-mix(in oklab, var(--ink) 40%, transparent);
+  --shadow-action: 0 10px 28px -10px color-mix(in oklab, var(--synapse) 70%, transparent);
 
   /* Motion */
   --ease-settle: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -68,41 +73,47 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --mist: #151b2c;
-    --paper: #1d2438;
-    --ink: #e3e8ee;
-    --ink-soft: #a7b0c2;
-    --rule: #354060;
-    --chlorophyll: #57b387;
-    --glucose: #f0b95a;
-    --glucose-ink: #f0b95a;
-    --oil: #c9b36b;
-    --synapse: #9c90f0;
-    --beet: #e2718f;
-    --on-accent: #151b2c;
-    --chart-focus: #7f6fe3;
-    --chart-calories: #c4801f;
-    --chart-sleep: #27a196;
+    --mist: #0c1324;
+    --paper: #151d33;
+    --ink: #e9edf7;
+    --ink-soft: #8d97b4;
+    --rule: #26304d;
+    --chlorophyll: #4fd49f;
+    --glucose: #f4b24c;
+    --glucose-ink: #f4b24c;
+    --oil: #c9a760;
+    --synapse: #9d86ff;
+    --ion: #43d9c8;
+    --sleep: #5b8dff;
+    --beet: #ff6f8a;
+    --on-accent: #070b16;
+    --glow: #1b2550;
+    --chart-focus: #9d86ff;
+    --chart-calories: #f4b24c;
+    --chart-sleep: #5b8dff;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --mist: #151b2c;
-  --paper: #1d2438;
-  --ink: #e3e8ee;
-  --ink-soft: #a7b0c2;
-  --rule: #354060;
-  --chlorophyll: #57b387;
-  --glucose: #f0b95a;
-  --glucose-ink: #f0b95a;
-  --oil: #c9b36b;
-  --synapse: #9c90f0;
-  --beet: #e2718f;
-  --on-accent: #151b2c;
-  --chart-focus: #7f6fe3;
-  --chart-calories: #c4801f;
-  --chart-sleep: #27a196;
+  --mist: #0c1324;
+  --paper: #151d33;
+  --ink: #e9edf7;
+  --ink-soft: #8d97b4;
+  --rule: #26304d;
+  --chlorophyll: #4fd49f;
+  --glucose: #f4b24c;
+  --glucose-ink: #f4b24c;
+  --oil: #c9a760;
+  --synapse: #9d86ff;
+  --ion: #43d9c8;
+  --sleep: #5b8dff;
+  --beet: #ff6f8a;
+  --on-accent: #070b16;
+  --glow: #1b2550;
+  --chart-focus: #9d86ff;
+  --chart-calories: #f4b24c;
+  --chart-sleep: #5b8dff;
   color-scheme: dark;
 }
 

@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Schibsted_Grotesk } from "next/font/google";
+import { Sora } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "./providers";
 import "../styles/app.css";
 
-const schibsted = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted", display: "swap" });
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  axes: ["SOFT", "opsz", "WONK"],
-  variable: "--font-fraunces",
-  display: "swap",
-});
+const sora = Sora({ subsets: ["latin"], variable: "--font-sora", display: "swap" });
 
 export const metadata: Metadata = {
   title: "NeuroCal",
@@ -23,14 +17,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#e9eef0" },
-    { media: "(prefers-color-scheme: dark)", color: "#151b2c" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f5fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1324" },
   ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${schibsted.variable} ${fraunces.variable}`}>
+    <html lang="en" className={sora.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

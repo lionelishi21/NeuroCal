@@ -13,6 +13,9 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+const glLabel = { low: "GL low", medium: "GL medium", high: "GL high" } as const;
+const glColor = { low: "text-chlorophyll", medium: "text-glucose-ink", high: "text-beet" } as const;
+
 const problemText: Record<NonNullable<AnalyzeMealResponse["problem"]>, string> = {
   too_dark: "The photo is too dark to read. Try again with more light on the plate.",
   no_food_found: "No food found in that photo. Try a closer shot of the plate.",
@@ -84,7 +87,7 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
       />
       <label
         htmlFor={inputId}
-        className="relative flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-control border-2 border-dashed border-rule bg-mist text-center peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-synapse hover:border-ink-soft"
+        className="relative flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-card border-2 border-dashed border-rule bg-[radial-gradient(circle_at_50%_40%,var(--glow),var(--mist)_70%)] text-center peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-synapse hover:border-ink-soft"
       >
         {photoUrl ? (
           <>
@@ -136,7 +139,12 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
                         {item.confidence !== undefined && item.confidence < 0.85 && ", best guess — check the portion"}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm text-glucose-ink">{kcal(item.calories)} kcal</span>
+                    <span className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="text-base font-semibold tabular-nums text-ink">{kcal(item.calories)}</span>
+                      {item.glycemicLoad && (
+                        <span className={`text-xs font-bold ${glColor[item.glycemicLoad]}`}>{glLabel[item.glycemicLoad]}</span>
+                      )}
+                    </span>
                   </label>
                 </li>
               ))}
@@ -163,6 +171,20 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
               ))}
             </div>
           </fieldset>
+
+          <dl className="m-0 mt-5 grid grid-cols-4 gap-2 rounded-card bg-mist p-3.5 text-xs text-ink-soft">
+            {[
+              { label: "kcal", value: kcal(total), color: "text-ink" },
+              { label: "Protein", value: `${Math.round(chosen.reduce((n, i) => n + i.macros.proteinG, 0))} g`, color: "text-chlorophyll" },
+              { label: "Carbs", value: `${Math.round(chosen.reduce((n, i) => n + i.macros.carbsG, 0))} g`, color: "text-glucose-ink" },
+              { label: "Fat", value: `${Math.round(chosen.reduce((n, i) => n + i.macros.fatG, 0))} g`, color: "text-oil" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="flex flex-col gap-0.5">
+                <dt>{label}</dt>
+                <dd className={`m-0 text-base font-semibold tabular-nums ${color}`}>{value}</dd>
+              </div>
+            ))}
+          </dl>
 
           {createMeal.isError && (
             <p role="alert" className="mt-4 mb-0 text-sm text-beet">

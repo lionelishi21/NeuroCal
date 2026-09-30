@@ -15,6 +15,9 @@
   --color-oil: var(--oil);
   --color-synapse: var(--synapse);
   --color-beet: var(--beet);
+  --color-ion: var(--ion);
+  --color-sleep: var(--sleep);
+  --color-glow: var(--glow);
   --color-on-accent: var(--on-accent);
   --color-chart-focus: var(--chart-focus);
   --color-chart-calories: var(--chart-calories);
@@ -38,9 +41,11 @@
   --radius-control: var(--radius-control);
   --radius-pill: var(--radius-pill);
   --radius-sheet: var(--radius-sheet);
+  --radius-card: var(--radius-card);
 
   --shadow-*: initial;
   --shadow-float: var(--shadow-float);
+  --shadow-action: var(--shadow-action);
 
   --ease-settle: var(--ease-settle);
   --spacing: 0.25rem;

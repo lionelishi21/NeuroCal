@@ -60,7 +60,7 @@ neurocal-workspace/
 | Server state | **TanStack Query** | Caching, refetch after logging, offline retry |
 | Styling | **Tailwind CSS v4** mapped to our own design tokens | Speed, but the look is ours |
 | Primitives | **Radix UI** (unstyled) | Accessible sheets and dialogs without a stock look |
-| Fonts | `next/font/google`: Schibsted Grotesk + Fraunces | Self-hosted at build, no layout shift |
+| Fonts | `next/font/google`: Sora | Self-hosted at build, no layout shift |
 | Mocks | **MSW** (browser only, loaded with `ssr: false`) | Runs fully without the backend |
 | Tests | Vitest + Testing Library (+ Playwright for screenshots) | MSW is ESM-only, which Jest handles poorly |
 
@@ -84,22 +84,23 @@ Complementary, optional: the Anthropic **Design** plugin (accessibility review, 
 
 **Subject, audience, job.** NeuroCal is a nutrition companion for people who eat to think clearly — knowledge workers, students, athletes managing focus and energy. Its primary job: *tell me, right now, what my body has and what my mind needs, and what to eat next.*
 
-**Concept: "field notes from the body."** Less fitness-app gamification, more a calm instrument — the feel of a well-made lab notebook crossed with a produce market. Data is precise; food is warm and real.
+**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light. One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
 
-**Palette (5 named values)**
-| Token | Hex | Role |
-|---|---|---|
-| `mist` | `#E9EEF0` | Cool, slightly blue paper background (deliberately not cream) |
-| `ink` | `#1C2438` | Deep indigo text and structure |
-| `chlorophyll` | `#2E7A57` | Primary action, protein/whole-food cues |
-| `glucose` | `#E9A93A` | Energy — calorie budget and carbs |
-| `synapse` | `#6B5BD6` | Cognitive flags and AI reasoning — the "neuro" colour, used sparingly |
+**Colour means a body system**, in both modes (tokens in `web-poc/src/styles/tokens.css`):
+| Token | Dark | Light | Meaning |
+|---|---|---|---|
+| `synapse` | `#9D86FF` | `#6A4FE0` | Focus, AI reasoning; primary action starts here |
+| `ion` | `#43D9C8` | `#0C9D8F` | Primary action and Focus ring end |
+| `sleep` | `#5B8DFF` | `#2B5FDC` | Sleep |
+| `glucose` | `#F4B24C` | `#D8962C` | Energy: calories, carbs |
+| `chlorophyll` | `#4FD49F` | `#13875A` | Protein, good |
+| `beet` | `#FF6F8A` | `#D0385A` | Over budget, errors |
 
-Warning/over-budget uses a beetroot `#B23A5B`, only where something needs attention.
+Surfaces: `mist` page (`#0C1324` / `#F3F5FA`), `paper` panels, `rule` hairlines, `glow` for the ambient light behind heroes.
 
-**Type.** One family carries the UI: **Schibsted Grotesk** (sentence case, tabular numerals for all nutrition data). One accent: **Fraunces** with its soft optical axis, used only for the big numbers on the Today dial. No monospace, no all-caps labels.
+**Type.** **Sora** for everything (headings, numbers, UI), bold weights for figures, tabular numerals for data. Sentence case, no all-caps labels except the NEUROCAL mark.
 
-**Signature element — the Bio-State Dial.** The Today screen opens with a single living figure: an organic ring showing calories left (glucose arc), macro balance (inner segments) and today's cognitive flags as small synapse-coloured nodes. This is where the design spends its boldness; every other screen stays quiet and disciplined.
+**Signature element — the Focus ring.** Today opens with the Focus Score in a violet-to-teal ring with a soft glow, its four inputs (sleep, evening timing, glycemic load, stress) as colour-coded bars underneath, and the AI explanation in a panel. Energy (the bio-state dial), what to eat next and meals sit in panels beside it.
 
 **Layout.** Mobile-first single column, left-aligned, bottom-sheet interactions (log meal, adjust item) rather than modal pages. Desktop becomes two panes: the dial on the left, the day's log and recommendations on the right.
 
@@ -196,6 +197,6 @@ Mobile — Today                  Desktop — Today
 
 ## 7. Open questions
 1. **Anthropic model:** decided: `claude-haiku-4-5` for recipe queries and Focus Score explanations (ARCHITECTURE §7).
-2. **Design direction:** the "field notes from the body" direction is built on Today; approve or adjust before more screens follow it.
+2. **Design direction:** decided — "instrument panel", dark and light, Sora (see Design direction).
 3. **Auth provider** for the API (Cognito proposed in ARCHITECTURE §10).
 4. **Affiliate recommendations:** how they are disclosed in the UI.

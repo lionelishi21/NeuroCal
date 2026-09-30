@@ -42,7 +42,8 @@ export function History() {
   const target = days.at(-1)?.calorieTarget;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pt-6 pb-16 sm:px-8 lg:pt-12">
+    <main className="relative mx-auto w-full max-w-3xl px-4 pt-6 pb-16 sm:px-8 lg:pt-12">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-72 bg-[radial-gradient(36rem_14rem_at_30%_0%,var(--glow),transparent_70%)]" />
       <div className="flex items-baseline justify-between gap-4">
         <h1 className="m-0 text-2xl">This week</h1>
         <Link href="/" className="text-sm text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
@@ -58,7 +59,7 @@ export function History() {
 
       {day && (
         <>
-          <section aria-live="polite" aria-label="Selected day" className="mt-8 border-t border-rule pt-4">
+          <section aria-live="polite" aria-label="Selected day" className="mt-8 rounded-card bg-paper p-5 ring-1 ring-rule ring-inset">
             <h2 className="m-0 text-base font-semibold">{fullDate(day.date)}</h2>
             <dl className="mt-3 mb-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
               <Readout value={day.focusScore === null ? "No data" : String(day.focusScore)} label="Focus Score" swatch="bg-chart-focus" />
@@ -100,7 +101,7 @@ export function History() {
             />
           </div>
 
-          <div role="group" aria-label="Choose a day" className="mt-2 grid grid-cols-7">
+          <div role="group" aria-label="Choose a day" className="mt-3 grid grid-cols-7 gap-1 rounded-pill bg-paper p-1 ring-1 ring-rule ring-inset">
             {days.map((d, i) => (
               <button
                 key={d.date}
@@ -109,7 +110,7 @@ export function History() {
                 aria-label={fullDate(d.date)}
                 onClick={() => setSelected(i)}
                 onFocus={() => setSelected(i)}
-                className={`rounded-control py-2 text-center text-sm ${current === i ? "font-semibold text-ink" : "text-ink-soft hover:text-ink"}`}
+                className={`rounded-pill py-2 text-center text-sm ${current === i ? "bg-rule font-semibold text-ink" : "text-ink-soft hover:text-ink"}`}
               >
                 {i === days.length - 1 ? "Today" : weekday(d.date)}
               </button>
@@ -122,7 +123,7 @@ export function History() {
             <h2 id="table-title" className="mt-0 mb-3 text-xl">
               Day by day
             </h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-card bg-paper px-4 ring-1 ring-rule ring-inset">
               <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-rule text-ink-soft">
@@ -167,7 +168,7 @@ function Readout({ value, label, swatch }: { value: string; label: string; swatc
         {swatch && <span aria-hidden className={`h-0.5 w-3 rounded-pill ${swatch}`} />}
         {label}
       </dt>
-      <dd className="m-0 text-lg font-semibold text-ink">{value}</dd>
+      <dd className="m-0 text-xl font-semibold text-ink tabular-nums">{value}</dd>
     </div>
   );
 }

@@ -13,14 +13,45 @@ import { useToast } from "../components/Toast";
 const linkClass = "text-ink underline decoration-rule underline-offset-4 hover:decoration-ink";
 const message = (e: unknown) => (e instanceof AuthError ? e.message : "Something went wrong. Try again.");
 
-function Frame({ children }: { children: ReactNode }) {
+/** Account screens: ambient glow, the NeuroCal mark, one column. */
+function Frame({ children, intro }: { children: ReactNode; intro?: ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[34rem] flex-col px-4 pt-12 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:pt-20">
-      <p className="m-0 text-sm font-semibold text-ink">NeuroCal</p>
-      <div className="mt-10">{children}</div>
-    </main>
+    <div className="relative min-h-dvh overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(28rem_22rem_at_85%_0%,color-mix(in_oklab,var(--synapse)_28%,transparent),transparent_70%),radial-gradient(24rem_20rem_at_0%_35%,color-mix(in_oklab,var(--ion)_16%,transparent),transparent_70%)]"
+      />
+      <main className="mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pt-10 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:pt-16">
+        <p className="m-0 flex items-center gap-2 text-sm font-semibold tracking-[0.08em] text-ink">
+          <span aria-hidden className="size-4 rounded-full bg-[conic-gradient(var(--synapse),var(--ion),var(--synapse))] shadow-[0_0_14px_var(--synapse)]" />
+          NEUROCAL
+        </p>
+        {intro}
+        <div className="mt-8">{children}</div>
+      </main>
+    </div>
   );
 }
+
+/** Sign-in pitch: what NeuroCal is, in one line, and the three things it measures. */
+const Pitch = (
+  <div className="mt-10">
+    <p className="m-0 text-[length:var(--text-2xl)] leading-[1.05] font-extrabold tracking-tight text-balance">
+      Eat for how you want to think.
+      <span className="block bg-[linear-gradient(90deg,var(--synapse),var(--ion))] bg-clip-text text-transparent">
+        Tonight, tomorrow, this week.
+      </span>
+    </p>
+    <p className="mt-3 mb-0 text-ink-soft">
+      Snap your meals. NeuroCal reads them against your sleep and stress and tells you what to eat next.
+    </p>
+    <ul aria-label="What NeuroCal measures" className="m-0 mt-4 flex list-none flex-wrap gap-2 p-0 text-xs text-ink-soft">
+      <li className="rounded-pill px-3 py-1.5 ring-1 ring-rule ring-inset"><b className="font-semibold text-ink">Focus</b> 0–100</li>
+      <li className="rounded-pill px-3 py-1.5 ring-1 ring-rule ring-inset"><b className="font-semibold text-ink">Glycemic load</b> per meal</li>
+      <li className="rounded-pill px-3 py-1.5 ring-1 ring-rule ring-inset"><b className="font-semibold text-ink">Sleep</b> 7-day</li>
+    </ul>
+  </div>
+);
 
 function Credentials({
   email,
@@ -120,9 +151,9 @@ export function SignIn() {
   };
 
   return (
-    <Frame>
+    <Frame intro={Pitch}>
       <form onSubmit={submit} noValidate={false}>
-        <h1 className="m-0 text-2xl">Sign in</h1>
+        <h1 className="m-0 text-lg">Sign in</h1>
         <Credentials email={email} password={password} onEmail={setEmail} onPassword={setPassword} />
         <ErrorLine text={error} />
         <Button type="submit" className="mt-8 w-full" disabled={busy}>
@@ -236,7 +267,7 @@ function ConfirmEmail({ email, password, created }: { email: string; password: s
             required
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            className="mt-1.5 block w-full rounded-control bg-paper px-4 py-2 font-figure text-[length:var(--text-2xl)] tracking-[0.35em] text-ink tabular-nums ring-1 ring-rule ring-inset focus:outline-none focus-visible:ring-2 focus-visible:ring-synapse"
+            className="mt-1.5 block w-full rounded-control bg-paper px-4 py-2 font-extrabold text-[length:var(--text-2xl)] tracking-[0.35em] text-ink tabular-nums ring-1 ring-rule ring-inset focus:outline-none focus-visible:ring-2 focus-visible:ring-synapse"
           />
         </label>
         {usesMockAuth && <p className="mt-2 mb-0 text-sm text-ink-soft">Test mode: the code is {MOCK_CODE}.</p>}

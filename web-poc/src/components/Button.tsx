@@ -4,8 +4,8 @@ type Variant = "primary" | "quiet" | "text";
 
 const styles: Record<Variant, string> = {
   primary:
-    "bg-chlorophyll text-on-accent rounded-pill px-6 py-3.5 font-semibold hover:brightness-110 active:brightness-95",
-  quiet: "bg-paper text-ink rounded-pill px-5 py-3.5 font-medium ring-1 ring-rule ring-inset hover:ring-ink-soft",
+    "bg-[linear-gradient(100deg,var(--synapse),var(--ion))] text-on-accent rounded-pill px-6 py-3.5 font-semibold shadow-action hover:brightness-110 active:brightness-95",
+  quiet: "bg-paper text-ink rounded-pill px-5 py-3.5 font-semibold ring-1 ring-rule ring-inset hover:ring-ink-soft",
   text: "text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink hover:decoration-ink px-1 py-1",
 };
 

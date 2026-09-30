@@ -31,9 +31,9 @@ export function WhatHelps() {
               : "Your week looks steady. These help keep it that way."}
           </p>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-3">
             {protocols.data.protocols.map((p) => (
-              <article key={p.id} className="border-t border-rule py-5">
+              <article key={p.id} className="rounded-card bg-paper p-5 ring-1 ring-rule ring-inset">
                 <h3 className="m-0 text-lg font-semibold">{p.title}</h3>
                 <p className="mt-1 mb-0 max-w-[var(--measure)] text-ink-soft">{p.summary}</p>
                 <ol className="mt-3 mb-0 max-w-[var(--measure)] list-decimal pl-7 marker:text-ink-soft">
@@ -48,7 +48,7 @@ export function WhatHelps() {
           </div>
 
           {protocols.data.products.length > 0 && (
-            <div className="mt-6 border-t border-rule pt-5">
+            <div className="mt-6 rounded-card bg-paper p-5 ring-1 ring-rule ring-inset">
               <h3 className="m-0 text-base font-semibold">Tools that can help</h3>
               <ul className="mt-3 mb-0 list-none p-0">
                 {protocols.data.products.map((product) => (

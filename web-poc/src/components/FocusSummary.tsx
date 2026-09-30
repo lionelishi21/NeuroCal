@@ -1,13 +1,18 @@
 import type { FocusScore } from "@neurocal/contracts";
 import Link from "next/link";
+import { useId } from "react";
 import { Button } from "./Button";
 
-const rows: { key: keyof FocusScore["components"]; label: string; hint: string }[] = [
-  { key: "sleep", label: "Sleep", hint: "last night" },
-  { key: "timing", label: "Evening timing", hint: "late food and screens" },
-  { key: "glycemic", label: "Glycemic load", hint: "yesterday's food" },
-  { key: "stress", label: "Stress", hint: "recent check-ins" },
+/** Each input has the colour of the body system it measures. */
+const rows: { key: keyof FocusScore["components"]; label: string; hint: string; color: string }[] = [
+  { key: "sleep", label: "Sleep", hint: "last night", color: "var(--sleep)" },
+  { key: "timing", label: "Evening timing", hint: "late food and screens", color: "var(--synapse)" },
+  { key: "glycemic", label: "Glycemic load", hint: "yesterday's food", color: "var(--glucose)" },
+  { key: "stress", label: "Stress", hint: "recent check-ins", color: "var(--chlorophyll)" },
 ];
+
+const R = 90;
+const CIRCUMFERENCE = 2 * Math.PI * R;
 
 interface Props {
   focus: FocusScore;
@@ -15,50 +20,81 @@ interface Props {
 }
 
 /**
- * Today's Focus Score as a ledger of its inputs. The number is the summary;
- * the rows show what it is made of; the synapse rule marks AI-written text.
+ * Today's hero: the Focus Score as a glowing ring, the four inputs it is made
+ * of underneath, then the AI-written explanation in its own panel.
  */
 export function FocusSummary({ focus, onLogSleep }: Props) {
+  const gradientId = useId();
   const hasScore = focus.score !== null;
-  return (
-    <div className="border-t border-rule pt-4">
-      <p className="m-0 flex items-baseline gap-2">
-        {hasScore ? (
-          <>
-            <span className="text-2xl font-semibold text-synapse">{focus.score}</span>
-            <span className="text-sm text-ink-soft">out of 100</span>
-          </>
-        ) : (
-          <span className="text-lg font-semibold text-ink">No score yet</span>
-        )}
-      </p>
+  const filled = hasScore ? (CIRCUMFERENCE * focus.score!) / 100 : 0;
 
-      <dl className="mt-4 mb-0 grid max-w-[var(--measure)] grid-cols-[minmax(0,1fr)_4.5rem] gap-x-4 gap-y-2.5 text-sm">
-        {rows.map(({ key, label, hint }) => {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="relative mx-auto grid size-56 place-items-center">
+        <span aria-hidden className="absolute inset-4 rounded-full bg-[radial-gradient(circle,var(--glow),transparent_70%)] blur-xl" />
+        <svg viewBox="0 0 220 220" aria-hidden className="absolute inset-0 size-full -rotate-90">
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" style={{ stopColor: "var(--synapse)" }} />
+              <stop offset="1" style={{ stopColor: "var(--ion)" }} />
+            </linearGradient>
+          </defs>
+          <circle cx="110" cy="110" r={R} fill="none" stroke="var(--rule)" strokeWidth="12" />
+          {hasScore && (
+            <circle
+              cx="110"
+              cy="110"
+              r={R}
+              fill="none"
+              stroke={`url(#${gradientId})`}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={`${filled} ${CIRCUMFERENCE}`}
+            />
+          )}
+        </svg>
+        <p className="relative m-0 flex flex-col items-center">
+          {hasScore ? (
+            <>
+              <span className="text-figure leading-none font-extrabold tracking-tight text-ink tabular-nums">{focus.score}</span>
+              <span className="mt-1 text-sm text-ink-soft">out of 100</span>
+            </>
+          ) : (
+            <span className="max-w-[9rem] text-center text-lg font-semibold text-ink">No score yet</span>
+          )}
+          <span className="mt-1 text-xs font-semibold tracking-wide text-synapse">Focus Score</span>
+        </p>
+      </div>
+
+      <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-4">
+        {rows.map(({ key, label, hint, color }) => {
           const value = focus.components[key];
           return (
-            <div key={key} className="contents">
-              <dt className="min-w-0">
-                <span className="text-ink">{label}</span> <span className="text-ink-soft">({hint})</span>
-                <span aria-hidden className="mt-1 block h-1 rounded-pill bg-rule">
+            <div key={key} className="flex min-w-0 flex-col gap-1.5">
+              <dt className="text-sm text-ink-soft">
+                <span className="text-ink">{label}</span>
+                <span className="block text-xs">{hint}</span>
+              </dt>
+              <dd className="m-0 flex flex-col gap-1.5">
+                <span className={`text-lg font-semibold tabular-nums ${value === null ? "text-ink-soft" : "text-ink"}`}>
+                  {value === null ? "No data" : Math.round(value * 100)}
+                </span>
+                <span aria-hidden className="block h-1 rounded-pill bg-rule">
                   {value !== null && (
-                    <span className="block h-full rounded-pill bg-synapse" style={{ width: `${Math.round(value * 100)}%` }} />
+                    <span className="block h-full rounded-pill" style={{ width: `${Math.round(value * 100)}%`, background: color }} />
                   )}
                 </span>
-              </dt>
-              <dd className={`m-0 self-center text-right tabular-nums ${value === null ? "text-ink-soft" : "text-ink"}`}>
-                {value === null ? "No data" : `${Math.round(value * 100)}%`}
               </dd>
             </div>
           );
         })}
       </dl>
 
-      <p className={`mt-4 mb-0 max-w-[var(--measure)] text-base ${hasScore ? "border-l-2 border-synapse pl-4" : "text-ink-soft"}`}>
+      <p className={`m-0 rounded-card bg-paper px-4 py-3.5 text-base ring-1 ring-rule ring-inset ${hasScore ? "text-ink" : "text-ink-soft"}`}>
         {focus.explanation}
       </p>
 
-      <p className="mt-2 mb-0 flex flex-wrap gap-x-5 text-sm">
+      <p className="-mt-2 mb-0 flex flex-wrap gap-x-5 text-sm">
         <Button variant="text" className="-ml-1" onClick={onLogSleep}>
           {focus.components.sleep === null ? "Log last night's sleep" : "Log sleep"}
         </Button>
