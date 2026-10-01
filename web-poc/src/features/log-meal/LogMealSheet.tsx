@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import { type AnalyzeMealResponse, type FoodItem, MealKind } from "@neurocal/contracts";
 import { useAnalyzeMeal, useCreateMeal } from "../../api/queries";
 import { Button } from "../../components/Button";
+import { fieldClass } from "../../components/fields";
 import { Sheet } from "../../components/Sheet";
 import { useToast } from "../../components/Toast";
 import { kcal, mealKindForHour, mealKindLabel, nowWithOffset } from "../../lib/format";
@@ -22,10 +23,14 @@ const problemText: Record<NonNullable<AnalyzeMealResponse["problem"]>, string> =
   blurry: "The photo is blurry. Hold the phone steady and try again.",
 };
 
+/** An item in the sheet: from the photo, or typed in (`manual`), and ticked or not. */
+type DraftItem = FoodItem & { included: boolean; manual?: true };
+
 export function LogMealSheet({ open, onOpenChange }: Props) {
   const inputId = useId();
   const [photoUrl, setPhotoUrl] = useState<string>();
-  const [items, setItems] = useState<(FoodItem & { included: boolean })[]>([]);
+  const [items, setItems] = useState<DraftItem[]>([]);
+  const [addingByHand, setAddingByHand] = useState(false);
   const [kind, setKind] = useState<MealKind>(() => mealKindForHour(new Date().getHours()));
   const analyze = useAnalyzeMeal();
   const createMeal = useCreateMeal();
@@ -36,6 +41,7 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
   const reset = () => {
     setPhotoUrl(undefined);
     setItems([]);
+    setAddingByHand(false);
     setKind(mealKindForHour(new Date().getHours()));
     analyze.reset();
     createMeal.reset();
@@ -49,22 +55,25 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
   const choosePhoto = (file: File | undefined) => {
     if (!file) return;
     setPhotoUrl(URL.createObjectURL(file));
-    setItems([]);
+    // A new photo replaces the last photo's items; anything typed in stays.
+    setItems((all) => all.filter((i) => i.manual));
     analyze.mutate(file, {
-      onSuccess: (result) => setItems(result.items.map((item) => ({ ...item, included: true }))),
+      onSuccess: (result) =>
+        setItems((all) => [...result.items.map((item) => ({ ...item, included: true })), ...all.filter((i) => i.manual)]),
     });
   };
 
   const chosen = items.filter((i) => i.included);
   const total = chosen.reduce((sum, i) => sum + i.calories, 0);
   const problem = analyze.data?.problem;
+  const hasHighGl = chosen.some((i) => i.glycemicLoad === "high");
 
   const logMeal = () =>
     createMeal.mutate(
-      { kind, eatenAt: nowWithOffset(), items: chosen.map(({ included: _, ...item }) => item) },
+      { kind, eatenAt: nowWithOffset(), items: chosen.map(({ included: _, manual: __, ...item }) => item) },
       {
-        onSuccess: () => {
-          toast("Meal logged");
+        onSuccess: (result) => {
+          toast(result === "queued" ? "You're offline. Meal saved on this device." : "Meal logged");
           close(false);
         },
       },
@@ -75,7 +84,7 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
       open={open}
       onOpenChange={close}
       title="Log a meal"
-      description="Take a photo of your plate. You can check every item before it's logged."
+      description="Take a photo of your plate or add items by hand. You can check every item before it's logged."
     >
       <input
         id={inputId}
@@ -115,6 +124,20 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
           </p>
         )}
       </div>
+
+      {addingByHand ? (
+        <ManualItemForm
+          onAdd={(item) => {
+            setItems((all) => [...all, { ...item, included: true, manual: true }]);
+            setAddingByHand(false);
+          }}
+          onCancel={() => setAddingByHand(false)}
+        />
+      ) : (
+        <Button variant="text" className="mt-2 -ml-1" onClick={() => setAddingByHand(true)}>
+          {items.length > 0 ? "Add another item by hand" : "Add an item by hand"}
+        </Button>
+      )}
 
       {items.length > 0 && (
         <>
@@ -186,6 +209,13 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
             ))}
           </dl>
 
+          {hasHighGl && (
+            <p className="mt-3 mb-0 text-sm text-ink-soft">
+              <span className="font-semibold text-beet">High glycemic load on this plate.</span> It can dip your energy later and
+              lowers tomorrow's Focus Score.
+            </p>
+          )}
+
           {createMeal.isError && (
             <p role="alert" className="mt-4 mb-0 text-sm text-beet">
               The meal didn't save. Check your connection and try again.
@@ -197,5 +227,89 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
         </>
       )}
     </Sheet>
+  );
+}
+
+const numberOr0 = (value: string) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
+/** The fallback when a photo can't be read, or for food without a photo. Macros are optional and count as 0 when left empty. */
+function ManualItemForm({ onAdd, onCancel }: { onAdd: (item: FoodItem) => void; onCancel: () => void }) {
+  const [name, setName] = useState("");
+  const [portion, setPortion] = useState("");
+  const [calories, setCalories] = useState("");
+  const [macros, setMacros] = useState({ proteinG: "", carbsG: "", fatG: "" });
+  const ready = name.trim().length > 0 && calories.trim() !== "" && Number(calories) >= 0;
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!ready) return;
+    onAdd({
+      name: name.trim(),
+      portion: portion.trim() || "1 serving",
+      calories: numberOr0(calories),
+      macros: { proteinG: numberOr0(macros.proteinG), carbsG: numberOr0(macros.carbsG), fatG: numberOr0(macros.fatG) },
+    });
+  };
+
+  const label = "block text-sm text-ink-soft";
+  return (
+    <form onSubmit={submit} aria-label="Add an item by hand" className="mt-3 rounded-card bg-mist p-4">
+      <label className={label}>
+        Food
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />
+      </label>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <label className={label}>
+          Portion
+          <input value={portion} onChange={(e) => setPortion(e.target.value)} placeholder="1 serving" className={fieldClass} />
+        </label>
+        <label className={label}>
+          Calories
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={calories}
+            onChange={(e) => setCalories(e.target.value)}
+            className={`${fieldClass} tabular-nums`}
+          />
+        </label>
+      </div>
+      <fieldset className="m-0 mt-3 border-0 p-0">
+        <legend className="mb-0 p-0 text-sm text-ink-soft">Grams, if you know them</legend>
+        <div className="grid grid-cols-3 gap-3">
+          {(
+            [
+              ["proteinG", "Protein"],
+              ["carbsG", "Carbs"],
+              ["fatG", "Fat"],
+            ] as const
+          ).map(([key, text]) => (
+            <label key={key} className={`mt-1.5 ${label}`}>
+              {text}
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={macros[key]}
+                onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
+                className={`${fieldClass} tabular-nums`}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="mt-4 flex items-center gap-3">
+        <Button type="submit" variant="quiet" disabled={!ready}>
+          Add item
+        </Button>
+        <Button variant="text" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

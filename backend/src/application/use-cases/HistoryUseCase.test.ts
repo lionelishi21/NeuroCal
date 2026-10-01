@@ -17,6 +17,10 @@ describe("GetHistoryUseCase", () => {
     await checkIns.create("u1", { at: new Date("2026-09-28T22:00:00Z"), flags: ["stressed"] });
     // Night of 28→29 Sep: 6 hours.
     await telemetry.upsertSleep("u1", [{ start: new Date("2026-09-29T05:00:00Z"), end: new Date("2026-09-29T11:00:00Z"), source: "manual" }]);
+    // 45 minutes of screens from 22:30 on the 28th.
+    await telemetry.upsertScreenTime("u1", [
+      { windowStart: new Date("2026-09-29T03:30:00Z"), windowEnd: new Date("2026-09-29T04:30:00Z"), minutes: 45, source: "manual" },
+    ]);
     const clock = new FixedClock(new Date("2026-09-29T17:00:00Z"));
     return new GetHistoryUseCase(profiles, meals, checkIns, telemetry, clock);
   }
@@ -33,10 +37,14 @@ describe("GetHistoryUseCase", () => {
       focusScore: 50, // only stress has data: two distinct negative flags → 0.5
       sleepMinutes: null,
       lastMealAt: "21:40",
+      bedtime: null,
+      wakeTime: null,
+      lateScreenMinutes: null,
       flags: ["stressed", "wired"],
     });
-    // sleep 0.75, timing 1 − 40/120, glycemic 1, stress 0.5 → 100 × (0.3 + 0.133 + 0.2 + 0.1)
-    expect(days[2]).toMatchObject({ focusScore: 73, sleepMinutes: 360, caloriesEaten: 0, lastMealAt: null, flags: [] });
+    // sleep 0.75, timing 1 − 40/120 − 0.5 × 45/120, glycemic 1, stress 0.5 → 100 × (0.3 + 0.096 + 0.2 + 0.1)
+    expect(days[2]).toMatchObject({ focusScore: 70, sleepMinutes: 360, caloriesEaten: 0, lastMealAt: null, flags: [] });
+    expect(days[2]).toMatchObject({ bedtime: "00:00", wakeTime: "06:00", lateScreenMinutes: 45 });
   });
 
   it("rejects out-of-range day counts", async () => {

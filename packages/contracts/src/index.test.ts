@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "@jest/globals";
-import { BioState, CreateMealRequest, FocusScore, ScreenTimeSample, SleepSession, caloriesRemaining, mealCalories } from "./index";
+import { BioState, CreateMealRequest, endpoints, FocusScore, ScreenTimeSample, SleepSession, caloriesRemaining, mealCalories } from "./index";
+import { buildOpenApi } from "./openapi";
 
 const item = { name: "Greek yogurt", portion: "200 g", calories: 190, macros: { proteinG: 20, carbsG: 8, fatG: 9 } };
 
@@ -45,5 +47,30 @@ describe("telemetry and focus score contracts", () => {
   it("allows a focus score with no data yet", () => {
     const empty = { date: "2026-09-29", score: null, components: { sleep: null, timing: null, glycemic: null, stress: null }, explanation: "" };
     expect(FocusScore.safeParse(empty).success).toBe(true);
+  });
+});
+
+describe("OpenAPI document", () => {
+  const doc = buildOpenApi();
+
+  it("is up to date in openapi.json (run `npm run openapi -w @neurocal/contracts` after changing a contract)", () => {
+    expect(JSON.parse(readFileSync("openapi.json", "utf8"))).toEqual(JSON.parse(JSON.stringify(doc)));
+  });
+
+  it("describes every endpoint with named request and response types", () => {
+    const operations = Object.values(doc.paths).flatMap((methods) => Object.values(methods)) as { operationId: string }[];
+    expect(operations.map((o) => o.operationId).sort()).toEqual(Object.keys(endpoints).sort());
+    expect(doc.paths["/meals/{id}"]).toMatchObject({ delete: { parameters: [{ name: "id", in: "path", required: true }], responses: { 204: {} } } });
+    expect(doc.paths["/meals"]).toMatchObject({
+      post: {
+        requestBody: { content: { "application/json": { schema: { $ref: "#/components/schemas/CreateMealRequest" } } } },
+        responses: { 201: { content: { "application/json": { schema: { $ref: "#/components/schemas/Meal" } } } } },
+      },
+    });
+    expect(doc.paths["/meals/analyze"]).toMatchObject({ post: { requestBody: { content: { "multipart/form-data": {} } } } });
+    expect(doc.components.schemas.Meal).toMatchObject({
+      required: ["id", "kind", "eatenAt", "items"],
+      properties: { kind: { $ref: "#/components/schemas/MealKind" }, eatenAt: { type: "string", format: "date-time" } },
+    });
   });
 });

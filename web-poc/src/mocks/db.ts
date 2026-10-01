@@ -81,14 +81,15 @@ export function createDb(options: { newUser?: boolean } = {}) {
   const screenTime: IngestScreenTimeRequest["samples"] = [];
 
   // Six earlier days with varied sleep, dinner times and feelings (mirrors the backend dev seed).
+  // Each late dinner is followed by a short night: the next row's sleep.
   if (!options.newUser) {
     const plan = [
-      { sleep: 7.5, dinner: [19, 0], high: false, flags: ["sharp"] },
-      { sleep: 6, dinner: [21, 45], high: true, flags: ["low_focus", "wired"] },
-      { sleep: 5.5, dinner: [22, 10], high: true, flags: ["brain_fog", "stressed"] },
-      { sleep: 8, dinner: [18, 45], high: false, flags: ["calm"] },
-      { sleep: 7, dinner: [20, 15], high: false, flags: ["sharp"] },
-      { sleep: 6.5, dinner: [21, 30], high: true, flags: ["low_energy"] },
+      { sleep: 7.5, dinner: [19, 0], high: false, flags: ["sharp"], screen: 0 },
+      { sleep: 8, dinner: [21, 45], high: true, flags: ["low_focus", "wired"], screen: 50 },
+      { sleep: 5.5, dinner: [22, 10], high: true, flags: ["brain_fog", "stressed"], screen: 75 },
+      { sleep: 6, dinner: [18, 45], high: false, flags: ["calm"], screen: 0 },
+      { sleep: 7.5, dinner: [20, 15], high: false, flags: ["sharp"], screen: 20 },
+      { sleep: 7, dinner: [21, 30], high: true, flags: ["low_energy"], screen: null },
     ] as const;
     plan.forEach((day, i) => {
       const back = plan.length - i;
@@ -114,6 +115,11 @@ export function createDb(options: { newUser?: boolean } = {}) {
         },
       );
       checkIns.push({ id: `hc${i}`, at: on(15, 0).toISOString(), flags: [...day.flags] });
+      // Screens after 10pm that evening; last night's is left for the user to log.
+      if (day.screen !== null) {
+        const from = on(22, 0);
+        screenTime.push({ windowStart: from.toISOString(), windowEnd: new Date(from.getTime() + 6 * 3_600_000).toISOString(), minutes: day.screen, source: "manual" });
+      }
     });
   }
 
@@ -218,6 +224,14 @@ export function createDb(options: { newUser?: boolean } = {}) {
     [item("Avocado toast", "1 slice sourdough", 290, 7, 30, 16, 0.9), item("Poached egg", "1 large", 72, 6.3, 0.4, 4.8, 0.86)],
   ];
 
+  /** Samples that start on the evening before `date` (22:00–04:00). */
+  function lateScreen(date: string, yesterday: string) {
+    return screenTime.filter((s) => {
+      const start = new Date(s.windowStart);
+      return (todayIso(start) === yesterday && start.getHours() >= 22) || (todayIso(start) === date && start.getHours() < 4);
+    });
+  }
+
   /** Mirrors backend/src/domain/focusScore.ts closely enough for the UI; the backend is the source of truth. */
   function focusScore(date: string): FocusScore {
     const clamp = (n: number) => Math.min(1, Math.max(0, n));
@@ -239,13 +253,9 @@ export function createDb(options: { newUser?: boolean } = {}) {
 
     const yMeals = mealsOn(yesterday);
     const lateEating = Math.max(0, ...yMeals.map((m) => (new Date(m.eatenAt).getHours() - 21) * 60 + new Date(m.eatenAt).getMinutes()));
-    const lateScreen = screenTime
-      .filter((s) => {
-        const start = new Date(s.windowStart);
-        return (todayIso(start) === yesterday && start.getHours() >= 22) || (todayIso(start) === date && start.getHours() < 4);
-      })
-      .reduce((sum, s) => sum + s.minutes, 0);
-    const timingC = yMeals.length || screenTime.length ? clamp(1 - clamp(lateEating / 120) - 0.5 * clamp(lateScreen / 120)) : null;
+    const screens = lateScreen(date, yesterday);
+    const screenMin = screens.reduce((sum, s) => sum + s.minutes, 0);
+    const timingC = yMeals.length || screens.length ? clamp(1 - clamp(lateEating / 120) - 0.5 * clamp(screenMin / 120)) : null;
 
     const yCalories = yMeals.reduce((sum, m) => sum + mealCalories(m), 0);
     const high = yMeals.flatMap((m) => m.items).filter((i) => i.glycemicLoad === "high").reduce((sum, i) => sum + i.calories, 0);
@@ -288,7 +298,14 @@ export function createDb(options: { newUser?: boolean } = {}) {
       const last = day.at(-1);
       const nights = sleep.filter((s) => todayIso(new Date(s.end)) === date);
       const minutes = nights.reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60_000, 0);
-      const lastAt = last ? new Date(last.eatenAt) : null;
+      const clock = (ms: number | null) => {
+        if (ms === null) return null;
+        const t = new Date(ms);
+        return `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+      };
+      const before = new Date(`${date}T12:00:00`);
+      before.setDate(before.getDate() - 1);
+      const screens = lateScreen(date, todayIso(before));
       return {
         date,
         calorieTarget: state.calorieTarget,
@@ -296,7 +313,10 @@ export function createDb(options: { newUser?: boolean } = {}) {
         proteinG: Math.round(state.macrosEaten.proteinG),
         focusScore: focusScore(date).score,
         sleepMinutes: nights.length ? Math.round(minutes) : null,
-        lastMealAt: lastAt ? `${String(lastAt.getHours()).padStart(2, "0")}:${String(lastAt.getMinutes()).padStart(2, "0")}` : null,
+        lastMealAt: clock(last ? Date.parse(last.eatenAt) : null),
+        bedtime: clock(nights.length ? Math.min(...nights.map((s) => Date.parse(s.start))) : null),
+        wakeTime: clock(nights.length ? Math.max(...nights.map((s) => Date.parse(s.end))) : null),
+        lateScreenMinutes: screens.length ? screens.reduce((sum, s) => sum + s.minutes, 0) : null,
         flags: [...new Set(checkIns.filter((c) => todayIso(new Date(c.at)) === date).flatMap((c) => c.flags))],
       };
     });
@@ -414,7 +434,12 @@ export function createDb(options: { newUser?: boolean } = {}) {
       return sessions.length;
     },
     addScreenTime(samples: IngestScreenTimeRequest["samples"]) {
-      screenTime.push(...samples);
+      for (const s of samples) {
+        // A sample replaces one from the same source with the same window start.
+        const same = screenTime.findIndex((x) => x.source === s.source && Date.parse(x.windowStart) === Date.parse(s.windowStart));
+        if (same >= 0) screenTime.splice(same, 1);
+        screenTime.push(s);
+      }
       return samples.length;
     },
     profile: () => profile,

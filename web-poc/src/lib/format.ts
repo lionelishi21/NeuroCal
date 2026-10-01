@@ -1,4 +1,4 @@
-import type { CognitiveFlag, MealKind } from "@neurocal/contracts";
+import type { CognitiveFlag, CognitiveGoal, DietaryPreference, MealKind } from "@neurocal/contracts";
 
 export function todayIso(now = new Date()): string {
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
@@ -24,6 +24,22 @@ export const flagLabel: Record<CognitiveFlag, string> = {
   calm: "Calm",
 };
 
+export const dietLabel: Record<DietaryPreference, { name: string; detail: string }> = {
+  omnivore: { name: "Everything", detail: "Meat, fish, dairy and plants" },
+  pescatarian: { name: "Pescatarian", detail: "Fish and seafood, no meat" },
+  vegetarian: { name: "Vegetarian", detail: "No meat or fish" },
+  vegan: { name: "Vegan", detail: "Plants only" },
+  keto: { name: "Keto", detail: "Very low carb, high fat" },
+  mediterranean: { name: "Mediterranean", detail: "Olive oil, fish, grains, vegetables" },
+};
+
+export const goalLabel: Record<CognitiveGoal, string> = {
+  focus: "Sharper focus",
+  calm: "Feel calmer",
+  energy: "Steadier energy",
+  sleep: "Better sleep",
+};
+
 export const mealKindLabel: Record<MealKind, string> = {
   breakfast: "Breakfast",
   lunch: "Lunch",
@@ -47,3 +63,14 @@ export function formatDay(date = new Date()): string {
 }
 
 export const kcal = (n: number) => Math.round(n).toLocaleString();
+
+/** "7 h 05 min". */
+export const hoursAndMinutes = (minutes: number) => `${Math.floor(minutes / 60)} h ${String(Math.round(minutes % 60)).padStart(2, "0")} min`;
+
+/** A contract "HH:MM" local time in the reader's clock format ("9:40 PM" or "21:40"). */
+export function formatClock(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h ?? 0, m ?? 0, 0, 0);
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}

@@ -11,7 +11,7 @@ import { FlagSummary } from "../components/FlagSummary";
 import { FocusSummary } from "../components/FocusSummary";
 import { MacroLegend } from "../components/MacroLegend";
 import { MealTimeline } from "../components/MealTimeline";
-import { SignOutLink } from "../components/SignOutLink";
+import { QueuedMealsNotice } from "../components/OfflineMeals";
 import { SuggestedMeal } from "../components/SuggestedMeal";
 import { useToast } from "../components/Toast";
 import { CheckInSheet } from "../features/check-in/CheckInSheet";
@@ -75,10 +75,12 @@ export function Today() {
             <Link href="/history" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
               This week
             </Link>
-            <Link href="/welcome" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
-              Edit profile
+            <Link href="/sleep" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
+              Sleep
             </Link>
-            <SignOutLink />
+            <Link href="/settings" className="text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
+              Settings
+            </Link>
           </nav>
         </header>
 
@@ -151,6 +153,7 @@ export function Today() {
             <h2 id="meals" className="mt-0 mb-3 text-lg">
               Meals today
             </h2>
+            <QueuedMealsNotice />
             {meals.isPending && <p className="m-0 text-ink-soft">Loading meals…</p>}
             {meals.isError && <p className="m-0 text-beet">Meals didn't load. Pull to refresh or try again shortly.</p>}
             {meals.data && (

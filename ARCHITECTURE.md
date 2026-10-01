@@ -339,7 +339,7 @@ Computed on read and stored in `focus_scores`; the AI explanation is only reques
 
 The score for day D is a **morning baseline**:
 - sleep ← sessions that ended on D (overlapping sessions from different sources count once)
-- timing ← the last meal of D−1 after 21:00, and screen time starting 22:00–04:00 on the evening of D−1
+- timing ← the last meal of D−1 after 21:00, and screen time starting 22:00–04:00 on the evening of D−1 (screen samples outside that window don't count as timing data)
 - glycemic ← D−1's meals
 - stress ← check-ins on D−1 and D
 
@@ -457,9 +457,11 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | GET | `/recommendations/next` | — | `NextRecommendationsResponse` | 6.6 |
 | GET | `/focus-score?date=` | — | `FocusScore` | 6.8 |
 | GET | `/recommendations/protocols` | — | `ProtocolsResponse` | 6.9 |
-| GET | `/history?days=` | — | `HistoryResponse` | the last 1–31 days, oldest first; Focus Scores recomputed without the AI explanation |
+| GET | `/history?days=` | — | `HistoryResponse` | the last 1–31 days, oldest first; Focus Scores recomputed without the AI explanation; each day carries the bedtime and wake time of the sleep that ended that morning and the screen minutes after 22:00 the night before (the web Sleep screen) |
 | POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
 | POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
+
+The same surface is published as OpenAPI 3.1 in `packages/contracts/openapi.json`, generated from the Zod schemas by `packages/contracts/src/openapi.ts` (`npm run openapi -w @neurocal/contracts`). The Flutter client is generated from that file. Rules written with `.refine()` (sleep ends after it starts, screen minutes fit the window) can't be expressed in JSON Schema and are stated in the operation descriptions.
 
 Planned — add to contracts first:
 

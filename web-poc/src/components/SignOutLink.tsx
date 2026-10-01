@@ -3,7 +3,7 @@
 import { useOptionalAuth } from "../auth/AuthProvider";
 import { useToast } from "./Toast";
 
-/** "Sign out" in the Today header. Renders nothing outside an AuthProvider. */
+/** "Sign out" on the Settings screen. Renders nothing outside an AuthProvider. */
 export function SignOutLink() {
   const auth = useOptionalAuth();
   const toast = useToast();

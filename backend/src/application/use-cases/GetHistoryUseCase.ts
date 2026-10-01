@@ -1,5 +1,5 @@
 import { InvalidError, NotFoundError } from "../../domain/errors";
-import { computeFocusComponents, focusScoreFrom, sleepMinutes } from "../../domain/focusScore";
+import { computeFocusComponents, focusScoreFrom, lateScreenMinutes, sleepMinutes } from "../../domain/focusScore";
 import { localDateOf, localTimeOf, previousDate } from "../../domain/localDay";
 import { mealCalories, sumMacros } from "../../domain/meal";
 import type { CognitiveFlag } from "../../domain/types";
@@ -17,6 +17,9 @@ export interface HistoryDay {
   focusScore: number | null;
   sleepMinutes: number | null;
   lastMealAt: string | null;
+  bedtime: string | null;
+  wakeTime: string | null;
+  lateScreenMinutes: number | null;
   flags: CognitiveFlag[];
 }
 
@@ -55,7 +58,14 @@ export class GetHistoryUseCase {
           loadFocusInputs(repos, profile, date),
         ]);
         const last = meals.at(-1);
-        const time = last ? localTimeOf(last.eatenAt, timeZone) : null;
+        const clock = (instant: Date | undefined) => {
+          if (!instant) return null;
+          const { hour, minute } = localTimeOf(instant, timeZone);
+          return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+        };
+        const { sleep } = focusInputs;
+        const fellAsleep = sleep.length ? new Date(Math.min(...sleep.map((s) => s.start.getTime()))) : undefined;
+        const woke = sleep.length ? new Date(Math.max(...sleep.map((s) => s.end.getTime()))) : undefined;
         return {
           date,
           calorieTarget: profile.dailyCalorieTarget,
@@ -63,7 +73,10 @@ export class GetHistoryUseCase {
           proteinG: Math.round(sumMacros(meals.flatMap((m) => m.items)).proteinG),
           focusScore: focusScoreFrom(computeFocusComponents(focusInputs)),
           sleepMinutes: focusInputs.sleep.length ? Math.round(sleepMinutes(focusInputs.sleep)) : null,
-          lastMealAt: time ? `${String(time.hour).padStart(2, "0")}:${String(time.minute).padStart(2, "0")}` : null,
+          lastMealAt: clock(last?.eatenAt),
+          bedtime: clock(fellAsleep),
+          wakeTime: clock(woke),
+          lateScreenMinutes: lateScreenMinutes(focusInputs),
           flags: [...new Set(checkIns.flatMap((c) => c.flags))],
         };
       }),

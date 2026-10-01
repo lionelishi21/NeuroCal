@@ -69,18 +69,21 @@ async function seed(db: Database, userId: string) {
   await seedPastWeek(db, userId, today);
 }
 
-/** Six earlier days with varied sleep, dinner times and feelings, so History has a story to show. */
+/**
+ * Six earlier days with varied sleep, dinner times and feelings, so History and Sleep have a story to show:
+ * each late dinner is followed by a short night (the next row's sleep).
+ */
 async function seedPastWeek(db: Database, userId: string, today: (h: number, m: number) => Date) {
   const meals = new DrizzleMealRepository(db);
   const checkIns = new DrizzleCheckInRepository(db);
   const telemetry = new DrizzleTelemetryRepository(db);
   const plan = [
     { sleep: 7.5, dinner: [19, 0], high: false, flags: ["sharp"] },
-    { sleep: 6, dinner: [21, 45], high: true, flags: ["low_focus", "wired"] },
+    { sleep: 8, dinner: [21, 45], high: true, flags: ["low_focus", "wired"] },
     { sleep: 5.5, dinner: [22, 10], high: true, flags: ["brain_fog", "stressed"] },
-    { sleep: 8, dinner: [18, 45], high: false, flags: ["calm"] },
-    { sleep: 7, dinner: [20, 15], high: false, flags: ["sharp"] },
-    { sleep: 6.5, dinner: [21, 30], high: true, flags: ["low_energy"] },
+    { sleep: 6, dinner: [18, 45], high: false, flags: ["calm"] },
+    { sleep: 7.5, dinner: [20, 15], high: false, flags: ["sharp"] },
+    { sleep: 7, dinner: [21, 30], high: true, flags: ["low_energy"] },
   ] as const;
   for (const [i, day] of plan.entries()) {
     const back = plan.length - i; // 6 … 1 days ago

@@ -6,7 +6,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - `/web-poc`: Next.js (React) Web Proof of Concept
 - `/mobile-app`: Flutter Mobile Application (iOS & Android)
 - `/infra`: AWS CDK stack (TypeScript) that deploys the backend; see `infra/README.md`
-- `/packages/contracts`: Zod schemas for every API request/response, shared by backend and web. Change the contract first, then both sides.
+- `/packages/contracts`: Zod schemas for every API request/response, shared by backend and web. Change the contract first, then both sides, then run `npm run openapi -w @neurocal/contracts` to regenerate `packages/contracts/openapi.json` (a test fails if it is stale).
 
 ## Core Tech Stack
 - **Backend:** Node.js (v20+ LTS), TypeScript (Strict Mode), AWS Serverless (Lambda, API Gateway, S3, EventBridge)

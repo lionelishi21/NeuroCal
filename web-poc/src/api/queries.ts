@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useSyncExternalStore } from "react";
 import { z } from "zod";
 import {
   AnalyzeMealResponse,
@@ -8,6 +9,7 @@ import {
   HistoryResponse,
   ProtocolsResponse,
   IngestResponse,
+  type IngestScreenTimeRequest,
   type IngestSleepRequest,
   type UpdateProfileRequest,
   type CreateCheckInRequest,
@@ -16,7 +18,9 @@ import {
   NextRecommendationsResponse,
   Profile,
 } from "@neurocal/contracts";
-import { request } from "./client";
+import { RequestFailed, request } from "./client";
+import { useOptionalAuth } from "../auth/AuthProvider";
+import { type QueuedMeal, dequeueMeal, enqueueMeal, queuedMeals, subscribeToMealQueue } from "../lib/mealQueue";
 import { todayIso } from "../lib/format";
 
 export const keys = {
@@ -89,23 +93,89 @@ export function useAnalyzeMeal() {
 /** Anything that changes intake or flags invalidates the day and the suggestions. */
 function useInvalidateDay() {
   const client = useQueryClient();
-  return () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: ["bio-state"] }),
-      client.invalidateQueries({ queryKey: ["meals"] }),
-      client.invalidateQueries({ queryKey: keys.recommendations }),
-      client.invalidateQueries({ queryKey: ["focus-score"] }),
-      client.invalidateQueries({ queryKey: ["history"] }),
-    ]);
+  return useCallback(
+    () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ["bio-state"] }),
+        client.invalidateQueries({ queryKey: ["meals"] }),
+        client.invalidateQueries({ queryKey: keys.recommendations }),
+        client.invalidateQueries({ queryKey: ["focus-score"] }),
+        client.invalidateQueries({ queryKey: ["history"] }),
+      ]),
+    [client],
+  );
 }
 
+const postMeal = (meal: CreateMealRequest) => request("/meals", Meal, { method: "POST", body: JSON.stringify(meal) });
+
+/** Whose queue this is: the signed-in email, or "" where there is no sign-in (unit tests). */
+function useQueueOwner() {
+  return useOptionalAuth()?.user?.email ?? "";
+}
+
+/**
+ * Logs a meal. If the API can't be reached at all (no response, as opposed to
+ * an error response), the meal is kept on the device and the result is
+ * "queued"; OfflineMealSync sends it once the connection is back.
+ */
 export function useCreateMeal() {
   const invalidate = useInvalidateDay();
+  const owner = useQueueOwner();
   return useMutation({
-    mutationFn: (meal: CreateMealRequest) =>
-      request("/meals", Meal, { method: "POST", body: JSON.stringify(meal) }),
-    onSuccess: invalidate,
+    // Run even when the browser reports offline, so the meal reaches the queue instead of pausing.
+    networkMode: "always",
+    mutationFn: async (meal: CreateMealRequest): Promise<Meal | "queued"> => {
+      try {
+        return await postMeal(meal);
+      } catch (error) {
+        if (error instanceof RequestFailed) throw error;
+        enqueueMeal(owner, meal);
+        return "queued";
+      }
+    },
+    onSuccess: (result) => (result === "queued" ? undefined : invalidate()),
   });
+}
+
+/** The signed-in person's meals waiting to be sent, oldest first. */
+export function useQueuedMeals(): QueuedMeal[] {
+  const owner = useQueueOwner();
+  const all = useSyncExternalStore(subscribeToMealQueue, queuedMeals, () => EMPTY_QUEUE);
+  return all.some((entry) => entry.owner !== owner) ? all.filter((entry) => entry.owner === owner) : all;
+}
+const EMPTY_QUEUE: QueuedMeal[] = [];
+
+let flushing: Promise<{ logged: number }> | null = null;
+
+/**
+ * Sends the queue in order and stops at the first meal that gets no response.
+ * A meal the API rejects (a 4xx) is dropped so it can't block the ones behind it.
+ * If a response is lost after the API saved the meal, that meal is sent twice:
+ * POST /meals has no idempotency key yet.
+ */
+export function useFlushMealQueue() {
+  const invalidate = useInvalidateDay();
+  const owner = useQueueOwner();
+  return useCallback(() => {
+    flushing ??= (async () => {
+      let logged = 0;
+      for (const entry of queuedMeals().filter((e) => e.owner === owner)) {
+        try {
+          await postMeal(entry.meal);
+          logged++;
+        } catch (error) {
+          const rejected = error instanceof RequestFailed && error.status >= 400 && error.status < 500 && error.status !== 401;
+          if (!rejected) break;
+        }
+        dequeueMeal(entry.id);
+      }
+      if (logged) await invalidate();
+      return { logged };
+    })().finally(() => {
+      flushing = null;
+    });
+    return flushing;
+  }, [invalidate, owner]);
 }
 
 export function useDeleteMeal() {
@@ -130,6 +200,15 @@ export function useLogSleep() {
   return useMutation({
     mutationFn: (sessions: IngestSleepRequest["sessions"]) =>
       request("/telemetry/sleep", IngestResponse, { method: "POST", body: JSON.stringify({ sessions }) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useLogScreenTime() {
+  const invalidate = useInvalidateDay();
+  return useMutation({
+    mutationFn: (samples: IngestScreenTimeRequest["samples"]) =>
+      request("/telemetry/screen-time", IngestResponse, { method: "POST", body: JSON.stringify({ samples }) }),
     onSuccess: invalidate,
   });
 }
