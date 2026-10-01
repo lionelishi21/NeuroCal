@@ -84,7 +84,7 @@ Complementary, optional: the Anthropic **Design** plugin (accessibility review, 
 
 **Subject, audience, job.** NeuroCal is a nutrition companion for people who eat to think clearly — knowledge workers, students, athletes managing focus and energy. Its primary job: *tell me, right now, what my body has and what my mind needs, and what to eat next.*
 
-**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light. One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
+**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light, and an Auto / Light / Dark switch (Today header and sign-in) that overrides it and is remembered per device. One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
 
 **Colour means a body system**, in both modes (tokens in `web-poc/src/styles/tokens.css`):
 | Token | Dark | Light | Meaning |

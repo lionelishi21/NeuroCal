@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+import { themeBootScript } from "../lib/theme";
 import { Providers } from "./providers";
 import "../styles/app.css";
 
@@ -24,7 +25,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={jakarta.variable}>
+    // suppressHydrationWarning: the boot script may set data-theme before React hydrates.
+    <html lang="en" className={jakarta.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>

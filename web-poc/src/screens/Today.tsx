@@ -13,6 +13,7 @@ import { MacroLegend } from "../components/MacroLegend";
 import { MealTimeline } from "../components/MealTimeline";
 import { SignOutLink } from "../components/SignOutLink";
 import { SuggestedMeal } from "../components/SuggestedMeal";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { useToast } from "../components/Toast";
 import { CheckInSheet } from "../features/check-in/CheckInSheet";
 import { LogSleepSheet } from "../features/log-sleep/LogSleepSheet";
@@ -79,6 +80,7 @@ export function Today() {
               Edit profile
             </Link>
             <SignOutLink />
+            <ThemeToggle className="w-full justify-self-end sm:w-auto" />
           </nav>
         </header>
 
