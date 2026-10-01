@@ -1,0 +1,48 @@
+name: neurocal
+description: "NeuroCal: eat for how you want to think"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  amplify_auth_cognito: ^2.15.1
+  amplify_flutter: ^2.15.0
+  http: ^1.6.0
+  image_picker: ^1.2.3
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  fonts:
+    # Plus Jakarta Sans, the same face as the web app (SIL OFL, assets/fonts/OFL.txt).
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-700.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-800.ttf
+          weight: 800
+
+# App icons from assets/icon (masters rendered by tool/icon_test.dart): dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  remove_alpha_ios: true
+  adaptive_icon_background: "#0C1324"
+  adaptive_icon_foreground: assets/icon/foreground.png

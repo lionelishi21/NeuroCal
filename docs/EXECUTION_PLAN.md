@@ -17,7 +17,7 @@ The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal
 | `packages/contracts` | Zod schemas for 9 endpoints, 3 Jest tests |
 | `web-poc/` | Next.js app: Today screen, log-meal and check-in flows on a mock API, 7 Vitest tests |
 | `backend/` | Hexagonal skeleton; only `IAiReasoningProvider.ts` has code |
-| `mobile-app/` | Not started (Flutter) |
+| `mobile-app/` | Flutter app: sign-in (Cognito or mock), Today, Log a meal, Check in, Settings with Match device / Light / Dark; hand-written Dart models for now |
 | `ARCHITECTURE.md` | Build spec: layers, domain model, DB schema, ports, use cases, AI prompts, API surface |
 
 ## 2. Recommendation: frontend-first, contract-driven
@@ -177,7 +177,8 @@ Mobile — Today                  Desktop — Today
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres
 
 ### Phase 4 — Mobile, integration and launch
-- [ ] Flutter app on the same API (Dart client generated from OpenAPI)
+- [x] Flutter app on the same API and Cognito pool, same tokens, font, logo and app icon (`mobile-app/`, build steps in its README)
+- [ ] Generate the Dart client from `openapi.json` instead of the hand-written models; add Sleep, History and protocols screens
 - [ ] Point `web-poc` at the real API (`NEXT_PUBLIC_API_URL`); E2E on the critical path
 - [ ] Accessibility and performance pass
 - [ ] Observability and AI cost tracking per request

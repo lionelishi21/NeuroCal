@@ -54,7 +54,10 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
   - `cd infra && npm run synth` - Bundle the Lambdas and synthesize the stack (no AWS account needed)
   - `cd infra && npm run deploy -- -c stage=dev` - Deploy a stage (needs AWS credentials); secrets and catalog sync steps are in `infra/README.md`
 - **Mobile App (`/mobile-app`):**
-  - `cd mobile-app && flutter run` - Run Flutter app on emulator/device
+  - `cd mobile-app && flutter run` - Run on a simulator/device with sample data and mock sign-in (code 123456)
+  - `flutter run --dart-define-from-file=env/dev.json` - Use the deployed API and Cognito (copy `env/dev.example.json`)
+  - `flutter analyze` / `flutter test` - Lint and widget tests (CI runs both); macOS setup steps are in `mobile-app/README.md`
+  - Same rules as the web app: colours, type and spacing only from `lib/theme/tokens.dart` (mirrors `tokens.css`); `lib/api/models.dart` mirrors `packages/contracts`
 
 ## Conventions
 - Never commit `node_modules`, `.env` files or `.DS_Store`.
