@@ -34,6 +34,7 @@ export function MealTimeline({ meals, onRemove, removingId }: Props) {
               {meal.items.map((item, i) => (
                 <li key={i}>
                   {item.name}, {item.portion}
+                  {item.glycemicLoad === "high" && <span className="font-semibold text-beet">, high glycemic load</span>}
                 </li>
               ))}
             </ul>

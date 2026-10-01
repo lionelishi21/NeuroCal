@@ -1,29 +1,36 @@
-/** The viewer's colour mode: follow the device, or force light or dark. Stored per browser. */
-export type ThemeChoice = "system" | "light" | "dark";
+/** "system" follows the device; the others pin tokens.css to one palette via <html data-theme>. */
+export const THEMES = ["system", "light", "dark"] as const;
+export type Theme = (typeof THEMES)[number];
+
+/** One name per choice everywhere the switch appears (Settings, sign-in). */
+export const themeLabel: Record<Theme, string> = { system: "Match device", light: "Light", dark: "Dark" };
 
 export const THEME_KEY = "neurocal-theme";
 
-export function readTheme(): ThemeChoice {
+/** The saved choice. Storage can be blocked (private windows), so it falls back to "system". */
+export function storedTheme(): Theme {
   try {
-    const saved = localStorage.getItem(THEME_KEY);
-    return saved === "light" || saved === "dark" ? saved : "system";
+    const value = window.localStorage.getItem(THEME_KEY);
+    return THEMES.includes(value as Theme) ? (value as Theme) : "system";
   } catch {
     return "system";
   }
 }
 
-/** Applies a choice to <html data-theme>, which tokens.css reads, and remembers it. */
-export function applyTheme(choice: ThemeChoice) {
-  const root = document.documentElement;
-  if (choice === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", choice);
+export function applyTheme(theme: Theme) {
+  if (theme === "system") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+}
+
+export function saveTheme(theme: Theme) {
+  applyTheme(theme);
   try {
-    if (choice === "system") localStorage.removeItem(THEME_KEY);
-    else localStorage.setItem(THEME_KEY, choice);
+    if (theme === "system") window.localStorage.removeItem(THEME_KEY);
+    else window.localStorage.setItem(THEME_KEY, theme);
   } catch {
-    // storage blocked: the choice lasts for this page only
+    // The choice still applies until the page is reloaded.
   }
 }
 
-/** Runs before first paint (inlined in <head>) so a saved choice never flashes the other theme. */
-export const themeBootScript = `try{var t=localStorage.getItem("${THEME_KEY}");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
+/** Runs before first paint (inlined in <head>) so a saved choice never flashes the other palette. */
+export const themeBootScript = `try{var t=localStorage.getItem("${THEME_KEY}");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;

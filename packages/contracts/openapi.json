@@ -1,0 +1,1369 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NeuroCal API",
+    "version": "0.1.0",
+    "description": "Generated from packages/contracts (Zod). Do not edit by hand: change the contract and run `npm run openapi`."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Local backend (`npm run dev` in backend)"
+    }
+  ],
+  "security": [
+    {
+      "cognitoIdToken": []
+    }
+  ],
+  "paths": {
+    "/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Get the profile and targets",
+        "description": "404 until the profile has been set up.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/me/profile": {
+      "put": {
+        "operationId": "updateProfile",
+        "summary": "Create or update the profile",
+        "description": "The first save creates the profile and needs displayName, dietaryPreference, dailyCalorieTarget and macroTargets. Later saves can be partial.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/bio-state": {
+      "get": {
+        "operationId": "getBioState",
+        "summary": "Get a day's intake against its targets",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Calendar day in the user's time zone, e.g. 2026-09-29. Defaults to today.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioState"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/check-ins": {
+      "post": {
+        "operationId": "createCheckIn",
+        "summary": "Record how the user feels",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckIn"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/meals/analyze": {
+      "post": {
+        "operationId": "analyzeMeal",
+        "summary": "Propose food items from a meal photo",
+        "description": "Nothing is saved. A photo that can't be read is a normal 200 response with `problem` set.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "photo"
+                ],
+                "properties": {
+                  "photo": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The meal photo (JPEG, PNG, WebP or HEIC)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeMealResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/meals": {
+      "post": {
+        "operationId": "createMeal",
+        "summary": "Log a confirmed meal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meal"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMeals",
+        "summary": "List a day's meals, earliest first",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Calendar day in the user's time zone, e.g. 2026-09-29. Defaults to today.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/meals/{id}": {
+      "delete": {
+        "operationId": "deleteMeal",
+        "summary": "Remove a meal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The meal's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/recommendations/next": {
+      "get": {
+        "operationId": "nextRecommendations",
+        "summary": "Suggest recipes for the current bio-state",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextRecommendationsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/focus-score": {
+      "get": {
+        "operationId": "getFocusScore",
+        "summary": "Get a day's Focus Score with its inputs and explanation",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Calendar day in the user's time zone, e.g. 2026-09-29. Defaults to today.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FocusScore"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "operationId": "getHistory",
+        "summary": "Get the last N days, oldest first",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "How many days, ending today. Defaults to 7.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/recommendations/protocols": {
+      "get": {
+        "operationId": "getProtocols",
+        "summary": "Suggest protocols and products for the week's weak points",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/telemetry/sleep": {
+      "post": {
+        "operationId": "ingestSleep",
+        "summary": "Store sleep sessions",
+        "description": "A session replaces any stored session from the same source that overlaps it. Sleep must end after it starts, last at most 24 hours and not end in the future.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestSleepRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/telemetry/screen-time": {
+      "post": {
+        "operationId": "ingestScreenTime",
+        "summary": "Store screen-time samples",
+        "description": "Samples upsert on source and windowStart. Minutes can't exceed the window length.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestScreenTimeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cognitoIdToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "The Cognito ID token of the signed-in user."
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Any failure. `message` is written for the user and can be shown as is.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "AnalyzeMealResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FoodItem"
+            }
+          },
+          "problem": {
+            "type": "string",
+            "enum": [
+              "too_dark",
+              "no_food_found",
+              "blurry"
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "BioState": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "calorieTarget": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "caloriesEaten": {
+            "type": "number",
+            "minimum": 0
+          },
+          "macrosEaten": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "macroTargets": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "macroFocus": {
+            "$ref": "#/components/schemas/MacroFocus"
+          },
+          "cognitiveFlags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveFlag"
+            }
+          },
+          "dietaryPreference": {
+            "$ref": "#/components/schemas/DietaryPreference"
+          }
+        },
+        "required": [
+          "date",
+          "calorieTarget",
+          "caloriesEaten",
+          "macrosEaten",
+          "macroTargets",
+          "macroFocus",
+          "cognitiveFlags",
+          "dietaryPreference"
+        ]
+      },
+      "CheckIn": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "flags": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveFlag"
+            }
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "flags"
+        ]
+      },
+      "CognitiveFlag": {
+        "type": "string",
+        "enum": [
+          "sharp",
+          "low_focus",
+          "brain_fog",
+          "low_energy",
+          "wired",
+          "stressed",
+          "calm"
+        ]
+      },
+      "CognitiveGoal": {
+        "type": "string",
+        "enum": [
+          "focus",
+          "calm",
+          "energy",
+          "sleep"
+        ]
+      },
+      "CreateCheckInRequest": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "flags": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveFlag"
+            }
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "at",
+          "flags"
+        ]
+      },
+      "CreateMealRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/MealKind"
+          },
+          "eatenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FoodItem"
+            }
+          },
+          "photoUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "kind",
+          "eatenAt",
+          "items"
+        ]
+      },
+      "DietaryPreference": {
+        "type": "string",
+        "enum": [
+          "omnivore",
+          "pescatarian",
+          "vegetarian",
+          "vegan",
+          "keto",
+          "mediterranean"
+        ]
+      },
+      "FocusComponentName": {
+        "type": "string",
+        "enum": [
+          "sleep",
+          "timing",
+          "glycemic",
+          "stress"
+        ]
+      },
+      "FocusScore": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "components": {
+            "type": "object",
+            "properties": {
+              "sleep": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "timing": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "glycemic": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "stress": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "sleep",
+              "timing",
+              "glycemic",
+              "stress"
+            ]
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "score",
+          "components",
+          "explanation"
+        ]
+      },
+      "FoodItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "portion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "calories": {
+            "type": "number",
+            "minimum": 0
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "glycemicLoad": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "portion",
+          "calories",
+          "macros"
+        ]
+      },
+      "HistoryDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "calorieTarget": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "caloriesEaten": {
+            "type": "number",
+            "minimum": 0
+          },
+          "proteinG": {
+            "type": "number",
+            "minimum": 0
+          },
+          "focusScore": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sleepMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastMealAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{2}:\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bedtime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{2}:\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wakeTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{2}:\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lateScreenMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveFlag"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "calorieTarget",
+          "caloriesEaten",
+          "proteinG",
+          "focusScore",
+          "sleepMinutes",
+          "lastMealAt",
+          "bedtime",
+          "wakeTime",
+          "lateScreenMinutes",
+          "flags"
+        ]
+      },
+      "HistoryResponse": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryDay"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "IngestResponse": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "accepted"
+        ]
+      },
+      "IngestScreenTimeRequest": {
+        "type": "object",
+        "properties": {
+          "samples": {
+            "minItems": 1,
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenTimeSample"
+            }
+          }
+        },
+        "required": [
+          "samples"
+        ]
+      },
+      "IngestSleepRequest": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SleepSession"
+            }
+          }
+        },
+        "required": [
+          "sessions"
+        ]
+      },
+      "MacroFocus": {
+        "type": "string",
+        "enum": [
+          "protein",
+          "complex_carbs",
+          "healthy_fats",
+          "balanced"
+        ]
+      },
+      "Macros": {
+        "type": "object",
+        "properties": {
+          "proteinG": {
+            "type": "number",
+            "minimum": 0
+          },
+          "carbsG": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fatG": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "proteinG",
+          "carbsG",
+          "fatG"
+        ]
+      },
+      "Meal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MealKind"
+          },
+          "eatenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FoodItem"
+            }
+          },
+          "photoUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "eatenAt",
+          "items"
+        ]
+      },
+      "MealKind": {
+        "type": "string",
+        "enum": [
+          "breakfast",
+          "lunch",
+          "dinner",
+          "snack"
+        ]
+      },
+      "MealList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Meal"
+        }
+      },
+      "NextRecommendationsResponse": {
+        "type": "object",
+        "properties": {
+          "searchQuery": {
+            "type": "string"
+          },
+          "recipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeRecommendation"
+            }
+          }
+        },
+        "required": [
+          "searchQuery",
+          "recipes"
+        ]
+      },
+      "ProductRecommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "affiliate": {
+            "type": "boolean"
+          },
+          "ownBrand": {
+            "type": "boolean"
+          },
+          "supplement": {
+            "type": "boolean"
+          },
+          "match": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "affiliate",
+          "ownBrand",
+          "supplement",
+          "match"
+        ]
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dietaryPreference": {
+            "$ref": "#/components/schemas/DietaryPreference"
+          },
+          "cognitiveGoals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveGoal"
+            }
+          },
+          "dailyCalorieTarget": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "macroTargets": {
+            "$ref": "#/components/schemas/Macros"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "dietaryPreference",
+          "cognitiveGoals",
+          "dailyCalorieTarget",
+          "macroTargets"
+        ]
+      },
+      "ProtocolRecommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "steps": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "match": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "steps",
+          "match"
+        ]
+      },
+      "ProtocolsResponse": {
+        "type": "object",
+        "properties": {
+          "weakPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeakPoint"
+            }
+          },
+          "protocols": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRecommendation"
+            }
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductRecommendation"
+            }
+          }
+        },
+        "required": [
+          "weakPoints",
+          "protocols",
+          "products"
+        ]
+      },
+      "RecipeRecommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "calories": {
+            "type": "number",
+            "minimum": 0
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "reasoning": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sourceName",
+          "sourceUrl",
+          "minutes",
+          "calories",
+          "macros",
+          "reasoning"
+        ]
+      },
+      "ScreenTimeSample": {
+        "type": "object",
+        "properties": {
+          "windowStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "windowEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "#/components/schemas/TelemetrySource"
+          }
+        },
+        "required": [
+          "windowStart",
+          "windowEnd",
+          "minutes",
+          "source"
+        ]
+      },
+      "SleepSession": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/TelemetrySource"
+          },
+          "deepMinutes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "source"
+        ]
+      },
+      "TelemetrySource": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "apple_health",
+          "health_connect",
+          "wearable"
+        ]
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dietaryPreference": {
+            "$ref": "#/components/schemas/DietaryPreference"
+          },
+          "cognitiveGoals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveGoal"
+            }
+          },
+          "dailyCalorieTarget": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "macroTargets": {
+            "$ref": "#/components/schemas/Macros"
+          }
+        }
+      },
+      "WeakPoint": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "$ref": "#/components/schemas/FocusComponentName"
+          },
+          "label": {
+            "type": "string"
+          },
+          "average": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "component",
+          "label",
+          "average"
+        ]
+      }
+    }
+  }
+}

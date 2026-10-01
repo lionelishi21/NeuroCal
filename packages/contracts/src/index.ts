@@ -78,6 +78,9 @@ export const Meal = z.object({
 });
 export type Meal = z.infer<typeof Meal>;
 
+export const MealList = z.array(Meal);
+export type MealList = z.infer<typeof MealList>;
+
 export const CreateMealRequest = Meal.omit({ id: true });
 export type CreateMealRequest = z.infer<typeof CreateMealRequest>;
 
@@ -189,6 +192,9 @@ export const FocusScore = z.object({
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 
+/** Local wall-clock time, "21:40". */
+const LocalTime = z.string().regex(/^\d{2}:\d{2}$/);
+
 export const HistoryDay = z.object({
   date: IsoDate,
   calorieTarget: z.number().int().positive(),
@@ -199,7 +205,13 @@ export const HistoryDay = z.object({
   /** Sleep that ended that morning, or null without data. */
   sleepMinutes: z.number().int().nonnegative().nullable(),
   /** Local time of the last meal ("21:40"), or null if nothing was logged. */
-  lastMealAt: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+  lastMealAt: LocalTime.nullable(),
+  /** Local time the sleep that ended that morning began, or null without data. */
+  bedtime: LocalTime.nullable(),
+  /** Local time that sleep ended, or null without data. */
+  wakeTime: LocalTime.nullable(),
+  /** Screen minutes after 22:00 the night before (until 04:00), or null when none was recorded. */
+  lateScreenMinutes: z.number().int().nonnegative().nullable(),
   /** Every distinct flag from that day's check-ins. */
   flags: z.array(CognitiveFlag),
 });
@@ -268,7 +280,7 @@ export const endpoints = {
   createCheckIn: { method: "POST", path: "/check-ins", body: CreateCheckInRequest, response: CheckIn },
   analyzeMeal: { method: "POST", path: "/meals/analyze", response: AnalyzeMealResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },
-  listMeals: { method: "GET", path: "/meals", response: z.array(Meal) },
+  listMeals: { method: "GET", path: "/meals", response: MealList },
   deleteMeal: { method: "DELETE", path: "/meals/:id" },
   nextRecommendations: { method: "GET", path: "/recommendations/next", response: NextRecommendationsResponse },
   getFocusScore: { method: "GET", path: "/focus-score", response: FocusScore },

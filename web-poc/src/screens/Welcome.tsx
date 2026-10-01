@@ -8,23 +8,8 @@ import { useProfile, useUpdateProfile } from "../api/queries";
 import { Button } from "../components/Button";
 import { fieldClass } from "../components/fields";
 import { useToast } from "../components/Toast";
+import { dietLabel, goalLabel } from "../lib/format";
 import { browserTimeZone, macroCalories, suggestMacros, timeZones } from "../lib/targets";
-
-const dietLabel: Record<DietaryPreference, { name: string; detail: string }> = {
-  omnivore: { name: "Everything", detail: "Meat, fish, dairy and plants" },
-  pescatarian: { name: "Pescatarian", detail: "Fish and seafood, no meat" },
-  vegetarian: { name: "Vegetarian", detail: "No meat or fish" },
-  vegan: { name: "Vegan", detail: "Plants only" },
-  keto: { name: "Keto", detail: "Very low carb, high fat" },
-  mediterranean: { name: "Mediterranean", detail: "Olive oil, fish, grains, vegetables" },
-};
-
-const goalLabel: Record<CognitiveGoal, string> = {
-  focus: "Sharper focus",
-  calm: "Feel calmer",
-  energy: "Steadier energy",
-  sleep: "Better sleep",
-};
 
 const STEPS = ["You", "How you eat", "What you want", "Daily targets"] as const;
 

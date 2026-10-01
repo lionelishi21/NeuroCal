@@ -1,6 +1,6 @@
 # NeuroCal — Execution Plan
 
-_Last updated: 2026-09-29_
+_Last updated: 2026-10-01_
 
 ## 1. Where the project is today
 
@@ -84,7 +84,7 @@ Complementary, optional: the Anthropic **Design** plugin (accessibility review, 
 
 **Subject, audience, job.** NeuroCal is a nutrition companion for people who eat to think clearly — knowledge workers, students, athletes managing focus and energy. Its primary job: *tell me, right now, what my body has and what my mind needs, and what to eat next.*
 
-**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light, and an Auto / Light / Dark switch (Today header and sign-in) that overrides it and is remembered per device. One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
+**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light, unless the viewer picks Light or Dark (Settings → Appearance, or the switch on the sign-in screens; saved per device and applied before first paint). One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
 
 **Colour means a body system**, in both modes (tokens in `web-poc/src/styles/tokens.css`):
 | Token | Dark | Light | Meaning |
@@ -133,7 +133,7 @@ Mobile — Today                  Desktop — Today
 - [x] Jest for backend and contracts, Vitest for web; GitHub Actions CI (typecheck, test, build)
 - [x] `packages/contracts`: Zod schemas for the endpoints in §6
 - [ ] ESLint + Prettier
-- [ ] Generate OpenAPI from `packages/contracts` (for Flutter codegen)
+- [x] Generate OpenAPI from `packages/contracts` (for Flutter codegen): `npm run openapi -w @neurocal/contracts` writes `packages/contracts/openapi.json` (OpenAPI 3.1); a contracts test fails when the file is out of date
 - [x] Write `ARCHITECTURE.md` (schemas, ports, system prompts)
 
 ### Phase 1 — Design system
@@ -146,14 +146,15 @@ Mobile — Today                  Desktop — Today
 ### Phase 2 — Web POC screens on the mock API
 1. ✅ **Onboarding** — name, time zone, dietary preference, cognitive goals, calorie and macro targets (`/welcome`, also used to edit the profile)
 2. ✅ **Today** — dial, meals, check-in, what to eat next
-3. ✅ **Log a meal** — photo → editable items → confirm. _To do: manual entry fallback; show high-glycemic flags_
+3. ✅ **Log a meal** — photo → editable items → confirm, or add items by hand; high glycemic load is flagged in the sheet and on the meal timeline
 4. ✅ **Check-in** — cognitive flags that feed recommendations
 5. ✅ **Focus Score** — daily score with the inputs behind it, plus a "Log sleep" sheet (ARCHITECTURE §6.7–6.8)
-6. **Sleep & circadian** — history view of sleep and screen time, late-eating insights (telemetry contracts and ingest are done)
+6. ✅ **Sleep & circadian** — seven nights on one clock axis (sleep, last meal, screens after 10pm), late-eating and screen-time insights computed from the week, "Log screen time" sheet (`/sleep`; `/history` now also returns bedtime, wake time and late screen minutes)
 7. ✅ **Protocols & products** — matched to the week's weak points with pgvector; affiliate links labelled ("What could help" on `/history`)
 8. ✅ **History** — the past week as aligned Focus Score / calories / sleep charts with a day-by-day table (`/history`)
-9. **Settings / profile**
-- PWA install, offline queue for meal logs
+9. ✅ **Settings / profile** — profile summary with "Edit profile", appearance (match device, light, dark; saved on the device), account and sign out (`/settings`). _To do: daily summary email opt-in, once ARCHITECTURE §6.10 has a contract_
+- [x] PWA install: web manifest and icons, "Install NeuroCal" in Settings (Share-menu steps on iPhone)
+- [x] Offline queue for meal logs: a meal that gets no response is kept on the device and sent when the connection returns. _To do: an idempotency key on `POST /meals`, so a lost response can't log a meal twice; a service worker so the app itself opens offline (it must share a scope with the MSW mock worker)_
 
 ### Phase 3 — Backend on AWS
 - [x] Domain entities (ARCHITECTURE §3); Drizzle schema + first migration for the core tables (§4)

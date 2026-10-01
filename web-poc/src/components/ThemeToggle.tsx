@@ -1,35 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { applyTheme, readTheme, type ThemeChoice } from "../lib/theme";
+import { THEMES, type Theme, saveTheme, storedTheme, themeLabel } from "../lib/theme";
 
-const options: { value: ThemeChoice; label: string }[] = [
-  { value: "system", label: "Auto" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
-
-/** Auto / Light / Dark. "Auto" follows the device setting. */
+/** Compact appearance switch for screens outside Settings (sign-in). Same choices and names as Settings. */
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [choice, setChoice] = useState<ThemeChoice>("system");
-  useEffect(() => setChoice(readTheme()), []);
+  const [theme, setTheme] = useState<Theme>("system");
+  useEffect(() => setTheme(storedTheme()), []);
 
   return (
-    <div role="group" aria-label="Colour mode" className={`inline-flex gap-0.5 rounded-pill bg-paper p-0.5 ring-1 ring-rule ring-inset ${className}`}>
-      {options.map(({ value, label }) => (
+    <div role="group" aria-label="Appearance" className={`inline-flex gap-0.5 rounded-pill bg-paper p-0.5 ring-1 ring-rule ring-inset ${className}`}>
+      {THEMES.map((option) => (
         <button
-          key={value}
+          key={option}
           type="button"
-          aria-pressed={choice === value}
+          aria-pressed={theme === option}
           onClick={() => {
-            applyTheme(value);
-            setChoice(value);
+            saveTheme(option);
+            setTheme(option);
           }}
-          className={`cursor-pointer rounded-pill px-2.5 py-1 text-xs font-semibold ${
-            choice === value ? "bg-synapse text-on-accent" : "text-ink-soft hover:text-ink"
+          className={`cursor-pointer rounded-pill px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${
+            theme === option ? "bg-synapse text-on-accent" : "text-ink-soft hover:text-ink"
           }`}
         >
-          {label}
+          {themeLabel[option]}
         </button>
       ))}
     </div>

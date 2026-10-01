@@ -68,16 +68,22 @@ export function sleepComponent(sessions: SleepSession[]): number | null {
   return 0.7 * duration + 0.3 * clamp01(deep / TARGET_DEEP_MIN);
 }
 
-export function timingComponent(inputs: FocusInputs): number | null {
+/** Screen minutes on the evening before `date` (22:00–04:00), or null when nothing was recorded for it. */
+export function lateScreenMinutes(inputs: FocusInputs): number | null {
   const previous = previousDate(inputs.date);
-  const lateScreen = inputs.screenTime
-    .filter((s) => {
-      const day = localDateOf(s.windowStart, inputs.timeZone);
-      const { hour } = localTimeOf(s.windowStart, inputs.timeZone);
-      return (day === previous && hour >= LATE_SCREEN_FROM_HOUR) || (day === inputs.date && hour < LATE_SCREEN_UNTIL_HOUR);
-    })
-    .reduce((sum, s) => sum + s.minutes, 0);
-  const hasScreen = inputs.screenTime.length > 0;
+  const late = inputs.screenTime.filter((s) => {
+    const day = localDateOf(s.windowStart, inputs.timeZone);
+    const { hour } = localTimeOf(s.windowStart, inputs.timeZone);
+    return (day === previous && hour >= LATE_SCREEN_FROM_HOUR) || (day === inputs.date && hour < LATE_SCREEN_UNTIL_HOUR);
+  });
+  return late.length ? late.reduce((sum, s) => sum + s.minutes, 0) : null;
+}
+
+export function timingComponent(inputs: FocusInputs): number | null {
+  const recorded = lateScreenMinutes(inputs);
+  const lateScreen = recorded ?? 0;
+  // Only that evening's samples count as data: daytime screen time says nothing about timing.
+  const hasScreen = recorded !== null;
   const hasMeals = inputs.previousDayMeals.length > 0;
   if (!hasScreen && !hasMeals) return null;
 

@@ -10,10 +10,10 @@ afterEach(() => {
 });
 
 describe("ThemeToggle", () => {
-  it("forces light or dark and remembers it, and Auto goes back to the device setting", async () => {
+  it("forces light or dark and remembers it, and Match device goes back to the device setting", async () => {
     const user = userEvent.setup();
     render(<ThemeToggle />);
-    expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Match device" })).toHaveAttribute("aria-pressed", "true");
 
     await user.click(screen.getByRole("button", { name: "Dark" }));
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
@@ -23,7 +23,7 @@ describe("ThemeToggle", () => {
     await user.click(screen.getByRole("button", { name: "Light" }));
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
 
-    await user.click(screen.getByRole("button", { name: "Auto" }));
+    await user.click(screen.getByRole("button", { name: "Match device" }));
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     expect(localStorage.getItem(THEME_KEY)).toBeNull();
   });

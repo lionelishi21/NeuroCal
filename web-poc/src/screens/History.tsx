@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useHistory } from "../api/queries";
 import { DayColumns } from "../components/DayColumns";
+import { Readout } from "../components/Readout";
 import { WhatHelps } from "../components/WhatHelps";
 import { flagLabel, kcal } from "../lib/format";
 
@@ -157,18 +158,5 @@ export function History() {
         </>
       )}
     </main>
-  );
-}
-
-function Readout({ value, label, swatch }: { value: string; label: string; swatch?: string }) {
-  return (
-    // Source order is dt → dd (valid HTML); the value reads first visually.
-    <div className="flex flex-col-reverse">
-      <dt className="m-0 flex items-center gap-1.5 text-sm text-ink-soft">
-        {swatch && <span aria-hidden className={`h-0.5 w-3 rounded-pill ${swatch}`} />}
-        {label}
-      </dt>
-      <dd className="m-0 text-xl font-semibold text-ink tabular-nums">{value}</dd>
-    </div>
   );
 }
