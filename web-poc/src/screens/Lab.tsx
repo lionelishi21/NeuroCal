@@ -2,6 +2,8 @@ import { BioStateDial } from "../components/BioStateDial";
 import { Button } from "../components/Button";
 import { FlagSummary } from "../components/FlagSummary";
 import { MacroLegend } from "../components/MacroLegend";
+import { NightBands } from "../components/NightBands";
+import type { Night } from "../lib/nights";
 
 const targets = { proteinG: 130, carbsG: 240, fatG: 75 };
 const states = [
@@ -10,7 +12,25 @@ const states = [
   { name: "Over budget", eaten: 2480, macros: { proteinG: 140, carbsG: 290, fatG: 92 } },
 ];
 
-/** Component states side by side, for design review and screenshots. Not linked from the app. */
+const night = (evening: string, morning: string, lastMealAt: string | null, lateScreenMinutes: number | null, bedtime: string | null, wakeTime: string | null, sleepMinutes: number | null): Night => ({
+  evening,
+  morning,
+  lastMealAt,
+  lateScreenMinutes,
+  bedtime,
+  wakeTime,
+  sleepMinutes,
+  focusScore: null,
+});
+const nights = [
+  night("Mon", "Tue", "19:00", 0, "22:30", "06:30", 480),
+  night("Tue", "Wed", "21:45", 50, "01:00", "06:30", 330),
+  night("Wed", "Thu", "22:10", 75, "00:30", "06:30", 360),
+  night("Thu", "Fri", null, null, null, null, null),
+  night("Fri", "Sat", "20:15", 20, "23:00", "08:30", 570),
+];
+
+/** Component states side by side, for design review and screenshots. Not linked from the app; open /lab directly (no sign-in needed). */
 export function Lab() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
@@ -28,6 +48,12 @@ export function Lab() {
             </div>
           ))}
         </div>
+      </section>
+      <section aria-labelledby="nights" className="mt-12 max-w-3xl">
+        <h2 id="nights" className="text-xl">
+          Night bands
+        </h2>
+        <NightBands nights={nights} label={(n) => n.evening} />
       </section>
       <section aria-labelledby="controls" className="mt-12">
         <h2 id="controls" className="text-xl">

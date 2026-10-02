@@ -16,7 +16,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
 } from "../infrastructure/database/DrizzleRepositories";
-import { GoogleRecipeSearch } from "../infrastructure/search/GoogleRecipeSearch";
+import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
 
@@ -27,7 +27,7 @@ import { createApi } from "./routes";
  */
 await applyAwsSecrets();
 const config = loadConfig();
-const required = (name: string, value: string | undefined) => {
+const required = <T>(name: string, value: T | undefined): T => {
   if (!value) throw new Error(`Missing required setting ${name}`);
   return value;
 };
@@ -46,10 +46,7 @@ const api = createApi(
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    search: new GoogleRecipeSearch({
-      apiKey: required("GOOGLE_CSE_API_KEY", config.googleSearchApiKey),
-      engineId: required("GOOGLE_CSE_ID", config.googleSearchEngineId),
-    }),
+    search: required("TAVILY_API_KEY (or BRAVE_SEARCH_API_KEY, or GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID)", createRecipeSearch(config)),
     clock: systemClock,
     recipeDomains: config.recipeDomains,
   }),

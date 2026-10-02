@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { ISearchEngineAdapter, RecipeSearchHit } from "../../application/interfaces/ISearchEngineAdapter";
+import { firstNumber, isoMinutes, str, sum } from "./recipeData";
+
+export { isoMinutes };
 
 const ENDPOINT = "https://www.googleapis.com/customsearch/v1";
 
@@ -69,25 +72,4 @@ function toHit(item: NonNullable<z.infer<typeof SearchResponse>["items"]>[number
     ...(calories !== undefined ? { calories } : {}),
     ...(proteinG !== undefined && carbsG !== undefined && fatG !== undefined ? { macros: { proteinG, carbsG, fatG } } : {}),
   };
-}
-
-const str = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : undefined);
-
-/** "450 calories", "30 g" → 450, 30. */
-function firstNumber(value: unknown): number | undefined {
-  const match = str(value)?.match(/\d+(?:\.\d+)?/);
-  return match ? Number(match[0]) : undefined;
-}
-
-/** ISO 8601 duration ("PT1H30M") → 90. */
-export function isoMinutes(value: unknown): number | undefined {
-  const match = str(value)?.match(/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/i);
-  if (!match || !(match[1] || match[2] || match[3])) return undefined;
-  const [, d = "0", h = "0", m = "0"] = match;
-  const total = Number(d) * 1440 + Number(h) * 60 + Number(m);
-  return total > 0 ? total : undefined;
-}
-
-function sum(a: number | undefined, b: number | undefined): number | undefined {
-  return a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0);
 }

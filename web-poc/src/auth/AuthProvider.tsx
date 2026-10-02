@@ -87,7 +87,8 @@ export function AuthProvider({ children, client: injected }: { children: ReactNo
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
+// The lab shows component states with fixed sample data: no account or API involved.
+const PUBLIC_PATHS = ["/sign-in", "/sign-up", "/lab"];
 
 /** Sends signed-out visitors to sign-in (remembering where they were going); renders nothing until the session is known. */
 export function RequireAuth({ children }: { children: ReactNode }) {

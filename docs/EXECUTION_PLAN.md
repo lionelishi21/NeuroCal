@@ -9,7 +9,7 @@ The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal
 - **Calorie & macro vision:** meal photo → items, calories, macros, high-glycemic flags (OpenAI `gpt-4o`)
 - **Focus Score engine:** a daily score from sleep telemetry, diet and self-reported stress
 - **Circadian telemetry:** late-night screen time and late eating vs. melatonin and weight plateaus
-- **Dynamic recipe routing:** macro gaps → search query (Anthropic Claude) → recipes from trusted domains (Google Custom Search)
+- **Dynamic recipe routing:** macro gaps → search query (Anthropic Claude) → recipes from trusted domains (Tavily search)
 - **Vector recommendations:** `pgvector` matches a user's weak points (e.g. "poor deep sleep") to protocols and products
 
 | Area | State |
@@ -68,7 +68,7 @@ neurocal-workspace/
 - **AWS Serverless:** Lambda, API Gateway, S3 (meal photos), EventBridge (scheduled Focus Score and telemetry jobs)
 - **Aurora PostgreSQL Serverless v2 + `pgvector`** via Drizzle
 - **AI:** OpenAI `gpt-4o` (vision) and `text-embedding-3-small` (vectors); Anthropic `claude-haiku-4-5` (recipe search queries). All behind the existing ports; every LLM output is validated against a schema
-- **Search / email:** Google Custom Search, Resend
+- **Search / email:** Tavily search (Brave and Google Custom Search as fallbacks), Resend
 - **Tests:** Jest with fake providers for use cases
 
 ## 4. Design approach — no templates
@@ -165,6 +165,7 @@ Mobile — Today                  Desktop — Today
 - [x] OpenAI vision adapter (§7.1)
 - [x] `RecommendRecipeUseCase` (§6.6)
 - [x] Claude reasoning adapter + Google Custom Search adapter (§7.2)
+- [x] Tavily search adapter (and a Brave one) with recipe-page nutrition lookup; the provider is chosen by which key is set (Google refuses the Custom Search API for new projects). The query prompt now asks for dish-style queries, which is what returns recipes. _To do: add `TAVILY_API_KEY` to the dev secret and redeploy; settle the allow-list (ARCHITECTURE §11.4)_
 - [x] Telemetry ingest + Focus Score use case with Claude explanation (§6.7–6.8, §7.4)
 - [x] Embeddings + vector recommendation use case, catalog sync, pgvector HNSW (§6.9, §7.3)
 - [ ] Real protocol/product content and partner links (catalog.ts)

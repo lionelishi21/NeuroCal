@@ -14,6 +14,8 @@ export interface AppConfig {
   databaseUrl?: string;
   openAiApiKey?: string;
   anthropicApiKey?: string;
+  tavilyApiKey?: string;
+  braveSearchApiKey?: string;
   googleSearchApiKey?: string;
   googleSearchEngineId?: string;
   recipeDomains: string[];
@@ -26,6 +28,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: opt("DATABASE_URL"),
     openAiApiKey: opt("OPENAI_API_KEY"),
     anthropicApiKey: opt("ANTHROPIC_API_KEY"),
+    tavilyApiKey: opt("TAVILY_API_KEY"),
+    braveSearchApiKey: opt("BRAVE_SEARCH_API_KEY"),
     googleSearchApiKey: opt("GOOGLE_CSE_API_KEY"),
     googleSearchEngineId: opt("GOOGLE_CSE_ID"),
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,

@@ -6,7 +6,7 @@
  */
 
 /** Keys accepted from the app secret; anything else in it is ignored. */
-const APP_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_CSE_API_KEY", "GOOGLE_CSE_ID", "RECIPE_ALLOWED_DOMAINS"] as const;
+const APP_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "TAVILY_API_KEY", "BRAVE_SEARCH_API_KEY", "GOOGLE_CSE_API_KEY", "GOOGLE_CSE_ID", "RECIPE_ALLOWED_DOMAINS"] as const;
 
 /** Shape of the secret Aurora generates for its admin user. */
 interface DbSecret {

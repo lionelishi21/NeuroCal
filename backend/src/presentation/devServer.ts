@@ -26,7 +26,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
-import { GoogleRecipeSearch } from "../infrastructure/search/GoogleRecipeSearch";
+import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
 
@@ -129,10 +129,7 @@ async function main() {
   const explainer = config.anthropicApiKey ? new ClaudeFocusExplainer({ apiKey: config.anthropicApiKey }) : stubExplainer;
   const embedder = config.openAiApiKey ? new OpenAiEmbeddingProvider({ apiKey: config.openAiApiKey }) : keywordEmbedder;
   const synced = await new SyncCatalogUseCase(new DrizzleCatalogRepository(db), embedder).execute({ protocols: PROTOCOLS, products: PRODUCTS });
-  const search =
-    config.googleSearchApiKey && config.googleSearchEngineId
-      ? new GoogleRecipeSearch({ apiKey: config.googleSearchApiKey, engineId: config.googleSearchEngineId })
-      : stubSearch;
+  const search = createRecipeSearch(config) ?? stubSearch;
 
   const api = createApi(
     buildUseCases({

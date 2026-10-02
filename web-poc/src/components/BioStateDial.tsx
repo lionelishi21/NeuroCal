@@ -17,7 +17,9 @@ interface Props {
 
 function polar(r: number, turn: number) {
   const a = turn * 2 * Math.PI - Math.PI / 2;
-  return { x: C + r * Math.cos(a), y: C + r * Math.sin(a) };
+  // Rounded: Node and browsers differ in the last digit of sin/cos, which breaks hydration.
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return { x: round(C + r * Math.cos(a)), y: round(C + r * Math.sin(a)) };
 }
 
 function arcPath(r: number, fraction: number) {

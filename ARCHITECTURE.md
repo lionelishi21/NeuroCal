@@ -34,8 +34,8 @@ _Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables
  │ infrastructure/ Adapters that implement the ports                      │
  └──┬─────────────┬──────────────┬──────────────┬──────────────┬─────────┘
     ▼             ▼              ▼              ▼              ▼
- Aurora PG     S3 (meal      OpenAI          Anthropic      Google Custom
- Serverless v2 photos)       gpt-4o vision   claude-haiku-  Search · Resend
+ Aurora PG     S3 (meal      OpenAI          Anthropic      Tavily search
+ Serverless v2 photos)       gpt-4o vision   claude-haiku-  · Resend      
  + pgvector                  embeddings      4-5            (email)
 ```
 
@@ -325,7 +325,7 @@ cognitiveFlags = flags of the latest check-in on that local day, or []
 Ports: `IProfileRepository`, `IMealRepository`, `ICheckInRepository`, `IAiReasoningProvider`, `ISearchEngineAdapter`, `IRecommendationRepository`. `RecommendRecipeUseCase.ts` is this use case.
 1. `ComputeBioState` for today → `BioStateContext { caloriesRemaining, macroFocus, cognitiveFlags, dietaryPreference }`.
 2. `generateRecipeSearchQuery(context)` → `{ searchQuery, contextualReasoning }` (Claude, §7.2).
-3. `searchRecipes(searchQuery, { allowedDomains, limit: 10 })` (Google Custom Search restricted to the allow-list).
+3. `searchRecipes(searchQuery, { allowedDomains, limit: 10 })`: Tavily search with the allow-list as `include_domains`. Tavily returns links only, so the adapter fetches each allow-listed hit's page and reads its schema.org Recipe data (time, calories, macros); guides, collection pages and pages that can't be read stay without nutrition and are dropped in the next step. `createRecipeSearch` picks the provider by which key is set: `TAVILY_API_KEY`, then `BRAVE_SEARCH_API_KEY`, then the Google Custom Search pair (Google closed that API to new projects).
 4. Rank the hits: keep only allowed domains (checked again, not just trusted to search) and hits with full nutrition (the contract requires minutes, calories and macros); drop anything over `caloriesRemaining` when calories are left; sort by protein per calorie; keep the top 3. The dietary preference is enforced by the query itself.
 5. Attach `contextualReasoning` as each recipe's `reasoning`, save, and return `NextRecommendationsResponse { searchQuery, recipes }`.
 
@@ -417,9 +417,14 @@ System prompt:
 You write one web search query that finds a recipe for the user's next meal.
 You get: calories remaining today, the macro they are most short of, how they
 feel right now (cognitive flags) and their dietary preference.
-The query must respect the dietary preference, fit within the calories remaining,
-favour the macro they are short of, and favour foods that support the way they
-want to feel (for example steady energy for low_energy, omega-3s for low_focus).
+Choose a dish or main ingredient that respects the dietary preference, is rich in
+the macro they are short of, and supports the way they want to feel (for example
+oats or lentils for low_energy, salmon or walnuts for low_focus).
+Write the query the way a person looks up a dish: four to eight plain words that
+name the ingredient or dish and the meal, ending with the word "recipe", for
+example "high protein salmon dinner recipe". Never put calorie numbers or nutrient
+names such as omega-3 in the query: they return articles instead of recipes, and
+the calories remaining are checked against each recipe afterwards.
 Also write contextualReasoning: two sentences, second person, plain words,
 explaining why this kind of meal fits right now. No medical claims.
 ```
@@ -496,7 +501,7 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 - **Auth:** Amazon Cognito user pool with a JWT authorizer on API Gateway (in `infra/`). The web app signs in with Amplify Auth (SRP) and sends the ID token; without Cognito settings it uses a local mock (`web-poc/src/auth`). Mobile sign-in **planned**. Handlers take `userId` only from the verified token, never from the request.
 - **Per-user scoping:** every repository method takes `userId` and puts it in the `WHERE` clause. Integration tests assert that user A cannot read or delete user B's rows.
 - **Health data is sensitive:** encryption at rest (Aurora + S3 with KMS), TLS everywhere, S3 buckets private with presigned URLs only, least-privilege IAM per Lambda.
-- **Secrets:** API keys (OpenAI, Anthropic, Google, Resend) in one Secrets Manager JSON secret and Aurora's credentials in its generated secret. Lambdas get only the ARNs and read them once per cold start (`infrastructure/aws/secrets.ts`); never in env files or the repo.
+- **Secrets:** API keys (OpenAI, Anthropic, Tavily, Resend) in one Secrets Manager JSON secret and Aurora's credentials in its generated secret. Lambdas get only the ARNs and read them once per cold start (`infrastructure/aws/secrets.ts`); never in env files or the repo.
 - **LLM safety:** schema-validated outputs (§7); user notes are passed as data, never as instructions; no medical claims in generated text.
 - **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client. When any suggested product has `supplement = true`, clients add a one-line note to check with a doctor or pharmacist first.
 - **Deletion:** account deletion removes rows, S3 objects and embeddings (§4 retention).
@@ -508,7 +513,7 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 1. **Focus Score weights** (§6.8): validate the v0 weights against real user data before showing scores widely.
 2. **Auth provider:** Cognito is wired in `infra/` because it fits the AWS stack; confirm before building sign-in screens.
 3. **Retention periods** for photos, telemetry and deleted accounts.
-4. **Recipe domain allow-list** for Google Custom Search ("trusted biohacking domains" in README).
+4. **Recipe domain allow-list** ("trusted biohacking domains" in README). Checked on 2026-10-01 with the page reader: bbcgoodfood.com, cooking.nytimes.com and budgetbytes.com publish full nutrition; bonappetit.com publishes none; seriouseats.com and eatingwell.com answer automated requests with 402. Set `RECIPE_ALLOWED_DOMAINS` to override the default list.
 5. **Telemetry sources** for sleep and screen time (Apple Health, Google Health Connect, wearables) and how the Flutter app collects them.
 
 ---

@@ -31,10 +31,11 @@ Context options:
    aws secretsmanager put-secret-value --secret-id <AppSecretArn> --secret-string '{
      "OPENAI_API_KEY": "sk-…",
      "ANTHROPIC_API_KEY": "sk-ant-…",
-     "GOOGLE_CSE_API_KEY": "…",
-     "GOOGLE_CSE_ID": "…"
+     "TAVILY_API_KEY": "tvly-…"
    }'
    ```
+   Replace each `…` with the whole real key before running it. `TAVILY_API_KEY` (from https://tavily.com; the free plan covers about 1,000 searches a month, one per recipe suggestion load) powers recipe search; it is not one of the placeholders the stack creates, so it only exists once you add it. `BRAVE_SEARCH_API_KEY`, or `GOOGLE_CSE_API_KEY` with `GOOGLE_CSE_ID`, are read as fallbacks in that order; Google no longer gives new projects access to its API. `RECIPE_ALLOWED_DOMAINS` (comma-separated) is optional.
+
    Lambdas read the secret once per cold start. After changing keys, force new containers, for example by redeploying or updating any environment value.
 5. **Embed the catalog.** Repeat this after every change to `backend/src/infrastructure/catalog/catalog.ts`:
    ```sh
