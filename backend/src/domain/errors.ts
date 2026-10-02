@@ -17,6 +17,11 @@ export class NotFoundError extends DomainError {
   readonly code = "not_found";
 }
 
+/** → 403. Signed in, but not allowed to do this. */
+export class ForbiddenError extends DomainError {
+  readonly code = "forbidden";
+}
+
 /** → 502. A model or external service failed or returned something unusable. */
 export class UpstreamError extends DomainError {
   readonly code = "upstream_failed";

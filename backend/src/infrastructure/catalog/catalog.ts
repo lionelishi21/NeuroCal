@@ -2,13 +2,18 @@
  * The protocol and product catalog (ARCHITECTURE §3: authored by NeuroCal, never generated).
  * Edit freely: SyncCatalogUseCase re-embeds only entries whose text changed.
  *
- * Most products are generic categories. When a partner agreement exists, add its
- * `url` and set `affiliate: true`. MitoProof (mitoproof.com) is run by NeuroCal's
- * makers, so its items set `ownBrand: true`. Every client labels both visibly.
+ * Some products are generic categories with no link. Partner products carry a
+ * `url`; set `affiliate: true` only when NeuroCal has its own agreement with the
+ * brand, and then put NeuroCal's own tracking link in `url` (never another
+ * affiliate's link: the commission would go to them). MitoProof (mitoproof.com)
+ * is run by NeuroCal's makers, so its items set `ownBrand: true`. Every client
+ * labels affiliate and own-brand items visibly.
  * Set `supplement: true` on dietary supplements: clients add a check-with-your-doctor note.
  * Keep wording practical and free of medical claims.
  */
 import type { Product, Protocol } from "../../domain/types";
+import { MITOPROOF_PRODUCTS } from "./mitoproofProducts";
+import { PARTNER_PRODUCTS } from "./partnerProducts";
 
 export const PROTOCOLS: Protocol[] = [
   {
@@ -105,6 +110,7 @@ export const PROTOCOLS: Protocol[] = [
   },
 ];
 
+/** Generic categories first (no link), then partner brands, then the MitoProof range. */
 export const PRODUCTS: Product[] = [
   {
     id: "sunrise-alarm",
@@ -151,25 +157,6 @@ export const PRODUCTS: Product[] = [
     supplement: false,
     tags: ["low focus", "stress", "focus blocks", "productivity"],
   },
-  {
-    id: "mitoproof-protocol",
-    name: "The Mitoproof Protocol",
-    description:
-      "A 30-day guide from MitoProof that puts sleep, meal timing, nutrition and supplement timing into one daily routine. A PDF with a resource pack.",
-    url: "https://www.mitoproof.com/products",
-    affiliate: false,
-    ownBrand: true,
-    supplement: false,
-    tags: ["sleep", "energy", "circadian rhythm", "timing", "late eating", "nutrition", "routine"],
-  },
-  {
-    id: "mitoproof-acv-capsules",
-    name: "MitoProof apple cider vinegar capsules",
-    description: "Apple cider vinegar in capsule form, for people who would rather not drink it. Take with a meal as the label directs.",
-    url: "https://www.mitoproof.com/products",
-    affiliate: false,
-    ownBrand: true,
-    supplement: true,
-    tags: ["meals", "high-glycemic meals", "steady energy", "supplements"],
-  },
+  ...PARTNER_PRODUCTS,
+  ...MITOPROOF_PRODUCTS,
 ];

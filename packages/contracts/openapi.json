@@ -135,14 +135,51 @@
         }
       }
     },
+    "/uploads/meal-photo": {
+      "post": {
+        "operationId": "createPhotoUpload",
+        "summary": "Get a short-lived URL to upload a meal photo to",
+        "description": "PUT the photo's bytes to `uploadUrl` with exactly the returned `headers`, then pass `photoKey` to POST /meals/analyze. The photo must be an image of at most 8 MB, and the bytes sent must match `sizeBytes`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePhotoUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoUpload"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/meals/analyze": {
       "post": {
         "operationId": "analyzeMeal",
         "summary": "Propose food items from a meal photo",
-        "description": "Nothing is saved. A photo that can't be read is a normal 200 response with `problem` set.",
+        "description": "Send the `photoKey` of an uploaded photo as JSON, or the photo itself as multipart. Nothing is saved. A photo that can't be read is a normal 200 response with `problem` set.",
         "requestBody": {
           "required": true,
           "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeMealRequest"
+              }
+            },
             "multipart/form-data": {
               "schema": {
                 "type": "object",
@@ -373,6 +410,125 @@
         }
       }
     },
+    "/admin/products": {
+      "get": {
+        "operationId": "listAdminProducts",
+        "summary": "List every product for the admin screen",
+        "description": "Admins only; anyone else gets 403.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAdminProduct",
+        "summary": "Add a product from the admin screen",
+        "description": "Admins only. An affiliate or own-brand product needs a link.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProduct"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/products/{id}": {
+      "put": {
+        "operationId": "updateAdminProduct",
+        "summary": "Change a product's link, affiliate label or on/off state",
+        "description": "Admins only. Send only the fields to change; `url: null` goes back to the catalog's link.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The product's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProduct"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAdminProduct",
+        "summary": "Remove a product added from the admin screen",
+        "description": "Admins only. Catalog products can't be removed, only turned off.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The product's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/telemetry/sleep": {
       "post": {
         "operationId": "ingestSleep",
@@ -460,6 +616,94 @@
       }
     },
     "schemas": {
+      "AdminProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "catalogUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "affiliate": {
+            "type": "boolean"
+          },
+          "ownBrand": {
+            "type": "boolean"
+          },
+          "supplement": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "managedBy": {
+            "type": "string",
+            "enum": [
+              "catalog",
+              "admin"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "affiliate",
+          "ownBrand",
+          "supplement",
+          "tags",
+          "enabled",
+          "managedBy"
+        ]
+      },
+      "AdminProductList": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProduct"
+            }
+          }
+        },
+        "required": [
+          "products"
+        ]
+      },
+      "AnalyzeMealRequest": {
+        "type": "object",
+        "properties": {
+          "photoKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "photoKey"
+        ]
+      },
       "AnalyzeMealResponse": {
         "type": "object",
         "properties": {
@@ -592,6 +836,51 @@
           "sleep"
         ]
       },
+      "CreateAdminProductRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https:\\/\\/"
+          },
+          "affiliate": {
+            "type": "boolean"
+          },
+          "ownBrand": {
+            "type": "boolean"
+          },
+          "supplement": {
+            "type": "boolean"
+          },
+          "tags": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "affiliate",
+          "ownBrand",
+          "supplement",
+          "tags"
+        ]
+      },
       "CreateCheckInRequest": {
         "type": "object",
         "properties": {
@@ -642,6 +931,24 @@
           "kind",
           "eatenAt",
           "items"
+        ]
+      },
+      "CreatePhotoUploadRequest": {
+        "type": "object",
+        "properties": {
+          "mediaType": {
+            "type": "string",
+            "pattern": "^image\\/[\\w.+-]+$"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 8388608
+          }
+        },
+        "required": [
+          "mediaType",
+          "sizeBytes"
         ]
       },
       "DietaryPreference": {
@@ -1054,6 +1361,38 @@
           "recipes"
         ]
       },
+      "PhotoUpload": {
+        "type": "object",
+        "properties": {
+          "photoKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uploadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "headers": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "photoKey",
+          "uploadUrl",
+          "headers",
+          "expiresAt"
+        ]
+      },
       "ProductRecommendation": {
         "type": "object",
         "properties": {
@@ -1313,6 +1652,28 @@
           "health_connect",
           "wearable"
         ]
+      },
+      "UpdateAdminProductRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^https:\\/\\/"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affiliate": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
       },
       "UpdateProfileRequest": {
         "type": "object",

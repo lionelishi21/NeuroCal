@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import { z } from "zod";
 import {
+  AdminProduct,
+  AdminProductList,
   AnalyzeMealResponse,
+  type CreateAdminProductRequest,
+  type UpdateAdminProductRequest,
   BioState,
   CheckIn,
   FocusScore,
@@ -16,6 +20,7 @@ import {
   type CreateMealRequest,
   Meal,
   NextRecommendationsResponse,
+  PhotoUpload,
   Profile,
 } from "@neurocal/contracts";
 import { RequestFailed, request } from "./client";
@@ -31,6 +36,7 @@ export const keys = {
   focusScore: (date: string) => ["focus-score", date] as const,
   history: (days: number) => ["history", days] as const,
   protocols: ["recommendations", "protocols"] as const,
+  adminProducts: ["admin", "products"] as const,
 };
 
 export function useProfile() {
@@ -80,12 +86,23 @@ export function useProtocols() {
   });
 }
 
+/**
+ * Photo → proposed items, in three steps: ask the API where to upload, PUT the
+ * photo straight to storage (so it never passes through the API), then analyze
+ * it by key (ARCHITECTURE §9).
+ */
 export function useAnalyzeMeal() {
   return useMutation({
-    mutationFn: (photo: File) => {
-      const form = new FormData();
-      form.append("photo", photo);
-      return request("/meals/analyze", AnalyzeMealResponse, { method: "POST", body: form });
+    mutationFn: async (photo: File) => {
+      const upload = await request("/uploads/meal-photo", PhotoUpload, {
+        method: "POST",
+        // Some cameras hand over a file with no type; the picker only offers images.
+        body: JSON.stringify({ mediaType: photo.type || "image/jpeg", sizeBytes: photo.size }),
+      });
+      // Not `request`: this goes to storage, not the API, and must carry no auth header.
+      const put = await fetch(upload.uploadUrl, { method: "PUT", headers: upload.headers, body: photo });
+      if (!put.ok) throw new Error(`Photo upload failed with ${put.status}`);
+      return request("/meals/analyze", AnalyzeMealResponse, { method: "POST", body: JSON.stringify({ photoKey: upload.photoKey }) });
     },
   });
 }
@@ -223,5 +240,46 @@ export function useUpdateProfile() {
       // Targets and time zone change every derived number.
       return client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "me" });
     },
+  });
+}
+
+/** Every product, for the admin screen. Fails with 403 for anyone who isn't an admin, so it is never retried. */
+export function useAdminProducts() {
+  return useQuery({
+    queryKey: keys.adminProducts,
+    queryFn: () => request("/admin/products", AdminProductList),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+/** Product edits change what "What could help" suggests, so both lists refresh. */
+function useInvalidateProducts() {
+  const client = useQueryClient();
+  return () => Promise.all([client.invalidateQueries({ queryKey: keys.adminProducts }), client.invalidateQueries({ queryKey: keys.protocols })]);
+}
+
+export function useUpdateAdminProduct() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: ({ id, ...settings }: UpdateAdminProductRequest & { id: string }) =>
+      request(`/admin/products/${encodeURIComponent(id)}`, AdminProduct, { method: "PUT", body: JSON.stringify(settings) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCreateAdminProduct() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: (product: CreateAdminProductRequest) => request("/admin/products", AdminProduct, { method: "POST", body: JSON.stringify(product) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteAdminProduct() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: (id: string) => request(`/admin/products/${encodeURIComponent(id)}`, z.undefined(), { method: "DELETE" }),
+    onSuccess: invalidate,
   });
 }

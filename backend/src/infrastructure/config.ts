@@ -18,7 +18,11 @@ export interface AppConfig {
   braveSearchApiKey?: string;
   googleSearchApiKey?: string;
   googleSearchEngineId?: string;
+  /** S3 bucket for meal photos; set by the stack. */
+  photoBucket?: string;
   recipeDomains: string[];
+  /** Lower-cased emails allowed to use the admin routes. */
+  adminEmails: string[];
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -32,6 +36,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     braveSearchApiKey: opt("BRAVE_SEARCH_API_KEY"),
     googleSearchApiKey: opt("GOOGLE_CSE_API_KEY"),
     googleSearchEngineId: opt("GOOGLE_CSE_ID"),
+    photoBucket: opt("PHOTO_BUCKET"),
+    adminEmails: (opt("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,
   };
 }

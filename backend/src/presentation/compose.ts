@@ -4,6 +4,7 @@ import type { ICatalogRepository } from "../application/interfaces/ICatalogRepos
 import type { IClock } from "../application/interfaces/IClock";
 import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
+import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
@@ -13,7 +14,9 @@ import type {
   ITelemetryRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
+import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
+import { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
 import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
@@ -37,6 +40,7 @@ export interface Ports {
   catalog: ICatalogRepository;
   embedder: IEmbeddingProvider;
   vision: IAiVisionProvider;
+  storage: IObjectStorage;
   explainer: IFocusExplainer;
   reasoning: IAiReasoningProvider;
   search: ISearchEngineAdapter;
@@ -52,7 +56,8 @@ export function buildUseCases(p: Ports): UseCases {
     updateProfile: new UpdateProfileUseCase(p.profiles),
     getBioState,
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
-    analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision),
+    createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
+    analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
     logMeal: new LogMealUseCase(p.meals, p.clock),
     listMeals: new ListMealsUseCase(p.profiles, p.meals, p.clock),
     deleteMeal: new DeleteMealUseCase(p.meals),
@@ -62,6 +67,7 @@ export function buildUseCases(p: Ports): UseCases {
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock),
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock),
+    adminProducts: new AdminProductUseCases(p.catalog, p.embedder),
     getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock),
   };
 }

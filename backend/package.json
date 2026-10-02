@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
+    "@aws-sdk/client-s3": "^3.1145.0",
     "@aws-sdk/client-secrets-manager": "^3.1143.0",
+    "@aws-sdk/s3-request-presigner": "^3.1145.0",
     "@neurocal/contracts": "*",
     "drizzle-orm": "^0.45.3",
     "openai": "^7.23.0",

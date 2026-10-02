@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { type AnalyzeMealResponse, type FoodItem, MealKind } from "@neurocal/contracts";
+import { RequestFailed } from "../../api/client";
 import { useAnalyzeMeal, useCreateMeal } from "../../api/queries";
 import { Button } from "../../components/Button";
 import { fieldClass } from "../../components/fields";
@@ -115,7 +116,10 @@ export function LogMealSheet({ open, onOpenChange }: Props) {
         {analyze.isPending && <p className="m-0 text-ink-soft">Reading your plate…</p>}
         {analyze.isError && (
           <p role="alert" className="m-0 text-beet">
-            The photo couldn't be analyzed. Check your connection and choose it again.
+            {/* A 400 says what is wrong with this photo (too large, not an image); anything else is a hiccup. */}
+            {analyze.error instanceof RequestFailed && analyze.error.status === 400
+              ? analyze.error.message
+              : "The photo couldn't be analyzed. Check your connection and choose it again."}
           </p>
         )}
         {problem && (

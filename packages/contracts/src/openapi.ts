@@ -20,7 +20,7 @@ interface OperationDoc {
   query?: Record<string, { description: string; schema: Record<string, unknown> }>;
   /** Path parameter descriptions, by name. */
   params?: Record<string, string>;
-  /** The request is a multipart form with these file fields instead of JSON. */
+  /** The request can also be a multipart form with these file fields. */
   multipart?: Record<string, string>;
 }
 
@@ -40,9 +40,13 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   getBioState: { summary: "Get a day's intake against its targets", query: dateQuery },
   createCheckIn: { summary: "Record how the user feels", status: 201 },
+  createPhotoUpload: {
+    summary: "Get a short-lived URL to upload a meal photo to",
+    description: "PUT the photo's bytes to `uploadUrl` with exactly the returned `headers`, then pass `photoKey` to POST /meals/analyze. The photo must be an image of at most 8 MB, and the bytes sent must match `sizeBytes`.",
+  },
   analyzeMeal: {
     summary: "Propose food items from a meal photo",
-    description: "Nothing is saved. A photo that can't be read is a normal 200 response with `problem` set.",
+    description: "Send the `photoKey` of an uploaded photo as JSON, or the photo itself as multipart. Nothing is saved. A photo that can't be read is a normal 200 response with `problem` set.",
     multipart: { photo: "The meal photo (JPEG, PNG, WebP or HEIC)." },
   },
   createMeal: { summary: "Log a confirmed meal", status: 201 },
@@ -55,6 +59,23 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     query: { days: { description: "How many days, ending today. Defaults to 7.", schema: { type: "integer", minimum: 1, maximum: 31 } } },
   },
   getProtocols: { summary: "Suggest protocols and products for the week's weak points" },
+  listAdminProducts: { summary: "List every product for the admin screen", description: "Admins only; anyone else gets 403." },
+  createAdminProduct: {
+    summary: "Add a product from the admin screen",
+    description: "Admins only. An affiliate or own-brand product needs a link.",
+    status: 201,
+  },
+  updateAdminProduct: {
+    summary: "Change a product's link, affiliate label or on/off state",
+    description: "Admins only. Send only the fields to change; `url: null` goes back to the catalog's link.",
+    params: { id: "The product's id." },
+  },
+  deleteAdminProduct: {
+    summary: "Remove a product added from the admin screen",
+    description: "Admins only. Catalog products can't be removed, only turned off.",
+    status: 204,
+    params: { id: "The product's id." },
+  },
   ingestSleep: {
     summary: "Store sleep sessions",
     description: "A session replaces any stored session from the same source that overlaps it. Sleep must end after it starts, last at most 24 hours and not end in the future.",
@@ -122,23 +143,20 @@ export function buildOpenApi() {
       ...Object.entries(doc.query ?? {}).map(([name, q]) => ({ name, in: "query", required: false, description: q.description, schema: q.schema })),
     ];
 
-    const requestBody = doc.multipart
-      ? {
-          required: true,
-          content: {
-            "multipart/form-data": {
-              schema: {
-                type: "object",
-                required: Object.keys(doc.multipart),
-                properties: Object.fromEntries(
-                  Object.entries(doc.multipart).map(([field, description]) => [field, { type: "string", format: "binary", description }]),
-                ),
-              },
-            },
-          },
-        }
-      : "body" in endpoint
-        ? { required: true, content: json(endpoint.body) }
+    const multipart = doc.multipart && {
+      "multipart/form-data": {
+        schema: {
+          type: "object",
+          required: Object.keys(doc.multipart),
+          properties: Object.fromEntries(
+            Object.entries(doc.multipart).map(([field, description]) => [field, { type: "string", format: "binary", description }]),
+          ),
+        },
+      },
+    };
+    const requestBody =
+      "body" in endpoint || multipart
+        ? { required: true, content: { ...("body" in endpoint ? json(endpoint.body) : {}), ...multipart } }
         : undefined;
 
     const path = endpoint.path.replace(/:(\w+)/g, "{$1}");

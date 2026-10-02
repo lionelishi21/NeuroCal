@@ -22,6 +22,10 @@ export interface ProtocolMatches {
  * weak point → nearest protocols and products (pgvector cosine), taken
  * round-robin so every weak point is addressed. Affiliate flags pass through
  * untouched so every client can label them.
+ *
+ * Own-brand supplements come first: whenever a match for a weak point is
+ * another brand's supplement, the closest own-brand supplement for that same
+ * weak point is suggested instead, when there is one.
  */
 export class GetProtocolsUseCase {
   constructor(
@@ -51,9 +55,35 @@ export class GetProtocolsUseCase {
     const vectors = await this.embedder.embed(queries);
     const [protocols, products] = await Promise.all([
       this.pickPerQuery(vectors, this.limits.protocols, (v, n) => this.catalog.nearestProtocols(v, n)),
-      this.pickPerQuery(vectors, this.limits.products, (v, n) => this.catalog.nearestProducts(v, n)),
+      this.pickPerQuery(vectors, this.limits.products, (v, n) => this.ownSupplementsFirst(v, n)),
     ]);
     return { weakPoints: points, protocols, products };
+  }
+
+  /**
+   * Nearest products for one weak point. When an own-brand supplement exists,
+   * other brands' supplements are left out and the closest own-brand one takes
+   * the place of the first of them (unless it is already in the list).
+   */
+  private async ownSupplementsFirst(vector: number[], n: number): Promise<{ item: Product; similarity: number }[]> {
+    const [nearest, own] = await Promise.all([
+      this.catalog.nearestProducts(vector, n),
+      this.catalog.nearestProducts(vector, 1, "ownSupplements"),
+    ]);
+    const best = own[0];
+    if (!best) return nearest;
+
+    let placed = nearest.some((c) => c.item.id === best.item.id);
+    const out: { item: Product; similarity: number }[] = [];
+    for (const candidate of nearest) {
+      if (candidate.item.supplement && !candidate.item.ownBrand) {
+        if (!placed) out.push(best);
+        placed = true;
+        continue;
+      }
+      out.push(candidate);
+    }
+    return out;
   }
 
   /** Round-robin over the queries: each takes its best unseen match until `limit` is reached. */

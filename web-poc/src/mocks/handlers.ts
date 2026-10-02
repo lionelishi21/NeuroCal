@@ -1,12 +1,17 @@
 import { HttpResponse, delay, http } from "msw";
 import {
+  type AdminProduct,
+  AnalyzeMealRequest,
+  CreateAdminProductRequest,
   CreateCheckInRequest,
   CreateMealRequest,
+  CreatePhotoUploadRequest,
   IngestScreenTimeRequest,
   IngestSleepRequest,
+  UpdateAdminProductRequest,
   UpdateProfileRequest,
 } from "@neurocal/contracts";
-import { createDb } from "./db";
+import { MOCK_PRODUCTS, createDb } from "./db";
 import { todayIso } from "../lib/format";
 
 const invalid = (message: string) => HttpResponse.json({ code: "invalid_request", message }, { status: 400 });
@@ -14,6 +19,18 @@ const noProfile = () => HttpResponse.json({ code: "not_found", message: "Set up 
 
 export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   const url = (path: string) => `${base}${path}`;
+  // The mock user is an admin. Products start from what the mock suggests, plus two partner brands.
+  const catalogUrls = new Map<string, string | undefined>();
+  const adminProducts: AdminProduct[] = [
+    ...MOCK_PRODUCTS.map(({ match: _, ...p }) => ({ ...p, tags: [], enabled: true, managedBy: "catalog" as const })),
+    { id: "truedark-evening-glasses", name: "TrueDark evening glasses", description: "Glasses with amber or red lenses that block blue and green light, worn before bed.", url: "https://truedark.com/", affiliate: true, ownBrand: false, supplement: false, tags: ["sleep", "late-night screens"], enabled: true, managedBy: "catalog" },
+    { id: "lmnt-electrolytes", name: "LMNT electrolyte drink mix", description: "A sugar-free sodium, potassium and magnesium drink mix.", url: "https://drinklmnt.com/", affiliate: false, ownBrand: false, supplement: true, tags: ["energy"], enabled: true, managedBy: "catalog" },
+  ];
+  for (const p of adminProducts) catalogUrls.set(p.id, p.url);
+  let adminCount = 0;
+  const noProduct = () => HttpResponse.json({ code: "not_found", message: "That product no longer exists." }, { status: 404 });
+  let uploadCount = 0;
+  const uploaded = new Set<string>();
   const dateParam = (request: Request) => new URL(request.url).searchParams.get("date") ?? todayIso();
 
   return [
@@ -40,7 +57,36 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       return HttpResponse.json(db.mealsOn(dateParam(request)));
     }),
+    http.post(url("/uploads/meal-photo"), async ({ request }) => {
+      const body = CreatePhotoUploadRequest.safeParse(await request.json());
+      if (!body.success) return invalid("The photo must be an image of at most 8 MB.");
+      await delay(latency);
+      const photoKey = `uploads/u1/${++uploadCount}`;
+      return HttpResponse.json(
+        {
+          photoKey,
+          // Stands in for the presigned S3 URL; the PUT handler below receives the bytes.
+          uploadUrl: new URL(url(`/_uploads/${uploadCount}`), globalThis.location?.origin ?? "http://localhost").href,
+          headers: { "content-type": body.data.mediaType },
+          expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+        },
+        { status: 201 },
+      );
+    }),
+    http.put(url("/_uploads/:id"), async ({ params }) => {
+      await delay(latency);
+      uploaded.add(`uploads/u1/${String(params.id)}`);
+      return new HttpResponse(null, { status: 200 });
+    }),
     http.post(url("/meals/analyze"), async ({ request }) => {
+      if (request.headers.get("content-type")?.startsWith("application/json")) {
+        const body = AnalyzeMealRequest.safeParse(await request.json());
+        if (!body.success || !uploaded.has(body.data.photoKey)) {
+          return HttpResponse.json({ code: "not_found", message: "That photo isn't there. Choose it again." }, { status: 404 });
+        }
+        await delay(latency * 4);
+        return HttpResponse.json(db.analyze(body.data.photoKey));
+      }
       const form = await request.formData();
       const photo = form.get("photo");
       // Not `instanceof File`: in tests the File comes from jsdom, not Node.
@@ -65,6 +111,47 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       if (!body.success) return invalid("Pick at least one way you feel.");
       await delay(latency);
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
+    }),
+    http.get(url("/admin/products"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ products: [...adminProducts].sort((a, b) => a.name.localeCompare(b.name)) });
+    }),
+    http.post(url("/admin/products"), async ({ request }) => {
+      const body = CreateAdminProductRequest.safeParse(await request.json());
+      if (!body.success) return invalid("A product needs a name, a description and an https link.");
+      if ((body.data.affiliate || body.data.ownBrand) && !body.data.url) return invalid("An affiliate or own-brand product needs a link.");
+      await delay(latency);
+      const { url: link, ...rest } = body.data;
+      const product: AdminProduct = { ...rest, ...(link ? { url: link } : {}), id: `admin-${++adminCount}`, enabled: true, managedBy: "admin" };
+      adminProducts.push(product);
+      return HttpResponse.json(product, { status: 201 });
+    }),
+    http.put(url("/admin/products/:id"), async ({ params, request }) => {
+      const body = UpdateAdminProductRequest.safeParse(await request.json());
+      if (!body.success) return invalid("The link must start with https://.");
+      const index = adminProducts.findIndex((p) => p.id === params.id);
+      if (index < 0) return noProduct();
+      await delay(latency);
+      const { url: _url, catalogUrl: _catalogUrl, ...current } = adminProducts[index]!;
+      const original = catalogUrls.get(current.id);
+      // undefined keeps the current link, null goes back to the catalog's, a string replaces it.
+      const link = body.data.url === undefined ? _url : (body.data.url ?? original);
+      const next: AdminProduct = {
+        ...current,
+        ...(body.data.affiliate === undefined ? {} : { affiliate: body.data.affiliate }),
+        ...(body.data.enabled === undefined ? {} : { enabled: body.data.enabled }),
+        ...(link ? { url: link } : {}),
+        ...(original && link !== original ? { catalogUrl: original } : {}),
+      };
+      adminProducts[index] = next;
+      return HttpResponse.json(next);
+    }),
+    http.delete(url("/admin/products/:id"), async ({ params }) => {
+      const index = adminProducts.findIndex((p) => p.id === params.id && p.managedBy === "admin");
+      if (index < 0) return noProduct();
+      await delay(latency);
+      adminProducts.splice(index, 1);
+      return new HttpResponse(null, { status: 204 });
     }),
     http.get(url("/recommendations/protocols"), async () => {
       if (!db.profile()) return noProfile();

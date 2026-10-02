@@ -25,6 +25,7 @@ import { createPgliteDatabase } from "../infrastructure/database/pglite";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
+import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
 import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
@@ -131,6 +132,9 @@ async function main() {
   const synced = await new SyncCatalogUseCase(new DrizzleCatalogRepository(db), embedder).execute({ protocols: PROTOCOLS, products: PRODUCTS });
   const search = createRecipeSearch(config) ?? stubSearch;
 
+  // Uploads land in memory; the "presigned" URL points back at this server.
+  const storage = new DevObjectStorage(`http://localhost:${PORT}`);
+
   const api = createApi(
     buildUseCases({
       profiles: new DrizzleProfileRepository(db),
@@ -142,6 +146,7 @@ async function main() {
       catalog: new DrizzleCatalogRepository(db),
       embedder,
       vision,
+      storage,
       explainer,
       reasoning,
       search,
@@ -159,6 +164,10 @@ async function main() {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(chunk as Buffer);
     const url = new URL(req.url ?? "/", "http://localhost");
+    if (req.method === "PUT" && url.pathname.startsWith(DevObjectStorage.PATH)) {
+      const stored = storage.put(decodeURIComponent(url.pathname.slice(DevObjectStorage.PATH.length)), Buffer.concat(chunks), req.headers["content-type"]);
+      return void res.writeHead(stored ? 200 : 403).end();
+    }
     const response = await api({
       method: req.method ?? "GET",
       path: url.pathname,
@@ -166,6 +175,8 @@ async function main() {
       headers: req.headers as Record<string, string | undefined>,
       ...(chunks.length ? { body: Buffer.concat(chunks) } : {}),
       userId: devUserId,
+      // The local dev user can manage products.
+      isAdmin: true,
     });
     res.writeHead(response.status, { "content-type": "application/json" });
     res.end(response.body === undefined ? undefined : JSON.stringify(response.body));

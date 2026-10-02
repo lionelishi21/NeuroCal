@@ -1,9 +1,14 @@
 import {
+  AdminProduct,
+  AdminProductList,
+  AnalyzeMealRequest,
   AnalyzeMealResponse,
   BioState,
   CheckIn,
+  CreateAdminProductRequest,
   CreateCheckInRequest,
   CreateMealRequest,
+  CreatePhotoUploadRequest,
   FocusScore,
   HistoryResponse,
   ProtocolsResponse,
@@ -12,12 +17,16 @@ import {
   IngestSleepRequest,
   Meal,
   NextRecommendationsResponse,
+  PhotoUpload,
   Profile,
+  UpdateAdminProductRequest,
   UpdateProfileRequest,
   type ApiError,
 } from "@neurocal/contracts";
 import { z } from "zod";
+import type { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import type { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
+import type { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
 import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import type { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import type { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
@@ -41,6 +50,8 @@ export interface ApiRequest {
   body?: Uint8Array;
   /** Set by the transport from the verified identity; never read from the request. */
   userId: string;
+  /** Set by the transport when the verified email is on the admin list. */
+  isAdmin?: boolean;
 }
 
 export interface ApiResponse {
@@ -53,6 +64,7 @@ export interface UseCases {
   updateProfile: UpdateProfileUseCase;
   getBioState: GetBioStateUseCase;
   recordCheckIn: RecordCheckInUseCase;
+  createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
   logMeal: LogMealUseCase;
   listMeals: ListMealsUseCase;
@@ -62,11 +74,12 @@ export interface UseCases {
   getFocusScore: GetFocusScoreUseCase;
   getHistory: GetHistoryUseCase;
   getProtocols: GetProtocolsUseCase;
+  adminProducts: AdminProductUseCases;
 }
 
 class BadRequest extends Error {}
 
-const STATUS: Record<string, number> = { invalid_request: 400, not_found: 404, upstream_failed: 502 };
+const STATUS: Record<string, number> = { invalid_request: 400, forbidden: 403, not_found: 404, upstream_failed: 502 };
 
 const error = (status: number, code: string, message: string): ApiResponse => ({
   status,
@@ -96,7 +109,7 @@ function json<S extends z.ZodType>(req: ApiRequest, schema: S): z.infer<S> {
 
 async function photoFrom(req: ApiRequest) {
   const contentType = req.headers["content-type"] ?? "";
-  if (!contentType.startsWith("multipart/form-data")) throw new BadRequest("Send the photo as multipart/form-data.");
+  if (!contentType.startsWith("multipart/form-data")) throw new BadRequest("Send the photo's key as JSON, or the photo as multipart/form-data.");
   let form: FormData;
   try {
     form = await new Request("http://local/", {
@@ -112,6 +125,7 @@ async function photoFrom(req: ApiRequest) {
   return { bytes: new Uint8Array(await photo.arrayBuffer()), mediaType: photo.type || "application/octet-stream" };
 }
 
+const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
 
 export function createApi(uc: UseCases) {
@@ -132,7 +146,25 @@ export function createApi(uc: UseCases) {
         return ok(CheckIn, toCheckIn(saved), 201);
       },
     ],
-    ["POST", /^\/meals\/analyze$/, async (req) => ok(AnalyzeMealResponse, toAnalysis(await uc.analyzeMealPhoto.execute(await photoFrom(req))))],
+    [
+      "POST",
+      /^\/uploads\/meal-photo$/,
+      async (req) => {
+        const upload = await uc.createPhotoUpload.execute({ userId: req.userId, ...json(req, CreatePhotoUploadRequest) });
+        return ok(PhotoUpload, { ...upload, expiresAt: upload.expiresAt.toISOString() }, 201);
+      },
+    ],
+    [
+      "POST",
+      /^\/meals\/analyze$/,
+      async (req) => {
+        // JSON names a photo uploaded first; multipart carries the photo itself (older clients, small photos).
+        const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
+          ? await uc.analyzeMealPhoto.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
+          : await uc.analyzeMealPhoto.execute(await photoFrom(req));
+        return ok(AnalyzeMealResponse, toAnalysis(analysis));
+      },
+    ],
     [
       "POST",
       /^\/meals$/,
@@ -174,6 +206,25 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["GET", /^\/focus-score$/, async (req) => ok(FocusScore, toFocusScore(await uc.getFocusScore.execute({ userId: req.userId, date: date(req) })))],
+    ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
+    [
+      "POST",
+      /^\/admin\/products$/,
+      async (req) => ok(AdminProduct, await uc.adminProducts.create(admin(req), json(req, CreateAdminProductRequest)), 201),
+    ],
+    [
+      "PUT",
+      /^\/admin\/products\/([^/]+)$/,
+      async (req, [id]) => ok(AdminProduct, await uc.adminProducts.update(admin(req), decodeURIComponent(id!), json(req, UpdateAdminProductRequest))),
+    ],
+    [
+      "DELETE",
+      /^\/admin\/products\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.adminProducts.remove(admin(req), decodeURIComponent(id!));
+        return { status: 204 };
+      },
+    ],
     [
       "POST",
       /^\/telemetry\/sleep$/,

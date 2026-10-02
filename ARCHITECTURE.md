@@ -235,12 +235,11 @@ export interface IEmailProvider {
   send(message: { to: string; subject: string; html: string; text: string }): Promise<void>;
 }
 
-// IObjectStorage.ts (planned)
+// IObjectStorage.ts
 export interface IObjectStorage {
-  createUploadUrl(key: string, mediaType: string, maxBytes: number): Promise<{ url: string; expiresAt: Date }>;
-  read(key: string): Promise<{ bytes: Uint8Array; mediaType: string }>;
-  delete(key: string): Promise<void>;
-}
+  createUploadUrl(key: string, mediaType: string, sizeBytes: number): Promise<{ url: string; headers: Record<string, string>; expiresAt: Date }>;
+  read(key: string, maxBytes: number): Promise<{ bytes: Uint8Array; mediaType: string } | null>;
+}   // delete is planned with account deletion
 
 // IClock.ts
 export interface IClock { now(): Date }
@@ -292,7 +291,7 @@ Each use case is a class in `backend/src/application/use-cases/` with a single `
 
 ### 6.1 AnalyzeMealPhoto — `POST /meals/analyze`
 Ports: `IObjectStorage`, `IAiVisionProvider`.
-1. Read the uploaded photo (by S3 key once presigned upload lands; multipart body until then).
+1. Read the photo: from storage by `photoKey` (the web app uploads it first with `POST /uploads/meal-photo`; a key that isn't under the caller's own prefix, or has nothing uploaded, is `NotFound`), or from the multipart body (the mobile app until it moves to uploads).
 2. `analyzeMealPhoto(photo)` → `MealPhotoAnalysis`.
 3. Return it. **Nothing is saved**: the user confirms items first.
 
@@ -361,7 +360,12 @@ Missing inputs drop out and the remaining weights are renormalised; the stored `
 3. `nearestProtocols` / `nearestProducts` per text (HNSW cosine), taken **round-robin** so every weak point gets its own best match; 2 protocols and 2 products in total. With no weak points, one "maintain steady focus…" query.
 4. Return them with the `affiliate` and `ownBrand` flags intact; clients label those links ("Affiliate link", "Our brand") next to the link and use `rel="sponsored"`.
 
-**Catalog.** Protocols and products are authored in the repo (`catalog.ts`), never generated. `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist, plus MitoProof's own items (`ownBrand: true`; MitoProof is run by NeuroCal's makers).
+**Catalog.** Protocols and products are authored in the repo (`catalog.ts`, with partner brands in `partnerProducts.ts` and the MitoProof range in `mitoproofProducts.ts`), never generated. Partner links in the repo are the brands' plain pages; NeuroCal's own tracking links are entered on the admin screen (§6.11). `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist, plus MitoProof's own items (`ownBrand: true`; MitoProof is run by NeuroCal's makers).
+
+**Own-brand supplements first.** For each weak point, when the matches include another brand's supplement and an own-brand supplement exists, the other brand's supplements are left out and the closest own-brand supplement takes the first one's place.
+
+### 6.11 Product admin — `/admin/products`
+`AdminProductUseCases`. An admin is a signed-in user whose **verified** email is in `ADMIN_EMAILS` (set by the stack from the `adminEmails` CDK context); the transport sets `isAdmin` and everyone else gets `403`. Admins can change a product's link, its affiliate label and whether it is suggested, and can add or remove their own products (embedded on creation). These settings are stored in separate columns (`url_override`, `affiliate_override`, `enabled`, `managed_by`) that catalog sync never writes, so they survive syncs and deploys; sync only removes rows it manages. The web screen is `/admin`, linked from Settings for admins.
 
 ### 6.10 SendDailySummary — planned; EventBridge, morning per user time zone
 Yesterday's intake, Focus Score and one suggestion, sent via `IEmailProvider` (Resend). Opt-in only.
@@ -455,7 +459,8 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | PUT | `/me/profile` | `UpdateProfileRequest` | `Profile` | creates the profile on first save (all required fields), then partial updates; `timeZone` defaults to UTC |
 | GET | `/bio-state?date=` | — | `BioState` | 6.5 |
 | POST | `/check-ins` | `CreateCheckInRequest` | `CheckIn` | 6.4 |
-| POST | `/meals/analyze` | multipart `photo` | `AnalyzeMealResponse` | 6.1 |
+| POST | `/uploads/meal-photo` | `CreatePhotoUploadRequest` | `PhotoUpload` | presigned PUT URL for one photo of a stated type and size (≤ 8 MB), valid 5 minutes; the key starts with the user's id |
+| POST | `/meals/analyze` | `AnalyzeMealRequest` (`{ photoKey }`), or multipart `photo` | `AnalyzeMealResponse` | 6.1 |
 | POST | `/meals` | `CreateMealRequest` | `Meal` | 6.2 |
 | GET | `/meals?date=` | — | `Meal[]` | meal list |
 | DELETE | `/meals/:id` | — | 204 | 6.3 |
@@ -463,16 +468,14 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | GET | `/focus-score?date=` | — | `FocusScore` | 6.8 |
 | GET | `/recommendations/protocols` | — | `ProtocolsResponse` | 6.9 |
 | GET | `/history?days=` | — | `HistoryResponse` | the last 1–31 days, oldest first; Focus Scores recomputed without the AI explanation; each day carries the bedtime and wake time of the sleep that ended that morning and the screen minutes after 22:00 the night before (the web Sleep screen) |
+| GET | `/admin/products` | — | `AdminProductList` | 6.11; admins only (403 otherwise) |
+| POST | `/admin/products` | `CreateAdminProductRequest` | `AdminProduct` | 6.11 |
+| PUT | `/admin/products/:id` | `UpdateAdminProductRequest` | `AdminProduct` | 6.11 |
+| DELETE | `/admin/products/:id` | — | 204 | 6.11; only products added by an admin |
 | POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
 | POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
 
 The same surface is published as OpenAPI 3.1 in `packages/contracts/openapi.json`, generated from the Zod schemas by `packages/contracts/src/openapi.ts` (`npm run openapi -w @neurocal/contracts`). The Flutter client is generated from that file. Rules written with `.refine()` (sleep ends after it starts, screen minutes fit the window) can't be expressed in JSON Schema and are stated in the operation descriptions.
-
-Planned — add to contracts first:
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/uploads/meal-photo` | Presigned S3 URL; `/meals/analyze` then takes `{ photoKey }` instead of multipart |
 
 Errors always use the `ApiError` shape `{ code, message }`, with messages written for the user ("A meal needs at least one item.").
 
@@ -481,10 +484,11 @@ Errors always use the `ApiError` shape `{ code, message }`, with messages writte
 ## 9. Async flows
 
 ```
-Photo upload (planned presigned flow)
-  client → POST /uploads/meal-photo → { url, photoKey }
-  client → PUT url (S3, ≤ 8 MB, image/*)
+Photo upload
+  client → POST /uploads/meal-photo { mediaType, sizeBytes } → { uploadUrl, headers, photoKey }
+  client → PUT uploadUrl (S3; the signed type and size must match, ≤ 8 MB, image/*)
   client → POST /meals/analyze { photoKey } → items → user confirms → POST /meals
+  The photo is not yet attached to the saved meal; uploads expire after 30 days (§4 retention is still open).
 
 EventBridge
   rate: hourly  → FocusScoreScheduler → for users whose local time just passed 04:00 → ComputeFocusScore
@@ -534,10 +538,10 @@ Cognito user pool ──JWT──▶ API Gateway (HTTP API, $default route, CORS
 Secrets Manager: app secret (API keys) + Aurora-generated secret → read by ARN at cold start
 Migration Lambda: applies backend/drizzle on every deploy that changes it (CDK Trigger)
 Catalog-sync Lambda: invoked after catalog changes (needs OPENAI_API_KEY in the app secret)
-S3 meal-photo bucket: private, TLS-only, KMS, 30-day expiry (for the planned presigned upload)
+S3 meal-photo bucket: private, TLS-only, KMS, 30-day expiry; the API Lambda signs uploads to it and reads from it
 ```
 
 - **Stages.** `dev` pauses the database when idle (0 ACU minimum) and deletes everything with the stack. `prod` keeps 0.5 ACU warm, turns on deletion protection, snapshots the database and retains the secret, user pool and bucket.
 - **TLS to the database.** Lambdas connect with `sslmode=verify-full` and trust the RDS CA through `NODE_EXTRA_CA_CERTS=/var/runtime/ca-cert.pem`.
-- **Not in the stack yet (planned):** EventBridge schedules and SQS fan-out (§9), the presigned-upload route and the Lambda's bucket grant, Resend, alarms and dashboards, a custom domain.
+- **Not in the stack yet (planned):** EventBridge schedules and SQS fan-out (§9), Resend, alarms and dashboards, a custom domain.
 

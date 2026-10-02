@@ -91,6 +91,30 @@ export const AnalyzeMealResponse = z.object({
 });
 export type AnalyzeMealResponse = z.infer<typeof AnalyzeMealResponse>;
 
+/** The largest meal photo the API accepts. */
+export const MAX_MEAL_PHOTO_BYTES = 8 * 1024 * 1024;
+
+export const CreatePhotoUploadRequest = z.object({
+  /** The photo's media type, e.g. "image/jpeg". */
+  mediaType: z.string().regex(/^image\/[\w.+-]+$/),
+  /** The photo's exact size; the upload is refused if the bytes sent differ. */
+  sizeBytes: z.number().int().positive().max(MAX_MEAL_PHOTO_BYTES),
+});
+export type CreatePhotoUploadRequest = z.infer<typeof CreatePhotoUploadRequest>;
+
+export const PhotoUpload = z.object({
+  /** Pass this to POST /meals/analyze once the upload has finished. */
+  photoKey: z.string().min(1),
+  /** PUT the photo's bytes here, with exactly the headers below. */
+  uploadUrl: z.url(),
+  headers: z.record(z.string(), z.string()),
+  expiresAt: IsoDateTime,
+});
+export type PhotoUpload = z.infer<typeof PhotoUpload>;
+
+export const AnalyzeMealRequest = z.object({ photoKey: z.string().min(1).max(200) });
+export type AnalyzeMealRequest = z.infer<typeof AnalyzeMealRequest>;
+
 export const CheckIn = z.object({
   id: Id,
   at: IsoDateTime,
@@ -266,6 +290,53 @@ export const ProtocolsResponse = z.object({
 });
 export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
 
+/** A product as the admin screen manages it. */
+export const AdminProduct = z.object({
+  id: Id,
+  name: z.string().min(1),
+  description: z.string().min(1),
+  /** The link users are sent to: the admin's link when one is set, otherwise the catalog's. */
+  url: z.url().optional(),
+  /** The catalog's own link, present only while an admin link replaces it. */
+  catalogUrl: z.url().optional(),
+  affiliate: z.boolean(),
+  ownBrand: z.boolean(),
+  supplement: z.boolean(),
+  tags: z.array(z.string()),
+  /** Disabled products are never suggested. */
+  enabled: z.boolean(),
+  /** "catalog": comes with the app; "admin": added from the admin screen and removable there. */
+  managedBy: z.enum(["catalog", "admin"]),
+});
+export type AdminProduct = z.infer<typeof AdminProduct>;
+
+export const AdminProductList = z.object({ products: z.array(AdminProduct) });
+export type AdminProductList = z.infer<typeof AdminProductList>;
+
+const HttpsUrl = z.url().regex(/^https:\/\//, "The link must start with https://");
+
+export const UpdateAdminProductRequest = z
+  .object({
+    /** A link to use instead of the catalog's; null goes back to the catalog's link. */
+    url: HttpsUrl.nullable(),
+    affiliate: z.boolean(),
+    enabled: z.boolean(),
+  })
+  .partial();
+export type UpdateAdminProductRequest = z.infer<typeof UpdateAdminProductRequest>;
+
+export const CreateAdminProductRequest = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().min(1).max(600),
+  url: HttpsUrl.optional(),
+  affiliate: z.boolean(),
+  ownBrand: z.boolean(),
+  supplement: z.boolean(),
+  /** Words that describe when to suggest it, e.g. "sleep", "low focus", "protein". */
+  tags: z.array(z.string().trim().min(1).max(40)).max(20),
+});
+export type CreateAdminProductRequest = z.infer<typeof CreateAdminProductRequest>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -278,7 +349,10 @@ export const endpoints = {
   updateProfile: { method: "PUT", path: "/me/profile", body: UpdateProfileRequest, response: Profile },
   getBioState: { method: "GET", path: "/bio-state", response: BioState },
   createCheckIn: { method: "POST", path: "/check-ins", body: CreateCheckInRequest, response: CheckIn },
-  analyzeMeal: { method: "POST", path: "/meals/analyze", response: AnalyzeMealResponse },
+  /** Step 1 of logging a photo: get a short-lived URL to upload it to. */
+  createPhotoUpload: { method: "POST", path: "/uploads/meal-photo", body: CreatePhotoUploadRequest, response: PhotoUpload },
+  /** Takes the key of an uploaded photo, or (older clients) the photo itself as multipart `photo`. */
+  analyzeMeal: { method: "POST", path: "/meals/analyze", body: AnalyzeMealRequest, response: AnalyzeMealResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },
   listMeals: { method: "GET", path: "/meals", response: MealList },
   deleteMeal: { method: "DELETE", path: "/meals/:id" },
@@ -288,6 +362,11 @@ export const endpoints = {
   getHistory: { method: "GET", path: "/history", response: HistoryResponse },
   /** Protocols and products matched (pgvector) to the past week's weakest Focus Score inputs. */
   getProtocols: { method: "GET", path: "/recommendations/protocols", response: ProtocolsResponse },
+  /** Admin only (403 otherwise): every product, including disabled ones. */
+  listAdminProducts: { method: "GET", path: "/admin/products", response: AdminProductList },
+  createAdminProduct: { method: "POST", path: "/admin/products", body: CreateAdminProductRequest, response: AdminProduct },
+  updateAdminProduct: { method: "PUT", path: "/admin/products/:id", body: UpdateAdminProductRequest, response: AdminProduct },
+  deleteAdminProduct: { method: "DELETE", path: "/admin/products/:id" },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
 } as const;

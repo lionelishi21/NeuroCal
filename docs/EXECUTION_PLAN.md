@@ -168,12 +168,13 @@ Mobile — Today                  Desktop — Today
 - [x] Tavily search adapter (and a Brave one) with recipe-page nutrition lookup; the provider is chosen by which key is set (Google refuses the Custom Search API for new projects). The query prompt now asks for dish-style queries, which is what returns recipes. _To do: add `TAVILY_API_KEY` to the dev secret and redeploy; settle the allow-list (ARCHITECTURE §11.4)_
 - [x] Telemetry ingest + Focus Score use case with Claude explanation (§6.7–6.8, §7.4)
 - [x] Embeddings + vector recommendation use case, catalog sync, pgvector HNSW (§6.9, §7.3)
-- [ ] Real protocol/product content and partner links (catalog.ts)
+- [x] Partner and own-brand products: TrueDark, Danger Coffee and BodyHealth as affiliates, the other product brands Dave Asprey recommends, and the MitoProof range; own-brand supplements are suggested before other brands'. Product admin at `/admin` (links, affiliate label, on/off, add and remove). _To do: enter NeuroCal's tracking links in the admin screen; embed the catalog (needs OpenAI credits); check the MitoProof descriptions against the labels_
 - [x] HTTP routes for all 9 endpoints + Lambda entry point (JWT claims from API Gateway)
 - [x] Infrastructure as code in `infra/` (CDK): HTTP API + Cognito JWT authorizer, Lambda bundling, Aurora Serverless v2 + pgvector, Secrets Manager, migrations on deploy, catalog-sync Lambda, photo bucket (ARCHITECTURE §12)
 - [x] Web sign-in: create account, email code, sign in and out (Cognito via Amplify; local mock without it)
-- [ ] First deploy to a `dev` stage
-- [ ] EventBridge schedules (nightly Focus Score, daily summary) and S3 presigned photo upload
+- [x] First deploy to a `dev` stage (`NeuroCal-dev`, us-east-1)
+- [x] S3 presigned photo upload: `POST /uploads/meal-photo`, then `/meals/analyze` by key; the web app uses it, multipart still works for the mobile app. _To do: move the mobile app to uploads; attach the photo to the saved meal_
+- [ ] EventBridge schedules (nightly Focus Score, daily summary)
 - [x] Local dev server (`npm run dev` in `backend`); web-poc runs against it end to end
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres
 

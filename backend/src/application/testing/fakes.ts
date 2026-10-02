@@ -1,7 +1,9 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type {
+  AdminProduct,
   Product,
+  ProductSettings,
   Protocol,
   CheckIn,
   FocusComponents,
@@ -23,6 +25,7 @@ import type { Embedded, ICatalogRepository } from "../interfaces/ICatalogReposit
 import type { IClock } from "../interfaces/IClock";
 import { EMBEDDING_DIMENSIONS, type IEmbeddingProvider } from "../interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
+import type { IObjectStorage } from "../interfaces/IObjectStorage";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
@@ -219,9 +222,14 @@ const cosine = (a: number[], b: number[]) => a.reduce((sum, x, i) => sum + x * b
 export class InMemoryCatalog implements ICatalogRepository {
   readonly protocols = new Map<string, Embedded<Protocol>>();
   readonly products = new Map<string, Embedded<Product>>();
+  /** Admin settings per product id; survive `upsertProducts` like the real columns do. */
+  readonly settings = new Map<string, ProductSettings>();
+  readonly adminIds = new Set<string>();
+
   async hashes() {
-    const hashes = <T>(m: Map<string, Embedded<T>>) => new Map([...m].map(([id, e]) => [id, e.contentHash]));
-    return { protocols: hashes(this.protocols), products: hashes(this.products) };
+    const hashes = <T>(m: Map<string, Embedded<T>>, skip: Set<string>) =>
+      new Map([...m].filter(([id]) => !skip.has(id)).map(([id, e]) => [id, e.contentHash]));
+    return { protocols: hashes(this.protocols, new Set()), products: hashes(this.products, this.adminIds) };
   }
   async upsertProtocols(items: Embedded<Protocol>[]) {
     for (const e of items) this.protocols.set(e.item.id, e);
@@ -231,18 +239,68 @@ export class InMemoryCatalog implements ICatalogRepository {
   }
   async retain(ids: { protocols: string[]; products: string[] }) {
     for (const id of this.protocols.keys()) if (!ids.protocols.includes(id)) this.protocols.delete(id);
-    for (const id of this.products.keys()) if (!ids.products.includes(id)) this.products.delete(id);
+    for (const id of this.products.keys()) if (!ids.products.includes(id) && !this.adminIds.has(id)) this.products.delete(id);
   }
-  private nearest<T>(m: Map<string, Embedded<T>>, embedding: number[], limit: number) {
-    return [...m.values()]
+  private shown(item: Product): Product {
+    const { url: _, ...rest } = item;
+    const set = this.settings.get(item.id);
+    const url = set?.url ?? item.url;
+    return { ...rest, ...(url ? { url } : {}), affiliate: set?.affiliate ?? item.affiliate };
+  }
+  private admin(item: Product): AdminProduct {
+    const set = this.settings.get(item.id);
+    return {
+      ...this.shown(item),
+      enabled: set?.enabled ?? true,
+      managedBy: this.adminIds.has(item.id) ? "admin" : "catalog",
+      ...(set?.url && item.url ? { catalogUrl: item.url } : {}),
+    };
+  }
+  async nearestProtocols(embedding: number[], limit: number) {
+    return [...this.protocols.values()]
       .map((e) => ({ item: e.item, similarity: cosine(e.embedding, embedding) }))
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
   }
-  async nearestProtocols(embedding: number[], limit: number) {
-    return this.nearest(this.protocols, embedding, limit);
+  async nearestProducts(embedding: number[], limit: number, only?: "ownSupplements") {
+    return [...this.products.values()]
+      .filter((e) => this.settings.get(e.item.id)?.enabled !== false)
+      .filter((e) => only !== "ownSupplements" || (e.item.ownBrand && e.item.supplement))
+      .map((e) => ({ item: this.shown(e.item), similarity: cosine(e.embedding, embedding) }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit);
   }
-  async nearestProducts(embedding: number[], limit: number) {
-    return this.nearest(this.products, embedding, limit);
+  async listProducts() {
+    return [...this.products.values()].map((e) => this.admin(e.item)).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  async updateProductSettings(id: string, settings: ProductSettings) {
+    const found = this.products.get(id);
+    if (!found) return null;
+    this.settings.set(id, { ...this.settings.get(id), ...settings });
+    return this.admin(found.item);
+  }
+  async addProduct(product: Embedded<Product>) {
+    this.products.set(product.item.id, product);
+    this.adminIds.add(product.item.id);
+    return this.admin(product.item);
+  }
+  async removeAdminProduct(id: string) {
+    if (!this.adminIds.has(id)) return false;
+    this.adminIds.delete(id);
+    this.settings.delete(id);
+    return this.products.delete(id);
+  }
+}
+
+export class InMemoryStorage implements IObjectStorage {
+  objects = new Map<string, { bytes: Uint8Array; mediaType: string }>();
+  uploads: { key: string; mediaType: string; sizeBytes: number }[] = [];
+  async createUploadUrl(key: string, mediaType: string, sizeBytes: number) {
+    this.uploads.push({ key, mediaType, sizeBytes });
+    return { url: `https://storage.test/${key}`, headers: { "content-type": mediaType }, expiresAt: new Date("2026-09-29T17:05:00Z") };
+  }
+  async read(key: string, maxBytes: number) {
+    const found = this.objects.get(key);
+    return found && found.bytes.byteLength <= maxBytes ? found : null;
   }
 }

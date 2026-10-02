@@ -248,6 +248,15 @@ export const products = pgTable(
     tags: text("tags").array().notNull(),
     embedding: embedding(),
     contentHash: text("content_hash").notNull(),
+    // Admin settings. Catalog sync never writes these, so they survive every sync and deploy.
+    /** "catalog" rows mirror catalog.ts; "admin" rows were added from the admin screen and are never removed by a sync. */
+    managedBy: text("managed_by").notNull().default("catalog"),
+    /** Disabled products are never suggested. */
+    enabled: boolean("enabled").notNull().default(true),
+    /** Replaces `url` when set (for example NeuroCal's own tracking link). */
+    urlOverride: text("url_override"),
+    /** Replaces `affiliate` when set. */
+    affiliateOverride: boolean("affiliate_override"),
     updatedAt: timestamps.updatedAt,
   },
   (t) => [index("products_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],

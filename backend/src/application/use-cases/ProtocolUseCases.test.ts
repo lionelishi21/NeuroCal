@@ -10,6 +10,9 @@ import {
   InMemoryTelemetry,
   profile,
 } from "../testing/fakes";
+import { ForbiddenError, InvalidError, NotFoundError } from "../../domain/errors";
+import type { Product } from "../../domain/types";
+import { AdminProductUseCases } from "./AdminProductUseCases";
 import { GetProtocolsUseCase } from "./GetProtocolsUseCase";
 import { SyncCatalogUseCase } from "./SyncCatalogUseCase";
 
@@ -89,5 +92,91 @@ describe("GetProtocolsUseCase", () => {
     expect(result.weakPoints).toEqual([]);
     expect(embedder.calls.at(-1)).toEqual(["Maintain steady focus, energy and sleep."]);
     expect(result.protocols.length).toBeGreaterThan(0);
+  });
+});
+
+describe("product admin and own-brand priority", () => {
+  const admin = { isAdmin: true };
+  const base = { affiliate: false, ownBrand: false, supplement: false };
+  const sleepMask: Product = { ...base, id: "mask", name: "Sleep mask", description: "Blocks light.", tags: ["sleep"] };
+  const otherMagnesium: Product = { ...base, id: "other-mag", name: "Brand X magnesium", description: "Magnesium for sleep.", url: "https://brandx.example/", supplement: true, tags: ["sleep", "short sleep"] };
+  const ownWhey: Product = { ...base, id: "own-whey", name: "Own whey", description: "Protein powder.", url: "https://own.example/whey", ownBrand: true, supplement: true, tags: ["protein"] };
+  const ownMagnesium: Product = { ...base, id: "own-mag", name: "Own magnesium", description: "Magnesium for sleep.", url: "https://own.example/mag", ownBrand: true, supplement: true, tags: ["sleep", "short sleep"] };
+
+  async function setup(products: Product[]) {
+    const catalog = new InMemoryCatalog();
+    const embedder = new FakeEmbedder();
+    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: PROTOCOLS, products });
+    return { catalog, embedder, admin: new AdminProductUseCases(catalog, embedder) };
+  }
+
+  it("refuses everyone who isn't an admin", async () => {
+    const { admin: useCases } = await setup([sleepMask]);
+    const visitor = { isAdmin: false };
+    await expect(useCases.list(visitor)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(useCases.update(visitor, "mask", { enabled: false })).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(useCases.create(visitor, { ...base, name: "X", description: "Y", tags: [] })).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(useCases.remove(visitor, "mask")).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("swaps a link and label, keeps them through a catalog sync, and can go back", async () => {
+    const { catalog, embedder, admin: useCases } = await setup([otherMagnesium]);
+    const updated = await useCases.update(admin, "other-mag", { url: "https://brandx.example/?ref=neurocal", affiliate: true });
+    expect(updated).toMatchObject({ url: "https://brandx.example/?ref=neurocal", catalogUrl: "https://brandx.example/", affiliate: true, enabled: true, managedBy: "catalog" });
+
+    // A deploy edits the catalog entry and syncs: the admin's link and label stay.
+    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: PROTOCOLS, products: [{ ...otherMagnesium, description: "Magnesium, reworded." }] });
+    const [shown] = await catalog.nearestProducts((await embedder.embed(["sleep"]))[0]!, 1);
+    expect(shown!.item).toMatchObject({ url: "https://brandx.example/?ref=neurocal", affiliate: true, description: "Magnesium, reworded." });
+
+    expect(await useCases.update(admin, "other-mag", { url: null })).toMatchObject({ url: "https://brandx.example/" });
+    await expect(useCases.update(admin, "other-mag", { url: "http://not-secure.example" })).rejects.toBeInstanceOf(InvalidError);
+    await expect(useCases.update(admin, "missing", { enabled: false })).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("never suggests a product that is turned off", async () => {
+    const { catalog, embedder, admin: useCases } = await setup([sleepMask]);
+    await useCases.update(admin, "mask", { enabled: false });
+    expect(await catalog.nearestProducts((await embedder.embed(["sleep"]))[0]!, 5)).toEqual([]);
+    expect((await useCases.list(admin)).map((p) => [p.id, p.enabled])).toEqual([["mask", false]]);
+  });
+
+  it("adds a product that survives catalog syncs, and removes only products it added", async () => {
+    const { catalog, embedder, admin: useCases } = await setup([sleepMask]);
+    const created = await useCases.create(admin, { ...base, name: " Vitamin ADK ", description: "Vitamins A, D and K.", url: "https://own.example/adk", ownBrand: true, supplement: true, tags: ["Vitamins", "vitamins", " energy "] });
+    expect(created).toMatchObject({ name: "Vitamin ADK", ownBrand: true, supplement: true, tags: ["vitamins", "energy"], managedBy: "admin", enabled: true });
+    expect(created.id).toMatch(/^admin-/);
+
+    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: PROTOCOLS, products: [sleepMask] });
+    expect((await useCases.list(admin)).map((p) => p.id).sort()).toEqual([created.id, "mask"].sort());
+
+    await expect(useCases.create(admin, { ...base, name: "No link", description: "x", ownBrand: true, tags: [] })).rejects.toBeInstanceOf(InvalidError);
+    await expect(useCases.remove(admin, "mask")).rejects.toBeInstanceOf(NotFoundError);
+    await useCases.remove(admin, created.id);
+    expect((await useCases.list(admin)).map((p) => p.id)).toEqual(["mask"]);
+  });
+
+  it("puts an own-brand supplement in place of another brand's supplement", async () => {
+    const { catalog, embedder } = await setup([sleepMask, otherMagnesium, ownWhey, ownMagnesium]);
+    const [vector] = await embedder.embed(["Magnesium for sleep. sleep, short sleep"]);
+    const profiles = new InMemoryProfiles();
+    await profiles.save(profile());
+    const useCase = new GetProtocolsUseCase(profiles, new InMemoryMeals(), new InMemoryCheckIns(), new InMemoryTelemetry(), catalog, { embed: async () => [vector!] }, new FixedClock(new Date("2026-09-29T17:00:00Z")), { protocols: 1, products: 3 });
+    const { products } = await useCase.execute({ userId: "u1" });
+
+    const ids = products.map((p) => p.item.id);
+    expect(ids).not.toContain("other-mag");
+    expect(ids).toContain("own-mag");
+    // Non-supplements are left alone.
+    expect(ids).toContain("mask");
+  });
+
+  it("keeps another brand's supplement when there is no own-brand one", async () => {
+    const { catalog, embedder } = await setup([otherMagnesium]);
+    const [vector] = await embedder.embed(["Magnesium for sleep."]);
+    const profiles = new InMemoryProfiles();
+    await profiles.save(profile());
+    const useCase = new GetProtocolsUseCase(profiles, new InMemoryMeals(), new InMemoryCheckIns(), new InMemoryTelemetry(), catalog, { embed: async () => [vector!] }, new FixedClock(new Date("2026-09-29T17:00:00Z")));
+    expect((await useCase.execute({ userId: "u1" })).products.map((p) => p.item.id)).toEqual(["other-mag"]);
   });
 });

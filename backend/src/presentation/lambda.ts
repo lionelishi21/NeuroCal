@@ -16,6 +16,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
 } from "../infrastructure/database/DrizzleRepositories";
+import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
@@ -43,6 +44,7 @@ const api = createApi(
     focusScores: new DrizzleFocusScoreRepository(db),
     catalog: new DrizzleCatalogRepository(db),
     embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
@@ -52,6 +54,13 @@ const api = createApi(
   }),
 );
 const userIds = new Map<string, string>();
+
+/** Admins are the verified emails listed in ADMIN_EMAILS (set by the stack). */
+function isAdminClaim(claims: Record<string, unknown>): boolean {
+  const email = typeof claims.email === "string" ? claims.email.toLowerCase() : "";
+  const verified = claims.email_verified === true || claims.email_verified === "true";
+  return verified && config.adminEmails.includes(email);
+}
 
 export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
   // CORS preflight carries no token; API Gateway adds the CORS headers.
@@ -73,6 +82,7 @@ export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): P
     headers: event.headers,
     ...(event.body ? { body: Buffer.from(event.body, event.isBase64Encoded ? "base64" : "utf8") } : {}),
     userId,
+    isAdmin: isAdminClaim(claims),
   });
   return {
     statusCode: response.status,

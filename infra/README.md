@@ -16,6 +16,7 @@ Run from `infra/` (or add `-w @neurocal/infra` from the repo root).
 Context options:
 - `stage`: `dev` (the default) or `prod`. Any other name behaves like `dev`.
 - `webOrigins`: comma-separated origins allowed by CORS. Defaults to `http://localhost:3000`.
+- `adminEmails`: comma-separated sign-in emails allowed to manage products at `/admin`. Set it in `cdk.json` under `context` so every deploy keeps it.
 
 ## First deploy
 

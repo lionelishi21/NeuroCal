@@ -159,6 +159,22 @@ export interface Product {
   tags: string[];
 }
 
+/** A product as the admin screen sees it: what is shown to users, plus what the catalog says underneath. */
+export interface AdminProduct extends Product {
+  enabled: boolean;
+  /** "catalog": authored in the repo; "admin": added from the admin screen. */
+  managedBy: "catalog" | "admin";
+  /** The catalog's own link, when an admin link replaces it. */
+  catalogUrl?: string;
+}
+
+export interface ProductSettings {
+  /** A link to show instead of the catalog's; null goes back to the catalog's link. */
+  url?: string | null;
+  affiliate?: boolean;
+  enabled?: boolean;
+}
+
 export type FocusComponentName = keyof FocusComponents;
 
 export interface WeakPoint {

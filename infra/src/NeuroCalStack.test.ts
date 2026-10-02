@@ -65,6 +65,18 @@ describe("NeuroCalStack", () => {
     });
   });
 
+  it("lets only the API Lambda sign uploads to and read from the photo bucket", () => {
+    dev.hasResourceProperties("AWS::Lambda::Function", {
+      Handler: "index.handler",
+      Environment: { Variables: Match.objectLike({ PHOTO_BUCKET: Match.anyValue() }) },
+    });
+    const policies = JSON.stringify(dev.findResources("AWS::IAM::Policy"));
+    expect(policies).toContain('["s3:PutObject","s3:GetObject"]');
+    expect(policies).toContain("/uploads/*");
+    // Nothing broader: no listing, deleting, tagging or wildcards on the bucket.
+    expect(policies.match(/s3:[A-Za-z*]+/g)).toEqual(["s3:PutObject", "s3:GetObject"]);
+  });
+
   it("applies migrations on deploy and keeps prod data on stack deletion", () => {
     dev.resourceCountIs("Custom::Trigger", 1);
     prod.hasResource("AWS::SecretsManager::Secret", { DeletionPolicy: "Retain" });

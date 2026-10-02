@@ -39,6 +39,49 @@ const item = (name: string, portion: string, calories: number, p: number, c: num
   ...(confidence === undefined ? {} : { confidence }),
 });
 
+/** The products the mock suggests; the mock admin screen manages the same list. */
+export const MOCK_PRODUCTS: ProtocolsResponse["products"] = [
+  {
+    id: "sunrise-alarm",
+    name: "Sunrise alarm clock",
+    description: "Brightens gradually before your alarm so waking at a fixed time feels easier.",
+    url: "https://example.com/mock-partner/sunrise-alarm",
+    affiliate: true,
+    ownBrand: false,
+    supplement: false,
+    match: 0.71,
+  },
+  {
+    id: "phone-lockbox",
+    name: "Timed phone lockbox",
+    description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
+    affiliate: false,
+    ownBrand: false,
+    supplement: false,
+    match: 0.66,
+  },
+  {
+    id: "mitoproof-protocol",
+    name: "The Mitoproof Protocol",
+    description: "A 30-day guide from MitoProof that puts sleep, meal timing, nutrition and supplement timing into one daily routine. A PDF with a resource pack.",
+    url: "https://www.mitoproof.com/products",
+    affiliate: false,
+    ownBrand: true,
+    supplement: false,
+    match: 0.63,
+  },
+  {
+    id: "mitoproof-acv-capsules",
+    name: "MitoProof apple cider vinegar capsules",
+    description: "Apple cider vinegar in capsule form, for people who would rather not drink it. Take with a meal as the label directs.",
+    url: "https://www.mitoproof.com/products",
+    affiliate: false,
+    ownBrand: true,
+    supplement: true,
+    match: 0.6,
+  },
+];
+
 export function createDb(options: { newUser?: boolean } = {}) {
   let nextId = 100;
   let profile: Profile | null = options.newUser ? null : {
@@ -375,47 +418,7 @@ export function createDb(options: { newUser?: boolean } = {}) {
     return {
       weakPoints,
       protocols: picked,
-      products: [
-        {
-          id: "sunrise-alarm",
-          name: "Sunrise alarm clock",
-          description: "Brightens gradually before your alarm so waking at a fixed time feels easier.",
-          url: "https://example.com/mock-partner/sunrise-alarm",
-          affiliate: true,
-          ownBrand: false,
-          supplement: false,
-          match: 0.71,
-        },
-        {
-          id: "phone-lockbox",
-          name: "Timed phone lockbox",
-          description: "Locks your phone away until a set time, so a screens-off rule sticks on busy evenings.",
-          affiliate: false,
-          ownBrand: false,
-          supplement: false,
-          match: 0.66,
-        },
-        {
-          id: "mitoproof-protocol",
-          name: "The Mitoproof Protocol",
-          description: "A 30-day guide from MitoProof that puts sleep, meal timing, nutrition and supplement timing into one daily routine. A PDF with a resource pack.",
-          url: "https://www.mitoproof.com/products",
-          affiliate: false,
-          ownBrand: true,
-          supplement: false,
-          match: 0.63,
-        },
-        {
-          id: "mitoproof-acv-capsules",
-          name: "MitoProof apple cider vinegar capsules",
-          description: "Apple cider vinegar in capsule form, for people who would rather not drink it. Take with a meal as the label directs.",
-          url: "https://www.mitoproof.com/products",
-          affiliate: false,
-          ownBrand: true,
-          supplement: true,
-          match: 0.6,
-        },
-      ],
+      products: MOCK_PRODUCTS,
     };
   }
 

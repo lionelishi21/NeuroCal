@@ -12,6 +12,8 @@ const origins = (app.node.tryGetContext("webOrigins") as string | undefined) ?? 
 new NeuroCalStack(app, `NeuroCal-${stage}`, {
   stage,
   webOrigins: origins.split(",").map((o) => o.trim()).filter(Boolean),
+  // -c adminEmails=you@example.com,other@example.com (or "adminEmails" in cdk.json's context, so every deploy keeps it)
+  adminEmails: ((app.node.tryGetContext("adminEmails") as string | undefined) ?? "").split(",").map((e) => e.trim()).filter(Boolean),
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
   tags: { project: "neurocal", stage },
 });

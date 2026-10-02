@@ -7,6 +7,7 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Architecture, Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction, OutputFormat, type NodejsFunctionProps } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -19,6 +20,8 @@ export interface NeuroCalStackProps extends StackProps {
   stage: string;
   /** Origins allowed to call the API and upload photos (the web app). */
   webOrigins: string[];
+  /** Sign-in emails allowed to use the admin routes. */
+  adminEmails?: string[];
 }
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -31,7 +34,7 @@ export const APP_SECRET_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_C
  * One NeuroCal stage (ARCHITECTURE §1, §9, §10): HTTP API with a Cognito JWT
  * authorizer → API Lambda → Aurora Serverless v2 (Postgres + pgvector), with
  * API keys in Secrets Manager, migrations applied on deploy, and a private
- * photo bucket for the planned presigned uploads.
+ * photo bucket that clients upload to through presigned URLs.
  */
 export class NeuroCalStack extends Stack {
   constructor(scope: Construct, id: string, props: NeuroCalStackProps) {
@@ -74,7 +77,7 @@ export class NeuroCalStack extends Stack {
       removalPolicy: retain,
     });
 
-    // Meal photos (planned presigned upload, ARCHITECTURE §8): private, TLS-only, expire after 30 days (§4).
+    // Meal photos (presigned upload, ARCHITECTURE §9): private, TLS-only, expire after 30 days (§4).
     const photos = new s3.Bucket(this, "MealPhotos", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.KMS_MANAGED,
@@ -119,7 +122,8 @@ export class NeuroCalStack extends Stack {
           sourceMap: true,
           // pg and other CommonJS dependencies call require() inside the ESM bundle.
           banner: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
-          externalModules: ["@aws-sdk/*", "pg-native"],
+          // Only the Secrets Manager client comes from the runtime; the S3 client and presigner are bundled.
+          externalModules: ["@aws-sdk/client-secrets-manager", "pg-native"],
           ...extra.bundling,
         },
       });
@@ -129,6 +133,13 @@ export class NeuroCalStack extends Stack {
     };
 
     const api = fn("ApiFunction", "lambda.ts", { timeout: Duration.seconds(29) });
+    // The API signs upload URLs for the bucket and reads uploaded photos; it never lists or deletes.
+    api.addEnvironment("PHOTO_BUCKET", photos.bucketName);
+    // Sign-in emails allowed to manage products (the admin screen). Not a secret: access still needs that account's sign-in.
+    api.addEnvironment("ADMIN_EMAILS", (props.adminEmails ?? []).join(","));
+    api.addToRolePolicy(
+      new iam.PolicyStatement({ actions: ["s3:PutObject", "s3:GetObject"], resources: [photos.arnForObjects("uploads/*")] }),
+    );
 
     const migrate = fn("MigrateFunction", "migrateLambda.ts", {
       timeout: Duration.minutes(5),

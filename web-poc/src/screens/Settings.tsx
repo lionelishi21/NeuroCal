@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { RequestFailed } from "../api/client";
-import { useProfile } from "../api/queries";
+import { useAdminProducts, useProfile } from "../api/queries";
 import { useOptionalAuth } from "../auth/AuthProvider";
 import { Button } from "../components/Button";
 import { SignOutLink } from "../components/SignOutLink";
@@ -94,6 +94,8 @@ export function Settings() {
         </fieldset>
       </section>
 
+      <AdminLink />
+
       <InstallApp />
 
       {auth && (
@@ -156,6 +158,24 @@ function InstallApp() {
           Install NeuroCal
         </Button>
       )}
+    </section>
+  );
+}
+
+/** "Manage products", shown only to admins (the request is refused for everyone else). */
+function AdminLink() {
+  const admin = useAdminProducts();
+  if (!admin.isSuccess) return null;
+  return (
+    <section aria-labelledby="admin-title" className="mt-10">
+      <h2 id="admin-title" className="mt-0 mb-2 text-lg">
+        Admin
+      </h2>
+      <p className="m-0">
+        <Link href="/admin" className={linkClass}>
+          Manage products
+        </Link>
+      </p>
     </section>
   );
 }
