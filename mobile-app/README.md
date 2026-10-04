@@ -4,7 +4,8 @@ iOS and Android app with the same design as the web app: Plus Jakarta Sans, the 
 (`lib/theme/tokens.dart` mirrors `web-poc/src/styles/tokens.css`), dark and light with a
 **Match device / Light / Dark** switch (sign-in screen and Settings, saved on the device).
 
-Screens: sign in / create account / confirm email, Today (Focus Score ring, its four inputs,
+Screens: sign in / create account / confirm email, the 11-step bio-profile onboarding (for an
+account without a profile), Today (Focus Score ring, its four inputs,
 calories left, meals), Log a meal (photo → analysis, or items by hand), Check in, Settings.
 
 ## Build it on a Mac
@@ -27,6 +28,7 @@ cd mobile-app
 flutter pub get
 open -a Simulator            # or start an emulator from Android Studio
 flutter run                  # sample data and local sign-in (any email, code 123456)
+flutter run --dart-define=MOCK_NEW_USER=true   # the same, starting without a profile, to see the onboarding
 ```
 
 ### Against the deployed backend

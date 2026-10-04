@@ -8,6 +8,9 @@ abstract final class AppConfig {
   static const userPoolId = String.fromEnvironment('COGNITO_USER_POOL_ID');
   static const clientId = String.fromEnvironment('COGNITO_CLIENT_ID');
 
+  /// With the mock API: start without a profile, to see the onboarding (`--dart-define=MOCK_NEW_USER=true`).
+  static const mockNewUser = bool.fromEnvironment('MOCK_NEW_USER');
+
   static bool get usesMockApi => apiUrl.isEmpty;
   static bool get usesMockAuth => userPoolId.isEmpty || clientId.isEmpty;
 }

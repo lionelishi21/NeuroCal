@@ -149,6 +149,7 @@ Screens not in the design file yet (This week, Sleep, Settings, Manage products,
 
 ### Phase 4 — Mobile, integration and launch
 - [x] Flutter app on the same API and Cognito pool, same tokens, font, logo and app icon (`mobile-app/`, build steps in its README)
+- [x] Mobile: the new tokens, the Focus Score ring and the 11-step bio-profile onboarding for accounts without a profile (the time zone comes from the device). _To do: the intro slides, the Today v2 layout, "Edit profile"_
 - [ ] Generate the Dart client from `openapi.json` instead of the hand-written models; add Sleep, History and protocols screens
 - [ ] Point `web-poc` at the real API (`NEXT_PUBLIC_API_URL`); E2E on the critical path
 - [ ] Accessibility and performance pass

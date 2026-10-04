@@ -175,6 +175,19 @@ class BioState {
   );
 }
 
+/// The signed-in person's profile (`Profile` in the contracts): the parts the app reads.
+class Profile {
+  const Profile({required this.displayName, this.bioProfile});
+
+  final String displayName;
+
+  /// The onboarding answers, keyed as in the contract's `BioProfile`; null for profiles made before it existed.
+  final Map<String, dynamic>? bioProfile;
+
+  factory Profile.fromJson(Map<String, dynamic> j) =>
+      Profile(displayName: j['displayName'] as String, bioProfile: j['bioProfile'] as Map<String, dynamic>?);
+}
+
 /// "2026-09-29" in local time.
 String isoDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

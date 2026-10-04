@@ -7,6 +7,11 @@ import 'models.dart';
 
 /// The NeuroCal API, as defined by `packages/contracts` (`endpoints`).
 abstract interface class NeuroCalApi {
+  /// The profile, or null when this account has not been through onboarding.
+  Future<Profile?> me();
+
+  /// `PUT /me/profile` with the fields of `UpdateProfileRequest`.
+  Future<Profile> saveProfile(Map<String, dynamic> fields);
   Future<FocusScore> focusScore(DateTime day);
   Future<BioState> bioState(DateTime day);
   Future<List<Meal>> meals(DateTime day);
@@ -54,6 +59,19 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   Future<dynamic> _get(String path, [Map<String, String>? query]) async =>
       _decode(await _client.get(_uri(path, query), headers: await _headers()));
+
+  @override
+  Future<Profile?> me() async {
+    final res = await _client.get(_uri('/me'), headers: await _headers());
+    if (res.statusCode == 404) return null;
+    return Profile.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Profile> saveProfile(Map<String, dynamic> fields) async {
+    final res = await _client.put(_uri('/me/profile'), headers: await _headers(json: true), body: jsonEncode(fields));
+    return Profile.fromJson(_decode(res) as Map<String, dynamic>);
+  }
 
   @override
   Future<FocusScore> focusScore(DateTime day) async =>

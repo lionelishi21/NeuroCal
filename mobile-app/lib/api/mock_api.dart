@@ -6,7 +6,9 @@ import 'models.dart';
 /// In-memory API used when no API_URL is set, seeded like the web app's mock (`web-poc/src/mocks/db.ts`).
 /// The backend is the source of truth for the Focus Score; this only gives the screens believable data.
 class MockNeuroCalApi implements NeuroCalApi {
-  MockNeuroCalApi({DateTime? now}) {
+  /// [newUser] starts without a profile, so the onboarding shows.
+  MockNeuroCalApi({DateTime? now, bool newUser = false})
+    : _profile = newUser ? null : const Profile(displayName: 'Sam') {
     final today = now ?? DateTime.now();
     DateTime at(int h, int m) => DateTime(today.year, today.month, today.day, h, m);
     _meals.addAll([
@@ -32,6 +34,7 @@ class MockNeuroCalApi implements NeuroCalApi {
   /// Simulated network delay, so loading states show up.
   Duration latency = const Duration(milliseconds: 250);
 
+  Profile? _profile;
   final _meals = <Meal>[];
   final _flags = <CognitiveFlag>{CognitiveFlag.lowFocus, CognitiveFlag.lowEnergy};
   var _nextId = 3;
@@ -57,6 +60,21 @@ class MockNeuroCalApi implements NeuroCalApi {
   static bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
   Future<void> _wait() => Future.delayed(latency);
+
+  @override
+  Future<Profile?> me() async {
+    await _wait();
+    return _profile;
+  }
+
+  @override
+  Future<Profile> saveProfile(Map<String, dynamic> fields) async {
+    await _wait();
+    return _profile = Profile(
+      displayName: fields['displayName'] as String? ?? _profile?.displayName ?? '',
+      bioProfile: fields['bioProfile'] as Map<String, dynamic>? ?? _profile?.bioProfile,
+    );
+  }
 
   @override
   Future<FocusScore> focusScore(DateTime day) async {

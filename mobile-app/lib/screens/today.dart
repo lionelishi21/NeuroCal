@@ -260,7 +260,7 @@ class _Component extends StatelessWidget {
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(Radii.pill),
-            child: LinearProgressIndicator(value: value ?? 0, minHeight: 4, backgroundColor: c.rule, color: color),
+            child: LinearProgressIndicator(value: value ?? 0, minHeight: 4, backgroundColor: c.track, color: color),
           ),
         ],
       ),
@@ -301,7 +301,7 @@ class _Calories extends StatelessWidget {
             child: CircularProgressIndicator(
               value: (bio.caloriesEaten / bio.calorieTarget).clamp(0, 1),
               strokeWidth: 5,
-              backgroundColor: c.rule,
+              backgroundColor: c.track,
               color: left >= 0 ? c.glucose : c.beet,
             ),
           ),
