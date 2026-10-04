@@ -1,0 +1,190 @@
+/*
+ * NeuroCal design tokens, from the NeuroCal onboarding and Today v2 designs.
+ * Every colour, size and duration in the app comes from here.
+ *
+ * Colour still names a body system: synapse = focus and primary actions,
+ * ion = the logo's spark and the ring's end, sleep = sleep, glucose = energy
+ * and "watch this", chlorophyll = good, oil = fat, beet = errors.
+ */
+:root {
+  /* Surfaces and text */
+  --mist: #f3f4fa; /* page */
+  --paper: #ffffff; /* cards, sheets, fields */
+  --ink: #121829; /* text */
+  --ink-soft: #5b6276; /* secondary text */
+  --ink-faint: #7c8296; /* tertiary text, placeholders in data */
+  --rule: #e3e5ef; /* hairlines, card borders */
+  --rule-strong: #cfd3e2; /* field and outline-button borders */
+  --track: #e1e4ee; /* empty bars and rings, segmented backgrounds */
+
+  /* Primary: focus, AI reasoning, actions */
+  --synapse: #6a4fdb;
+  --synapse-ink: #5b3fd0; /* primary as text */
+  --synapse-soft: #eeeafd; /* selected and soft-button fill */
+  --on-accent: #ffffff;
+  --ion: #159c98;
+
+  /* Signals */
+  --chlorophyll: #178a63; /* good, as text */
+  --chlorophyll-bar: #1e9e74; /* good, as a fill */
+  --on-good: #ffffff;
+  --glucose: #e09a2b; /* energy, carbs, "watch this", as a fill */
+  --glucose-ink: #9a6200; /* the same, as text */
+  --oil: #8a6d2a; /* fats */
+  --sleep: #2b5fdc;
+  --beet: #b3261e; /* errors, over budget */
+  --beet-soft: #fce8e6; /* error panel fill */
+
+  --glow: #e6e4fb; /* ambient light behind heroes */
+  --focus-ring: rgb(106 79 219 / 0.18);
+  --shade: rgb(18 24 41 / 0.08); /* soft shadow colour */
+  --toast: #121829;
+  --on-toast: #ffffff;
+
+  /* Focus ring gradient (the same in both themes) */
+  --ring-from: #4f63d9;
+  --ring-to: #159c98;
+
+  /* Chart marks (History) */
+  --chart-focus: #6a4fdb;
+  --chart-calories: #b8700a;
+  --chart-sleep: #2b5fdc;
+
+  /* Type: Plus Jakarta Sans throughout */
+  --font-ui: var(--font-jakarta), system-ui, sans-serif;
+  --font-figure: var(--font-jakarta), system-ui, sans-serif;
+  --text-2xs: 0.75rem; /* 12: eyebrow on onboarding steps */
+  --text-xs: 0.8125rem; /* 13: captions */
+  --text-sm: 0.875rem; /* 14: labels, secondary */
+  --text-md: 0.9375rem; /* 15: rows, option labels */
+  --text-base: 1rem; /* 16: body, inputs */
+  --text-lg: 1.0625rem; /* 17: section titles, buttons */
+  --text-xl: 1.375rem; /* 22: card headline numbers */
+  --text-2xl: 1.75rem; /* 28: step titles */
+  --text-3xl: 2rem; /* 32: screen titles */
+  --text-figure: 2.375rem; /* 38: Focus Score on Today */
+  --text-display: 3.5rem; /* 56: Focus Score in the intro */
+  --leading-body: 1.45;
+  --leading-tight: 1.15;
+  --measure: 34rem;
+
+  /* Space (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Shape */
+  --radius-option: 0.875rem; /* 14: segmented choices, code boxes */
+  --radius-control: 1rem; /* 16: fields, option rows */
+  --radius-card: 1.25rem; /* 20: cards */
+  --radius-hero: 1.5rem; /* 24: the Focus Score card */
+  --radius-sheet: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-float: 0 -1px 0 color-mix(in oklab, var(--ink) 8%, transparent),
+    0 24px 60px -16px color-mix(in oklab, var(--ink) 40%, transparent);
+  --shadow-action: 0 8px 24px rgb(106 79 219 / 0.28);
+  --shadow-chip: 0 6px 18px var(--shade);
+  --shadow-toast: 0 10px 30px rgb(0 0 0 / 0.25);
+
+  /* Motion */
+  --ease-settle: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --duration-quick: 160ms;
+  --duration-select: 300ms;
+  --duration-sheet: 280ms;
+  --duration-step: 500ms;
+  --duration-stage: 900ms;
+  --duration-dial: 900ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mist: #0e1325;
+    --paper: #161c31;
+    --ink: #eef0f7;
+    --ink-soft: #a3a9bd;
+    --ink-faint: #8a90a6;
+    --rule: #262d45;
+    --rule-strong: #353d58;
+    --track: #2a3149;
+    --synapse: #9d85fa;
+    --synapse-ink: #b4a2ff;
+    --synapse-soft: #2a2550;
+    --on-accent: #14102b;
+    --ion: #3cc7bf;
+    --chlorophyll: #4fd1a1;
+    --chlorophyll-bar: #3cc08d;
+    --on-good: #0e1325;
+    --glucose: #e6a33a;
+    --glucose-ink: #f2b85a;
+    --oil: #c9a760;
+    --sleep: #5b8dff;
+    --beet: #ffb4ab;
+    --beet-soft: #3a1e22;
+    --glow: #1b2550;
+    --focus-ring: rgb(157 133 250 / 0.25);
+    --shade: rgb(0 0 0 / 0.35);
+    --toast: #eef0f7;
+    --on-toast: #0e1325;
+    --chart-focus: #9d85fa;
+    --chart-calories: #e6a33a;
+    --chart-sleep: #5b8dff;
+    --shadow-action: 0 8px 24px rgb(0 0 0 / 0.4);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --mist: #0e1325;
+  --paper: #161c31;
+  --ink: #eef0f7;
+  --ink-soft: #a3a9bd;
+  --ink-faint: #8a90a6;
+  --rule: #262d45;
+  --rule-strong: #353d58;
+  --track: #2a3149;
+  --synapse: #9d85fa;
+  --synapse-ink: #b4a2ff;
+  --synapse-soft: #2a2550;
+  --on-accent: #14102b;
+  --ion: #3cc7bf;
+  --chlorophyll: #4fd1a1;
+  --chlorophyll-bar: #3cc08d;
+  --on-good: #0e1325;
+  --glucose: #e6a33a;
+  --glucose-ink: #f2b85a;
+  --oil: #c9a760;
+  --sleep: #5b8dff;
+  --beet: #ffb4ab;
+  --beet-soft: #3a1e22;
+  --glow: #1b2550;
+  --focus-ring: rgb(157 133 250 / 0.25);
+  --shade: rgb(0 0 0 / 0.35);
+  --toast: #eef0f7;
+  --on-toast: #0e1325;
+  --chart-focus: #9d85fa;
+  --chart-calories: #e6a33a;
+  --chart-sleep: #5b8dff;
+  --shadow-action: 0 8px 24px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-quick: 0ms;
+    --duration-select: 0ms;
+    --duration-sheet: 0ms;
+    --duration-step: 0ms;
+    --duration-stage: 0ms;
+    --duration-dial: 0ms;
+  }
+}

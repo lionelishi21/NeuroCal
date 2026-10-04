@@ -1,15 +1,17 @@
 # Claude Code Project Context: NeuroCal AI Monorepo
 
 ## Workspace Structure
-This repository is organized as a monorepo containing three core applications:
+This repository is organized as a monorepo (npm workspaces) containing three core applications and one shared package:
 - `/backend`: Node.js Serverless API (Hexagonal / Clean Architecture)
 - `/web-poc`: Next.js (React) Web Proof of Concept
 - `/mobile-app`: Flutter Mobile Application (iOS & Android)
+- `/infra`: AWS CDK stack (TypeScript) that deploys the backend; see `infra/README.md`
+- `/packages/contracts`: Zod schemas for every API request/response, shared by backend and web. Change the contract first, then both sides, then run `npm run openapi -w @neurocal/contracts` to regenerate `packages/contracts/openapi.json` (a test fails if it is stale).
 
 ## Core Tech Stack
 - **Backend:** Node.js (v20+ LTS), TypeScript (Strict Mode), AWS Serverless (Lambda, API Gateway, S3, EventBridge)
 - **Database:** PostgreSQL (AWS Aurora Serverless v2) + `pgvector` extension via Drizzle ORM
-- **Inference & APIs:** OpenAI (`gpt-4o`, `text-embedding-3-small`), Anthropic (`claude-3-5-haiku`), Resend API, Google Custom Search API
+- **Inference & APIs:** OpenAI (`gpt-4o`, `text-embedding-3-small`), Anthropic (`claude-haiku-4-5`), Resend API, Tavily Search API (recipe search; Brave and Google Custom Search adapters kept as fallbacks)
 - **Web & Mobile:** Next.js / React (Web POC) & Flutter (Mobile App)
 
 ## Backend Architecture & Rules (`/backend`)
@@ -21,16 +23,43 @@ This repository is organized as a monorepo containing three core applications:
 - **SOLID Compliance:** Always code to interfaces (`IAiVisionProvider`, `IRepositories`); never inject concrete infrastructure classes directly into use cases.
 - **LLM Safety:** Enforce structured JSON schema validation for all LLM outputs.
 
+## Web POC Rules (`/web-poc`)
+- Use the `frontend-design` skill (`.claude/skills/frontend-design/`) for any new screen or visual change.
+- Use the design tokens in `web-poc/src/styles/tokens.css` — never hard-code colors, font sizes or spacing.
+- No stock UI themes or templates. Radix primitives are fine; their look must come from our tokens.
+- Mobile-first; visible keyboard focus; respect `prefers-reduced-motion`.
+- Copy: sentence case, plain verbs, same action name through a flow ("Log a meal" → "Meal logged").
+- The look comes from the Claude Design files (see "Design direction" in `docs/EXECUTION_PLAN.md`); build new screens from `Button`, `FocusRing`, `fieldClass` and the tokens before inventing styles.
+- Without `NEXT_PUBLIC_API_URL`, the app runs on the MSW mock API in `web-poc/src/mocks`, built from `packages/contracts`. Set `localStorage["neurocal.mock.newUser"] = "1"` to start the mock without a profile and see the onboarding.
+- Without `NEXT_PUBLIC_COGNITO_USER_POOL_ID` / `NEXT_PUBLIC_COGNITO_CLIENT_ID`, sign-in uses the local mock in `web-poc/src/auth` (every code is 123456).
+
 ## Key Reference Docs
 - See `ARCHITECTURE.md` at the root for full database schemas, TypeScript interfaces, system prompts, and use cases.
+- See `docs/EXECUTION_PLAN.md` for the roadmap, phases and design direction.
 
 ## Development Workflows
+- **All packages (repo root):**
+  - `npm install` - Install every workspace
+  - `npm run typecheck` / `npm test` / `npm run build` - Run across all workspaces
 - **Backend (`/backend`):**
-  - `cd backend && npm install` - Install backend dependencies
   - `cd backend && npm run build` - Compile TypeScript to `/backend/dist`
   - `cd backend && npm run test` - Execute Jest unit test suite
-  - `cd backend && npm run dev` - Run local serverless environment
+  - `cd backend && npm run db:generate` - Generate a SQL migration from `schema.ts` into `backend/drizzle/`
+  - `cd backend && npm run catalog:sync` - Embed new or edited protocols/products from `src/infrastructure/catalog/catalog.ts` into `DATABASE_URL` (needs `OPENAI_API_KEY`)
+  - `cd backend && npm run dev` - Local API on :4000 (in-memory Postgres + stub AI unless `backend/.env` sets keys; see `backend/.env.example`)
+  - Backend tests run Jest with `--experimental-vm-modules` so repository tests can use PGlite (in-process Postgres)
 - **Web POC (`/web-poc`):**
-  - `cd web-poc && npm run dev` - Run Next.js local dev server
+  - `cd web-poc && npm run dev` - Run Next.js local dev server (mock API); `NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev` to use the local backend
+  - `cd web-poc && npm run test` - Vitest + Testing Library (Vitest, not Jest, because MSW is ESM-only)
+- **Infra (`/infra`):**
+  - `cd infra && npm run synth` - Bundle the Lambdas and synthesize the stack (no AWS account needed)
+  - `cd infra && npm run deploy -- -c stage=dev` - Deploy a stage (needs AWS credentials); secrets and catalog sync steps are in `infra/README.md`
 - **Mobile App (`/mobile-app`):**
-  - `cd mobile-app && flutter run` - Run Flutter app on emulator/device
+  - `cd mobile-app && flutter run` - Run on a simulator/device with sample data and mock sign-in (code 123456); add `--dart-define=MOCK_NEW_USER=true` to start without a profile and see the onboarding
+  - `flutter run --dart-define-from-file=env/dev.json` - Use the deployed API and Cognito (copy `env/dev.example.json`)
+  - `flutter analyze` / `flutter test` - Lint and widget tests (CI runs both); macOS setup steps are in `mobile-app/README.md`
+  - Same rules as the web app: colours, type and spacing only from `lib/theme/tokens.dart` (mirrors `tokens.css`); `lib/api/models.dart` mirrors `packages/contracts`; `lib/onboarding/bio_profile.dart` mirrors `web-poc/src/lib/bioProfile.ts`
+
+## Conventions
+- Never commit `node_modules`, `.env` files or `.DS_Store`.
+- Tests next to code (`*.test.ts`); use cases are tested with fake providers.
