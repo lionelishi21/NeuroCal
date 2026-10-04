@@ -11,7 +11,7 @@ import {
   profile,
 } from "../testing/fakes";
 import { ForbiddenError, InvalidError, NotFoundError } from "../../domain/errors";
-import type { Product } from "../../domain/types";
+import type { Product, Profile } from "../../domain/types";
 import { AdminProductUseCases } from "./AdminProductUseCases";
 import { GetProtocolsUseCase } from "./GetProtocolsUseCase";
 import { SyncCatalogUseCase } from "./SyncCatalogUseCase";
@@ -37,12 +37,12 @@ describe("SyncCatalogUseCase", () => {
 });
 
 describe("GetProtocolsUseCase", () => {
-  async function setup(nights: number[]) {
+  async function setup(nights: number[], bioProfile?: Profile["bioProfile"]) {
     const profiles = new InMemoryProfiles();
     const telemetry = new InMemoryTelemetry();
     const catalog = new InMemoryCatalog();
     const embedder = new FakeEmbedder();
-    await profiles.save(profile({ timeZone: "UTC", cognitiveGoals: [] }));
+    await profiles.save(profile({ timeZone: "UTC", cognitiveGoals: [], ...(bioProfile ? { bioProfile } : {}) }));
     // One night per day ending at 06:00 UTC, for the last N days up to 29 Sep.
     for (const [i, hours] of nights.entries()) {
       const end = new Date(Date.UTC(2026, 8, 29 - (nights.length - 1 - i), 6));
@@ -92,6 +92,17 @@ describe("GetProtocolsUseCase", () => {
     expect(result.weakPoints).toEqual([]);
     expect(embedder.calls.at(-1)).toEqual(["Maintain steady focus, energy and sleep."]);
     expect(result.protocols.length).toBeGreaterThan(0);
+  });
+
+  it("searches for the onboarding friction point first, even with no data yet", async () => {
+    const fresh = await setup([], { friction: "night_waking" });
+    await fresh.useCase.execute({ userId: "u1" });
+    expect(fresh.embedder.calls.at(-1)).toEqual(["Help with waking in the night."]);
+
+    const tired = await setup([5, 5.5, 6, 5, 6, 5.5, 6], { friction: "afternoon_crash" });
+    const result = await tired.useCase.execute({ userId: "u1" });
+    expect(tired.embedder.calls.at(-1)).toEqual(["Help with afternoon energy crashes.", "Help with short or light sleep."]);
+    expect(result.weakPoints.map((w) => w.component)).toEqual(["sleep"]);
   });
 });
 

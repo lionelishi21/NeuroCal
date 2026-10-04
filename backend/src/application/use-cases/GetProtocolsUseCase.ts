@@ -1,3 +1,4 @@
+import { frictionNeed } from "../../domain/bioProfile";
 import { NotFoundError } from "../../domain/errors";
 import { computeFocusComponents } from "../../domain/focusScore";
 import { localDateOf, previousDate } from "../../domain/localDay";
@@ -20,8 +21,9 @@ export interface ProtocolMatches {
 /**
  * ARCHITECTURE §6.9: the week's weakest Focus Score inputs → one embedding per
  * weak point → nearest protocols and products (pgvector cosine), taken
- * round-robin so every weak point is addressed. Affiliate flags pass through
- * untouched so every client can label them.
+ * round-robin so every weak point is addressed. The friction point from the
+ * onboarding answers is searched for as well, ahead of the weak points.
+ * Affiliate flags pass through untouched so every client can label them.
  *
  * Own-brand supplements come first: whenever a match for a weak point is
  * another brand's supplement, the closest own-brand supplement for that same
@@ -51,7 +53,10 @@ export class GetProtocolsUseCase {
     const points = weakPoints(week);
     // One query per weak point (one batched embedding call), so each gets its own
     // best match instead of the strongest one crowding the other out.
-    const queries = points.length ? points.map((p) => needText([p], profile.cognitiveGoals)) : [needText([], profile.cognitiveGoals)];
+    // The friction point named in onboarding goes first: it is all there is to go on before a week of data exists.
+    const friction = frictionNeed(profile.bioProfile);
+    const needs = [...(friction ? [{ label: friction }] : []), ...points];
+    const queries = needs.length ? needs.map((n) => needText([n], profile.cognitiveGoals)) : [needText([], profile.cognitiveGoals)];
     const vectors = await this.embedder.embed(queries);
     const [protocols, products] = await Promise.all([
       this.pickPerQuery(vectors, this.limits.protocols, (v, n) => this.catalog.nearestProtocols(v, n)),

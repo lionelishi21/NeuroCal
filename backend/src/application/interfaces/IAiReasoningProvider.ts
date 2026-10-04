@@ -4,6 +4,8 @@ export interface BioStateContext {
     macroFocus: string;
     cognitiveFlags: string[];
     dietaryPreference: string;
+    /** What the onboarding answers ask of a meal, as plain sentences. Absent when there are none. */
+    habits?: string[];
 }
 
 export interface RecipeQueryOutput {

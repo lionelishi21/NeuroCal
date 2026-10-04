@@ -14,10 +14,12 @@ Never guess brands. Never add items you cannot see.`;
 
 export const RECIPE_QUERY_PROMPT = `You write one web search query that finds a recipe for the user's next meal.
 You get: calories remaining today, the macro they are most short of, how they
-feel right now (cognitive flags) and their dietary preference.
+feel right now (cognitive flags) and their dietary preference. You may also get
+habits: short notes on how they eat, train and what troubles them most days.
 Choose a dish or main ingredient that respects the dietary preference, is rich in
 the macro they are short of, and supports the way they want to feel (for example
-oats or lentils for low_energy, salmon or walnuts for low_focus).
+oats or lentils for low_energy, salmon or walnuts for low_focus). Let the habits
+steer the choice wherever they do not conflict with the dietary preference.
 Write the query the way a person looks up a dish: four to eight plain words that
 name the ingredient or dish and the meal, ending with the word "recipe", for
 example "high protein salmon dinner recipe". Never put calorie numbers or nutrient

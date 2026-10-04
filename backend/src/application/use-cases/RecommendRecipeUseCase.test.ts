@@ -75,6 +75,18 @@ describe("RecommendRecipeUseCase", () => {
     expect(saved.rows).toHaveLength(2);
   });
 
+  it("tells Claude what the onboarding answers ask of the meal", async () => {
+    await profiles.save(profile({ bioProfile: { friction: "afternoon_crash", fasting: "16_8", movement: "none", moldSensitive: true } }));
+    const reasoning = new FakeReasoning(query);
+
+    await build(reasoning, new FakeSearch([])).execute({ userId: "u1" });
+
+    expect(reasoning.calls[0]!.habits).toEqual([
+      "Often crashes mid-afternoon: prefer protein, fat and slow carbs over sugar and refined starch.",
+      "Eats within an eight-hour window: the meal should be filling.",
+    ]);
+  });
+
   it("returns an empty list when nothing usable comes back", async () => {
     const result = await build(new FakeReasoning(query), new FakeSearch([])).execute({ userId: "u1" });
     expect(result).toEqual({ searchQuery: query.searchQuery, recipes: [] });

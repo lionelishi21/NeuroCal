@@ -113,7 +113,7 @@ Screens not in the design file yet (This week, Sleep, Settings, Manage products,
 - [ ] Playwright screenshot tests of `/lab` and Today in CI
 
 ### Phase 2 — Web POC screens on the mock API
-1. ✅ **Intro and onboarding** — a five-slide intro for first visits (`/intro`), then the 11-step bio-profile onboarding for new accounts (`/welcome`): chronotype, diet and fasting, coffee, environment, hydration, recovery, supplements, training, friction point and goal, ending in a starting macro ratio, eating window, caffeine curfew and amber-light time. "Edit profile" keeps the earlier four steps. _To do: device connections (shown as "Coming soon"); use the answers in suggestions; a "Forgot password?" flow_
+1. ✅ **Intro and onboarding** — a five-slide intro for first visits (`/intro`), then the 11-step bio-profile onboarding for new accounts (`/welcome`): chronotype, diet and fasting, coffee, environment, hydration, recovery, supplements, training, friction point and goal, ending in a starting macro ratio, eating window, caffeine curfew and amber-light time. "Edit profile" keeps the earlier four steps. The friction point, fasting schedule and training answers steer the recipe query, and the friction point is matched to protocols and products. _To do: device connections (shown as "Coming soon"); leave out supplements the person already takes; a "Forgot password?" flow_
 2. ✅ **Today** — Focus Score card, the four signals with "log it" actions for missing ones, calories left, what to eat next, meals
 3. ✅ **Log a meal** — photo → editable items → confirm, or add items by hand; high glycemic load is flagged in the sheet and on the meal timeline
 4. ✅ **Check-in** — cognitive flags that feed recommendations

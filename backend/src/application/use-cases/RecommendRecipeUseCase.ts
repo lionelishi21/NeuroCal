@@ -1,3 +1,4 @@
+import { mealHabits } from "../../domain/bioProfile";
 import { DomainError, NotFoundError, UpstreamError } from "../../domain/errors";
 import type { NewRecipeRecommendation, RecipeRecommendation } from "../../domain/types";
 import type { IAiReasoningProvider } from "../interfaces/IAiReasoningProvider";
@@ -34,6 +35,7 @@ export class RecommendRecipeUseCase {
 
     const state = await this.bioState.forProfile(profile);
     const caloriesRemaining = state.calorieTarget - state.caloriesEaten;
+    const habits = mealHabits(profile.bioProfile);
 
     const query = await this.upstream(() =>
       this.reasoning.generateRecipeSearchQuery({
@@ -41,6 +43,7 @@ export class RecommendRecipeUseCase {
         macroFocus: state.macroFocus,
         cognitiveFlags: state.cognitiveFlags,
         dietaryPreference: state.dietaryPreference,
+        ...(habits.length ? { habits } : {}),
       }),
     );
     const hits = await this.upstream(() =>

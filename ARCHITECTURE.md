@@ -207,6 +207,8 @@ export interface BioStateContext {
   macroFocus: string;
   cognitiveFlags: string[];
   dietaryPreference: string;
+  /** What the onboarding answers ask of a meal, as plain sentences. Absent when there are none. */
+  habits?: string[];
 }
 export interface RecipeQueryOutput {
   searchQuery: string;
@@ -323,7 +325,7 @@ cognitiveFlags = flags of the latest check-in on that local day, or []
 
 ### 6.6 RecommendRecipe — `GET /recommendations/next`
 Ports: `IProfileRepository`, `IMealRepository`, `ICheckInRepository`, `IAiReasoningProvider`, `ISearchEngineAdapter`, `IRecommendationRepository`. `RecommendRecipeUseCase.ts` is this use case.
-1. `ComputeBioState` for today → `BioStateContext { caloriesRemaining, macroFocus, cognitiveFlags, dietaryPreference }`.
+1. `ComputeBioState` for today → `BioStateContext { caloriesRemaining, macroFocus, cognitiveFlags, dietaryPreference, habits? }`. `habits` are fixed sentences that `mealHabits` (`domain/bioProfile.ts`) picks from the onboarding answers (friction point, fasting schedule, training); the stored answers themselves are never sent.
 2. `generateRecipeSearchQuery(context)` → `{ searchQuery, contextualReasoning }` (Claude, §7.2).
 3. `searchRecipes(searchQuery, { allowedDomains, limit: 10 })`: Tavily search with the allow-list as `include_domains`. Tavily returns links only, so the adapter fetches each allow-listed hit's page and reads its schema.org Recipe data (time, calories, macros); guides, collection pages and pages that can't be read stay without nutrition and are dropped in the next step. `createRecipeSearch` picks the provider by which key is set: `TAVILY_API_KEY`, then `BRAVE_SEARCH_API_KEY`, then the Google Custom Search pair (Google closed that API to new projects).
 4. Rank the hits: keep only allowed domains (checked again, not just trusted to search) and hits with full nutrition (the contract requires minutes, calories and macros); drop anything over `caloriesRemaining` when calories are left; sort by protein per calorie; keep the top 3. The dietary preference is enforced by the query itself.
@@ -358,7 +360,7 @@ Missing inputs drop out and the remaining weights are renormalised; the stored `
 ### 6.9 RecommendProtocols — `GET /recommendations/protocols`
 1. Weak points: Focus Score components averaged over the last 7 days; below 0.75 counts; the two lowest are used.
 2. One text per weak point (e.g. "Help with stress and low focus. Goals: focus."), embedded in one batched call.
-3. `nearestProtocols` / `nearestProducts` per text (HNSW cosine), taken **round-robin** so every weak point gets its own best match; 2 protocols and 2 products in total. With no weak points, one "maintain steady focus…" query.
+3. `nearestProtocols` / `nearestProducts` per text (HNSW cosine), taken **round-robin** so every weak point gets its own best match; 2 protocols and 2 products in total. The friction point from the onboarding answers (e.g. "Help with afternoon energy crashes.") is one more text, placed first, so a new account gets matches before it has a week of data. With no weak points and no friction point, one "maintain steady focus…" query.
 4. Return them with the `affiliate` and `ownBrand` flags intact; clients label those links ("Affiliate link", "Our brand") next to the link and use `rel="sponsored"`.
 
 **Catalog.** Protocols and products are authored in the repo (`catalog.ts`, with partner brands in `partnerProducts.ts` and the MitoProof range in `mitoproofProducts.ts`), never generated. Partner links in the repo are the brands' plain pages; NeuroCal's own tracking links are entered on the admin screen (§6.11). `SyncCatalogUseCase` embeds only entries whose record hash changed (any field, so URL and affiliate edits are always stored) and removes deleted ones. The dev server syncs on start; `npm run catalog:sync -w @neurocal/backend` syncs a real database. Products are generic categories until partner agreements exist, plus MitoProof's own items (`ownBrand: true`; MitoProof is run by NeuroCal's makers).
@@ -421,10 +423,12 @@ System prompt:
 ```
 You write one web search query that finds a recipe for the user's next meal.
 You get: calories remaining today, the macro they are most short of, how they
-feel right now (cognitive flags) and their dietary preference.
+feel right now (cognitive flags) and their dietary preference. You may also get
+habits: short notes on how they eat, train and what troubles them most days.
 Choose a dish or main ingredient that respects the dietary preference, is rich in
 the macro they are short of, and supports the way they want to feel (for example
-oats or lentils for low_energy, salmon or walnuts for low_focus).
+oats or lentils for low_energy, salmon or walnuts for low_focus). Let the habits
+steer the choice wherever they do not conflict with the dietary preference.
 Write the query the way a person looks up a dish: four to eight plain words that
 name the ingredient or dish and the meal, ending with the word "recipe", for
 example "high protein salmon dinner recipe". Never put calorie numbers or nutrient

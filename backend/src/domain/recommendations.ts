@@ -27,7 +27,7 @@ export function weakPoints(days: FocusComponents[]): WeakPoint[] {
 }
 
 /** What gets embedded to search the catalog: the problems, plus what the user wants from food. */
-export function needText(points: WeakPoint[], goals: string[]): string {
+export function needText<T extends { label: string }>(points: T[], goals: string[]): string {
   const problems = points.length ? `Help with ${points.map((p) => p.label).join("; ")}.` : "Maintain steady focus, energy and sleep.";
   return goals.length ? `${problems} Goals: ${goals.join(", ")}.` : problems;
 }
