@@ -1,4 +1,7 @@
 import type { DietaryPreference, Macros } from "@neurocal/contracts";
+import { DIETS, macroRatio } from "./bioProfile";
+
+const PROTOCOLS = new Set<string>(DIETS.map(([value]) => value));
 
 /** Share of calories from protein / carbs / fat. Keto flips carbs and fat. */
 const SPLITS: Record<"standard" | "keto", { protein: number; carbs: number; fat: number }> = {
@@ -8,6 +11,11 @@ const SPLITS: Record<"standard" | "keto", { protein: number; carbs: number; fat:
 
 /** Grams from a calorie target (4 kcal/g protein and carbs, 9 kcal/g fat), rounded to 5 g. */
 export function suggestMacros(dailyCalories: number, diet: DietaryPreference): Macros {
+  // The onboarding's diet protocols carry their own ratios.
+  if (PROTOCOLS.has(diet)) {
+    const [fat, protein, carbs] = macroRatio(diet, dailyCalories);
+    return { fatG: fat!.grams, proteinG: protein!.grams, carbsG: carbs!.grams };
+  }
   const split = SPLITS[diet === "keto" ? "keto" : "standard"];
   const round5 = (n: number) => Math.round(n / 5) * 5;
   return {

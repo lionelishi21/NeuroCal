@@ -268,7 +268,7 @@ function AddProduct() {
       </label>
       <label className={`mt-3 ${label}`}>
         What it is
-        <textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} rows={2} maxLength={600} className={smallField} />
+        <textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} rows={2} maxLength={600} className={`${smallField} h-auto py-3`} />
         <span className="mt-1 block">One or two plain sentences. Say what it is; leave out health claims.</span>
       </label>
       <label className={`mt-3 ${label}`}>

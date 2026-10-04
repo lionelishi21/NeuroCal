@@ -35,3 +35,21 @@ describe("GetProfileUseCase", () => {
     await expect(new GetProfileUseCase(new InMemoryProfiles()).execute({ userId: "u1" })).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("bio-profile", () => {
+  const answers = { wake: "6_to_8", fasting: "16_8", coffeeType: "none", takesSupplements: false, supplements: [] as string[] };
+
+  it("is stored with the profile and survives later partial updates", async () => {
+    const profiles = new InMemoryProfiles();
+    const update = new UpdateProfileUseCase(profiles);
+    const created = await update.execute({
+      userId: "u1",
+      patch: { displayName: "Maya", dietaryPreference: "cyclical_keto", dailyCalorieTarget: 2200, macroTargets: { proteinG: 110, carbsG: 55, fatG: 171 }, bioProfile: answers },
+    });
+    expect(created).toMatchObject({ dietaryPreference: "cyclical_keto", bioProfile: answers });
+
+    const renamed = await update.execute({ userId: "u1", patch: { displayName: "Maya R" } });
+    expect(renamed.bioProfile).toEqual(answers);
+    expect((await new GetProfileUseCase(profiles).execute({ userId: "u1" })).bioProfile).toEqual(answers);
+  });
+});

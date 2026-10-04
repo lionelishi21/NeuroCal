@@ -82,7 +82,7 @@ export const MOCK_PRODUCTS: ProtocolsResponse["products"] = [
   },
 ];
 
-export function createDb(options: { newUser?: boolean } = {}) {
+export function createDb(options: { newUser?: boolean; withoutLastNight?: boolean } = {}) {
   let nextId = 100;
   let profile: Profile | null = options.newUser ? null : {
     id: "u1",
@@ -120,7 +120,7 @@ export function createDb(options: { newUser?: boolean } = {}) {
   // Last night: 23:15 → 05:45, six and a half hours.
   const bedtime = new Date(at(23, 15));
   bedtime.setDate(bedtime.getDate() - 1);
-  const sleep: IngestSleepRequest["sessions"] = [{ start: bedtime.toISOString(), end: at(5, 45), source: "manual" }];
+  const sleep: IngestSleepRequest["sessions"] = options.withoutLastNight ? [] : [{ start: bedtime.toISOString(), end: at(5, 45), source: "manual" }];
   const screenTime: IngestScreenTimeRequest["samples"] = [];
 
   // Six earlier days with varied sleep, dinner times and feelings (mirrors the backend dev seed).

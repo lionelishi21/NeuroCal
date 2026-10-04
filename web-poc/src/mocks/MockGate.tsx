@@ -2,6 +2,7 @@
 
 import { setupWorker } from "msw/browser";
 import { useEffect, useState, type ReactNode } from "react";
+import { createDb } from "./db";
 import { createHandlers } from "./handlers";
 
 /**
@@ -9,7 +10,17 @@ import { createHandlers } from "./handlers";
  * and MSW throws if it is started twice, so the start promise is shared.
  */
 let started: Promise<unknown> | null = null;
-const startWorker = () => (started ??= setupWorker(...createHandlers()).start({ onUnhandledFrame: "bypass", quiet: true }));
+/** Set localStorage "neurocal.mock.newUser" to "1" to start the mock without a profile and see the onboarding. */
+function startsAsNewUser(): boolean {
+  try {
+    return window.localStorage.getItem("neurocal.mock.newUser") === "1";
+  } catch {
+    return false;
+  }
+}
+
+const startWorker = () =>
+  (started ??= setupWorker(...createHandlers("/api", createDb({ newUser: startsAsNewUser() }))).start({ onUnhandledFrame: "bypass", quiet: true }));
 
 /** Starts the MSW mock API in the browser, then renders the app. Browser-only: load with ssr: false. */
 export default function MockGate({ children }: { children: ReactNode }) {

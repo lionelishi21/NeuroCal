@@ -40,8 +40,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {message && (
           <p
             key={message.id}
-            className={`m-0 rounded-pill px-5 py-2.5 text-sm font-medium shadow-float ${
-              message.tone === "problem" ? "bg-beet text-on-accent" : "bg-ink text-mist"
+            className={`m-0 rounded-pill px-[1.125rem] py-3 text-sm font-semibold shadow-toast ${
+              message.tone === "problem" ? "bg-beet-soft text-beet" : "bg-toast text-on-toast"
             }`}
             style={{ animation: "toast-in var(--duration-sheet) var(--ease-settle)" }}
           >

@@ -8,7 +8,18 @@
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
   --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-track: var(--track);
+  --color-synapse-ink: var(--synapse-ink);
+  --color-synapse-soft: var(--synapse-soft);
+  --color-chlorophyll-bar: var(--chlorophyll-bar);
+  --color-on-good: var(--on-good);
+  --color-beet-soft: var(--beet-soft);
+  --color-focus-ring: var(--focus-ring);
+  --color-toast: var(--toast);
+  --color-on-toast: var(--on-toast);
   --color-chlorophyll: var(--chlorophyll);
   --color-glucose: var(--glucose);
   --color-glucose-ink: var(--glucose-ink);
@@ -29,16 +40,22 @@
   --font-figure: var(--font-figure);
 
   --text-*: initial;
+  --text-2xs: var(--text-2xs);
   --text-xs: var(--text-xs);
   --text-sm: var(--text-sm);
+  --text-md: var(--text-md);
   --text-base: var(--text-base);
   --text-lg: var(--text-lg);
   --text-xl: var(--text-xl);
   --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
+  --text-display: var(--text-display);
   --text-figure: var(--text-figure);
 
   --radius-*: initial;
+  --radius-option: var(--radius-option);
   --radius-control: var(--radius-control);
+  --radius-hero: var(--radius-hero);
   --radius-pill: var(--radius-pill);
   --radius-sheet: var(--radius-sheet);
   --radius-card: var(--radius-card);
@@ -46,8 +63,11 @@
   --shadow-*: initial;
   --shadow-float: var(--shadow-float);
   --shadow-action: var(--shadow-action);
+  --shadow-chip: var(--shadow-chip);
+  --shadow-toast: var(--shadow-toast);
 
   --ease-settle: var(--ease-settle);
+  --ease-spring: var(--ease-spring);
   --spacing: 0.25rem;
 }
 
@@ -65,6 +85,14 @@
     margin: 0;
     background: var(--mist);
     min-height: 100dvh;
+  }
+
+  /* Form controls use the app's typeface, not the browser's. */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
   }
 
   h1,
@@ -96,5 +124,34 @@
   from {
     transform: translateY(0.75rem);
     opacity: 0;
+  }
+}
+
+/* The plate being read, in the intro. */
+@keyframes scan {
+  0%,
+  100% {
+    top: 14%;
+  }
+  50% {
+    top: 80%;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* A screen or onboarding step arriving; --enter-from sets the side it comes from. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--enter-from, 1.75rem));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-line,
+  .spinner {
+    animation: none !important;
   }
 }

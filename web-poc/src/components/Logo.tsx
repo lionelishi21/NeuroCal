@@ -20,7 +20,7 @@ export function LogoMark({ className = "size-6" }: { className?: string }) {
 /** Mark plus the name, for headers. */
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink ${className}`}>
+    <span className={`inline-flex items-center gap-2 text-lg font-extrabold tracking-[-0.02em] text-ink ${className}`}>
       <LogoMark className="size-7" />
       NeuroCal
     </span>

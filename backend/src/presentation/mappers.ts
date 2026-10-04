@@ -13,6 +13,8 @@ export const toProfile = (p: Profile): C.Profile => ({
   cognitiveGoals: p.cognitiveGoals,
   dailyCalorieTarget: p.dailyCalorieTarget,
   macroTargets: p.macroTargets,
+  // Stored as given; the response schema checks the shape before it is sent.
+  ...(p.bioProfile ? { bioProfile: p.bioProfile as C.BioProfile } : {}),
 });
 
 const toFoodItem = (i: FoodItem): C.FoodItem => ({

@@ -31,6 +31,11 @@ export const dietLabel: Record<DietaryPreference, { name: string; detail: string
   vegan: { name: "Vegan", detail: "Plants only" },
   keto: { name: "Keto", detail: "Very low carb, high fat" },
   mediterranean: { name: "Mediterranean", detail: "Olive oil, fish, grains, vegetables" },
+  cyclical_keto: { name: "Cyclical keto", detail: "Keto most days, planned carb refeeds" },
+  low_toxin: { name: "Bulletproof (low-toxin)", detail: "Whole foods, healthy fats, low toxins" },
+  carnivore: { name: "Carnivore", detail: "Animal foods only" },
+  paleo: { name: "Paleo", detail: "Meat, fish and vegetables, no grains or dairy" },
+  standard: { name: "Standard", detail: "No specific protocol" },
 };
 
 export const goalLabel: Record<CognitiveGoal, string> = {

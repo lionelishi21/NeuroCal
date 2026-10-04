@@ -74,6 +74,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       cognitiveGoals: row.cognitiveGoals as CognitiveGoal[],
       dailyCalorieTarget: row.dailyCalorieTarget,
       macroTargets: { proteinG: row.proteinTargetG, carbsG: row.carbsTargetG, fatG: row.fatTargetG },
+      ...(row.bioProfile ? { bioProfile: row.bioProfile } : {}),
     };
   }
 
@@ -87,6 +88,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       proteinTargetG: profile.macroTargets.proteinG,
       carbsTargetG: profile.macroTargets.carbsG,
       fatTargetG: profile.macroTargets.fatG,
+      bioProfile: profile.bioProfile ?? null,
     };
     await this.db
       .insert(profiles)

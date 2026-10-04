@@ -24,7 +24,11 @@ afterAll(() => server.close());
 let handlers: ReturnType<typeof createHandlers>;
 
 function renderToday(...overrides: ReturnType<typeof createHandlers>) {
-  handlers = createHandlers(API_BASE, createDb(), 0);
+  return renderWith(createDb(), ...overrides);
+}
+
+function renderWith(db: ReturnType<typeof createDb>, ...overrides: ReturnType<typeof createHandlers>) {
+  handlers = createHandlers(API_BASE, db, 0);
   server.use(...handlers);
   server.use(...overrides);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -42,10 +46,16 @@ describe("Today", () => {
   it("shows the day's meals, check-in and a suggestion", async () => {
     renderToday();
     const meals = await screen.findByRole("region", { name: "Meals today" });
-    expect(await within(meals).findByText("Breakfast")).toBeInTheDocument();
+    expect(await within(meals).findByText("Steel-cut oats, Blueberries, Walnuts")).toBeInTheDocument();
+    expect(within(meals).getByText("Breakfast")).toBeInTheDocument();
     expect(within(meals).getByText("Lunch")).toBeInTheDocument();
-    expect(await screen.findByText("Low focus")).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /Miso-glazed cod/ })).toBeInTheDocument();
+
+    // 1,050 of 2,200 kcal eaten in the seed.
+    const calories = screen.getByRole("region", { name: "Calories today" });
+    expect(await within(calories).findByText("1,150 kcal left")).toBeInTheDocument();
+    expect(within(calories).getByText("1,050 of 2,200 eaten")).toBeInTheDocument();
+    expect(within(calories).getByRole("progressbar", { name: "Calories eaten" })).toHaveAttribute("aria-valuenow", "1050");
   });
 
   it("logs a meal from a photo", async () => {
@@ -94,7 +104,7 @@ describe("Today", () => {
     await user.click(within(sheet).getByRole("button", { name: "Log meal, 180 kcal" }));
     expect(await screen.findByText("Meal logged")).toBeInTheDocument();
     const meals = screen.getByRole("region", { name: "Meals today" });
-    expect(await within(meals).findByText("Protein shake, 1 serving")).toBeInTheDocument();
+    expect(await within(meals).findByText("Protein shake")).toBeInTheDocument();
   });
 
   it("keeps a meal logged offline and sends it when the connection returns", async () => {
@@ -122,7 +132,7 @@ describe("Today", () => {
     server.use(...handlers);
     window.dispatchEvent(new Event("online"));
 
-    expect(await within(meals).findByText("Trail mix, 1 serving")).toBeInTheDocument();
+    expect(await within(meals).findByText("Trail mix")).toBeInTheDocument();
     await waitFor(() => expect(within(meals).queryByText(/saved on this device/)).not.toBeInTheDocument());
     expect(queuedMeals()).toHaveLength(0);
   });
@@ -143,12 +153,30 @@ describe("Today", () => {
 
   it("shows the Focus Score with its inputs and explanation", async () => {
     renderToday();
-    const focus = await screen.findByRole("region", { name: "Focus today" });
-    expect(await within(focus).findByText("out of 100")).toBeInTheDocument();
-    expect(within(focus).getByText("Sleep")).toBeInTheDocument();
-    expect(within(focus).queryAllByText("No data")).toHaveLength(0); // the seeded week gives every input data
-    expect(within(focus).getByText("Evening timing")).toBeInTheDocument();
+    const focus = await screen.findByRole("region", { name: "Focus score" });
+    expect(await within(focus).findByText("of 100")).toBeInTheDocument();
     expect(within(focus).getByText(/holding your focus back/)).toBeInTheDocument();
+    // Every signal has data in the seeded week, so nothing asks to be logged.
+    expect(within(focus).queryByRole("button", { name: "Log sleep" })).not.toBeInTheDocument();
+
+    const shaping = screen.getByRole("region", { name: "What's shaping it" });
+    expect(within(shaping).getByText("4 of 4 signals")).toBeInTheDocument();
+    for (const name of ["Sleep", "Evening", "Glycemic load", "Stress"]) expect(within(shaping).getByText(name)).toBeInTheDocument();
+    expect(within(shaping).queryByRole("button", { name: /^Log / })).not.toBeInTheDocument();
+  });
+
+  it("asks for what is missing and removes a meal from its options", async () => {
+    const user = userEvent.setup();
+    renderWith(createDb({ withoutLastNight: true }));
+    const shaping = await screen.findByRole("region", { name: "What's shaping it" });
+    expect(await within(shaping).findByText("3 of 4 signals")).toBeInTheDocument();
+    expect(within(shaping).getByRole("button", { name: "Log sleep" })).toBeInTheDocument();
+
+    const meals = screen.getByRole("region", { name: "Meals today" });
+    await user.click(await within(meals).findByRole("button", { name: "Options for Steel-cut oats, Blueberries, Walnuts" }));
+    await user.click(within(meals).getByRole("button", { name: "Remove meal" }));
+    expect(await screen.findByText("Meal removed")).toBeInTheDocument();
+    await waitFor(() => expect(within(meals).queryByText("Steel-cut oats, Blueberries, Walnuts")).not.toBeInTheDocument());
   });
 
   it("logs sleep and refreshes the Focus Score", async () => {
@@ -158,9 +186,9 @@ describe("Today", () => {
       vi.useRealTimers();
     });
     const user = userEvent.setup();
-    renderToday();
-    const focus = await screen.findByRole("region", { name: "Focus today" });
-    const before = (await within(focus).findByText("out of 100")).previousSibling?.textContent;
+    renderWith(createDb({ withoutLastNight: true }));
+    const focus = await screen.findByRole("region", { name: "Focus score" });
+    const before = (await within(focus).findByText("of 100")).previousSibling?.textContent;
 
     await user.click(within(focus).getByRole("button", { name: "Log sleep" }));
     const sheet = await screen.findByRole("dialog", { name: "Log sleep" });
@@ -174,7 +202,9 @@ describe("Today", () => {
     await user.click(within(sheet).getByRole("button", { name: "Log sleep" }));
 
     expect(await screen.findByText("Sleep logged")).toBeInTheDocument();
-    await waitFor(() => expect(within(focus).getByText("out of 100").previousSibling?.textContent).not.toBe(before));
+    await waitFor(() => expect(within(focus).getByText("of 100").previousSibling?.textContent).not.toBe(before));
+    // With sleep in, the score no longer asks for it.
+    await waitFor(() => expect(within(focus).queryByRole("button", { name: "Log sleep" })).not.toBeInTheDocument());
   });
 
   it("saves a check-in", async () => {

@@ -12,6 +12,12 @@ export const DietaryPreference = z.enum([
   "vegan",
   "keto",
   "mediterranean",
+  // Diet protocols offered by the bio-profile onboarding.
+  "cyclical_keto",
+  "low_toxin",
+  "carnivore",
+  "paleo",
+  "standard",
 ]);
 export type DietaryPreference = z.infer<typeof DietaryPreference>;
 
@@ -39,6 +45,35 @@ export const Macros = z.object({
 });
 export type Macros = z.infer<typeof Macros>;
 
+const Frequency = z.enum(["daily", "weekly", "never"]);
+
+/** Answers from the bio-profile onboarding. They shape suggestions; none of them is a medical record. */
+export const BioProfile = z.object({
+  /** When the person wakes without an alarm. */
+  wake: z.enum(["before_6", "6_to_8", "after_8"]),
+  fasting: z.enum(["16_8", "omad", "12_12", "none"]),
+  coffeeType: z.enum(["biohacked", "black", "espresso", "none"]),
+  /** Absent when they don't drink coffee. */
+  coffeeTime: z.enum(["before_9", "9_to_11", "afternoon"]).optional(),
+  coffeeMoldTested: z.boolean().optional(),
+  moldSensitive: z.boolean(),
+  /** Hours of screens after sunset without blue-light blockers. */
+  eveningScreens: z.enum(["none", "1_2", "3_plus"]),
+  phoneAtNight: z.enum(["airplane_mode", "another_room", "nightstand", "next_to_head"]),
+  water: z.enum(["filtered", "spring", "tap"]),
+  addsMinerals: z.boolean(),
+  coldTherapy: Frequency,
+  redLight: Frequency,
+  pemf: Frequency,
+  takesSupplements: z.boolean(),
+  supplements: z.array(z.enum(["c8_mct", "magnesium_l_threonate", "binders", "ketone_esters", "methyl_b", "nootropics"])),
+  movement: z.enum(["heavy_lifting", "rehit", "chronic_cardio", "mobility", "none"]),
+  /** The daily problem to watch for first. */
+  friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
+  goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity"]),
+});
+export type BioProfile = z.infer<typeof BioProfile>;
+
 export const Profile = z.object({
   id: Id,
   displayName: z.string().min(1),
@@ -48,6 +83,8 @@ export const Profile = z.object({
   cognitiveGoals: z.array(CognitiveGoal),
   dailyCalorieTarget: z.number().int().positive(),
   macroTargets: Macros,
+  /** Set by the bio-profile onboarding; absent for profiles made before it existed. */
+  bioProfile: BioProfile.optional(),
 });
 export type Profile = z.infer<typeof Profile>;
 

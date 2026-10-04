@@ -2,12 +2,13 @@
 
 import { CognitiveGoal, DietaryPreference, type Macros, type UpdateProfileRequest } from "@neurocal/contracts";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { RequestFailed } from "../api/client";
 import { useProfile, useUpdateProfile } from "../api/queries";
 import { Button } from "../components/Button";
 import { fieldClass } from "../components/fields";
 import { useToast } from "../components/Toast";
+import { Onboarding } from "./Onboarding";
 import { dietLabel, goalLabel } from "../lib/format";
 import { browserTimeZone, macroCalories, suggestMacros, timeZones } from "../lib/targets";
 
@@ -92,6 +93,12 @@ export function Welcome() {
       },
     });
   };
+
+  // A new account gets the bio-profile onboarding; this screen is then only "Edit profile".
+  // It stays up after its own save creates the profile, so its closing screen can show.
+  const startedNew = useRef(false);
+  if (existing.error instanceof RequestFailed && existing.error.status === 404) startedNew.current = true;
+  if (startedNew.current) return <Onboarding />;
 
   if (existing.isPending) {
     return <main className="mx-auto max-w-[34rem] px-4 pt-12 text-ink-soft">Loading…</main>;

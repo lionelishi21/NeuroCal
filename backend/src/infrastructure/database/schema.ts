@@ -3,24 +3,7 @@
  * Migration 0002 enables the `vector` extension before the catalog tables use it.
  */
 import { sql } from "drizzle-orm";
-import {
-  check,
-  date,
-  index,
-  primaryKey,
-  integer,
-  numeric,
-  pgTable,
-  real,
-  smallint,
-  text,
-  timestamp,
-  unique,
-  uuid,
-  varchar,
-  vector,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -58,6 +41,8 @@ export const profiles = pgTable(
     proteinTargetG: decimal("protein_target_g", 6, 1).notNull(),
     carbsTargetG: decimal("carbs_target_g", 6, 1).notNull(),
     fatTargetG: decimal("fat_target_g", 6, 1).notNull(),
+    /** Bio-profile onboarding answers (packages/contracts BioProfile), or null. */
+    bioProfile: jsonb("bio_profile").$type<Record<string, string | boolean | string[]>>(),
     ...timestamps,
   },
   (t) => [

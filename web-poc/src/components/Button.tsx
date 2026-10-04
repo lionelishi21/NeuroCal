@@ -1,12 +1,12 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "quiet" | "text";
+type Variant = "primary" | "quiet" | "soft" | "text";
 
 const styles: Record<Variant, string> = {
-  primary:
-    "bg-synapse text-on-accent rounded-pill px-6 py-3.5 font-semibold shadow-action hover:brightness-110 active:brightness-95",
-  quiet: "bg-paper text-ink rounded-pill px-5 py-3.5 font-semibold ring-1 ring-rule ring-inset hover:ring-ink-soft",
-  text: "text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink hover:decoration-ink px-1 py-1",
+  primary: "h-14 rounded-pill bg-synapse px-6 text-lg font-bold text-on-accent hover:brightness-110 active:brightness-95",
+  quiet: "h-12 rounded-pill border-[1.5px] border-rule-strong px-5 text-sm font-bold text-synapse-ink hover:border-ink-soft",
+  soft: "h-11 rounded-pill bg-synapse-soft px-4 text-sm font-bold text-synapse-ink hover:brightness-95",
+  text: "px-1 py-1 text-md font-bold text-synapse-ink hover:underline hover:underline-offset-4",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }>(
@@ -15,7 +15,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
       <button
         ref={ref}
         type={type}
-        className={`inline-flex items-center justify-center gap-2 text-base transition-[filter,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`}
+        className={`inline-flex cursor-pointer items-center justify-center gap-2 transition-[filter,opacity] duration-150 disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]} ${className}`}
         {...props}
       />
     );

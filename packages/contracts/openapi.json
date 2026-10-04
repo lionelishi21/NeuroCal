@@ -741,6 +741,166 @@
           "message"
         ]
       },
+      "BioProfile": {
+        "type": "object",
+        "properties": {
+          "wake": {
+            "type": "string",
+            "enum": [
+              "before_6",
+              "6_to_8",
+              "after_8"
+            ]
+          },
+          "fasting": {
+            "type": "string",
+            "enum": [
+              "16_8",
+              "omad",
+              "12_12",
+              "none"
+            ]
+          },
+          "coffeeType": {
+            "type": "string",
+            "enum": [
+              "biohacked",
+              "black",
+              "espresso",
+              "none"
+            ]
+          },
+          "coffeeTime": {
+            "type": "string",
+            "enum": [
+              "before_9",
+              "9_to_11",
+              "afternoon"
+            ]
+          },
+          "coffeeMoldTested": {
+            "type": "boolean"
+          },
+          "moldSensitive": {
+            "type": "boolean"
+          },
+          "eveningScreens": {
+            "type": "string",
+            "enum": [
+              "none",
+              "1_2",
+              "3_plus"
+            ]
+          },
+          "phoneAtNight": {
+            "type": "string",
+            "enum": [
+              "airplane_mode",
+              "another_room",
+              "nightstand",
+              "next_to_head"
+            ]
+          },
+          "water": {
+            "type": "string",
+            "enum": [
+              "filtered",
+              "spring",
+              "tap"
+            ]
+          },
+          "addsMinerals": {
+            "type": "boolean"
+          },
+          "coldTherapy": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "never"
+            ]
+          },
+          "redLight": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "never"
+            ]
+          },
+          "pemf": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "never"
+            ]
+          },
+          "takesSupplements": {
+            "type": "boolean"
+          },
+          "supplements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "c8_mct",
+                "magnesium_l_threonate",
+                "binders",
+                "ketone_esters",
+                "methyl_b",
+                "nootropics"
+              ]
+            }
+          },
+          "movement": {
+            "type": "string",
+            "enum": [
+              "heavy_lifting",
+              "rehit",
+              "chronic_cardio",
+              "mobility",
+              "none"
+            ]
+          },
+          "friction": {
+            "type": "string",
+            "enum": [
+              "afternoon_crash",
+              "night_waking",
+              "post_meal_fog",
+              "slow_recovery"
+            ]
+          },
+          "goal": {
+            "type": "string",
+            "enum": [
+              "focus",
+              "deep_sleep",
+              "steady_energy",
+              "longevity"
+            ]
+          }
+        },
+        "required": [
+          "wake",
+          "fasting",
+          "coffeeType",
+          "moldSensitive",
+          "eveningScreens",
+          "phoneAtNight",
+          "water",
+          "addsMinerals",
+          "coldTherapy",
+          "redLight",
+          "pemf",
+          "takesSupplements",
+          "supplements",
+          "movement",
+          "friction",
+          "goal"
+        ]
+      },
       "BioState": {
         "type": "object",
         "properties": {
@@ -959,7 +1119,12 @@
           "vegetarian",
           "vegan",
           "keto",
-          "mediterranean"
+          "mediterranean",
+          "cyclical_keto",
+          "low_toxin",
+          "carnivore",
+          "paleo",
+          "standard"
         ]
       },
       "FocusComponentName": {
@@ -1467,6 +1632,9 @@
           },
           "macroTargets": {
             "$ref": "#/components/schemas/Macros"
+          },
+          "bioProfile": {
+            "$ref": "#/components/schemas/BioProfile"
           }
         },
         "required": [
@@ -1701,6 +1869,9 @@
           },
           "macroTargets": {
             "$ref": "#/components/schemas/Macros"
+          },
+          "bioProfile": {
+            "$ref": "#/components/schemas/BioProfile"
           }
         }
       },

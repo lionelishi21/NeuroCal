@@ -80,49 +80,18 @@ It is **vendored into this repo** at `.claude/skills/frontend-design/`, so every
 
 Complementary, optional: the Anthropic **Design** plugin (accessibility review, design critique, design-system skills) for later audits.
 
-### Proposed design direction (draft — to be validated in Phase 1)
+### Design direction (from the NeuroCal onboarding and Today v2 designs, October 2026)
 
-**Subject, audience, job.** NeuroCal is a nutrition companion for people who eat to think clearly — knowledge workers, students, athletes managing focus and energy. Its primary job: *tell me, right now, what my body has and what my mind needs, and what to eat next.*
+The source is the Claude Design file "NeuroCal onboarding" (intro, sign in, create account, confirm email, the 11-step bio-profile onboarding, "Profile saved") with "NC Today v2" embedded. Tokens live in `web-poc/src/styles/tokens.css`; nothing in the app hard-codes a colour or size.
 
-**Concept: "instrument panel."** A premium biohacker look (chosen from mockups): dark by default, light when the phone is set to light, unless the viewer picks Light or Dark (Settings → Appearance, or the switch on the sign-in screens; saved per device and applied before first paint). One glowing element per screen carries the boldness; everything around it is quiet instrumentation. Mockups: `NeuroCal Night Lab` artifact.
+- **Look.** Light page `#F3F4FA` with white cards, or dark `#0E1325` with `#161C31` cards; one violet primary (`#6A4FDB` / `#9D85FA`), teal for the logo's spark, green for "good" and amber for "watch this". Cards have a 1px border and no shadow; only chips, toasts and the main button float.
+- **Type.** Plus Jakarta Sans throughout: 800 for titles and figures, 700 for buttons and section titles, 600 for labels. Sizes 12 to 56 px are the `--text-*` scale.
+- **Shape.** Pills for buttons and chips, 16 px for fields and option rows, 20 px for cards, 24 px for the Focus Score card.
+- **Signature.** The Focus Score ring: a blue-to-teal arc on a quiet track. It is the hero of Today, the payoff of the intro and, dashed, the "no score yet" state.
+- **Motion.** The intro's illustration glides between five poses with a spring; onboarding steps slide in from the side they come from; selections scale up slightly. All of it stops under `prefers-reduced-motion`.
+- **Copy.** Sentence case, plain verbs, the same action name through a flow. Onboarding step eyebrows are the one uppercase label, as designed.
 
-**Colour means a body system**, in both modes (tokens in `web-poc/src/styles/tokens.css`):
-| Token | Dark | Light | Meaning |
-|---|---|---|---|
-| `synapse` | `#9D86FF` | `#6A4FE0` | Focus, AI reasoning, primary buttons (solid) |
-| `ion` | `#43D9C8` | `#0C9D8F` | Focus ring end, the logo's spark |
-| `sleep` | `#5B8DFF` | `#2B5FDC` | Sleep |
-| `glucose` | `#F4B24C` | `#D8962C` | Energy: calories, carbs |
-| `chlorophyll` | `#4FD49F` | `#13875A` | Protein, good |
-| `beet` | `#FF6F8A` | `#D0385A` | Over budget, errors |
-
-Surfaces: `mist` page (`#0C1324` / `#F3F5FA`), `paper` panels, `rule` hairlines, `glow` for the ambient light behind heroes.
-
-**Type.** **Plus Jakarta Sans** for everything (headings, numbers, UI), bold weights for figures, tabular numerals for data. Sentence case, no all-caps labels except the NEUROCAL mark.
-
-**Signature element — the Focus ring.** Today opens with the Focus Score in a violet-to-teal ring with a soft glow, its four inputs (sleep, evening timing, glycemic load, stress) as colour-coded bars underneath, and the AI explanation in a panel. Energy (the bio-state dial), what to eat next and meals sit in panels beside it.
-
-**Layout.** Mobile-first single column, left-aligned, bottom-sheet interactions (log meal, adjust item) rather than modal pages. Desktop becomes two panes: the dial on the left, the day's log and recommendations on the right.
-
-```
-Mobile — Today                  Desktop — Today
-┌──────────────────────┐        ┌──────────────┬───────────────────────┐
-│ Tue 29 Sep     (you) │        │              │ Today's meals         │
-│                      │        │   BIO-STATE  │  Breakfast  420 kcal  │
-│      ╭──────╮        │        │     DIAL     │  Lunch      610 kcal  │
-│     (  840   )       │        │              │───────────────────────│
-│      ╰──────╯ left   │        │  flags:      │ Suggested next meal   │
-│  focus · low energy  │        │  low focus   │  recipe + "why"       │
-├──────────────────────┤        │              │                       │
-│ Meals today          │        └──────────────┴───────────────────────┘
-│ Suggested next meal  │
-│      [ Log a meal ]  │  ← thumb-reach primary action
-└──────────────────────┘
-```
-
-**Motion.** One orchestrated moment: the dial filling on load and re-settling after a meal is logged. Everything else is action feedback only (sheet opens, item confirmed).
-
-**Copy.** Plain, second person, sentence case. "Log a meal", toast "Meal logged". Errors say what happened and how to fix it ("We couldn't read that photo — try better light or add items by hand").
+Screens not in the design file yet (This week, Sleep, Settings, Manage products, the four sheets) use the same tokens and components but keep their earlier layouts until they are designed.
 
 ## 5. Phased execution
 
@@ -144,8 +113,8 @@ Mobile — Today                  Desktop — Today
 - [ ] Playwright screenshot tests of `/lab` and Today in CI
 
 ### Phase 2 — Web POC screens on the mock API
-1. ✅ **Onboarding** — name, time zone, dietary preference, cognitive goals, calorie and macro targets (`/welcome`, also used to edit the profile)
-2. ✅ **Today** — dial, meals, check-in, what to eat next
+1. ✅ **Intro and onboarding** — a five-slide intro for first visits (`/intro`), then the 11-step bio-profile onboarding for new accounts (`/welcome`): chronotype, diet and fasting, coffee, environment, hydration, recovery, supplements, training, friction point and goal, ending in a starting macro ratio, eating window, caffeine curfew and amber-light time. "Edit profile" keeps the earlier four steps. _To do: device connections (shown as "Coming soon"); use the answers in suggestions; a "Forgot password?" flow_
+2. ✅ **Today** — Focus Score card, the four signals with "log it" actions for missing ones, calories left, what to eat next, meals
 3. ✅ **Log a meal** — photo → editable items → confirm, or add items by hand; high glycemic load is flagged in the sheet and on the meal timeline
 4. ✅ **Check-in** — cognitive flags that feed recommendations
 5. ✅ **Focus Score** — daily score with the inputs behind it, plus a "Log sleep" sheet (ARCHITECTURE §6.7–6.8)
@@ -201,6 +170,6 @@ Mobile — Today                  Desktop — Today
 
 ## 7. Open questions
 1. **Anthropic model:** decided: `claude-haiku-4-5` for recipe queries and Focus Score explanations (ARCHITECTURE §7).
-2. **Design direction:** decided — "instrument panel", dark and light, Plus Jakarta Sans (see Design direction).
+2. **Design direction:** decided — the Claude Design files, light and dark, Plus Jakarta Sans (see Design direction).
 3. **Auth provider** for the API (Cognito proposed in ARCHITECTURE §10).
 4. **Affiliate recommendations:** how they are disclosed in the UI.

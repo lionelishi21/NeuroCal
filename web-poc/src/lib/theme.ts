@@ -3,7 +3,7 @@ export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
 /** One name per choice everywhere the switch appears (Settings, sign-in). */
-export const themeLabel: Record<Theme, string> = { system: "Match device", light: "Light", dark: "Dark" };
+export const themeLabel: Record<Theme, string> = { system: "Auto", light: "Light", dark: "Dark" };
 
 export const THEME_KEY = "neurocal-theme";
 

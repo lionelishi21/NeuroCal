@@ -48,13 +48,13 @@ describe("Settings", () => {
   it("switches the appearance and remembers it", async () => {
     const user = userEvent.setup();
     renderSettings();
-    expect(screen.getByRole("radio", { name: "Match device" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Auto" })).toBeChecked();
 
     await user.click(screen.getByRole("radio", { name: "Light" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(window.localStorage.getItem("neurocal-theme")).toBe("light");
 
-    await user.click(screen.getByRole("radio", { name: "Match device" }));
+    await user.click(screen.getByRole("radio", { name: "Auto" }));
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(window.localStorage.getItem("neurocal-theme")).toBeNull();
   });

@@ -73,7 +73,7 @@ Names below are domain types in `backend/src/domain/`. Where a contract type has
 
 | Entity / value object | Fields (summary) | Invariants |
 |---|---|---|
-| **Profile** | userId, displayName, timeZone, dietaryPreference, cognitiveGoals[], dailyCalorieTarget, macroTargets | Calorie target > 0; macro targets ≥ 0; `timeZone` is an IANA name and defines the user's "day" |
+| **Profile** | userId, displayName, timeZone, dietaryPreference, cognitiveGoals[], dailyCalorieTarget, macroTargets, bioProfile? (onboarding answers: `BioProfile` in contracts, stored as JSON) | Calorie target > 0; macro targets ≥ 0; `timeZone` is an IANA name and defines the user's "day" |
 | **Meal** | id, userId, kind, eatenAt, items[] (≥ 1), photoKey? | At least one item; `eatenAt` not more than 5 minutes in the future |
 | **FoodItem** (value) | name, portion, calories, macros, confidence?, glycemicLoad? | Non-negative numbers; `confidence` in 0–1 and only on AI-proposed items |
 | **CheckIn** | id, userId, at, flags[] (≥ 1), note? (≤ 280) | Flags from the `CognitiveFlag` enum |
@@ -108,6 +108,7 @@ profiles                                   1:1 with users
   cognitive_goals text[] not null default '{}'
   daily_calorie_target integer not null check (> 0)
   protein_target_g, carbs_target_g, fat_target_g numeric(6,1) not null
+  bio_profile jsonb                        -- onboarding answers (contracts BioProfile), validated at the API edge
   created_at, updated_at
 
 meals

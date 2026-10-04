@@ -3,7 +3,19 @@
  * packages/contracts and is mapped in presentation/ (ARCHITECTURE §2–3).
  */
 
-export const DIETARY_PREFERENCES = ["omnivore", "pescatarian", "vegetarian", "vegan", "keto", "mediterranean"] as const;
+export const DIETARY_PREFERENCES = [
+  "omnivore",
+  "pescatarian",
+  "vegetarian",
+  "vegan",
+  "keto",
+  "mediterranean",
+  "cyclical_keto",
+  "low_toxin",
+  "carnivore",
+  "paleo",
+  "standard",
+] as const;
 export type DietaryPreference = (typeof DIETARY_PREFERENCES)[number];
 
 export const COGNITIVE_FLAGS = ["sharp", "low_focus", "brain_fog", "low_energy", "wired", "stressed", "calm"] as const;
@@ -36,7 +48,11 @@ export interface Profile {
   cognitiveGoals: CognitiveGoal[];
   dailyCalorieTarget: number;
   macroTargets: Macros;
+  /** Onboarding answers, stored as given. The contract (presentation) validates their shape in and out. */
+  bioProfile?: BioProfileAnswers;
 }
+
+export type BioProfileAnswers = Readonly<Record<string, string | boolean | string[]>>;
 
 export interface FoodItem {
   name: string;

@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { setAuthHooks } from "../api/client";
+import { introSeen } from "../lib/intro";
 import { createMockAuth } from "./mockAuth";
 import type { AuthClient, AuthUser } from "./types";
 
@@ -88,7 +89,7 @@ export function AuthProvider({ children, client: injected }: { children: ReactNo
 }
 
 // The lab shows component states with fixed sample data: no account or API involved.
-const PUBLIC_PATHS = ["/sign-in", "/sign-up", "/lab"];
+const PUBLIC_PATHS = ["/intro", "/sign-in", "/sign-up", "/lab"];
 
 /** Sends signed-out visitors to sign-in (remembering where they were going); renders nothing until the session is known. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -99,7 +100,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isPublic && status === "signedOut") {
-      router.replace(pathname === "/" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(pathname)}`);
+      // A first visit starts with the intro; after that, straight to sign in.
+      if (pathname === "/" && !introSeen()) router.replace("/intro");
+      else router.replace(pathname === "/" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(pathname)}`);
     }
   }, [isPublic, status, pathname, router]);
 

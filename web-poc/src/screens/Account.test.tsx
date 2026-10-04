@@ -15,7 +15,10 @@ import { SignIn, SignUp } from "./Account";
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  window.localStorage.clear();
+});
 afterAll(() => server.close());
 
 function renderWith(ui: React.ReactElement, client: AuthClient) {
@@ -39,8 +42,20 @@ describe("Account", () => {
       </RequireAuth>,
       createMockAuth(null),
     );
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/sign-in"));
+    // The first visit on a device starts with the intro.
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/intro"));
     expect(screen.queryByText("Private page")).not.toBeInTheDocument();
+  });
+
+  it("sends a returning signed-out visitor straight to sign in", async () => {
+    window.localStorage.setItem("neurocal-intro-seen", "1");
+    renderWith(
+      <RequireAuth>
+        <p>Private page</p>
+      </RequireAuth>,
+      createMockAuth(null),
+    );
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/sign-in"));
   });
 
   it("creates an account, verifies the email and signs in", async () => {
@@ -55,26 +70,43 @@ describe("Account", () => {
     );
 
     await user.type(screen.getByLabelText("Email"), "sam@example.com");
-    await user.type(screen.getByLabelText(/^Password/), "short");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Use at least 10 characters.");
+    await user.type(screen.getByLabelText("Password"), "short");
+    // The rule counts along, and the button waits for ten characters.
+    expect(screen.getByText("At least 10 characters · 5 so far")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
 
-    await user.type(screen.getByLabelText(/^Password/), "-but-longer");
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(screen.getByLabelText("Password")).toHaveAttribute("type", "text");
+    await user.type(screen.getByLabelText("Password"), "-but-longer");
+    expect(screen.getByText("At least 10 characters")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument();
     expect(screen.getByText("sam@example.com")).toBeInTheDocument();
 
-    const code = screen.getByLabelText("Verification code");
+    const code = screen.getByLabelText("Six-digit code");
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
     await user.type(code, "000000");
-    await user.click(screen.getByRole("button", { name: "Verify email" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("That code doesn't match");
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Wrong code\..*Check the email and try again\./);
 
     await user.clear(code);
     await user.type(code, MOCK_CODE);
-    await user.click(screen.getByRole("button", { name: "Verify email" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
     expect(await screen.findByText("status: signedIn")).toBeInTheDocument();
     expect(screen.getByText("Account created")).toBeInTheDocument();
+  });
+
+  it("offers sign-in when the email already has an account", async () => {
+    const user = userEvent.setup();
+    const auth = createMockAuth(null);
+    await auth.signUp("sam@example.com", "correct-horse");
+    renderWith(<SignUp />, auth);
+    await user.type(screen.getByLabelText("Email"), "sam@example.com");
+    await user.type(screen.getByLabelText("Password"), "another-password");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an account.");
+    expect(screen.getByRole("link", { name: "Sign in instead" })).toHaveAttribute("href", "/sign-in");
   });
 
   it("explains a wrong password and signs in with the right one", async () => {
@@ -85,12 +117,12 @@ describe("Account", () => {
     renderWith(<SignIn />, auth);
 
     await user.type(screen.getByLabelText("Email"), "sam@example.com");
-    await user.type(screen.getByLabelText(/^Password/), "wrong-password");
+    await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Those details don't match.");
 
-    await user.clear(screen.getByLabelText(/^Password/));
-    await user.type(screen.getByLabelText(/^Password/), "correct-horse");
+    await user.clear(screen.getByLabelText("Password"));
+    await user.type(screen.getByLabelText("Password"), "correct-horse");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
@@ -102,7 +134,7 @@ describe("Account", () => {
     renderWith(<SignIn />, auth);
 
     await user.type(screen.getByLabelText("Email"), "sam@example.com");
-    await user.type(screen.getByLabelText(/^Password/), "correct-horse");
+    await user.type(screen.getByLabelText("Password"), "correct-horse");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument();
   });
