@@ -8,7 +8,16 @@ import 'models.dart';
 class MockNeuroCalApi implements NeuroCalApi {
   /// [newUser] starts without a profile, so the onboarding shows.
   MockNeuroCalApi({DateTime? now, bool newUser = false})
-    : _profile = newUser ? null : const Profile(displayName: 'Sam') {
+    : _profile = newUser
+          ? null
+          : const Profile(
+              displayName: 'Sam Rivera',
+              timeZone: 'Europe/London',
+              diet: 'pescatarian',
+              goals: ['focus', 'energy'],
+              calorieTarget: 2200,
+              macroTargets: Macros(proteinG: 130, carbsG: 240, fatG: 75),
+            ) {
     final today = now ?? DateTime.now();
     DateTime at(int h, int m) => DateTime(today.year, today.month, today.day, h, m);
     _meals.addAll([
@@ -70,8 +79,14 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<Profile> saveProfile(Map<String, dynamic> fields) async {
     await _wait();
+    final macros = fields['macroTargets'] as Map<String, dynamic>?;
     return _profile = Profile(
       displayName: fields['displayName'] as String? ?? _profile?.displayName ?? '',
+      timeZone: fields['timeZone'] as String? ?? _profile?.timeZone,
+      diet: fields['dietaryPreference'] as String? ?? _profile?.diet,
+      goals: (fields['cognitiveGoals'] as List?)?.cast<String>() ?? _profile?.goals ?? const [],
+      calorieTarget: fields['dailyCalorieTarget'] as int? ?? _profile?.calorieTarget,
+      macroTargets: macros == null ? _profile?.macroTargets : Macros.fromJson(macros),
       bioProfile: fields['bioProfile'] as Map<String, dynamic>? ?? _profile?.bioProfile,
     );
   }
@@ -96,8 +111,45 @@ class MockNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<BioState> bioState(DateTime day) async {
-    final eaten = (await meals(day)).fold<double>(0, (sum, m) => sum + m.calories);
-    return BioState(calorieTarget: 2200, caloriesEaten: eaten);
+    final items = [for (final m in await meals(day)) ...m.items];
+    double sum(double Function(FoodItem) of) => items.fold(0, (total, i) => total + of(i));
+    return BioState(
+      calorieTarget: _profile?.calorieTarget ?? 2200,
+      caloriesEaten: sum((i) => i.calories),
+      macrosEaten: Macros(
+        proteinG: sum((i) => i.macros.proteinG),
+        carbsG: sum((i) => i.macros.carbsG),
+        fatG: sum((i) => i.macros.fatG),
+      ),
+      macroTargets: _profile?.macroTargets ?? const Macros(proteinG: 130, carbsG: 240, fatG: 75),
+      flags: _flags.toList(),
+    );
+  }
+
+  @override
+  Future<List<Recipe>> recommendations() async {
+    await _wait();
+    return const [
+      Recipe(
+        title: 'Miso-glazed cod with edamame and brown rice',
+        sourceName: 'Serious Eats',
+        sourceUrl: 'https://www.seriouseats.com/miso-glazed-cod',
+        minutes: 30,
+        calories: 640,
+        macros: Macros(proteinG: 46, carbsG: 62, fatG: 18),
+        reasoning:
+            'Cod and edamame bring slow protein, and brown rice releases energy gradually instead of spiking it.',
+      ),
+      Recipe(
+        title: 'Lentil, spinach and feta skillet with a soft egg',
+        sourceName: 'BBC Good Food',
+        sourceUrl: 'https://www.bbcgoodfood.com/recipes/lentil-spinach-feta-skillet',
+        minutes: 25,
+        calories: 520,
+        macros: Macros(proteinG: 31, carbsG: 48, fatG: 20),
+        reasoning: 'Lentils keep energy steady through the afternoon.',
+      ),
+    ];
   }
 
   @override

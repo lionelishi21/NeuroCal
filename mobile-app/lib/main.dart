@@ -11,10 +11,11 @@ import 'device_time_zone.dart';
 import 'api/models.dart';
 import 'screens/account.dart';
 import 'screens/onboarding.dart';
-import 'screens/today.dart';
+import 'screens/home.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
 import 'theme/tokens.dart';
+import 'widgets/toast.dart';
 
 /// Composition root: picks the real or mock API and sign-in from the build settings (config.dart).
 Future<void> main() async {
@@ -59,7 +60,8 @@ class NeuroCalApp extends StatelessWidget {
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),
           themeMode: mode,
-          // Signed out → account screens; signed in → onboarding or Today. Rebuilds when the session changes.
+          builder: (context, child) => ToastHost(child: child!),
+          // Signed out → account screens; signed in → onboarding or the tabs. Rebuilds when the session changes.
           home: ListenableBuilder(
             listenable: auth,
             builder: (context, _) => auth.signedIn ? _SignedIn(key: ValueKey(auth.email)) : const AccountScreen(),
@@ -70,7 +72,7 @@ class NeuroCalApp extends StatelessWidget {
   }
 }
 
-/// Signed in: the onboarding for an account without a profile, otherwise Today.
+/// Signed in: the onboarding for an account without a profile, otherwise the main screens.
 class _SignedIn extends StatefulWidget {
   const _SignedIn({super.key});
 
@@ -129,7 +131,7 @@ class _SignedInState extends State<_SignedIn> {
             }),
           );
         }
-        return const TodayScreen();
+        return HomeScreen(profile: snapshot.data!);
       },
     );
   }

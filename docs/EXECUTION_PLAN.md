@@ -148,8 +148,14 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] Jest use-case tests with fake providers; integration tests against Postgres
 
 ### Phase 4 — Mobile, integration and launch
+**Direction (agreed October 2026): the mobile app is the product.** Health data (Apple Health, Oura, Whoop) is only reachable natively, and the app is a daily habit that needs the camera and notifications. The web app stays as a companion and hosts the admin screen, frozen at its current feature set; new features go to Flutter first. The domain root becomes a landing page for signed-out visitors (what NeuroCal does, screens, store buttons or a waitlist, a small "Sign in" link). Order of work:
+1. Bring the Flutter app up to the Claude Design screens (tab bar, Today, This week, Sleep and evenings, Settings, the four sheets).
+2. Build the landing page.
+3. Health data connections on mobile.
+4. Leave the web app as it is unless something is cheap to add.
+
 - [x] Flutter app on the same API and Cognito pool, same tokens, font, logo and app icon (`mobile-app/`, build steps in its README)
-- [x] Mobile: the new tokens, the Focus Score ring and the 11-step bio-profile onboarding for accounts without a profile (the time zone comes from the device). _To do: the intro slides, the Today v2 layout, "Edit profile"_
+- [x] Mobile: the new tokens, the Focus Score ring and the 11-step bio-profile onboarding for accounts without a profile (the time zone comes from the device). Then the tab bar, top toasts, Today and Settings from the second design file. _To do: This week, Sleep and evenings, the four sheets in the new style, the intro slides, "Edit profile"_
 - [ ] Generate the Dart client from `openapi.json` instead of the hand-written models; add Sleep, History and protocols screens
 - [ ] Point `web-poc` at the real API (`NEXT_PUBLIC_API_URL`); E2E on the critical path
 - [ ] Accessibility and performance pass

@@ -14,6 +14,9 @@ abstract interface class NeuroCalApi {
   Future<Profile> saveProfile(Map<String, dynamic> fields);
   Future<FocusScore> focusScore(DateTime day);
   Future<BioState> bioState(DateTime day);
+
+  /// Recipes for the next meal, best first. Empty when nothing fits.
+  Future<List<Recipe>> recommendations();
   Future<List<Meal>> meals(DateTime day);
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
   Future<Meal> createMeal(NewMeal meal);
@@ -80,6 +83,12 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<BioState> bioState(DateTime day) async =>
       BioState.fromJson(await _get('/bio-state', {'date': isoDate(day)}) as Map<String, dynamic>);
+
+  @override
+  Future<List<Recipe>> recommendations() async => [
+    for (final r in (await _get('/recommendations/next') as Map<String, dynamic>)['recipes'] as List)
+      Recipe.fromJson(r as Map<String, dynamic>),
+  ];
 
   @override
   Future<List<Meal>> meals(DateTime day) async => [

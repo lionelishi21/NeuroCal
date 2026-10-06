@@ -5,8 +5,9 @@ iOS and Android app with the same design as the web app: Plus Jakarta Sans, the 
 **Match device / Light / Dark** switch (sign-in screen and Settings, saved on the device).
 
 Screens: sign in / create account / confirm email, the 11-step bio-profile onboarding (for an
-account without a profile), Today (Focus Score ring, its four inputs,
-calories left, meals), Log a meal (photo → analysis, or items by hand), Check in, Settings.
+account without a profile), then two tabs: Today (Focus Score with its four signals, calories and
+macros, how you feel, what to eat next, meals) and Settings. Log a meal (photo → analysis, or items
+by hand) and Check in open as sheets. This week and Sleep are not built yet.
 
 ## Build it on a Mac
 

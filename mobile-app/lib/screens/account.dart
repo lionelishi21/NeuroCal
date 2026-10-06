@@ -6,6 +6,7 @@ import '../config.dart';
 import '../theme/tokens.dart';
 import '../widgets/appearance_switch.dart';
 import '../widgets/logo.dart';
+import '../widgets/toast.dart';
 
 /// Sign in, create an account and confirm the email: one screen with three modes, like the web app.
 class AccountScreen extends StatefulWidget {
@@ -72,7 +73,7 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _confirm() => _run(() async {
     await _auth.confirmSignUp(_email.text, _code.text);
     if (_created && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account created')));
+      showToast(context, 'Account created');
     }
     await _auth.signIn(_email.text, _password.text);
   });
@@ -80,7 +81,7 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _resend() async {
     try {
       await _auth.resendCode(_email.text);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('New code sent')));
+      if (mounted) showToast(context, 'New code sent');
     } on AuthFailure catch (e) {
       setState(() => _error = e.message);
     }

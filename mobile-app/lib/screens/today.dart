@@ -5,22 +5,65 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
-import '../widgets/logo.dart';
+import '../widgets/toast.dart';
+import '../widgets/ui.dart';
 import 'check_in_sheet.dart';
 import 'log_meal_sheet.dart';
-import 'settings.dart';
 
 class _Day {
-  const _Day(this.focus, this.bio, this.meals);
+  const _Day(this.focus, this.bio, this.meals, this.recipes);
 
   final FocusScore focus;
   final BioState bio;
   final List<Meal> meals;
+
+  /// Null when suggestions didn't load; the rest of the day still shows.
+  final List<Recipe>? recipes;
 }
 
-/// Today: the Focus Score and what it is made of, calories left, and the meals logged so far.
+const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const _months = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/// "Thursday 2 October".
+String longDate(DateTime d) => '${_weekdays[d.weekday - 1]} ${d.day} ${_months[d.month - 1]}';
+
+String greeting(int hour) => switch (hour) {
+  >= 5 && < 12 => 'Good morning',
+  >= 12 && < 18 => 'Good afternoon',
+  _ => 'Good evening',
+};
+
+/// One word for the score, shown beside the ring.
+String scoreWord(int score) => switch (score) {
+  >= 80 => 'Great',
+  >= 65 => 'Good',
+  >= 45 => 'Fair',
+  _ => 'Low',
+};
+
+String _kcal(num n) => n.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => ',');
+String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+/// Today: the Focus Score with the four signals behind it, calories left, how you feel,
+/// what to eat next and the day's meals.
 class TodayScreen extends StatefulWidget {
-  const TodayScreen({super.key});
+  const TodayScreen({super.key, required this.profile, required this.onOpenSettings});
+
+  final Profile profile;
+  final VoidCallback onOpenSettings;
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
@@ -39,8 +82,10 @@ class _TodayScreenState extends State<TodayScreen> {
 
   Future<_Day> _load() async {
     final now = DateTime.now();
-    final (focus, bio, meals) = await (_api.focusScore(now), _api.bioState(now), _api.meals(now)).wait;
-    return _Day(focus, bio, meals);
+    final api = _api;
+    final recipes = api.recommendations().then<List<Recipe>?>((r) => r).catchError((Object _) => null);
+    final (focus, bio, meals) = await (api.focusScore(now), api.bioState(now), api.meals(now)).wait;
+    return _Day(focus, bio, meals, await recipes);
   }
 
   Future<void> _refresh() async {
@@ -55,30 +100,28 @@ class _TodayScreenState extends State<TodayScreen> {
     }
   }
 
-  void _toast(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-
   Future<void> _logMeal() async {
     final logged = await showLogMealSheet(context);
-    if (logged == true) {
-      _toast('Meal logged');
+    if (logged == true && mounted) {
+      showToast(context, 'Meal logged');
       await _refresh();
     }
   }
 
   Future<void> _checkIn() async {
     final saved = await showCheckInSheet(context);
-    if (saved == true) {
-      _toast('Check-in saved');
+    if (saved == true && mounted) {
+      showToast(context, 'Check-in saved');
       await _refresh();
     }
   }
 
-  Future<void> _delete(Meal meal) async {
+  Future<void> _remove(Meal meal) async {
     try {
       await _api.deleteMeal(meal.id);
-      _toast('Meal deleted');
+      if (mounted) showToast(context, 'Meal removed', ToastTone.info);
     } catch (_) {
-      _toast("Couldn't delete that meal. Try again.");
+      if (mounted) showToast(context, "Couldn't remove the meal. Try again.", ToastTone.problem);
     }
     await _refresh();
   }
@@ -86,183 +129,312 @@ class _TodayScreenState extends State<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          child: FutureBuilder(
-            future: _day,
-            builder: (context, snapshot) => ListView(
-              padding: const EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s4, 120),
+    final now = DateTime.now();
+    final first = widget.profile.displayName.trim().split(RegExp(r'\s+')).first;
+    return SafeArea(
+      bottom: false,
+      child: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _refresh,
+            child: FutureBuilder(
+              future: _day,
+              builder: (context, snapshot) => ListView(
+                padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s4, ActionBar.clearance + Space.s4),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: Space.s1),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                longDate(now),
+                                style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+                              ),
+                              const SizedBox(height: 2),
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  first.isEmpty ? greeting(now.hour) : '${greeting(now.hour)}, $first',
+                                  style: const TextStyle(
+                                    fontSize: TextSize.xxl,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Settings',
+                          icon: Icon(Icons.settings_outlined, color: c.inkSoft),
+                          onPressed: widget.onOpenSettings,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: Space.s4),
+                  if (snapshot.hasError)
+                    ScreenFailed(
+                      title: "Couldn't load today",
+                      detail: snapshot.error is ApiException && (snapshot.error as ApiException).unauthorized
+                          ? 'Your session has ended. Sign out in Settings and sign in again.'
+                          : 'Your meals and score are safe. Check your connection and try again.',
+                      onRetry: _refresh,
+                    )
+                  else if (!snapshot.hasData)
+                    const ScreenLoading(label: 'Loading today', heights: [232, 120, 64, 150])
+                  else ...[
+                    _FocusCard(snapshot.data!.focus, onCheckIn: _checkIn),
+                    const SizedBox(height: Space.s3),
+                    _Calories(snapshot.data!.bio),
+                    const SizedBox(height: Space.s3),
+                    _Feeling(snapshot.data!.bio.flags, onCheckIn: _checkIn),
+                    const BlockTitle('What to eat next'),
+                    _Suggestions(snapshot.data!.recipes),
+                    BlockTitle(
+                      'Meals today',
+                      note: snapshot.data!.meals.isEmpty
+                          ? null
+                          : '${snapshot.data!.meals.length} logged · ${_kcal(snapshot.data!.bio.caloriesEaten)} kcal',
+                    ),
+                    if (snapshot.data!.meals.isEmpty)
+                      EmptyCard(
+                        title: 'No meals yet today',
+                        detail: "Snap your first plate and we'll read it against your sleep and stress.",
+                        action: SoftButton(label: '+ Log a meal', semanticLabel: 'Log a meal', onPressed: _logMeal),
+                      )
+                    else
+                      AppCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            for (final (i, meal) in snapshot.data!.meals.indexed)
+                              _MealRow(meal, divider: i > 0, onRemove: () => _remove(meal)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ActionBar(
               children: [
-                Row(
+                Expanded(
+                  flex: 3,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                      boxShadow: [
+                        BoxShadow(color: c.synapse.withValues(alpha: 0.28), blurRadius: 24, offset: const Offset(0, 8)),
+                      ],
+                    ),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                      onPressed: _logMeal,
+                      icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                      label: const Text('Log a meal'),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      foregroundColor: c.synapseInk,
+                      side: BorderSide(color: c.ruleStrong, width: 1.5),
+                      textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
+                    ),
+                    onPressed: _checkIn,
+                    child: const Text('Check in'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The hero: the ring, a word for the score, the explanation, and the four signals behind it.
+class _FocusCard extends StatelessWidget {
+  const _FocusCard(this.focus, {required this.onCheckIn});
+
+  final FocusScore focus;
+  final VoidCallback onCheckIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final score = focus.score;
+    final parts = focus.components;
+    final signals = [
+      ('Sleep', 'Last night', parts.sleep, null as String?),
+      ('Evening timing', 'Late food and screens', parts.timing, null),
+      ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
+      ('Stress', 'Recent check-ins', parts.stress, null),
+    ];
+    return AppCard(
+      radius: Radii.hero,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              FocusRing(
+                score: score,
+                size: 104,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const LogoMark(size: 26),
-                    const SizedBox(width: Space.s2),
-                    Expanded(child: Text('Today', style: text.headlineSmall)),
-                    IconButton(
-                      tooltip: 'Settings',
-                      icon: Icon(Icons.tune_rounded, color: c.inkSoft),
-                      onPressed: () =>
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    Text(
+                      score?.toString() ?? '–',
+                      style: TextStyle(
+                        fontSize: TextSize.xxxl,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                        height: 1,
+                        color: score == null ? c.inkFaint : c.ink,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    if (score != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          'of 100',
+                          style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w500, color: c.inkSoft),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Space.s4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: Space.s1,
+                  children: [
+                    Text(
+                      'Focus Score',
+                      style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
+                    ),
+                    Text(
+                      score == null ? 'No score yet' : scoreWord(score),
+                      style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, height: 1.15),
+                    ),
+                    Text(
+                      focus.explanation,
+                      style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
                     ),
                   ],
                 ),
-                const SizedBox(height: Space.s5),
-                if (snapshot.hasError)
-                  _Problem(
-                    onRetry: _refresh,
-                    unauthorized: snapshot.error is ApiException && (snapshot.error as ApiException).unauthorized,
-                  )
-                else if (!snapshot.hasData)
-                  const Padding(
-                    padding: EdgeInsets.only(top: Space.s7),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else ...[
-                  Center(child: FocusRing(score: snapshot.data!.focus.score)),
-                  const SizedBox(height: Space.s5),
-                  _Components(snapshot.data!.focus.components),
-                  const SizedBox(height: Space.s5),
-                  _Panel(child: Text(snapshot.data!.focus.explanation, style: text.bodyLarge)),
-                  const SizedBox(height: Space.s4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(onPressed: _checkIn, child: const Text('Check in')),
-                  ),
-                  const SizedBox(height: Space.s4),
-                  _Calories(snapshot.data!.bio),
-                  const SizedBox(height: Space.s6),
-                  Text('Meals today', style: text.titleMedium),
-                  const SizedBox(height: Space.s3),
-                  if (snapshot.data!.meals.isEmpty)
-                    Text(
-                      'No meals yet. Log one to see how it moves your score.',
-                      style: text.bodyLarge?.copyWith(color: c.inkSoft),
-                    )
-                  else
-                    for (final meal in snapshot.data!.meals) _MealRow(meal, onDelete: () => _delete(meal)),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.s4),
+          for (var row = 0; row < 2; row++) ...[
+            if (row > 0) const SizedBox(height: Space.s2),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: Space.s2,
+                children: [
+                  for (final (name, detail, value, waiting) in signals.skip(row * 2).take(2))
+                    Expanded(
+                      child: _Signal(
+                        name: name,
+                        detail: detail,
+                        value: value,
+                        waiting: waiting,
+                        onCheckIn: name == 'Stress' ? onCheckIn : null,
+                      ),
+                    ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Space.s4),
-        child: SizedBox(
-          width: double.infinity,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Radii.pill),
-              boxShadow: [
-                BoxShadow(
-                  color: c.synapse.withValues(alpha: 0.45),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
-                  spreadRadius: -10,
-                ),
-              ],
-            ),
-            child: FilledButton.icon(
-              onPressed: _logMeal,
-              icon: const Icon(Icons.photo_camera_outlined),
-              label: const Text('Log a meal'),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Space.s4, vertical: 14),
-      decoration: BoxDecoration(
-        color: c.paper,
-        borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(color: c.rule),
-      ),
-      child: child,
-    );
-  }
-}
-
-/// The four inputs of the score, each in the colour of the body system it measures.
-class _Components extends StatelessWidget {
-  const _Components(this.components);
-
-  final FocusComponents components;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final rows = [
-      ('Sleep', 'last night', components.sleep, c.sleep),
-      ('Evening timing', 'late food and screens', components.timing, c.synapse),
-      ('Glycemic load', "yesterday's food", components.glycemic, c.glucose),
-      ('Stress', 'recent check-ins', components.stress, c.chlorophyll),
-    ];
-    return LayoutBuilder(
-      builder: (context, box) {
-        final width = (box.maxWidth - Space.s5) / 2;
-        return Wrap(
-          spacing: Space.s5,
-          runSpacing: Space.s4,
-          children: [
-            for (final (label, hint, value, color) in rows)
-              SizedBox(width: width, child: _Component(label, hint, value, color)),
           ],
-        );
-      },
+        ],
+      ),
     );
   }
 }
 
-class _Component extends StatelessWidget {
-  const _Component(this.label, this.hint, this.value, this.color);
+/// One of the four inputs: good from 0.75, otherwise "watch this"; without data it says what fills it.
+class _Signal extends StatelessWidget {
+  const _Signal({required this.name, required this.detail, required this.value, this.waiting, this.onCheckIn});
 
-  final String label;
-  final String hint;
+  final String name;
+  final String detail;
   final double? value;
-  final Color color;
+  final String? waiting;
+  final VoidCallback? onCheckIn;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final text = Theme.of(context).textTheme;
+    final v = value;
+    final good = v != null && v >= 0.75;
+    final word = v == null ? 'No data' : (good ? 'Good' : (v >= 0.4 ? 'Moderate' : 'Low'));
+    final small = TextStyle(fontSize: TextSize.xxs, color: c.inkFaint);
     return Semantics(
-      label: '$label, $hint: ${value == null ? 'no data' : '${(value! * 100).round()} out of 100'}',
-      excludeSemantics: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: text.bodyMedium),
-          Text(
-            hint,
-            style: text.labelSmall?.copyWith(color: c.inkSoft, fontWeight: FontWeight.w400),
-          ),
-          const SizedBox(height: Space.s1),
-          Text(
-            value == null ? 'No data' : '${(value! * 100).round()}',
-            style: text.titleMedium?.copyWith(color: value == null ? c.inkSoft : c.ink),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(Radii.pill),
-            child: LinearProgressIndicator(value: value ?? 0, minHeight: 4, backgroundColor: c.track, color: color),
-          ),
-        ],
+      container: true,
+      label: '$name: $word',
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 74),
+        padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: 10),
+        decoration: BoxDecoration(color: c.mist, borderRadius: BorderRadius.circular(Radii.option)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: Space.s1,
+          children: [
+            ExcludeSemantics(
+              child: Text(
+                name,
+                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600, color: c.inkSoft),
+              ),
+            ),
+            if (v != null) ...[
+              ExcludeSemantics(
+                child: Text(
+                  word,
+                  style: TextStyle(
+                    fontSize: TextSize.md,
+                    fontWeight: FontWeight.w700,
+                    color: good ? c.chlorophyll : c.glucoseInk,
+                  ),
+                ),
+              ),
+              Meter(value: v, color: good ? c.chlorophyllBar : c.glucose),
+              Text(detail, style: small),
+            ] else if (onCheckIn != null) ...[
+              SoftButton(label: '+ Check in', semanticLabel: 'Check in', height: 32, onPressed: onCheckIn),
+              Text('No check-ins yet', style: small),
+            ] else ...[
+              ExcludeSemantics(
+                child: Text(
+                  '–',
+                  style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700, color: c.inkFaint),
+                ),
+              ),
+              Text(waiting ?? 'Nothing logged yet', style: small),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -276,9 +448,104 @@ class _Calories extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final text = Theme.of(context).textTheme;
     final left = bio.calorieTarget - bio.caloriesEaten.round();
-    return _Panel(
+    final over = left < 0;
+    final macros = [
+      ('Protein', bio.macrosEaten.proteinG, bio.macroTargets.proteinG),
+      ('Carbs', bio.macrosEaten.carbsG, bio.macroTargets.carbsG),
+      ('Fat', bio.macrosEaten.fatG, bio.macroTargets.fatG),
+    ];
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  over ? '${_kcal(-left)} kcal over' : '${_kcal(left)} kcal left',
+                  style: TextStyle(
+                    fontSize: TextSize.xl,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: over ? c.beet : c.ink,
+                  ),
+                ),
+              ),
+              Text(
+                bio.caloriesEaten > 0
+                    ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten'
+                    : 'Nothing eaten yet',
+                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Meter(value: bio.caloriesEaten / bio.calorieTarget, color: over ? c.beet : c.synapse, height: 8),
+          if (over)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.s2),
+              child: Text(
+                "Over today's target. No need to make up for it tomorrow.",
+                style: TextStyle(fontSize: TextSize.xs, color: c.beet),
+              ),
+            ),
+          const SizedBox(height: 14),
+          Row(
+            spacing: 14,
+            children: [
+              for (final (name, got, goal) in macros)
+                Expanded(
+                  child: MergeSemantics(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 5,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Text(
+                              '${got.round()} g',
+                              style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                            ),
+                          ],
+                        ),
+                        Meter(value: goal <= 0 ? 0 : got / goal, color: got > goal ? c.glucose : c.ion, height: 5),
+                        Text(
+                          'of ${goal.round()} g',
+                          style: TextStyle(fontSize: TextSize.xxxs, color: c.inkFaint),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Feeling extends StatelessWidget {
+  const _Feeling(this.flags, {required this.onCheckIn});
+
+  final List<CognitiveFlag> flags;
+  final VoidCallback onCheckIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final words = [for (final (i, flag) in flags.indexed) i == 0 ? flag.label : flag.label.toLowerCase()].join(', ');
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s3, Space.s3),
       child: Row(
         children: [
           Expanded(
@@ -286,25 +553,156 @@ class _Calories extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  left >= 0 ? '$left kcal left' : '${-left} kcal over',
-                  style: text.titleMedium?.copyWith(color: left >= 0 ? c.ink : c.beet),
+                  flags.isEmpty ? 'How you feel' : 'You said you feel',
+                  style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600, color: c.inkSoft),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  '${bio.caloriesEaten.round()} of ${bio.calorieTarget} kcal eaten',
-                  style: text.bodyMedium?.copyWith(color: c.inkSoft),
+                  flags.isEmpty ? 'No check-in yet today' : words,
+                  style: TextStyle(
+                    fontSize: TextSize.base,
+                    fontWeight: FontWeight.w700,
+                    color: flags.isEmpty ? c.inkFaint : c.ink,
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox.square(
-            dimension: 40,
-            child: CircularProgressIndicator(
-              value: (bio.caloriesEaten / bio.calorieTarget).clamp(0, 1),
-              strokeWidth: 5,
-              backgroundColor: c.track,
-              color: left >= 0 ? c.glucose : c.beet,
-            ),
+          const SizedBox(width: Space.s3),
+          SoftButton(label: 'Check in', onPressed: onCheckIn),
+        ],
+      ),
+    );
+  }
+}
+
+class _Suggestions extends StatefulWidget {
+  const _Suggestions(this.recipes);
+
+  final List<Recipe>? recipes;
+
+  @override
+  State<_Suggestions> createState() => _SuggestionsState();
+}
+
+class _SuggestionsState extends State<_Suggestions> {
+  var _more = false;
+
+  String _meta(Recipe r) => '${r.minutes} min · ${_kcal(r.calories)} kcal';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final recipes = widget.recipes;
+    if (recipes == null || recipes.isEmpty) {
+      return AppCard(
+        child: Text(
+          recipes == null
+              ? "Suggestions aren't available right now. They return on their own."
+              : "No recipe fits what's left of today. Check back after your next meal.",
+          style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+        ),
+      );
+    }
+    final first = recipes.first;
+    final chips = [(first.macros.proteinG, 'protein'), (first.macros.carbsG, 'carbs'), (first.macros.fatG, 'fat')];
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            first.title,
+            style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.25),
           ),
+          const SizedBox(height: Space.s1),
+          Text(
+            _meta(first),
+            style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final (grams, label) in chips)
+                Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(color: c.mist, borderRadius: BorderRadius.circular(Radii.pill)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${grams.round()} g ',
+                        style: const TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        label,
+                        style: const TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: c.rule),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Why it fits: ',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: c.ionInk),
+                ),
+                TextSpan(text: first.reasoning),
+              ],
+            ),
+            style: const TextStyle(fontSize: TextSize.sm),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Recipe from ${first.sourceName}',
+                  style: TextStyle(fontSize: TextSize.xxs, color: c.inkFaint),
+                ),
+              ),
+              if (recipes.length > 1)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                    textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                  ),
+                  onPressed: () => setState(() => _more = !_more),
+                  child: Text(_more ? 'Fewer ideas' : 'More ideas'),
+                ),
+            ],
+          ),
+          if (_more)
+            for (final recipe in recipes.skip(1))
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: c.rule)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        recipe.title,
+                        style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _meta(recipe),
+                      style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
         ],
       ),
     );
@@ -312,79 +710,95 @@ class _Calories extends StatelessWidget {
 }
 
 class _MealRow extends StatelessWidget {
-  const _MealRow(this.meal, {required this.onDelete});
+  const _MealRow(this.meal, {required this.divider, required this.onRemove});
 
   final Meal meal;
-  final VoidCallback onDelete;
+  final bool divider;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    final time = TimeOfDay.fromDateTime(meal.eatenAt.toLocal()).format(context);
     final kind = meal.kind.name[0].toUpperCase() + meal.kind.name.substring(1);
+    final name = meal.items.map((i) => i.name).join(', ');
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: Space.s3),
+      padding: const EdgeInsets.fromLTRB(14, Space.s3, Space.s2, Space.s2),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: c.rule)),
+        border: divider ? Border(top: BorderSide(color: c.rule)) : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 64,
-            child: Text(time, style: text.bodyMedium?.copyWith(color: c.inkSoft)),
+            width: 44,
+            child: Text(
+              _clock(meal.eatenAt.toLocal()),
+              style: TextStyle(
+                fontSize: TextSize.xs,
+                fontWeight: FontWeight.w600,
+                color: c.inkSoft,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 3,
               children: [
-                Wrap(
-                  spacing: Space.s2,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(kind, style: text.labelLarge),
-                    if (meal.highGlycemic)
-                      Text('High glycemic load', style: text.labelSmall?.copyWith(color: c.glucoseInk)),
-                  ],
+                Text(
+                  kind,
+                  style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft),
                 ),
-                Text(meal.items.map((i) => i.name).join(', '), style: text.bodyMedium?.copyWith(color: c.inkSoft)),
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600, height: 1.3),
+                ),
+                if (meal.highGlycemic)
+                  Container(
+                    margin: const EdgeInsets.only(top: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: Space.s2, vertical: 3),
+                    decoration: BoxDecoration(color: c.glucoseSoft, borderRadius: BorderRadius.circular(Radii.pill)),
+                    child: Text(
+                      'High glycemic load',
+                      style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w700, color: c.glucoseInk),
+                    ),
+                  ),
               ],
             ),
           ),
-          Text('${meal.calories.round()} kcal', style: text.bodyMedium),
-          IconButton(
-            tooltip: 'Delete $kind',
-            visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.delete_outline_rounded, color: c.inkSoft, size: 20),
-            onPressed: onDelete,
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(
+                  '${_kcal(meal.calories)} kcal',
+                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: 'Remove $name',
+                excludeSemantics: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Radii.pill),
+                  onTap: onRemove,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Problem extends StatelessWidget {
-  const _Problem({required this.onRetry, required this.unauthorized});
-
-  final VoidCallback onRetry;
-  final bool unauthorized;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          unauthorized
-              ? 'Your session has ended. Sign in again from Settings.'
-              : "Today didn't load. Check your connection and try again.",
-          style: TextStyle(color: c.beet),
-        ),
-        TextButton(onPressed: onRetry, child: const Text('Try again')),
-      ],
     );
   }
 }

@@ -164,28 +164,123 @@ class FocusScore {
 }
 
 class BioState {
-  const BioState({required this.calorieTarget, required this.caloriesEaten});
+  const BioState({
+    required this.calorieTarget,
+    required this.caloriesEaten,
+    required this.macrosEaten,
+    required this.macroTargets,
+    this.flags = const [],
+  });
 
   final int calorieTarget;
   final double caloriesEaten;
+  final Macros macrosEaten;
+  final Macros macroTargets;
+
+  /// How the person said they feel in today's check-ins.
+  final List<CognitiveFlag> flags;
 
   factory BioState.fromJson(Map<String, dynamic> j) => BioState(
     calorieTarget: (j['calorieTarget'] as num).toInt(),
     caloriesEaten: (j['caloriesEaten'] as num).toDouble(),
+    macrosEaten: Macros.fromJson(j['macrosEaten'] as Map<String, dynamic>),
+    macroTargets: Macros.fromJson(j['macroTargets'] as Map<String, dynamic>),
+    flags: [
+      for (final wire in j['cognitiveFlags'] as List? ?? const [])
+        for (final flag in CognitiveFlag.values)
+          if (flag.wire == wire) flag,
+    ],
   );
 }
 
+/// A recipe suggested for the next meal (`RecipeRecommendation` in the contracts).
+class Recipe {
+  const Recipe({
+    required this.title,
+    required this.sourceName,
+    required this.sourceUrl,
+    required this.minutes,
+    required this.calories,
+    required this.macros,
+    required this.reasoning,
+  });
+
+  final String title;
+  final String sourceName;
+  final String sourceUrl;
+  final int minutes;
+  final double calories;
+  final Macros macros;
+
+  /// Plain-language reason it fits right now.
+  final String reasoning;
+
+  factory Recipe.fromJson(Map<String, dynamic> j) => Recipe(
+    title: j['title'] as String,
+    sourceName: j['sourceName'] as String,
+    sourceUrl: j['sourceUrl'] as String,
+    minutes: (j['minutes'] as num).toInt(),
+    calories: (j['calories'] as num).toDouble(),
+    macros: Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    reasoning: j['reasoning'] as String,
+  );
+}
+
+/// The diet names people read, keyed by the contract's `DietaryPreference`.
+const dietLabels = <String, String>{
+  'omnivore': 'Everything',
+  'pescatarian': 'Pescatarian',
+  'vegetarian': 'Vegetarian',
+  'vegan': 'Vegan',
+  'keto': 'Keto',
+  'mediterranean': 'Mediterranean',
+  'cyclical_keto': 'Cyclical keto',
+  'low_toxin': 'Bulletproof (low-toxin)',
+  'carnivore': 'Carnivore',
+  'paleo': 'Paleo',
+  'standard': 'Standard',
+};
+
+const goalLabels = <String, String>{
+  'focus': 'Sharper focus',
+  'calm': 'Feel calmer',
+  'energy': 'Steadier energy',
+  'sleep': 'Better sleep',
+};
+
 /// The signed-in person's profile (`Profile` in the contracts): the parts the app reads.
 class Profile {
-  const Profile({required this.displayName, this.bioProfile});
+  const Profile({
+    required this.displayName,
+    this.timeZone,
+    this.diet,
+    this.goals = const [],
+    this.calorieTarget,
+    this.macroTargets,
+    this.bioProfile,
+  });
 
   final String displayName;
+  final String? timeZone;
+
+  /// The contract's `DietaryPreference` id, e.g. "paleo".
+  final String? diet;
+  final List<String> goals;
+  final int? calorieTarget;
+  final Macros? macroTargets;
 
   /// The onboarding answers, keyed as in the contract's `BioProfile`; null for profiles made before it existed.
   final Map<String, dynamic>? bioProfile;
 
-  factory Profile.fromJson(Map<String, dynamic> j) =>
-      Profile(displayName: j['displayName'] as String, bioProfile: j['bioProfile'] as Map<String, dynamic>?);
+  factory Profile.fromJson(Map<String, dynamic> j) => Profile(
+    displayName: j['displayName'] as String,
+    timeZone: j['timeZone'] as String?,
+    diet: j['dietaryPreference'] as String?,
+    goals: [for (final g in j['cognitiveGoals'] as List? ?? const []) g as String],
+    calorieTarget: (j['dailyCalorieTarget'] as num?)?.toInt(),
+    macroTargets: j['macroTargets'] == null ? null : Macros.fromJson(j['macroTargets'] as Map<String, dynamic>),
+    bioProfile: j['bioProfile'] as Map<String, dynamic>?,
+  );
 }
 
 /// "2026-09-29" in local time.

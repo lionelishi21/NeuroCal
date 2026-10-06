@@ -111,8 +111,7 @@ void main() {
   testWidgets('a check-in needs a flag and updates the stress input', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.scrollUntilVisible(find.text('Check in'), 200);
-    await tester.tap(find.text('Check in'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Check in'));
     await tester.pumpAndSettle();
 
     final save = find.widgetWithText(FilledButton, 'Save check-in');

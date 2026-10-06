@@ -30,6 +30,11 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     required this.beet,
     required this.beetSoft,
     required this.glow,
+    required this.synapseFaint,
+    required this.ionInk,
+    required this.glucoseSoft,
+    required this.toast,
+    required this.onToast,
   });
 
   /// Page background.
@@ -89,9 +94,27 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
   /// Ambient light behind heroes.
   final Color glow;
 
+  /// The quieter bar beside a primary one.
+  final Color synapseFaint;
+
+  /// Teal as text.
+  final Color ionInk;
+
+  /// "Watch this" panel fill.
+  final Color glucoseSoft;
+
+  /// The toast's fill.
+  final Color toast;
+  final Color onToast;
+
   /// The Focus Score ring's gradient, the same in both themes.
   static const ringFrom = Color(0xFF4F63D9);
   static const ringTo = Color(0xFF159C98);
+
+  /// Behind a sheet, and the toast's problem dot: the same in both themes.
+  static const scrim = Color(0x80080A14);
+  static const signalProblem = Color(0xFFC2412D);
+  static const onSignal = Color(0xFFFFFFFF);
 
   static const light = NeuroCalColors(
     mist: Color(0xFFF3F4FA),
@@ -113,9 +136,14 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     glucoseInk: Color(0xFF9A6200),
     oil: Color(0xFF8A6D2A),
     sleep: Color(0xFF2B5FDC),
-    beet: Color(0xFFB3261E),
-    beetSoft: Color(0xFFFCE8E6),
+    beet: Color(0xFFC2412D),
+    beetSoft: Color(0xFFFBE6E2),
     glow: Color(0xFFE6E4FB),
+    synapseFaint: Color(0xFFC9C0F5),
+    ionInk: Color(0xFF0E7A77),
+    glucoseSoft: Color(0xFFFCF1DE),
+    toast: Color(0xFF121829),
+    onToast: Color(0xFFF3F4FA),
   );
 
   static const dark = NeuroCalColors(
@@ -138,9 +166,14 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     glucoseInk: Color(0xFFF2B85A),
     oil: Color(0xFFC9A760),
     sleep: Color(0xFF5B8DFF),
-    beet: Color(0xFFFFB4AB),
-    beetSoft: Color(0xFF3A1E22),
+    beet: Color(0xFFFF8A73),
+    beetSoft: Color(0xFF3D1F1B),
     glow: Color(0xFF1B2550),
+    synapseFaint: Color(0xFF463D80),
+    ionInk: Color(0xFF5FD6CF),
+    glucoseSoft: Color(0xFF3A2E17),
+    toast: Color(0xFFEEF0F7),
+    onToast: Color(0xFF121829),
   );
 
   @override
@@ -173,6 +206,11 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
       beet: mix(beet, other.beet),
       beetSoft: mix(beetSoft, other.beetSoft),
       glow: mix(glow, other.glow),
+      synapseFaint: mix(synapseFaint, other.synapseFaint),
+      ionInk: mix(ionInk, other.ionInk),
+      glucoseSoft: mix(glucoseSoft, other.glucoseSoft),
+      toast: mix(toast, other.toast),
+      onToast: mix(onToast, other.onToast),
     );
   }
 }
@@ -203,6 +241,9 @@ abstract final class Radii {
 }
 
 abstract final class TextSize {
+  /// Tab bar labels.
+  static const xxxs = 11.0;
+
   /// Eyebrow on onboarding steps.
   static const xxs = 12.0;
 
