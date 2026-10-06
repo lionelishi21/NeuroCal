@@ -57,6 +57,7 @@
   --text-2xl: var(--text-2xl);
   --text-3xl: var(--text-3xl);
   --text-display: var(--text-display);
+  --text-hero: var(--text-hero);
   --text-figure: var(--text-figure);
 
   --radius-*: initial;

@@ -71,6 +71,7 @@
   --text-3xl: 2rem; /* 32: screen titles */
   --text-figure: 2.375rem; /* 38: Focus Score on Today */
   --text-display: 3.5rem; /* 56: Focus Score in the intro */
+  --text-hero: clamp(2.75rem, 10.5vw, 6.5rem); /* the landing page's headline, as wide as the screen allows */
   --leading-body: 1.45;
   --leading-tight: 1.15;
   --measure: 34rem;

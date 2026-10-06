@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useOptionalAuth } from "../auth/AuthProvider";
-import { FocusRing } from "../components/FocusRing";
 import { Logo } from "../components/Logo";
+import { type Evening, type Part, WEIGHTS, biggestDrag, clock, parts, score, sleepMinutes } from "../lib/focusDemo";
+import { flagLabel } from "../lib/format";
 import { clearSessionHint } from "../lib/sessionHint";
 
 const primary = "inline-flex h-14 items-center justify-center rounded-pill bg-synapse px-7 text-lg font-bold text-on-accent no-underline shadow-action hover:brightness-110";
 
-/** The sample day the page describes. Fixed numbers, shown as a sample, never as the visitor's own. */
-const SAMPLE_SCORE = 74;
-const SIGNALS = [
-  { name: "Sleep", word: "Good", detail: "7h 12m last night", value: 0.82, good: true },
-  { name: "Evening timing", word: "Late", detail: "Dinner at 22:40", value: 0.45, good: false },
-  { name: "Glycemic load", word: "Medium", detail: "Yesterday's food", value: 0.6, good: false },
-  { name: "Stress", word: "Low", detail: "2 check-ins", value: 0.8, good: true },
-] as const;
+/** Where the demo starts: a late dinner, some screens, seven hours of sleep. */
+const START: Evening = { dinner: 21.75, bedtime: 23.5, wake: 6.5, screens: 30, highGlycemicShare: 0.25, flags: ["low_focus"] };
+const FEELINGS = ["sharp", "calm", "low_focus", "brain_fog", "wired", "stressed"] as const;
+
+const PART_NAME: Record<Part, string> = { sleep: "Sleep", timing: "Evening timing", glycemic: "Glycemic load", stress: "Stress" };
+const PART_FILL: Record<Part, string> = { sleep: "bg-synapse", timing: "bg-ion", glycemic: "bg-glucose", stress: "bg-chlorophyll-bar" };
 
 /** A day in order, by the clock: the page's one real sequence. */
 const DAY = [
@@ -27,17 +26,31 @@ const DAY = [
   { time: "22:00", title: "Close the evening", body: "Log sleep and late screens. Tomorrow morning's score starts here." },
 ] as const;
 
-/** The score's four inputs and their share of it (ARCHITECTURE §6.8). */
-const PARTS = [
-  { name: "Sleep", share: 40, fill: "bg-sleep", reads: "How long you slept last night." },
-  { name: "Evening timing", share: 20, fill: "bg-synapse", reads: "How late you ate, and screens after 22:00." },
-  { name: "Glycemic load", share: 20, fill: "bg-glucose", reads: "How much of yesterday's food spikes blood sugar." },
-  { name: "Stress", share: 20, fill: "bg-chlorophyll-bar", reads: "What you said in your recent check-ins." },
-] as const;
+const hoursAndMinutes = (minutes: number) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+
+/** What the biggest drag is, in the visitor's own numbers, and what fixing it would do. */
+function verdict(evening: Evening, total: number): string {
+  const drag = biggestDrag(parts(evening));
+  if (!drag) return "Nothing is dragging tomorrow down. Keep this rhythm.";
+  const better = Math.min(100, total + drag.points);
+  switch (drag.part) {
+    case "sleep":
+      return `${hoursAndMinutes(sleepMinutes(evening))} of sleep is the biggest drag: ${drag.points} points. Eight hours would make it ${better}.`;
+    case "timing":
+      return evening.dinner > 21
+        ? `Dinner at ${clock(evening.dinner)}${evening.screens ? " and late screens are" : " is"} the biggest drag: ${drag.points} points. Finish by 21:00, screens off by 22:00, and it is ${better}.`
+        : `${evening.screens} minutes of screens after 22:00 is the biggest drag: ${drag.points} points. Without them it is ${better}.`;
+    case "glycemic":
+      return `High-glycemic food is the biggest drag: ${drag.points} points. Swap it for slow carbs and it is ${better}.`;
+    case "stress":
+      return `How you felt is the biggest drag: ${drag.points} points. A calmer day would make it ${better}.`;
+  }
+}
 
 /**
- * What a signed-out visitor sees at the home page: what NeuroCal does, a sample of the Focus
- * Score, a day in order, and how to start. The app itself is behind "Sign in".
+ * What a signed-out visitor sees at the home page. The page is built around one working thing:
+ * an evening on a 24-hour dial that the visitor can change, with tomorrow's Focus Score
+ * recomputed by the app's own formula.
  */
 export function Landing() {
   const auth = useOptionalAuth();
@@ -46,15 +59,15 @@ export function Landing() {
     if (auth?.status === "signedOut") clearSessionHint();
   }, [auth?.status]);
 
-  // The ring fills once, on arrival: the page's one moving part.
-  const [score, setScore] = useState(0);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setScore(SAMPLE_SCORE), 150);
-    return () => window.clearTimeout(timer);
-  }, []);
+  const [evening, setEvening] = useState(START);
+  const set = (patch: Partial<Evening>) => setEvening((current) => ({ ...current, ...patch }));
+  const values = parts(evening);
+  const total = score(values);
+  // Bedtime runs past midnight, so the slider counts hours from 18:00.
+  const bedFromSix = (((evening.bedtime - 18) % 24) + 24) % 24;
 
   return (
-    <div data-landing className="mx-auto w-full max-w-[68rem] px-5 pb-16 sm:px-8">
+    <div data-landing className="mx-auto w-full max-w-[76rem] px-5 pb-20 sm:px-8">
       <header className="flex h-16 items-center justify-between">
         <Logo />
         <Link href="/sign-in" className="flex h-11 items-center rounded-pill px-4 text-sm font-bold text-synapse-ink no-underline hover:bg-synapse-soft">
@@ -63,101 +76,119 @@ export function Landing() {
       </header>
 
       <main>
-        <section className="grid items-center gap-10 pt-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-14 lg:pt-14">
-          <div>
-            <h1 className="m-0 max-w-[14ch] text-3xl leading-[1.08] font-extrabold tracking-[-0.03em] sm:text-display">Eat for how you want to think.</h1>
-            <p className="mt-5 mb-0 max-w-[34rem] text-lg leading-[1.5] text-pretty text-ink-soft">
-              Photograph your meals. NeuroCal reads them against your sleep and stress, gives you one Focus Score each morning and tells you what to eat next.
-            </p>
-            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Link href="/sign-up" className={primary}>
-                Create an account
-              </Link>
-              <Link href="/intro" className="text-md font-bold text-synapse-ink underline-offset-4 hover:underline">
-                See how it works
-              </Link>
-            </div>
-            <p className="mt-4 mb-0 text-sm text-ink-soft">Runs in your browser today. iPhone and Android apps are on the way.</p>
+        <h1 className="m-0 pt-6 text-hero leading-[0.94] font-extrabold tracking-[-0.045em] text-balance lg:pt-10">Eat for how you want to think.</h1>
+        <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+          <p className="m-0 max-w-[36rem] text-lg leading-[1.5] text-pretty text-ink-soft">
+            Photograph your meals. NeuroCal reads them against your sleep and stress, gives you one Focus Score each morning and tells you what to eat next.
+          </p>
+          <div className="flex shrink-0 flex-col items-start gap-2.5 lg:items-end">
+            <Link href="/sign-up" className={primary}>
+              Create an account
+            </Link>
+            <p className="m-0 text-sm text-ink-soft">In your browser today. iPhone and Android apps are on the way.</p>
           </div>
+        </div>
 
-          <figure className="m-0 mx-auto w-full max-w-[26rem]">
-            <div className="rounded-hero border border-rule bg-paper p-[1.125rem]">
-              <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4">
-                <FocusRing score={score} size={104} stroke={18}>
-                  <span className="text-3xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">{SAMPLE_SCORE}</span>
-                  <span className="mt-[3px] text-3xs font-medium text-ink-soft">of 100</span>
-                </FocusRing>
-                <div className="flex min-w-0 flex-col gap-1">
-                  <p className="m-0 text-xs font-semibold text-synapse-ink">Focus Score</p>
-                  <p className="m-0 text-xl leading-[1.15] font-extrabold">Good</p>
-                  <p className="m-0 text-sm text-pretty text-ink-soft">Solid sleep and low stress are carrying you. Last night's 22:40 dinner is the biggest drag, so expect a dip near 16:00.</p>
-                </div>
-              </div>
-              <ul className="m-0 mt-4 grid list-none grid-cols-2 gap-2 p-0">
-                {SIGNALS.map((signal) => (
-                  <li key={signal.name} className="flex flex-col gap-1 rounded-option bg-mist px-3 py-2.5">
-                    <span className="text-2xs font-semibold text-ink-soft">{signal.name}</span>
-                    <span className={`text-md font-bold ${signal.good ? "text-chlorophyll" : "text-glucose-ink"}`}>{signal.word}</span>
-                    <span aria-hidden className="block h-1 rounded-pill bg-track">
-                      <span className={`block h-full rounded-pill ${signal.good ? "bg-chlorophyll-bar" : "bg-glucose"}`} style={{ width: `${signal.value * 100}%` }} />
-                    </span>
-                    <span className="text-2xs text-ink-faint">{signal.detail}</span>
-                  </li>
-                ))}
-              </ul>
+        <section aria-labelledby="try-title" className="mt-14 border-t border-rule-strong pt-10 lg:mt-20 lg:pt-14">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] lg:gap-16">
+            <div className="lg:sticky lg:top-8">
+              <DayDial evening={evening} score={total} />
+              <p aria-live="polite" className="mt-5 mb-0 text-lg leading-[1.4] font-bold text-pretty">
+                {verdict(evening, total)}
+              </p>
             </div>
-            <figcaption className="mt-2.5 text-center text-xs text-ink-soft">A sample morning. Yours comes from what you log.</figcaption>
-          </figure>
+
+            <div>
+              <h2 id="try-title" className="m-0 text-2xl leading-[1.1] font-extrabold tracking-[-0.025em]">
+                Change tonight. See tomorrow morning.
+              </h2>
+              <p className="mt-2 mb-0 max-w-[34rem] text-md text-pretty text-ink-soft">This is the formula the app uses, not an illustration. Move anything and the score is worked out again.</p>
+
+              <div className="mt-6 flex flex-col gap-1">
+                <Dial label="Dinner" value={clock(evening.dinner)} min={18} max={23.5} step={0.25} at={evening.dinner} onChange={(dinner) => set({ dinner })} />
+                <Dial
+                  label="Bedtime"
+                  value={`${clock(evening.bedtime)}, ${hoursAndMinutes(sleepMinutes(evening))} asleep`}
+                  min={3.5}
+                  max={8}
+                  step={0.25}
+                  at={bedFromSix}
+                  onChange={(hours) => set({ bedtime: (18 + hours) % 24 })}
+                />
+                <Dial label="Screens after 22:00" value={evening.screens ? `${evening.screens} min` : "None"} min={0} max={120} step={5} at={evening.screens} onChange={(screens) => set({ screens })} />
+                <Dial
+                  label="High-glycemic food"
+                  value={`${Math.round(evening.highGlycemicShare * 100)}% of the day's calories`}
+                  min={0}
+                  max={100}
+                  step={5}
+                  at={Math.round(evening.highGlycemicShare * 100)}
+                  onChange={(percent) => set({ highGlycemicShare: percent / 100 })}
+                />
+              </div>
+
+              <fieldset className="m-0 mt-4 min-w-0 border-0 p-0">
+                <legend className="mb-2.5 p-0 text-sm font-bold">How you felt</legend>
+                <div className="flex flex-wrap gap-2">
+                  {FEELINGS.map((flag) => {
+                    const on = evening.flags.includes(flag);
+                    return (
+                      <button
+                        key={flag}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => set({ flags: on ? evening.flags.filter((f) => f !== flag) : [...evening.flags, flag] })}
+                        className={`h-11 cursor-pointer rounded-pill border-[1.5px] px-4 text-md font-bold ${on ? "border-synapse bg-synapse text-on-accent" : "border-rule-strong bg-paper text-ink hover:border-ink-soft"}`}
+                      >
+                        {flagLabel[flag]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <dl className="m-0 mt-8 grid gap-x-8 gap-y-3.5 border-t border-rule pt-6 sm:grid-cols-2">
+                {(Object.keys(WEIGHTS) as Part[]).map((part) => (
+                  <div key={part}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="text-sm font-bold">
+                        {PART_NAME[part]} <span className="font-semibold text-ink-soft">{WEIGHTS[part] * 100}% of the score</span>
+                      </dt>
+                      <dd className="m-0 text-sm font-bold tabular-nums">{Math.round(values[part] * 100)}</dd>
+                    </div>
+                    <span aria-hidden className="mt-1.5 block h-1.5 rounded-pill bg-track">
+                      <span className={`block h-full rounded-pill transition-[width] duration-[var(--duration-select)] ${PART_FILL[part]}`} style={{ width: `${values[part] * 100}%` }} />
+                    </span>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
         </section>
 
-        <section aria-labelledby="day-title" className="mt-20 max-w-[44rem] lg:mt-28">
-          <h2 id="day-title" className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
+        <section aria-labelledby="day-title" className="mt-20 grid gap-8 border-t border-rule-strong pt-10 lg:mt-28 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] lg:gap-16 lg:pt-14">
+          <h2 id="day-title" className="m-0 text-2xl leading-[1.1] font-extrabold tracking-[-0.025em]">
             A day with NeuroCal
           </h2>
-          <ol className="m-0 mt-7 list-none p-0">
+          <ol className="m-0 list-none p-0">
             {DAY.map((step, i) => (
               <li key={step.time} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-4">
                 <time className="pt-0.5 text-sm font-bold text-synapse-ink tabular-nums">{step.time}</time>
                 <div className={`relative border-l pl-6 ${i === DAY.length - 1 ? "border-transparent" : "border-rule-strong pb-8"}`}>
                   <span aria-hidden className="absolute top-1.5 -left-[5px] size-[9px] rounded-full bg-synapse ring-4 ring-mist" />
                   <h3 className="m-0 text-lg font-bold">{step.title}</h3>
-                  <p className="mt-1 mb-0 text-md text-pretty text-ink-soft">{step.body}</p>
+                  <p className="mt-1 mb-0 max-w-[36rem] text-md text-pretty text-ink-soft">{step.body}</p>
                 </div>
               </li>
             ))}
           </ol>
         </section>
 
-        <section aria-labelledby="score-title" className="mt-20 max-w-[44rem] lg:mt-28">
-          <h2 id="score-title" className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
-            What the score is made of
-          </h2>
-          <p className="mt-3 mb-0 text-md text-pretty text-ink-soft">
-            A fixed formula, not a guess. Four things you can change, weighted the same way every day. The sentence beside the score is written by AI from those four numbers and nothing else.
-          </p>
-          <div aria-hidden className="mt-6 flex h-3 gap-[3px]">
-            {PARTS.map((part) => (
-              <span key={part.name} className={`rounded-[3px] ${part.fill}`} style={{ flex: `${part.share} 0 0` }} />
-            ))}
-          </div>
-          <dl className="m-0 mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-            {PARTS.map((part) => (
-              <div key={part.name} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5">
-                <span aria-hidden className={`mt-[0.4375rem] size-2.5 rounded-full ${part.fill}`} />
-                <dt className="text-md font-bold">
-                  {part.name} <span className="font-semibold text-ink-soft">{part.share}%</span>
-                </dt>
-                <dd className="col-start-2 m-0 text-sm text-ink-soft">{part.reads}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section aria-labelledby="straight-title" className="mt-20 max-w-[44rem] lg:mt-28">
-          <h2 id="straight-title" className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
+        <section aria-labelledby="straight-title" className="mt-20 grid gap-8 border-t border-rule-strong pt-10 lg:mt-28 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] lg:gap-16 lg:pt-14">
+          <h2 id="straight-title" className="m-0 text-2xl leading-[1.1] font-extrabold tracking-[-0.025em]">
             Three things to know first
           </h2>
-          <ul className="m-0 mt-5 flex list-none flex-col gap-4 p-0 text-md text-pretty">
+          <ul className="m-0 flex max-w-[40rem] list-none flex-col gap-4 p-0 text-md text-pretty">
             <li>
               <b className="font-bold">It is not medical advice.</b> <span className="text-ink-soft">NeuroCal shows patterns in what you log. It does not diagnose or treat anything.</span>
             </li>
@@ -171,23 +202,123 @@ export function Landing() {
           </ul>
         </section>
 
-        <section className="mt-20 flex flex-col items-start gap-5 rounded-hero border border-rule bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:mt-28">
-          <div>
-            <h2 className="m-0 text-xl font-extrabold tracking-[-0.015em]">Start with tonight's sleep.</h2>
-            <p className="mt-1 mb-0 text-md text-ink-soft">Log it tomorrow morning and you have a first score.</p>
+        <section className="mt-20 border-t border-rule-strong pt-10 lg:mt-28 lg:pt-14">
+          <h2 className="m-0 max-w-[16ch] text-3xl leading-[1.02] font-extrabold tracking-[-0.035em] sm:text-display">Start with tonight's sleep.</h2>
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link href="/sign-up" className={primary}>
+              Create an account
+            </Link>
+            <p className="m-0 text-md text-ink-soft">Log it tomorrow morning and you have a first score.</p>
           </div>
-          <Link href="/sign-up" className={`${primary} shrink-0`}>
-            Create an account
-          </Link>
         </section>
       </main>
 
-      <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-6 text-sm text-ink-soft">
+      <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-6 text-sm text-ink-soft">
         <span>NeuroCal</span>
-        <Link href="/sign-in" className="font-bold text-synapse-ink underline-offset-4 hover:underline">
-          Sign in
-        </Link>
+        <span className="flex gap-5">
+          <Link href="/intro" className="font-bold text-synapse-ink underline-offset-4 hover:underline">
+            Take the tour
+          </Link>
+          <Link href="/sign-in" className="font-bold text-synapse-ink underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </span>
       </footer>
     </div>
+  );
+}
+
+/** One slider of the demo: its name, its value in words, and a full-width track. */
+function Dial({ label, value, min, max, step, at, onChange }: { label: string; value: string; min: number; max: number; step: number; at: number; onChange: (value: number) => void }) {
+  const id = useId();
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="text-sm font-bold">
+          {label}
+        </label>
+        <output htmlFor={id} className="text-right text-sm font-semibold text-ink-soft tabular-nums">
+          {value}
+        </output>
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={at}
+        aria-valuetext={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="block h-11 w-full cursor-pointer accent-[var(--synapse)]"
+      />
+    </div>
+  );
+}
+
+const SIZE = 360;
+const CENTER = SIZE / 2;
+const point = (hours: number, radius: number) => {
+  const angle = (hours / 24) * 2 * Math.PI - Math.PI / 2;
+  // Rounded, so the server and the browser write the same numbers into the SVG.
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return [round(CENTER + radius * Math.cos(angle)), round(CENTER + radius * Math.sin(angle))] as const;
+};
+/** A clockwise arc from one clock time to another, wrapping past midnight. */
+function arc(from: number, to: number, radius: number): string {
+  const span = (((to - from) % 24) + 24) % 24;
+  const [x1, y1] = point(from, radius);
+  const [x2, y2] = point(from + span, radius);
+  return `M ${x1} ${y1} A ${radius} ${radius} 0 ${span > 12 ? 1 : 0} 1 ${x2} ${y2}`;
+}
+
+/**
+ * The evening on a 24-hour dial, midnight at the top: the thick arc is sleep, the dot is dinner
+ * (with an amber arc back to 21:00 when it is late), the thin teal arc is screens after 22:00.
+ * Decorative for assistive tech: the sliders and the sentence under it carry every value.
+ */
+function DayDial({ evening, score: total }: { evening: Evening; score: number }) {
+  const [dinnerX, dinnerY] = point(evening.dinner, 120);
+  return (
+    <figure className="relative m-0 mx-auto aspect-square w-full max-w-[27rem]">
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden className="size-full">
+        {Array.from({ length: 24 }, (_, hour) => {
+          const [x1, y1] = point(hour, hour % 6 === 0 ? 158 : 163);
+          const [x2, y2] = point(hour, 169);
+          return <line key={hour} x1={x1} y1={y1} x2={x2} y2={y2} stroke={hour % 6 === 0 ? "var(--ink-soft)" : "var(--rule-strong)"} strokeWidth={hour % 6 === 0 ? 2 : 1.5} strokeLinecap="round" />;
+        })}
+        {[0, 6, 12, 18].map((hour) => {
+          const [x, y] = point(hour, 145);
+          return (
+            <text key={hour} x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize="11" fontWeight="700" fill="var(--ink-soft)">
+              {String(hour).padStart(2, "0")}
+            </text>
+          );
+        })}
+        <circle cx={CENTER} cy={CENTER} r="120" fill="none" stroke="var(--track)" strokeWidth="20" />
+        <path d={arc(evening.bedtime, evening.wake, 120)} fill="none" stroke="var(--synapse)" strokeWidth="20" strokeLinecap="round" />
+        {evening.dinner > 21 && <path d={arc(21, evening.dinner, 98)} fill="none" stroke="var(--glucose)" strokeWidth="5" strokeLinecap="round" />}
+        {evening.screens > 0 && <path d={arc(22, 22 + evening.screens / 60, 88)} fill="none" stroke="var(--ion)" strokeWidth="5" strokeLinecap="round" />}
+        <circle cx={dinnerX} cy={dinnerY} r="9" fill="var(--glucose)" stroke="var(--paper)" strokeWidth="3.5" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-display leading-none font-extrabold tracking-[-0.04em] tabular-nums">{total}</span>
+        <span className="mt-1 text-2xs font-semibold text-ink-soft">tomorrow's Focus Score</span>
+      </div>
+      <figcaption className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-2xs text-ink-soft">
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-2 w-4 rounded-pill bg-synapse" />
+          Asleep
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="size-2.5 rounded-full bg-glucose" />
+          Dinner
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="h-1 w-4 rounded-pill bg-ion" />
+          Screens after 22:00
+        </span>
+      </figcaption>
+    </figure>
   );
 }
