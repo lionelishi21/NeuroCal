@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { useOptionalAuth } from "../auth/AuthProvider";
+import { FocusDemo } from "../components/FocusDemo";
 import { FocusRing } from "../components/FocusRing";
 import { LogoMark } from "../components/Logo";
 import { clearSessionHint } from "../lib/sessionHint";
@@ -228,6 +229,10 @@ export function Landing() {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section aria-label="Try the Focus Score" className={`${wrap} pb-16 sm:pb-[6.5rem]`}>
+          <FocusDemo />
         </section>
 
         <section className="night bg-mist text-ink">
