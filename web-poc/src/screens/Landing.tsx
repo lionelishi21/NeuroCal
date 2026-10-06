@@ -57,7 +57,7 @@ const STEPS = [
 ] as const;
 
 const INPUTS = [
-  { title: "Sleep", body: "How long you slept last night, from your wearable or a quick log.", icon: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z", tile: "bg-synapse-soft text-synapse-ink" },
+  { title: "Sleep", body: "How long you slept last night, from a quick log each morning.", icon: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z", tile: "bg-synapse-soft text-synapse-ink" },
   { title: "Evening timing", body: "How close your last meal was to bedtime. Late dinners tend to cost sleep quality.", icon: "M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z", tile: "bg-glucose-soft text-glucose-ink" },
   { title: "Glycemic load", body: "How sharply yesterday's food was likely to swing your blood sugar.", icon: "M3 17l5-6 4 3 4-7 5 6", tile: "bg-ion-soft text-ion-ink" },
   { title: "Stress", body: "From your check-ins: sharp, foggy, wired, calm and so on.", icon: "M4 12h3l2-5 3 10 2-5h6", tile: "bg-beet-soft text-beet" },
@@ -84,14 +84,11 @@ const fromSix = (time: string) => {
 const pct = (hours: number) => `${Math.round((hours / AXIS_HOURS) * 100000) / 1000}%`;
 const TICKS = ["18", "21", "00", "03", "06", "09", "12"];
 
-const WEARABLES = [
-  ["Oura", "Sleep, readiness"],
-  ["Whoop", "Sleep, strain"],
-  ["Apple Health", "Sleep, workouts"],
-] as const;
+/** Not connected yet: shown so people know sync is coming. */
+const WEARABLES = ["Oura", "Whoop", "Apple Health"] as const;
 
 const SCIENCE = [
-  ["Your own baseline", "For the first two weeks we learn what normal looks like for you. After that, the score moves when you move away from your own normal."],
+  ["One formula, the same every day", "Sleep counts for 40% of the score and the other three inputs for 20% each. Nothing is hidden or adjusted behind the scenes: try it in the demo above."],
   ["Four inputs, shown openly", "Sleep, evening timing, glycemic load and stress each feed the score. You'll always see which one lifted or lowered it."],
   ["Estimates, labelled as estimates", "Photo readings and glycemic load are estimates. When we're not sure, we say \"best guess\" and let you correct it."],
   ["Patterns over single days", "One late dinner is noise. Three in a week is a pattern, and that's when we suggest a routine."],
@@ -99,15 +96,15 @@ const SCIENCE = [
 
 const PRO_MONTHLY = 6;
 const FREE = ["Photo meal logging", "Daily Focus Score with explanation", "Calories and macros", "Check-ins", "What to eat next"];
-const PRO = ["This week: charts and weak points", "Sleep and evenings clock", "Routines with steps", "Oura, Whoop and Apple Health sync", "Unlimited history"];
+const PRO = ["This week: charts and weak points", "Sleep and evenings clock", "Routines with steps", "Oura, Whoop and Apple Health sync, when it arrives", "Unlimited history"];
 
 const FAQS = [
-  ["Do I need a wearable?", "No. You can log bedtime and wake-up in a few seconds. If you have Oura, Whoop or Apple Health, Pro fills your nights in automatically."],
+  ["Do I need a wearable?", "No. You log bedtime and wake-up in a few seconds. Sync with Oura, Whoop and Apple Health is on the way."],
   ["How does photo logging work?", "Take a photo of your plate. We find each item and estimate the portion, calories and glycemic load. Anything we're unsure of is marked \"best guess\", and you can untick it or add items by hand."],
-  ["Is it really free?", "Yes. Meal logging, the daily Focus Score, check-ins and meal suggestions are free for good. Pro adds weekly patterns, the sleep clock, routines and wearable sync."],
-  ["What happens to my data?", "Your meals, sleep and check-ins are used only to work out your score and suggestions. We don't sell your data, and you can delete everything from Settings."],
+  ["Is it really free?", "Yes. Meal logging, the daily Focus Score, check-ins and meal suggestions are free for good. Weekly patterns, the sleep clock and routines will be part of Pro; until Pro launches they are free too."],
+  ["What happens to my data?", "Your meals, sleep and check-ins are used only to work out your score and suggestions. We don't sell your data."],
   ["Why do you suggest products?", "Sometimes a product fits a weak spot in your week. Every suggestion is labelled \"Affiliate link\" or \"Our brand\", and we say clearly when we earn a commission."],
-  ["Can I cancel Pro?", "Any time, in two taps. You keep Pro until the end of the period you've paid for, then drop back to Free with all your history."],
+  ["When does Pro start?", "We're building it now. Everything listed under Pro is free for everyone while we do."],
 ] as const;
 
 /**
@@ -257,14 +254,14 @@ export function Landing() {
           <div className="flex flex-wrap items-center justify-between gap-10 rounded-[2rem] border border-rule bg-paper p-7 sm:p-14">
             <div className="flex max-w-[32.5rem] flex-[1_1_22.5rem] flex-col gap-3.5">
               <p className={eyebrow}>Works with what you wear</p>
-              <h2 className="m-0 text-2xl leading-[1.1] font-extrabold tracking-[-0.03em] text-balance sm:text-figure">Already tracking? Bring your sleep in automatically.</h2>
-              <p className="m-0 text-base leading-[1.55] text-pretty text-ink-soft">Connect once and your nights fill in on their own. No wearable? Logging bedtime and wake-up takes five seconds.</p>
+              <h2 className="m-0 text-2xl leading-[1.1] font-extrabold tracking-[-0.03em] text-balance sm:text-figure">Already tracking? Your wearable is next.</h2>
+              <p className="m-0 text-base leading-[1.55] text-pretty text-ink-soft">Sync with Oura, Whoop and Apple Health is on the way, so your nights fill in on their own. Until then, logging bedtime and wake-up takes five seconds.</p>
             </div>
             <ul className="m-0 grid flex-[0_1_26.25rem] list-none grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-2.5 p-0">
-              {WEARABLES.map(([name, reads]) => (
+              {WEARABLES.map((name) => (
                 <li key={name} className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-card bg-mist">
                   <span className="text-lg font-extrabold">{name}</span>
-                  <span className="text-2xs text-ink-soft">{reads}</span>
+                  <span className="text-2xs text-ink-soft">Coming soon</span>
                 </li>
               ))}
             </ul>
@@ -277,7 +274,7 @@ export function Landing() {
               <p className={eyebrow}>The science, plainly</p>
               <h2 className={heading}>How we calculate it</h2>
               <p className="m-0 text-lg leading-[1.55] text-pretty text-ink-soft">
-                We lean on well-studied links between sleep, meal timing, blood sugar swings and stress. Then we compare you with yourself, not with everyone else.
+                We lean on well-studied links between sleep, meal timing, blood sugar swings and stress. Then we show you your own week, not an average of everyone else's.
               </p>
               <p className="m-0 rounded-control bg-mist p-4 text-sm leading-normal text-ink-soft">
                 NeuroCal isn't a medical device and doesn't diagnose anything. Talk to your doctor before changing medication or starting supplements.
@@ -352,15 +349,13 @@ export function Landing() {
                   <h3 className="m-0 text-xl font-extrabold">Pro</h3>
                   <p className="mt-1 mb-0 text-md text-on-promo-soft">Patterns, routines and wearables</p>
                 </div>
-                <span className="flex h-[1.625rem] shrink-0 items-center rounded-pill bg-on-promo/20 px-2.5 text-2xs font-bold">14 days free</span>
+                <span className="flex h-[1.625rem] shrink-0 items-center rounded-pill bg-on-promo/20 px-2.5 text-2xs font-bold">Coming soon</span>
               </div>
               <p aria-live="polite" className="m-0 flex flex-wrap items-baseline gap-1.5">
                 <span className="text-price leading-none font-extrabold tracking-[-0.03em]">£{yearly ? Math.round(PRO_MONTHLY * 12 * 0.7) : PRO_MONTHLY}</span>
                 <span className="text-md text-on-promo-soft">{yearly ? `a year · £${(PRO_MONTHLY * 0.7).toFixed(2)} a month` : "a month"}</span>
               </p>
-              <Link href="/sign-up" className="flex h-[3.25rem] items-center justify-center rounded-pill bg-on-promo text-base font-bold text-promo no-underline hover:brightness-95">
-                Try Pro free
-              </Link>
+              <p className="m-0 flex h-[3.25rem] items-center justify-center rounded-pill bg-on-promo/20 px-4 text-center text-base font-bold">Free for everyone until Pro launches</p>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
                 <li className="text-sm font-bold text-on-promo-soft">Everything in Free, plus</li>
                 {PRO.map((item) => (
@@ -509,7 +504,7 @@ function Phone() {
         </span>
         <span className="flex flex-col">
           <span className="text-xs font-extrabold">Slept 7h 12m</span>
-          <span className="text-3xs text-ink-soft">Synced from Oura</span>
+          <span className="text-3xs text-ink-soft">Logged this morning</span>
         </span>
       </div>
     </div>
