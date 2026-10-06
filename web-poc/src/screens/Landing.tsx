@@ -94,7 +94,24 @@ const SCIENCE = [
   ["Patterns over single days", "One late dinner is noise. Three in a week is a pattern, and that's when we suggest a routine."],
 ] as const;
 
-const PRO_MONTHLY = 6;
+/** Pro's monthly price in each currency; a year costs 30% less. */
+const CURRENCIES = {
+  GBP: { symbol: "£", name: "Pounds", monthly: 6 },
+  USD: { symbol: "$", name: "US dollars", monthly: 8 },
+} as const;
+type Currency = keyof typeof CURRENCIES;
+const YEARLY_DISCOUNT = 0.3;
+
+/** Dollars for visitors whose browser or clock says United States; pounds for everyone else. */
+function localCurrency(): Currency {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    const american = /^(America\/(New_York|Chicago|Denver|Phoenix|Los_Angeles|Anchorage|Detroit|Boise|Juneau|Indiana|Kentucky|North_Dakota)|Pacific\/Honolulu)/.test(zone);
+    return navigator.language === "en-US" || american ? "USD" : "GBP";
+  } catch {
+    return "GBP";
+  }
+}
 const FREE = ["Photo meal logging", "Daily Focus Score with explanation", "Calories and macros", "Check-ins", "What to eat next"];
 const PRO = ["This week: charts and weak points", "Sleep and evenings clock", "Routines with steps", "Oura, Whoop and Apple Health sync, when it arrives", "Unlimited history"];
 
@@ -120,6 +137,10 @@ export function Landing() {
   }, [auth?.status]);
 
   const [yearly, setYearly] = useState(true);
+  // Pounds on the server; the visitor's own currency once the page is in their browser.
+  const [currency, setCurrency] = useState<Currency>("GBP");
+  useEffect(() => setCurrency(localCurrency()), []);
+  const { symbol, monthly } = CURRENCIES[currency];
   const [openFaq, setOpenFaq] = useState(0);
   const faqId = useId();
 
@@ -300,7 +321,8 @@ export function Landing() {
           <div className="flex flex-col items-center gap-3.5 text-center">
             <p className={eyebrow}>Pricing</p>
             <h2 className={heading}>Start free. Go Pro when you want the why.</h2>
-            <div role="radiogroup" aria-label="Billing" className="mt-3 flex gap-1 rounded-pill border border-rule bg-paper p-1">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
+            <div role="radiogroup" aria-label="Billing" className="flex gap-1 rounded-pill border border-rule bg-paper p-1">
               {(
                 [
                   ["Monthly", false],
@@ -320,6 +342,22 @@ export function Landing() {
                 </button>
               ))}
             </div>
+            <div role="radiogroup" aria-label="Currency" className="flex gap-1 rounded-pill border border-rule bg-paper p-1">
+              {(Object.keys(CURRENCIES) as Currency[]).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={currency === code}
+                  aria-label={CURRENCIES[code].name}
+                  onClick={() => setCurrency(code)}
+                  className={`grid h-10 min-w-11 cursor-pointer place-items-center rounded-pill px-3.5 text-sm font-bold ${currency === code ? "bg-ink text-mist" : "text-ink-soft hover:text-ink"}`}
+                >
+                  {CURRENCIES[code].symbol}
+                </button>
+              ))}
+            </div>
+            </div>
           </div>
           <div className="mx-auto mt-11 grid max-w-[55rem] grid-cols-[repeat(auto-fit,minmax(18.75rem,1fr))] gap-5">
             <div className="flex flex-col gap-[1.125rem] rounded-sheet border border-rule bg-paper p-8">
@@ -328,7 +366,7 @@ export function Landing() {
                 <p className="mt-1 mb-0 text-md text-ink-soft">Everything you need each day</p>
               </div>
               <p className="m-0 flex items-baseline gap-1.5">
-                <span className="text-price leading-none font-extrabold tracking-[-0.03em]">£0</span>
+                <span className="text-price leading-none font-extrabold tracking-[-0.03em]">{symbol}0</span>
                 <span className="text-md text-ink-soft">forever</span>
               </p>
               <Link href="/sign-up" className="flex h-[3.25rem] items-center justify-center rounded-pill border-[1.5px] border-rule-strong text-base font-bold text-ink no-underline hover:bg-mist">
@@ -352,8 +390,11 @@ export function Landing() {
                 <span className="flex h-[1.625rem] shrink-0 items-center rounded-pill bg-on-promo/20 px-2.5 text-2xs font-bold">Coming soon</span>
               </div>
               <p aria-live="polite" className="m-0 flex flex-wrap items-baseline gap-1.5">
-                <span className="text-price leading-none font-extrabold tracking-[-0.03em]">£{yearly ? Math.round(PRO_MONTHLY * 12 * 0.7) : PRO_MONTHLY}</span>
-                <span className="text-md text-on-promo-soft">{yearly ? `a year · £${(PRO_MONTHLY * 0.7).toFixed(2)} a month` : "a month"}</span>
+                <span className="text-price leading-none font-extrabold tracking-[-0.03em]">
+                  {symbol}
+                  {yearly ? Math.round(monthly * 12 * (1 - YEARLY_DISCOUNT)) : monthly}
+                </span>
+                <span className="text-md text-on-promo-soft">{yearly ? `a year · ${symbol}${(monthly * (1 - YEARLY_DISCOUNT)).toFixed(2)} a month` : "a month"}</span>
               </p>
               <p className="m-0 flex h-[3.25rem] items-center justify-center rounded-pill bg-on-promo/20 px-4 text-center text-base font-bold">Free for everyone until Pro launches</p>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">

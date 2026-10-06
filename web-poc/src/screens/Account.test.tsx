@@ -72,6 +72,17 @@ describe("Account", () => {
     expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/sign-in");
     expect(screen.queryByText("Private page")).not.toBeInTheDocument();
     expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    // Pro in dollars: $8 a month, 30% less by the year.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("radio", { name: "US dollars" }));
+    expect(screen.getByText("$0")).toBeInTheDocument();
+    expect(screen.getByText("$67")).toBeInTheDocument();
+    expect(screen.getByText("a year · $5.60 a month")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Monthly" }));
+    expect(screen.getByText("$8")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Pounds" }));
+    expect(screen.getByText("£6")).toBeInTheDocument();
   });
 
   it("creates an account, verifies the email and signs in", async () => {
