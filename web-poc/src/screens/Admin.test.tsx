@@ -54,9 +54,7 @@ describe("Admin", () => {
     await user.type(link, "https://truedark.com/?ref=neurocal");
     await user.click(within(glasses).getByRole("button", { name: "Save link" }));
     expect(await screen.findByText("Link saved")).toBeInTheDocument();
-    expect(await within(await row("TrueDark evening glasses")).findByText(/Replaces the built-in link/)).toBeInTheDocument();
-
-    await user.click(within(await row("TrueDark evening glasses")).getByRole("button", { name: "Use the built-in link" }));
+    await user.click(await within(await row("TrueDark evening glasses")).findByRole("button", { name: "Use the built-in link" }));
     expect(await screen.findByText("Built-in link restored")).toBeInTheDocument();
     await waitFor(async () => expect(within(await row("TrueDark evening glasses")).getByLabelText("Link")).toHaveValue("https://truedark.com/"));
   });
@@ -65,7 +63,7 @@ describe("Admin", () => {
     const user = userEvent.setup();
     renderAdmin();
     const lmnt = await row("LMNT electrolyte drink mix");
-    await user.click(within(lmnt).getByRole("checkbox", { name: "I earn a commission from this link" }));
+    await user.click(within(lmnt).getByRole("checkbox", { name: "I earn a commission" }));
     expect(await screen.findByText("Labelled as an affiliate link")).toBeInTheDocument();
     expect(await within(await row("LMNT electrolyte drink mix")).findByText("Affiliate link")).toBeInTheDocument();
 
@@ -78,12 +76,11 @@ describe("Admin", () => {
     const user = userEvent.setup();
     renderAdmin();
     await row("TrueDark evening glasses");
-    await user.click(screen.getByRole("button", { name: "Add a product" }));
     const form = screen.getByRole("form", { name: "Add a product" });
     await user.type(within(form).getByLabelText("Name"), "MitoProof Vitamin ADK");
-    await user.type(within(form).getByLabelText(/What it is/), "Vitamins A, D and K in one capsule.");
+    await user.type(within(form).getByLabelText("Description"), "Vitamins A, D and K in one capsule.");
     await user.type(within(form).getByLabelText("Link"), "https://www.mitoproof.com/products/vitamin-adk");
-    await user.type(within(form).getByLabelText(/Suggest it for/), "vitamins, energy");
+    await user.type(within(form).getByLabelText(/Words to suggest it for/), "vitamins, energy");
     await user.click(within(form).getByRole("button", { name: "Add product" }));
 
     expect(await screen.findByText("Product added")).toBeInTheDocument();
@@ -99,6 +96,6 @@ describe("Admin", () => {
   it("tells a non-admin the page isn't for them", async () => {
     renderAdmin(http.get(`${API_BASE}/admin/products`, () => HttpResponse.json({ code: "forbidden", message: "Only an admin can manage products." }, { status: 403 })));
     expect(await screen.findByRole("alert")).toHaveTextContent("This page is for admins");
-    expect(screen.queryByRole("button", { name: "Add a product" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add product" })).not.toBeInTheDocument();
   });
 });

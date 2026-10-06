@@ -3,8 +3,7 @@
 import { useId, useState } from "react";
 import { useLogScreenTime } from "../../api/queries";
 import { Button } from "../../components/Button";
-import { fieldClass } from "../../components/fields";
-import { Sheet } from "../../components/Sheet";
+import { Sheet, SheetNote, sheetAction } from "../../components/Sheet";
 import { useToast } from "../../components/Toast";
 
 interface Props {
@@ -12,7 +11,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-/** 10pm to 4am: the window the Focus Score reads (ARCHITECTURE §6.8). */
+/** 22:00 to 04:00: the window the Focus Score reads (ARCHITECTURE §6.8). */
 const WINDOW_MINUTES = 360;
 
 /** Last night's late-screen window: yesterday 22:00 to today 04:00, local time. */
@@ -27,9 +26,11 @@ const quickPicks = [0, 15, 30, 60, 90];
 
 export function LogScreenTimeSheet({ open, onOpenChange }: Props) {
   const minutesId = useId();
-  const [minutes, setMinutes] = useState(30);
+  // Kept as typed, so the field can be emptied on the way to another number.
+  const [typed, setTyped] = useState("30");
   const logScreenTime = useLogScreenTime();
   const toast = useToast();
+  const minutes = typed === "" ? Number.NaN : Number(typed);
   const valid = Number.isInteger(minutes) && minutes >= 0 && minutes <= WINDOW_MINUTES;
 
   const close = (next: boolean) => {
@@ -49,52 +50,48 @@ export function LogScreenTimeSheet({ open, onOpenChange }: Props) {
   };
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={close}
-      title="Log screen time"
-      description="How long were you on your phone, laptop or TV after 10pm last night?"
-    >
-      <label htmlFor={minutesId} className="block text-sm text-ink-soft">
-        Minutes after 10pm
-        <input
-          id={minutesId}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={WINDOW_MINUTES}
-          step={5}
-          value={Number.isNaN(minutes) ? "" : minutes}
-          onChange={(e) => setMinutes(e.target.valueAsNumber)}
-          className={`${fieldClass} tabular-nums`}
-        />
-      </label>
-      <div role="group" aria-label="Common amounts" className="mt-3 flex flex-wrap gap-2">
+    <Sheet open={open} onOpenChange={close} title="Log screen time">
+      <p className="m-0 text-sm text-ink-soft">Minutes on screens after 22:00 last night.</p>
+      <div role="group" aria-label="Common amounts" className="grid grid-cols-5 gap-1.5">
         {quickPicks.map((pick) => (
           <button
             key={pick}
             type="button"
             aria-pressed={minutes === pick}
-            onClick={() => setMinutes(pick)}
-            className={`cursor-pointer rounded-pill px-3.5 py-2 text-sm ring-1 ring-inset ${
-              minutes === pick ? "bg-synapse text-on-accent ring-synapse" : "bg-paper text-ink ring-rule hover:ring-ink-soft"
+            aria-label={pick === 0 ? "None" : `${pick} minutes`}
+            onClick={() => setTyped(String(pick))}
+            className={`h-12 cursor-pointer rounded-option border-[1.5px] text-md font-bold ${
+              minutes === pick ? "border-synapse bg-synapse text-on-accent" : "border-rule-strong bg-paper text-ink hover:border-ink-soft"
             }`}
           >
-            {pick === 0 ? "None" : `${pick} min`}
+            {pick === 0 ? "None" : pick}
           </button>
         ))}
       </div>
+      <label htmlFor={minutesId} className={`flex h-14 items-center gap-2.5 rounded-control bg-mist px-4 ${valid ? "" : "ring-[1.5px] ring-beet ring-inset"}`}>
+        <input
+          id={minutesId}
+          inputMode="numeric"
+          aria-label="Minutes"
+          aria-invalid={!valid}
+          value={typed}
+          onChange={(e) => setTyped(e.target.value.replace(/\D/g, "").slice(0, 3))}
+          className="w-20 border-0 bg-transparent text-xl font-extrabold text-ink tabular-nums focus:outline-none"
+        />
+        <span className="text-md text-ink-soft">minutes</span>
+      </label>
 
-      <p aria-live="polite" className={`mt-4 mb-0 text-sm ${valid ? "text-ink-soft" : "text-beet"}`}>
-        {valid ? "Logging again for the same night replaces the earlier entry." : "Enter a whole number of minutes between 0 and 360."}
-      </p>
-
-      {logScreenTime.isError && (
-        <p role="alert" className="mt-4 mb-0 text-sm text-beet">
-          Screen time didn't save. Check your connection and try again.
+      {!valid && (
+        <p aria-live="polite" className="m-0 text-xs font-semibold text-beet">
+          Enter a whole number of minutes between 0 and 360.
         </p>
       )}
-      <Button className="mt-6 w-full" onClick={save} disabled={!valid || logScreenTime.isPending}>
+      {logScreenTime.isError && (
+        <SheetNote tone="problem" lead="Couldn't save your screen time." alert>
+          Check your connection and try again.
+        </SheetNote>
+      )}
+      <Button className={sheetAction} onClick={save} disabled={!valid || logScreenTime.isPending}>
         {logScreenTime.isPending ? "Logging…" : "Log screen time"}
       </Button>
     </Sheet>

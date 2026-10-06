@@ -2,8 +2,15 @@
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
-/** One name per choice everywhere the switch appears (Settings, sign-in). */
+/** The short names, for the compact switch on the sign-in screens. */
 export const themeLabel: Record<Theme, string> = { system: "Auto", light: "Light", dark: "Dark" };
+
+/** Settings has room to say what "Auto" does. In the order Settings shows them. */
+export const THEME_CHOICES: readonly (readonly [Theme, string])[] = [
+  ["light", "Light"],
+  ["dark", "Dark"],
+  ["system", "Match device"],
+];
 
 export const THEME_KEY = "neurocal-theme";
 

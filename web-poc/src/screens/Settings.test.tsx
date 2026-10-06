@@ -41,20 +41,20 @@ describe("Settings", () => {
     expect(await within(profile).findByText("Lionel")).toBeInTheDocument();
     expect(within(profile).getByText("Pescatarian")).toBeInTheDocument();
     expect(within(profile).getByText("Sharper focus, Steadier energy")).toBeInTheDocument();
-    expect(within(profile).getByText("2,200 kcal")).toBeInTheDocument();
+    expect(within(profile).getByText("2,200 kcal a day")).toBeInTheDocument();
     expect(within(profile).getByRole("link", { name: "Edit profile" })).toHaveAttribute("href", "/welcome");
   });
 
   it("switches the appearance and remembers it", async () => {
     const user = userEvent.setup();
     renderSettings();
-    expect(screen.getByRole("radio", { name: "Auto" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Match device" })).toBeChecked();
 
     await user.click(screen.getByRole("radio", { name: "Light" }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(window.localStorage.getItem("neurocal-theme")).toBe("light");
 
-    await user.click(screen.getByRole("radio", { name: "Auto" }));
+    await user.click(screen.getByRole("radio", { name: "Match device" }));
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(window.localStorage.getItem("neurocal-theme")).toBeNull();
   });

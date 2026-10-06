@@ -29,7 +29,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - No stock UI themes or templates. Radix primitives are fine; their look must come from our tokens.
 - Mobile-first; visible keyboard focus; respect `prefers-reduced-motion`.
 - Copy: sentence case, plain verbs, same action name through a flow ("Log a meal" → "Meal logged").
-- The look comes from the Claude Design files (see "Design direction" in `docs/EXECUTION_PLAN.md`); build new screens from `Button`, `FocusRing`, `fieldClass` and the tokens before inventing styles.
+- The look comes from the Claude Design files (see "Design direction" in `docs/EXECUTION_PLAN.md`); build new screens from `Screen`/`ScreenHeader`/`Section`/`ActionBar` (`components/Screen.tsx`), the loading, empty and failed states in `components/ListStates.tsx`, `Sheet`, `Button`, `FocusRing`, `fieldClass` and the tokens before inventing styles.
 - Without `NEXT_PUBLIC_API_URL`, the app runs on the MSW mock API in `web-poc/src/mocks`, built from `packages/contracts`. Set `localStorage["neurocal.mock.newUser"] = "1"` to start the mock without a profile and see the onboarding.
 - Without `NEXT_PUBLIC_COGNITO_USER_POOL_ID` / `NEXT_PUBLIC_COGNITO_CLIENT_ID`, sign-in uses the local mock in `web-poc/src/auth` (every code is 123456).
 

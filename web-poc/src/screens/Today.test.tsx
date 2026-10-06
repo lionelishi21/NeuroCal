@@ -65,7 +65,7 @@ describe("Today", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Log a meal" })[0]!);
     const sheet = await screen.findByRole("dialog", { name: "Log a meal" });
-    await user.upload(within(sheet).getByLabelText(/Take or choose a photo/), new File(["x"], "plate.jpg", { type: "image/jpeg" }));
+    await user.upload(within(sheet).getByLabelText("Choose a photo"), new File(["x"], "plate.jpg", { type: "image/jpeg" }));
 
     const logButton = await within(sheet).findByRole("button", { name: /^Log meal, / });
     await user.click(within(sheet).getAllByRole("checkbox")[0]!);
@@ -83,7 +83,7 @@ describe("Today", () => {
     server.use(http.post(`${API_BASE}/meals/analyze`, () => HttpResponse.json({ items: [], problem: "too_dark" })));
     await user.click(screen.getAllByRole("button", { name: "Log a meal" })[0]!);
     const sheet = await screen.findByRole("dialog", { name: "Log a meal" });
-    await user.upload(within(sheet).getByLabelText(/Take or choose a photo/), new File(["x"], "plate.jpg", { type: "image/jpeg" }));
+    await user.upload(within(sheet).getByLabelText("Choose a photo"), new File(["x"], "plate.jpg", { type: "image/jpeg" }));
     expect(await within(sheet).findByRole("alert")).toHaveTextContent("too dark");
   });
 
@@ -94,7 +94,7 @@ describe("Today", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Log a meal" })[0]!);
     const sheet = await screen.findByRole("dialog", { name: "Log a meal" });
-    await user.click(within(sheet).getByRole("button", { name: "Add an item by hand" }));
+    await user.click(within(sheet).getByRole("button", { name: "Add an item by hand instead" }));
     const form = within(sheet).getByRole("form", { name: "Add an item by hand" });
     await user.type(within(form).getByLabelText("Food"), "Protein shake");
     await user.type(within(form).getByLabelText("Calories"), "180");
@@ -115,16 +115,16 @@ describe("Today", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Log a meal" })[0]!);
     const sheet = await screen.findByRole("dialog", { name: "Log a meal" });
-    await user.click(within(sheet).getByRole("button", { name: "Add an item by hand" }));
+    await user.click(within(sheet).getByRole("button", { name: "Add an item by hand instead" }));
     const form = within(sheet).getByRole("form", { name: "Add an item by hand" });
     await user.type(within(form).getByLabelText("Food"), "Trail mix");
     await user.type(within(form).getByLabelText("Calories"), "210");
     await user.click(within(form).getByRole("button", { name: "Add item" }));
     await user.click(within(sheet).getByRole("button", { name: "Log meal, 210 kcal" }));
 
-    expect(await screen.findByText("You're offline. Meal saved on this device.")).toBeInTheDocument();
+    expect(await screen.findByText("Saved on this device. We'll upload it later.")).toBeInTheDocument();
     const meals = screen.getByRole("region", { name: "Meals today" });
-    expect(await within(meals).findByText(/1 meal is saved on this device/)).toBeInTheDocument();
+    expect(await within(meals).findByText(/1 meal saved on this device/)).toBeInTheDocument();
     expect(queuedMeals()).toHaveLength(1);
 
     // Back online: the default handler answers again.
@@ -153,28 +153,25 @@ describe("Today", () => {
 
   it("shows the Focus Score with its inputs and explanation", async () => {
     renderToday();
-    const focus = await screen.findByRole("region", { name: "Focus score" });
+    const focus = await screen.findByRole("region", { name: "Focus Score" });
     expect(await within(focus).findByText("of 100")).toBeInTheDocument();
     expect(within(focus).getByText(/holding your focus back/)).toBeInTheDocument();
     // Every signal has data in the seeded week, so nothing asks to be logged.
     expect(within(focus).queryByRole("button", { name: "Log sleep" })).not.toBeInTheDocument();
 
-    const shaping = screen.getByRole("region", { name: "What's shaping it" });
-    expect(within(shaping).getByText("4 of 4 signals")).toBeInTheDocument();
-    for (const name of ["Sleep", "Evening", "Glycemic load", "Stress"]) expect(within(shaping).getByText(name)).toBeInTheDocument();
-    expect(within(shaping).queryByRole("button", { name: /^Log / })).not.toBeInTheDocument();
+    for (const name of ["Sleep", "Evening timing", "Glycemic load", "Stress"]) expect(within(focus).getByText(name)).toBeInTheDocument();
+    expect(within(focus).queryByRole("button", { name: /^Log / })).not.toBeInTheDocument();
   });
 
-  it("asks for what is missing and removes a meal from its options", async () => {
+  it("asks for what is missing and removes a meal", async () => {
     const user = userEvent.setup();
     renderWith(createDb({ withoutLastNight: true }));
-    const shaping = await screen.findByRole("region", { name: "What's shaping it" });
-    expect(await within(shaping).findByText("3 of 4 signals")).toBeInTheDocument();
-    expect(within(shaping).getByRole("button", { name: "Log sleep" })).toBeInTheDocument();
+    const focus = await screen.findByRole("region", { name: "Focus Score" });
+    // Last night's sleep is missing, so its tile asks for it.
+    expect(await within(focus).findByRole("button", { name: "Log sleep" })).toBeInTheDocument();
 
     const meals = screen.getByRole("region", { name: "Meals today" });
-    await user.click(await within(meals).findByRole("button", { name: "Options for Steel-cut oats, Blueberries, Walnuts" }));
-    await user.click(within(meals).getByRole("button", { name: "Remove meal" }));
+    await user.click(await within(meals).findByRole("button", { name: "Remove Steel-cut oats, Blueberries, Walnuts" }));
     expect(await screen.findByText("Meal removed")).toBeInTheDocument();
     await waitFor(() => expect(within(meals).queryByText("Steel-cut oats, Blueberries, Walnuts")).not.toBeInTheDocument());
   });
@@ -187,7 +184,7 @@ describe("Today", () => {
     });
     const user = userEvent.setup();
     renderWith(createDb({ withoutLastNight: true }));
-    const focus = await screen.findByRole("region", { name: "Focus score" });
+    const focus = await screen.findByRole("region", { name: "Focus Score" });
     const before = (await within(focus).findByText("of 100")).previousSibling?.textContent;
 
     await user.click(within(focus).getByRole("button", { name: "Log sleep" }));
@@ -198,7 +195,7 @@ describe("Today", () => {
     await user.type(bed, "22:00");
     await user.clear(wake);
     await user.type(wake, "06:00");
-    expect(within(sheet).getByText("8 h 00 min")).toBeInTheDocument();
+    expect(within(sheet).getByText("8h 00m")).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Log sleep" }));
 
     expect(await screen.findByText("Sleep logged")).toBeInTheDocument();

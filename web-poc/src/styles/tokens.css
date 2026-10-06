@@ -21,8 +21,10 @@
   --synapse: #6a4fdb;
   --synapse-ink: #5b3fd0; /* primary as text */
   --synapse-soft: #eeeafd; /* selected and soft-button fill */
+  --synapse-faint: #c9c0f5; /* the quieter bar beside a primary one */
   --on-accent: #ffffff;
   --ion: #159c98;
+  --ion-ink: #0e7a77; /* teal as text */
 
   /* Signals */
   --chlorophyll: #178a63; /* good, as text */
@@ -30,16 +32,20 @@
   --on-good: #ffffff;
   --glucose: #e09a2b; /* energy, carbs, "watch this", as a fill */
   --glucose-ink: #9a6200; /* the same, as text */
+  --glucose-soft: #fcf1de; /* "watch this" panel fill */
   --oil: #8a6d2a; /* fats */
   --sleep: #2b5fdc;
-  --beet: #b3261e; /* errors, over budget */
-  --beet-soft: #fce8e6; /* error panel fill */
+  --beet: #c2412d; /* errors, over budget */
+  --beet-soft: #fbe6e2; /* error panel fill */
+  --signal-problem: #c2412d; /* the toast's problem dot, the same in both themes */
+  --on-signal: #ffffff;
 
   --glow: #e6e4fb; /* ambient light behind heroes */
   --focus-ring: rgb(106 79 219 / 0.18);
   --shade: rgb(18 24 41 / 0.08); /* soft shadow colour */
   --toast: #121829;
-  --on-toast: #ffffff;
+  --on-toast: #f3f4fa;
+  --scrim: rgb(8 10 20 / 0.5); /* behind a sheet */
 
   /* Focus ring gradient (the same in both themes) */
   --ring-from: #4f63d9;
@@ -53,6 +59,7 @@
   /* Type: Plus Jakarta Sans throughout */
   --font-ui: var(--font-jakarta), system-ui, sans-serif;
   --font-figure: var(--font-jakarta), system-ui, sans-serif;
+  --text-3xs: 0.6875rem; /* 11: tab bar labels */
   --text-2xs: 0.75rem; /* 12: eyebrow on onboarding steps */
   --text-xs: 0.8125rem; /* 13: captions */
   --text-sm: 0.875rem; /* 14: labels, secondary */
@@ -67,6 +74,8 @@
   --leading-body: 1.45;
   --leading-tight: 1.15;
   --measure: 34rem;
+  /* The tab bar: 6px + a 56px row + its border, plus the bottom inset. Floating actions sit on top of it. */
+  --tabbar-height: calc(3.9375rem + max(0.5rem, env(safe-area-inset-bottom)));
 
   /* Space (4px base) */
   --space-1: 0.25rem;
@@ -119,22 +128,25 @@
     --synapse: #9d85fa;
     --synapse-ink: #b4a2ff;
     --synapse-soft: #2a2550;
+    --synapse-faint: #463d80;
     --on-accent: #14102b;
     --ion: #3cc7bf;
+    --ion-ink: #5fd6cf;
     --chlorophyll: #4fd1a1;
     --chlorophyll-bar: #3cc08d;
     --on-good: #0e1325;
     --glucose: #e6a33a;
     --glucose-ink: #f2b85a;
+    --glucose-soft: #3a2e17;
     --oil: #c9a760;
     --sleep: #5b8dff;
-    --beet: #ffb4ab;
-    --beet-soft: #3a1e22;
+    --beet: #ff8a73;
+    --beet-soft: #3d1f1b;
     --glow: #1b2550;
     --focus-ring: rgb(157 133 250 / 0.25);
     --shade: rgb(0 0 0 / 0.35);
     --toast: #eef0f7;
-    --on-toast: #0e1325;
+    --on-toast: #121829;
     --chart-focus: #9d85fa;
     --chart-calories: #e6a33a;
     --chart-sleep: #5b8dff;
@@ -155,22 +167,25 @@
   --synapse: #9d85fa;
   --synapse-ink: #b4a2ff;
   --synapse-soft: #2a2550;
+  --synapse-faint: #463d80;
   --on-accent: #14102b;
   --ion: #3cc7bf;
+  --ion-ink: #5fd6cf;
   --chlorophyll: #4fd1a1;
   --chlorophyll-bar: #3cc08d;
   --on-good: #0e1325;
   --glucose: #e6a33a;
   --glucose-ink: #f2b85a;
+  --glucose-soft: #3a2e17;
   --oil: #c9a760;
   --sleep: #5b8dff;
-  --beet: #ffb4ab;
-  --beet-soft: #3a1e22;
+  --beet: #ff8a73;
+  --beet-soft: #3d1f1b;
   --glow: #1b2550;
   --focus-ring: rgb(157 133 250 / 0.25);
   --shade: rgb(0 0 0 / 0.35);
   --toast: #eef0f7;
-  --on-toast: #0e1325;
+  --on-toast: #121829;
   --chart-focus: #9d85fa;
   --chart-calories: #e6a33a;
   --chart-sleep: #5b8dff;

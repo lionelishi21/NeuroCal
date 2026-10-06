@@ -2,59 +2,57 @@
 
 interface Props {
   title: string;
-  /** Top of the scale; the only tick besides the baseline. */
+  /** Said beside the title, e.g. "Average 65". */
+  note?: string;
+  /** Top of the scale. */
   max: number;
-  maxLabel: string;
   values: (number | null)[];
-  /** Tailwind background class for the columns, e.g. "bg-chart-focus". */
-  colorClass: string;
+  /** One short label per column for the day axis, e.g. "F". */
+  days: string[];
+  /** The selected column's value, as shown above it. */
+  format: (value: number) => string;
   /** Optional reference line (e.g. the calorie target) with its label. */
   reference?: { value: number; label: string };
-  active: number | null;
-  onActive: (index: number | null) => void;
+  selected: number | null;
+  onSelect: (index: number) => void;
 }
 
 /**
- * One single-series column chart in the History stack. Columns are thin
- * (<= 24px), rounded at the data end and square at the baseline; the grid is a
- * hairline at the top tick and the baseline. The chart is decorative for
- * assistive tech: the readout and the table carry every value.
+ * One single-series column chart in the This week stack. The selected day is
+ * the full-strength column with its value above it; the rest are the quieter
+ * tint, and a day without data is a stub on the baseline. Decorative for
+ * assistive tech: the day picker, the readout and the table carry every value.
  */
-export function DayColumns({ title, max, maxLabel, values, colorClass, reference, active, onActive }: Props) {
+export function DayColumns({ title, note, max, values, days, format, reference, selected, onSelect }: Props) {
   const pct = (v: number) => `${Math.min(100, (v / max) * 100)}%`;
   return (
-    <figure className="m-0">
-      <figcaption className="mb-2 flex items-baseline justify-between gap-3 text-sm">
-        <span className="font-semibold text-ink">{title}</span>
-        <span className="text-ink-soft">{maxLabel}</span>
+    <figure className="mx-4 mt-3 mb-0 rounded-card border border-rule bg-paper px-4 pt-4 pb-3">
+      <figcaption className="flex items-baseline justify-between gap-2">
+        <span className="text-md font-bold">{title}</span>
+        {note && <span className="text-2xs text-ink-soft">{note}</span>}
       </figcaption>
-      <div aria-hidden className="relative h-28 border-t border-b border-rule">
+      <div aria-hidden className="relative mt-3.5 grid h-[7.5rem] grid-cols-7 items-end gap-2 border-b border-rule">
+        {values.map((value, i) => (
+          <div key={i} className="flex h-full cursor-pointer flex-col items-center justify-end" onClick={() => onSelect(i)}>
+            {selected === i && value !== null && <span className="mb-[3px] text-3xs font-bold whitespace-nowrap">{format(value)}</span>}
+            <span
+              className={`w-full max-w-[1.875rem] rounded-t-[7px] rounded-b-[2px] ${value === null ? "bg-track" : selected === i ? "bg-synapse" : "bg-synapse-faint"}`}
+              style={{ height: value === null ? 4 : pct(value), minHeight: 4 }}
+            />
+          </div>
+        ))}
         {reference && (
-          <div className="pointer-events-none absolute inset-x-0 z-10 border-t border-ink-soft" style={{ bottom: pct(reference.value) }}>
-            <span className="absolute -top-5 right-0 bg-mist pl-1 text-xs text-ink-soft">{reference.label}</span>
+          <div className="pointer-events-none absolute inset-x-0 border-t-[1.5px] border-dashed border-ink-faint" style={{ bottom: pct(reference.value) }}>
+            <span className="absolute -top-[1.125rem] right-0 bg-paper pl-1 text-3xs font-bold text-ink-soft">{reference.label}</span>
           </div>
         )}
-        <div className="absolute inset-0 grid grid-cols-7">
-          {values.map((value, i) => (
-            <div
-              key={i}
-              className="relative flex h-full items-end justify-center"
-              onPointerEnter={() => onActive(i)}
-              onPointerLeave={() => onActive(null)}
-            >
-              {value === null ? (
-                <span className="mb-1 text-xs text-ink-soft">–</span>
-              ) : (
-                <span
-                  className={`block w-[min(24px,55%)] rounded-t-[4px] transition-opacity duration-150 ${colorClass} ${
-                    active !== null && active !== i ? "opacity-35" : ""
-                  }`}
-                  style={{ height: pct(value), minHeight: value > 0 ? 2 : 0 }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+      </div>
+      <div aria-hidden className="mt-1.5 grid grid-cols-7 gap-2">
+        {days.map((day, i) => (
+          <span key={i} className="text-center text-3xs font-semibold text-ink-soft">
+            {day}
+          </span>
+        ))}
       </div>
     </figure>
   );

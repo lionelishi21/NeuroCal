@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState, type ReactNode } from "react";
 import { AuthProvider, RequireAuth } from "../auth/AuthProvider";
 import { OfflineMealSync } from "../components/OfflineMeals";
+import { TabBar } from "../components/TabBar";
 import { ToastProvider } from "../components/Toast";
 import { watchInstallPrompt } from "../lib/install";
 import { applyTheme, storedTheme } from "../lib/theme";
@@ -29,11 +30,13 @@ export function Providers({ children }: { children: ReactNode }) {
               <MockGate>
                 <OfflineMealSync />
                 {children}
+                <TabBar />
               </MockGate>
             ) : (
               <>
                 <OfflineMealSync />
                 {children}
+                <TabBar />
               </>
             )}
           </RequireAuth>

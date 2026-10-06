@@ -13,9 +13,9 @@ export function SignOutLink() {
       type="button"
       onClick={async () => {
         await auth.signOut();
-        toast("Signed out");
+        toast("Signed out", "info");
       }}
-      className="cursor-pointer bg-transparent p-0 text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink"
+      className="h-11 shrink-0 cursor-pointer rounded-pill bg-beet-soft px-4 text-sm font-bold text-beet hover:brightness-95"
     >
       Sign out
     </button>

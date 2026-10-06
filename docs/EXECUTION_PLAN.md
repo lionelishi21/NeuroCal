@@ -91,7 +91,7 @@ The source is the Claude Design file "NeuroCal onboarding" (intro, sign in, crea
 - **Motion.** The intro's illustration glides between five poses with a spring; onboarding steps slide in from the side they come from; selections scale up slightly. All of it stops under `prefers-reduced-motion`.
 - **Copy.** Sentence case, plain verbs, the same action name through a flow. Onboarding step eyebrows are the one uppercase label, as designed.
 
-Screens not in the design file yet (This week, Sleep, Settings, Manage products, the four sheets) use the same tokens and components but keep their earlier layouts until they are designed.
+The rest of the app follows the second Claude Design file (Today, This week, Sleep and evenings, Settings, Manage products, the four bottom sheets): a bottom tab bar for the four main screens, toasts at the top with a tick, "i" or "!" dot, floating actions above the tab bar, and one shared set of loading, empty and failed states (`ListStates.tsx`, `Screen.tsx`). Times on charts and tables are 24-hour.
 
 ## 5. Phased execution
 

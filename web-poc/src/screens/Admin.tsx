@@ -2,11 +2,13 @@
 
 import type { AdminProduct } from "@neurocal/contracts";
 import Link from "next/link";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { RequestFailed } from "../api/client";
 import { useAdminProducts, useCreateAdminProduct, useDeleteAdminProduct, useUpdateAdminProduct } from "../api/queries";
+import { useOptionalAuth } from "../auth/AuthProvider";
 import { Button } from "../components/Button";
-import { fieldClass } from "../components/fields";
+import { ScreenFailed, ScreenLoading } from "../components/ListStates";
+import { Screen, ScreenHeader, Section, cardClass } from "../components/Screen";
 import { useToast } from "../components/Toast";
 
 const FILTERS = ["All", "Our brand", "Affiliate", "Other brands", "Turned off"] as const;
@@ -21,8 +23,13 @@ const matches: Record<Filter, (p: AdminProduct) => boolean> = {
 };
 
 const problem = (error: unknown, fallback: string) => (error instanceof RequestFailed ? error.message : fallback);
-const smallField = fieldClass.replace("text-lg", "text-base");
-const check = "size-5 accent-[var(--synapse)]";
+
+/** This screen's fields sit on cards, so they take the page colour: 48px tall, 14px radius. */
+const field =
+  "block h-12 w-full rounded-option border-[1.5px] bg-mist px-3.5 text-md text-ink placeholder:text-ink-faint focus:border-synapse focus:shadow-[0_0_0_3px_var(--focus-ring)] focus:outline-none";
+const fieldLabel = "text-xs font-bold";
+const fieldError = "text-2xs font-semibold text-beet";
+const isLink = (value: string) => /^https:\/\/\S+\.\S+/.test(value);
 
 /**
  * Product management for admins: swap a product's link, label it as an
@@ -31,88 +38,132 @@ const check = "size-5 accent-[var(--synapse)]";
  */
 export function Admin() {
   const products = useAdminProducts();
+  const auth = useOptionalAuth();
   const [filter, setFilter] = useState<Filter>("All");
   const [search, setSearch] = useState("");
-  const searchId = useId();
 
   const forbidden = products.error instanceof RequestFailed && products.error.status === 403;
   const all = products.data?.products ?? [];
   const term = search.trim().toLowerCase();
-  const shown = all.filter((p) => matches[filter](p) && (!term || `${p.name} ${p.description}`.toLowerCase().includes(term)));
+  const shown = all.filter((p) => matches[filter](p) && (!term || `${p.name} ${p.tags.join(" ")} ${p.description}`.toLowerCase().includes(term)));
+  const email = auth?.user?.email;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pt-6 pb-16 sm:px-8 lg:pt-12">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="m-0 text-2xl">Manage products</h1>
-        <Link href="/settings" className="shrink-0 text-sm text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
-          Back to settings
-        </Link>
-      </div>
-      <p className="mt-2 mb-0 max-w-[var(--measure)] text-ink-soft">
-        These are the products NeuroCal can suggest under "What could help". Your own supplements are suggested before any other brand's.
-      </p>
+    <Screen>
+      <ScreenHeader title="Manage products" detail="Admin only" back={{ href: "/settings", label: "Back to Settings" }} />
 
-      {products.isPending && <p className="mt-8 text-ink-soft">Loading products…</p>}
+      {products.isPending && <ScreenLoading label="Loading products" heights={[18.75, 2.75, 13.75]} />}
       {forbidden && (
-        <p role="alert" className="mt-8 text-ink">
-          This page is for admins. Sign in with an admin account to manage products.
-        </p>
+        <div role="alert" className="m-4 flex flex-col items-start gap-2 rounded-hero border border-rule bg-paper px-5 py-6">
+          <span aria-hidden className="grid size-11 place-items-center rounded-full bg-synapse-soft text-synapse-ink">
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+          </span>
+          <p className="m-0 mt-1 text-xl font-extrabold">This page is for admins</p>
+          <p className="m-0 text-md text-pretty text-ink-soft">
+            {email ? `You're signed in as ${email}, which doesn't have admin access.` : "This account doesn't have admin access."} Ask an admin to add you.
+          </p>
+          <Link href="/" className="mt-2 inline-flex h-12 items-center rounded-pill bg-synapse px-[1.375rem] text-md font-bold text-on-accent no-underline hover:brightness-110">
+            Back to Today
+          </Link>
+        </div>
       )}
       {products.isError && !forbidden && (
-        <div role="alert" className="mt-8">
-          <p className="m-0 text-beet">The products didn't load. Check your connection and try again.</p>
-          <Button variant="text" className="mt-1 -ml-1" onClick={() => products.refetch()}>
-            Try again
-          </Button>
-        </div>
+        <ScreenFailed title="Couldn't load products" onRetry={() => products.refetch()}>
+          Check your connection and try again.
+        </ScreenFailed>
       )}
 
       {products.data && (
         <>
-          <AddProduct />
+          <AddProduct
+            onAdded={() => {
+              setFilter("All");
+              setSearch("");
+            }}
+          />
 
-          <div className="mt-10 flex flex-wrap items-end gap-x-6 gap-y-3">
-            <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+          <Section title="Products" kind="title" className="[&>h2]:pt-6">
+            <div role="group" aria-label="Show" className="flex gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
               {FILTERS.map((option) => (
                 <button
                   key={option}
                   type="button"
                   aria-pressed={filter === option}
                   onClick={() => setFilter(option)}
-                  className={`cursor-pointer rounded-pill px-3.5 py-2 text-sm ring-1 ring-inset ${
-                    filter === option ? "bg-synapse text-on-accent ring-synapse" : "bg-paper text-ink ring-rule hover:ring-ink-soft"
+                  className={`flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-pill border-[1.5px] px-3.5 text-xs font-bold ${
+                    filter === option ? "border-synapse bg-synapse text-on-accent" : "border-rule bg-paper text-ink hover:border-rule-strong"
                   }`}
                 >
-                  {option} <span className="tabular-nums opacity-70">{all.filter(matches[option]).length}</span>
+                  {option} <span className="tabular-nums opacity-75">{all.filter(matches[option]).length}</span>
                 </button>
               ))}
             </div>
-            <label htmlFor={searchId} className="min-w-[12rem] flex-1 text-sm text-ink-soft">
-              Search
-              <input id={searchId} type="search" value={search} onChange={(e) => setSearch(e.target.value)} className={smallField} />
-            </label>
-          </div>
+            <div className="relative mx-4 mt-2.5">
+              <svg viewBox="0 0 24 24" aria-hidden className="pointer-events-none absolute top-[0.9375rem] left-3.5 size-[1.125rem] text-ink-faint" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="M16 16l4 4" />
+              </svg>
+              <input
+                type="search"
+                aria-label="Search products"
+                placeholder="Search products"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`${field} border-rule bg-paper pl-[2.625rem]`}
+              />
+            </div>
 
-          {shown.length === 0 ? (
-            <p className="mt-6 border-t border-rule pt-4 text-ink-soft">No products match. Clear the search or choose another group.</p>
-          ) : (
-            <ul aria-label="Products" className="m-0 mt-6 list-none p-0">
-              {shown.map((product) => (
-                <ProductRow key={product.id} product={product} />
-              ))}
-            </ul>
-          )}
+            {shown.length === 0 ? (
+              <div className="mx-4 mt-3 flex flex-col items-start gap-2.5 rounded-card border-[1.5px] border-dashed border-rule-strong p-[1.125rem]">
+                <p className="m-0 text-md font-bold">{term ? `No products match "${search.trim()}"` : "No products here yet"}</p>
+                <Button
+                  variant="soft"
+                  className="h-10 px-3.5 text-xs"
+                  onClick={() => {
+                    setSearch("");
+                    setFilter("All");
+                  }}
+                >
+                  Show all products
+                </Button>
+              </div>
+            ) : (
+              <ul aria-label="Products" className="m-0 flex list-none flex-col gap-2.5 px-4 pt-3 pb-0">
+                {shown.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </ul>
+            )}
+          </Section>
         </>
       )}
-    </main>
+    </Screen>
   );
 }
 
-function ProductRow({ product }: { product: AdminProduct }) {
+/** A checkbox drawn as the design's rounded box; the real input stays for keyboards and screen readers. */
+function Check({ checked, onChange, disabled = false, children }: { checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; children: ReactNode }) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-center gap-2.5">
+      <input type="checkbox" className="peer sr-only" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span
+        aria-hidden
+        className="grid size-[1.375rem] shrink-0 place-items-center rounded-[0.4375rem] border-2 border-rule-strong text-xs font-extrabold text-transparent peer-checked:border-synapse peer-checked:bg-synapse peer-checked:text-on-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-synapse"
+      >
+        ✓
+      </span>
+      <span className="text-sm font-semibold">{children}</span>
+    </label>
+  );
+}
+
+function ProductCard({ product }: { product: AdminProduct }) {
   const update = useUpdateAdminProduct();
   const remove = useDeleteAdminProduct();
   const toast = useToast();
-  const linkId = useId();
   const [link, setLink] = useState(product.url ?? "");
   const changed = link.trim() !== (product.url ?? "");
 
@@ -130,80 +181,82 @@ function ProductRow({ product }: { product: AdminProduct }) {
   };
 
   return (
-    <li aria-label={product.name} className={`border-t border-rule py-5 last:border-b ${product.enabled ? "" : "opacity-70"}`}>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="m-0 text-base font-semibold">{product.name}</h2>
-        {product.ownBrand && <Tag>Our brand</Tag>}
-        {product.affiliate && <Tag>Affiliate link</Tag>}
-        {product.supplement && <Tag>Supplement</Tag>}
-        {product.managedBy === "admin" && <Tag>Added by you</Tag>}
-        {!product.enabled && <Tag>Turned off</Tag>}
-      </div>
-      <p className="mt-1 mb-0 max-w-[var(--measure)] text-sm text-ink-soft">{product.description}</p>
-
-      <form onSubmit={saveLink} className="mt-3 flex flex-wrap items-end gap-3">
-        <label htmlFor={linkId} className="min-w-[14rem] flex-1 text-sm text-ink-soft">
-          Link
-          <input
-            id={linkId}
-            type="url"
-            inputMode="url"
-            placeholder="https://"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            className={smallField}
-          />
-        </label>
-        <Button type="submit" variant="quiet" disabled={!changed || !link.trim() || update.isPending}>
-          Save link
-        </Button>
-      </form>
-      {product.catalogUrl && (
-        <p className="mt-2 mb-0 text-sm text-ink-soft">
-          Replaces the built-in link, <span className="break-all">{product.catalogUrl}</span>.{" "}
-          <Button variant="text" className="text-sm" disabled={update.isPending} onClick={() => save({ id: product.id, url: null }, "Built-in link restored")}>
-            Use the built-in link
-          </Button>
+    <li aria-label={product.name} className={`flex flex-col gap-2.5 rounded-card border border-rule bg-paper p-4 ${product.enabled ? "" : "opacity-70"}`}>
+      <p className="m-0 flex flex-wrap gap-1.5">
+        {product.ownBrand ? (
+          <Tag className="bg-synapse-soft text-synapse-ink">Our brand</Tag>
+        ) : product.affiliate ? (
+          <Tag className="bg-glucose-soft text-glucose-ink">Affiliate link</Tag>
+        ) : (
+          <Tag className="bg-mist text-ink-soft">Other brand</Tag>
+        )}
+        {product.supplement && <Tag className="bg-mist text-ink-soft">Supplement</Tag>}
+        {product.managedBy === "admin" && <Tag className="bg-mist text-ink-soft">Added by you</Tag>}
+        {!product.enabled && <Tag className="bg-track text-ink-soft">Turned off</Tag>}
+      </p>
+      <h3 className="m-0 text-base font-extrabold">{product.name}</h3>
+      <p className="m-0 text-xs leading-[1.4] text-ink-soft">{product.description}</p>
+      {product.tags.length > 0 && (
+        <p className="m-0 text-2xs text-ink-soft">
+          Suggested for: <b className="font-semibold text-ink">{product.tags.join(", ")}</b>
         </p>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            className={check}
-            checked={product.enabled}
-            disabled={update.isPending}
-            onChange={(e) => save({ id: product.id, enabled: e.target.checked }, e.target.checked ? "Product turned on" : "Product turned off")}
-          />
+      <form onSubmit={saveLink} className="flex gap-1.5">
+        <input
+          type="url"
+          inputMode="url"
+          aria-label="Link"
+          placeholder="https://"
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          className={`${field} h-11 min-w-0 flex-1 rounded-[0.75rem] border-rule px-3 text-xs`}
+        />
+        <button
+          type="submit"
+          disabled={!changed || !link.trim() || update.isPending}
+          className="h-11 shrink-0 cursor-pointer rounded-[0.75rem] bg-synapse-soft px-3.5 text-xs font-bold whitespace-nowrap text-synapse-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Save link
+        </button>
+      </form>
+      {product.catalogUrl && (
+        <Button variant="text" className="min-h-8 self-start px-0 text-xs" disabled={update.isPending} onClick={() => save({ id: product.id, url: null }, "Built-in link restored")}>
+          Use the built-in link
+        </Button>
+      )}
+
+      <div className="flex flex-col border-t border-rule pt-1">
+        <Check
+          checked={product.enabled}
+          disabled={update.isPending}
+          onChange={(on) => save({ id: product.id, enabled: on }, on ? "Product turned on" : "Product turned off")}
+        >
           Suggest this product
-        </label>
+        </Check>
         {!product.ownBrand && (
-          <label className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              className={check}
-              checked={product.affiliate}
-              disabled={update.isPending}
-              onChange={(e) => save({ id: product.id, affiliate: e.target.checked }, e.target.checked ? "Labelled as an affiliate link" : "Affiliate label removed")}
-            />
-            I earn a commission from this link
-          </label>
-        )}
-        {product.managedBy === "admin" && (
-          <Button
-            variant="text"
-            className="text-sm"
-            disabled={remove.isPending}
-            onClick={() => remove.mutate(product.id, { onSuccess: () => toast("Product removed") })}
+          <Check
+            checked={product.affiliate}
+            disabled={update.isPending}
+            onChange={(on) => save({ id: product.id, affiliate: on }, on ? "Labelled as an affiliate link" : "Affiliate label removed")}
           >
-            {remove.isPending ? "Removing…" : "Remove product"}
-          </Button>
+            I earn a commission
+          </Check>
         )}
       </div>
+      {product.managedBy === "admin" && (
+        <button
+          type="button"
+          disabled={remove.isPending}
+          onClick={() => remove.mutate(product.id, { onSuccess: () => toast("Product removed", "info") })}
+          className="h-10 cursor-pointer self-start rounded-pill bg-beet-soft px-3.5 text-xs font-bold text-beet hover:brightness-95 disabled:opacity-45"
+        >
+          {remove.isPending ? "Removing…" : "Remove product"}
+        </button>
+      )}
 
       {(update.isError || remove.isError) && (
-        <p role="alert" className="mt-2 mb-0 text-sm text-beet">
+        <p role="alert" className={`m-0 ${fieldError}`}>
           {problem(update.error ?? remove.error, "That change didn't save. Try again.")}
         </p>
       )}
@@ -211,31 +264,48 @@ function ProductRow({ product }: { product: AdminProduct }) {
   );
 }
 
-const Tag = ({ children }: { children: string }) => (
-  <span className="rounded-pill px-2.5 py-0.5 text-xs text-ink-soft ring-1 ring-rule ring-inset">{children}</span>
-);
+function Tag({ children, className }: { children: string; className: string }) {
+  return <span className={`flex h-[1.375rem] items-center rounded-[0.375rem] px-2 text-3xs font-bold ${className}`}>{children}</span>;
+}
 
-const emptyDraft = { name: "", description: "", url: "", tags: "", kind: "own" as "own" | "affiliate" | "other", supplement: true };
+const OWNERS = [
+  ["own", "Our brand"],
+  ["affiliate", "Affiliate"],
+  ["other", "Other brand"],
+] as const;
+type Owner = (typeof OWNERS)[number][0];
+
+const emptyDraft = { name: "", description: "", url: "", tags: "", owner: "own" as Owner, supplement: true };
+type Errors = Partial<Record<"name" | "description" | "url", string>>;
 
 /** Adds a product that isn't in the built-in catalog, such as a new MitoProof item. */
-function AddProduct() {
+function AddProduct({ onAdded }: { onAdded: () => void }) {
   const create = useCreateAdminProduct();
   const toast = useToast();
-  const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
-  const set = (patch: Partial<typeof emptyDraft>) => setDraft((d) => ({ ...d, ...patch }));
-  const ready = draft.name.trim() && draft.description.trim() && (draft.kind === "other" || draft.url.trim());
+  const [errors, setErrors] = useState<Errors>({});
+  const set = (patch: Partial<typeof emptyDraft>) => {
+    setDraft((d) => ({ ...d, ...patch }));
+    setErrors((e) => Object.fromEntries(Object.entries(e).filter(([key]) => !(key in patch))));
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!ready) return;
+    const url = draft.url.trim();
+    const found: Errors = {};
+    if (!draft.name.trim()) found.name = "Give the product a name.";
+    if (!draft.description.trim()) found.description = "Say what it is in one line.";
+    // A link you earn from, or to your own shop, has to be there; another brand's product can go without.
+    if (url ? !isLink(url) : draft.owner !== "other") found.url = "Add a full link, starting with https://";
+    setErrors(found);
+    if (Object.keys(found).length) return;
     create.mutate(
       {
         name: draft.name.trim(),
         description: draft.description.trim(),
-        ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
-        ownBrand: draft.kind === "own",
-        affiliate: draft.kind === "affiliate",
+        ...(url ? { url } : {}),
+        ownBrand: draft.owner === "own",
+        affiliate: draft.owner === "affiliate",
         supplement: draft.supplement,
         tags: draft.tags.split(",").map((t) => t.trim()).filter(Boolean),
       },
@@ -243,79 +313,72 @@ function AddProduct() {
         onSuccess: () => {
           toast("Product added");
           setDraft(emptyDraft);
-          setOpen(false);
           create.reset();
+          onAdded();
         },
       },
     );
   };
 
-  if (!open) {
-    return (
-      <Button className="mt-6" onClick={() => setOpen(true)}>
-        Add a product
-      </Button>
-    );
-  }
-
-  const label = "block text-sm text-ink-soft";
+  const border = (key: keyof Errors) => (errors[key] ? "border-beet" : "border-rule");
   return (
-    <form onSubmit={submit} aria-label="Add a product" className="mt-6 rounded-card bg-paper p-5 ring-1 ring-rule ring-inset">
-      <h2 className="m-0 text-lg">Add a product</h2>
-      <label className={`mt-4 ${label}`}>
-        Name
-        <input autoFocus value={draft.name} onChange={(e) => set({ name: e.target.value })} maxLength={120} className={smallField} />
-      </label>
-      <label className={`mt-3 ${label}`}>
-        What it is
-        <textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} rows={2} maxLength={600} className={`${smallField} h-auto py-3`} />
-        <span className="mt-1 block">One or two plain sentences. Say what it is; leave out health claims.</span>
-      </label>
-      <label className={`mt-3 ${label}`}>
-        Link
-        <input type="url" inputMode="url" placeholder="https://" value={draft.url} onChange={(e) => set({ url: e.target.value })} className={smallField} />
-      </label>
-      <label className={`mt-3 ${label}`}>
-        Suggest it for
-        <input value={draft.tags} onChange={(e) => set({ tags: e.target.value })} placeholder="sleep, low focus, protein" className={smallField} />
-        <span className="mt-1 block">Words separated by commas. They decide when it is suggested.</span>
-      </label>
+    <Section title="Add a product" kind="title" className="[&>h2]:pt-[1.125rem]">
+      <form onSubmit={submit} noValidate aria-label="Add a product" className={`${cardClass} flex flex-col gap-3 p-4`}>
+        <label className="flex flex-col gap-1.5">
+          <span className={fieldLabel}>Name</span>
+          <input value={draft.name} onChange={(e) => set({ name: e.target.value })} maxLength={120} placeholder="e.g. Magnesium glycinate" aria-invalid={Boolean(errors.name)} className={`${field} ${border("name")}`} />
+          {errors.name && <span className={fieldError}>{errors.name}</span>}
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={fieldLabel}>Description</span>
+          <textarea
+            value={draft.description}
+            onChange={(e) => set({ description: e.target.value })}
+            rows={2}
+            maxLength={600}
+            placeholder="One line people will see"
+            aria-invalid={Boolean(errors.description)}
+            className={`${field} h-auto resize-y py-3 ${border("description")}`}
+          />
+          {errors.description && <span className={fieldError}>{errors.description}</span>}
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={fieldLabel}>Link</span>
+          <input type="url" inputMode="url" placeholder="https://" value={draft.url} onChange={(e) => set({ url: e.target.value })} aria-invalid={Boolean(errors.url)} className={`${field} ${border("url")}`} />
+          {errors.url && <span className={fieldError}>{errors.url}</span>}
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={fieldLabel}>Words to suggest it for</span>
+          <input value={draft.tags} onChange={(e) => set({ tags: e.target.value })} placeholder="sleep, stress, late dinner" className={`${field} border-rule`} />
+          <span className="text-2xs text-ink-soft">Separate with commas.</span>
+        </label>
 
-      <fieldset className="m-0 mt-4 border-0 p-0">
-        <legend className="mb-1.5 p-0 text-sm text-ink-soft">Whose product is it?</legend>
-        <div className="flex flex-col gap-2 text-base">
-          {(
-            [
-              ["own", "Our brand (MitoProof)"],
-              ["affiliate", "Another brand, and I earn a commission"],
-              ["other", "Another brand, no commission"],
-            ] as const
-          ).map(([value, text]) => (
-            <label key={value} className="flex cursor-pointer items-center gap-2">
-              <input type="radio" name="kind" className={check} checked={draft.kind === value} onChange={() => set({ kind: value })} />
-              {text}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <label className="mt-4 flex cursor-pointer items-center gap-2 text-base">
-        <input type="checkbox" className={check} checked={draft.supplement} onChange={(e) => set({ supplement: e.target.checked })} />
-        It is a dietary supplement
-      </label>
+        <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+          <legend className={`mb-1.5 p-0 ${fieldLabel}`}>Whose product is it?</legend>
+          <div className="grid grid-cols-3 gap-1 rounded-option bg-mist p-1">
+            {OWNERS.map(([value, text]) => (
+              <label key={value} className="relative">
+                <input type="radio" name="owner" className="peer sr-only" checked={draft.owner === value} onChange={() => set({ owner: value })} />
+                <span className="grid h-10 cursor-pointer place-items-center rounded-[0.625rem] text-xs font-bold text-ink-soft peer-checked:bg-paper peer-checked:text-synapse-ink peer-focus-visible:outline-2 peer-focus-visible:outline-synapse">
+                  {text}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <Check checked={draft.supplement} onChange={(supplement) => set({ supplement })}>
+          It's a supplement<span className="font-normal text-ink-soft"> (adds a doctor note)</span>
+        </Check>
 
-      {create.isError && (
-        <p role="alert" className="mt-4 mb-0 text-sm text-beet">
-          {problem(create.error, "The product wasn't added. Try again.")}
-        </p>
-      )}
-      <div className="mt-5 flex items-center gap-3">
-        <Button type="submit" disabled={!ready || create.isPending}>
+        {create.isError && (
+          <p role="alert" className={`m-0 ${fieldError}`}>
+            {problem(create.error, "The product wasn't added. Try again.")}
+          </p>
+        )}
+        <Button type="submit" className="h-[3.125rem] text-md" disabled={create.isPending}>
           {create.isPending ? "Adding…" : "Add product"}
         </Button>
-        <Button variant="text" onClick={() => setOpen(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Section>
   );
 }

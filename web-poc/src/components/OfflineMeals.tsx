@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useFlushMealQueue, useQueuedMeals } from "../api/queries";
-import { Button } from "./Button";
 import { useToast } from "./Toast";
 
 /** Sends queued meals when the app starts and whenever the connection returns. Renders nothing. */
@@ -39,13 +38,17 @@ export function QueuedMealsNotice() {
   };
 
   return (
-    <p role="status" className="mt-0 mb-3 flex flex-wrap items-baseline gap-x-3 rounded-card bg-paper px-4 py-3 text-sm text-ink ring-1 ring-rule ring-inset">
-      <span>
-        {waiting === 1 ? "1 meal is" : `${waiting} meals are`} saved on this device and will be logged when you're back online.
-      </span>
-      <Button variant="text" className="-ml-1 text-sm" onClick={tryNow}>
+    <div role="status" className="mx-4 mb-2.5 flex items-center gap-3 rounded-control bg-glucose-soft py-3 pr-3 pl-3.5">
+      <svg viewBox="0 0 24 24" aria-hidden className="size-5 shrink-0 text-glucose-ink" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M3 3l18 18M8.5 8.6A6 6 0 0 0 6 13.5 4 4 0 0 0 7 21.4h10M17.8 14A4 4 0 0 0 16 7a6 6 0 0 0-5-1" />
+      </svg>
+      <p className="m-0 min-w-0 flex-1 text-xs leading-[1.4]">
+        <b className="font-bold">{waiting === 1 ? "1 meal saved on this device." : `${waiting} meals saved on this device.`}</b> {waiting === 1 ? "It'll" : "They'll"} count once{" "}
+        {waiting === 1 ? "it uploads" : "they upload"}.
+      </p>
+      <button type="button" onClick={tryNow} className="h-10 shrink-0 cursor-pointer rounded-pill bg-paper px-3.5 text-xs font-bold whitespace-nowrap text-ink hover:brightness-95">
         Try now
-      </Button>
-    </p>
+      </button>
+    </div>
   );
 }

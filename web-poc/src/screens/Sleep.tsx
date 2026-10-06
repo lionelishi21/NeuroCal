@@ -1,18 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useHistory } from "../api/queries";
 import { Button } from "../components/Button";
+import { ScreenEmpty, ScreenFailed, ScreenLoading } from "../components/ListStates";
 import { NightBands } from "../components/NightBands";
-import { Readout } from "../components/Readout";
+import { ActionBar, Screen, ScreenHeader, Section, cardClass } from "../components/Screen";
 import { LogScreenTimeSheet } from "../features/log-screen-time/LogScreenTimeSheet";
 import { LogSleepSheet } from "../features/log-sleep/LogSleepSheet";
-import { formatClock, hoursAndMinutes } from "../lib/format";
 import { type Night, ateLate, averageSleep, eveningInsights, nightsFrom, usualBedtime } from "../lib/nights";
 
 const NIGHTS = 7;
-const weekday = (date: string, style: "short" | "long") => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: style });
+/** Under this, a night's sleep is marked as short. */
+const SHORT_SLEEP_MINUTES = 7 * 60;
+const weekday = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+/** "6h 30m": the table has six columns on a phone. */
+const compact = (minutes: number) => `${Math.floor(minutes / 60)}h ${String(Math.round(minutes % 60)).padStart(2, "0")}m`;
+
+const columns = "grid grid-cols-[3.375rem_repeat(5,minmax(0,1fr))] gap-1 px-3";
 
 /**
  * Sleep and evenings for the past week: each night on one clock axis (sleep,
@@ -26,127 +31,111 @@ export function Sleep() {
   const [loggingScreens, setLoggingScreens] = useState(false);
 
   const nights = history.data ? nightsFrom(history.data.days) : [];
-  const lastNight = nights.at(-1);
   const hasSleep = nights.some((n) => n.sleepMinutes !== null);
   const average = averageSleep(nights);
   const bedtime = usualBedtime(nights);
   const lateDinners = nights.filter(ateLate).length;
   const insights = eveningInsights(nights);
-  const nightName = (night: Night, style: "short" | "long") =>
-    night === lastNight ? "Last night" : style === "short" ? weekday(night.evening, "short") : `${weekday(night.evening, "long")} night`;
+  const label = (night: Night) => weekday(night.evening);
 
   return (
     <>
-      <main className="relative mx-auto w-full max-w-3xl px-4 pt-6 pb-16 sm:px-8 lg:pt-12">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-72 bg-[radial-gradient(36rem_14rem_at_30%_0%,var(--glow),transparent_70%)]" />
-        <div className="flex items-baseline justify-between gap-4">
-          <h1 className="m-0 text-2xl">Sleep and evenings</h1>
-          <Link href="/" className="shrink-0 text-sm text-ink-soft underline decoration-rule underline-offset-4 hover:text-ink">
-            Back to today
-          </Link>
-        </div>
-        <p className="mt-2 mb-0 max-w-[var(--measure)] text-ink-soft">
-          Your last seven nights, with what came before each one: when you last ate and how long you stayed on screens.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={() => setLoggingSleep(true)}>Log sleep</Button>
-          <Button variant="quiet" onClick={() => setLoggingScreens(true)}>
-            Log screen time
-          </Button>
-        </div>
+      <Screen actions>
+        <ScreenHeader title="Sleep and evenings" detail={`Last ${NIGHTS} nights`} back={{ href: "/", label: "Back to Today" }} />
 
-        {history.isPending && <p className="mt-8 text-ink-soft">Loading your nights…</p>}
+        {history.isPending && <ScreenLoading label="Loading your nights" heights={[5.25, 18.75, 7.5]} />}
         {history.isError && (
-          <div role="alert" className="mt-8">
-            <p className="m-0 text-beet">Your nights didn't load. Check your connection and try again.</p>
-            <Button variant="text" className="mt-1 -ml-1" onClick={() => history.refetch()}>
-              Try again
-            </Button>
-          </div>
+          <ScreenFailed title="Couldn't load your nights" onRetry={() => history.refetch()}>
+            Check your connection and try again.
+          </ScreenFailed>
         )}
-
         {history.data && !hasSleep && (
-          <p className="mt-8 max-w-[var(--measure)] border-t border-rule pt-4 text-ink-soft">
-            No sleep logged in the past week. Log last night's sleep and it appears here, next to your last meal of the evening.
-          </p>
+          <ScreenEmpty title="No sleep logged yet" action="Log sleep" onAction={() => setLoggingSleep(true)}>
+            Log last night and we'll put your sleep, last meal and late screens on one clock, so patterns are easy to spot.
+          </ScreenEmpty>
         )}
 
         {hasSleep && (
           <>
-            <dl aria-label="This week" className="mt-8 mb-0 grid grid-cols-2 gap-x-6 gap-y-3 rounded-card bg-paper p-5 ring-1 ring-rule ring-inset sm:grid-cols-3">
-              <Readout value={average === null ? "No data" : hoursAndMinutes(average)} label="Average sleep" swatch="bg-chart-sleep" />
-              <Readout value={bedtime ? formatClock(bedtime) : "No data"} label="Usual bedtime" />
-              <Readout value={`${lateDinners} of ${nights.length}`} label="Nights you ate after 9pm" swatch="bg-glucose" />
+            <dl aria-label="This week" className="m-0 grid grid-cols-3 gap-2 px-4 pt-3.5">
+              <Figure value={average === null ? "No data" : compact(average)} label="Average sleep" />
+              <Figure value={bedtime ?? "No data"} label="Usual bedtime" />
+              <Figure value={`${lateDinners} of ${nights.length}`} label="Nights eaten after 9pm" watch={lateDinners > 2} />
             </dl>
 
-            <section aria-labelledby="nights-title" className="mt-10">
-              <h2 id="nights-title" className="mt-0 mb-4 text-xl">
-                Night by night
+            <section aria-labelledby="clock-title" className={`${cardClass} mt-3 px-3.5 pt-4 pb-3.5`}>
+              <h2 id="clock-title" className="m-0 mb-2 text-md font-bold">
+                Your nights on one clock
               </h2>
-              <NightBands nights={nights} label={(night) => (night === lastNight ? "Last" : weekday(night.evening, "short"))} />
+              <NightBands nights={nights} label={label} />
             </section>
 
-            <section aria-labelledby="insights-title" className="mt-12">
-              <h2 id="insights-title" className="mt-0 mb-3 text-xl">
-                What your evenings did
-              </h2>
-              <ul className="m-0 max-w-[var(--measure)] list-none p-0">
-                {insights.map((text) => (
-                  <li key={text} className="border-t border-rule py-3.5 text-ink last:border-b">
-                    {text}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 mb-0 text-sm text-ink-soft">
-                <Link href="/history#help" className="underline decoration-rule underline-offset-4 hover:text-ink hover:decoration-ink">
-                  See what helps
-                </Link>
-              </p>
-            </section>
+            {insights.length > 0 && (
+              <Section title="What we noticed" kind="title">
+                <ul className={`${cardClass} m-0 list-none overflow-hidden p-0`}>
+                  {insights.map((text) => (
+                    <li key={text} className="border-t border-rule px-4 py-3.5 text-md text-pretty first:border-t-0">
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
 
-            <section aria-labelledby="table-title" className="mt-12">
-              <h2 id="table-title" className="mt-0 mb-3 text-xl">
-                Every night
-              </h2>
-              <div className="overflow-x-auto rounded-card bg-paper px-4 ring-1 ring-rule ring-inset">
-                <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-rule text-ink-soft">
-                      <th scope="col" className="py-2 pr-4 font-normal">Night</th>
-                      <th scope="col" className="py-2 pr-4 font-normal">Last meal</th>
-                      <th scope="col" className="py-2 pr-4 text-right font-normal">Screens after 10pm</th>
-                      <th scope="col" className="py-2 pr-4 font-normal">Bedtime</th>
-                      <th scope="col" className="py-2 pr-4 font-normal">Woke</th>
-                      <th scope="col" className="py-2 pr-4 text-right font-normal">Sleep</th>
-                      <th scope="col" className="py-2 text-right font-normal">Focus next day</th>
+            <Section title="Every night" kind="title">
+              <table className={`${cardClass} block w-auto overflow-hidden text-left text-xs`}>
+                <thead className="block">
+                  <tr className={`${columns} border-b border-rule py-2.5 text-3xs font-bold text-ink-soft`}>
+                    <th scope="col" className="font-bold">Night</th>
+                    <th scope="col" className="font-bold">Bed</th>
+                    <th scope="col" className="font-bold">Woke</th>
+                    <th scope="col" className="font-bold">Slept</th>
+                    <th scope="col" className="font-bold">Ate</th>
+                    <th scope="col" className="font-bold">Screens</th>
+                  </tr>
+                </thead>
+                <tbody className="block">
+                  {nights.map((n) => (
+                    <tr key={n.morning} className={`${columns} min-h-11 items-center border-t border-rule first:border-t-0`}>
+                      <th scope="row" className="font-bold">{label(n)}</th>
+                      <td>{n.bedtime ?? "–"}</td>
+                      <td>{n.wakeTime ?? "–"}</td>
+                      <td className={`font-bold ${n.sleepMinutes !== null && n.sleepMinutes < SHORT_SLEEP_MINUTES ? "text-glucose-ink" : ""}`}>
+                        {n.sleepMinutes === null ? "–" : compact(n.sleepMinutes)}
+                      </td>
+                      <td className={ateLate(n) ? "text-glucose-ink" : ""}>{n.lastMealAt ?? "–"}</td>
+                      <td>{n.lateScreenMinutes === null ? "–" : n.lateScreenMinutes === 0 ? "None" : `${n.lateScreenMinutes} min`}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {[...nights].reverse().map((n) => (
-                      <tr key={n.morning} className="border-b border-rule last:border-b-0">
-                        <th scope="row" className="py-2.5 pr-4 font-normal text-ink">{nightName(n, "long")}</th>
-                        <td className={`py-2.5 pr-4 ${ateLate(n) ? "font-semibold text-glucose-ink" : ""}`}>
-                          {n.lastMealAt ? formatClock(n.lastMealAt) : "–"}
-                        </td>
-                        <td className="py-2.5 pr-4 text-right tabular-nums">
-                          {n.lateScreenMinutes === null ? "–" : n.lateScreenMinutes === 0 ? "None" : `${n.lateScreenMinutes} min`}
-                        </td>
-                        <td className="py-2.5 pr-4">{n.bedtime ? formatClock(n.bedtime) : "–"}</td>
-                        <td className="py-2.5 pr-4">{n.wakeTime ? formatClock(n.wakeTime) : "–"}</td>
-                        <td className="py-2.5 pr-4 text-right tabular-nums">{n.sleepMinutes === null ? "–" : hoursAndMinutes(n.sleepMinutes)}</td>
-                        <td className="py-2.5 text-right tabular-nums">{n.focusScore ?? "–"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                  ))}
+                </tbody>
+              </table>
+            </Section>
           </>
         )}
-      </main>
+      </Screen>
+
+      <ActionBar>
+        <Button className="flex-1 px-2 text-base" onClick={() => setLoggingSleep(true)}>
+          Log sleep
+        </Button>
+        <Button variant="quiet" className="h-14 flex-1 bg-paper px-2 text-base" onClick={() => setLoggingScreens(true)}>
+          Log screen time
+        </Button>
+      </ActionBar>
 
       <LogSleepSheet open={loggingSleep} onOpenChange={setLoggingSleep} />
       <LogScreenTimeSheet open={loggingScreens} onOpenChange={setLoggingScreens} />
     </>
+  );
+}
+
+/** One of the week's three headline numbers. `watch` marks one worth a second look. */
+function Figure({ value, label, watch = false }: { value: string; label: string; watch?: boolean }) {
+  return (
+    // Source order is dt → dd (valid HTML); the value reads first visually.
+    <div className="flex flex-col-reverse justify-end rounded-[1.125rem] border border-rule bg-paper p-3">
+      <dt className="mt-0.5 text-2xs leading-[1.3] text-ink-soft">{label}</dt>
+      <dd className={`m-0 text-xl font-extrabold tracking-[-0.02em] tabular-nums ${watch ? "text-glucose-ink" : ""}`}>{value}</dd>
+    </div>
   );
 }

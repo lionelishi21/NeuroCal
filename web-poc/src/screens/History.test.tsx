@@ -36,19 +36,19 @@ describe("History", () => {
   it("suggests protocols for the week's weak points and labels affiliate links", async () => {
     renderHistory();
     const help = await screen.findByRole("region", { name: "What could help" });
-    expect(await within(help).findByText(/held your Focus Score back most/)).toBeInTheDocument();
+    expect(await within(help).findByText("Weak points this week")).toBeInTheDocument();
     expect(within(help).getAllByRole("article").length).toBeGreaterThan(0);
     expect(within(help).getAllByRole("listitem").length).toBeGreaterThan(2); // steps and tools
-    const link = within(help).getByRole("link", { name: "View sunrise alarm clock" });
+    const link = within(help).getByRole("link", { name: "See product: Sunrise alarm clock" });
     expect(link).toHaveAttribute("rel", expect.stringContaining("sponsored"));
     expect(within(help).getByText("Affiliate link")).toBeInTheDocument();
-    expect(within(help).getByText(/may earn a commission/)).toBeInTheDocument();
+    expect(within(help).getByText(/We earn a commission/)).toBeInTheDocument();
   });
 
   it("labels products from NeuroCal's own brand", async () => {
     renderHistory();
     const help = await screen.findByRole("region", { name: "What could help" });
-    const link = await within(help).findByRole("link", { name: "View the mitoproof protocol" });
+    const link = await within(help).findByRole("link", { name: "See product: The Mitoproof Protocol" });
     expect(link).toHaveAttribute("rel", expect.stringContaining("sponsored"));
     expect(within(help).getAllByText("Our brand").length).toBeGreaterThan(0);
     expect(within(help).getByText(/run by the people who make NeuroCal/)).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe("History", () => {
     renderHistory();
     const help = await screen.findByRole("region", { name: "What could help" });
     expect(await within(help).findByText("MitoProof apple cider vinegar capsules")).toBeInTheDocument();
-    expect(within(help).getByText(/Check with your doctor or pharmacist/)).toBeInTheDocument();
+    expect(within(help).getAllByText(/Check with your doctor before starting it/).length).toBeGreaterThan(0);
   });
 
   it("switches the readout to the chosen day", async () => {
@@ -71,7 +71,7 @@ describe("History", () => {
     // Four days ago in the seed: 5.5 h of sleep, dinner at 22:10.
     await user.click(dayButtons[2]!);
     const readout = screen.getByRole("region", { name: "Selected day" });
-    expect(within(readout).getByText("5 h 30 min")).toBeInTheDocument();
+    expect(within(readout).getByText("5h 30m")).toBeInTheDocument();
     expect(dayButtons[2]).toHaveAttribute("aria-pressed", "true");
   });
 });
