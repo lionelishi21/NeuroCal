@@ -25,6 +25,7 @@
   --on-accent: #ffffff;
   --ion: #159c98;
   --ion-ink: #0e7a77; /* teal as text */
+  --ion-soft: #ddf3f1; /* teal icon tile, "save" tag */
 
   /* Signals */
   --chlorophyll: #178a63; /* good, as text */
@@ -46,6 +47,14 @@
   --toast: #121829;
   --on-toast: #f3f4fa;
   --scrim: rgb(8 10 20 / 0.5); /* behind a sheet */
+
+  /* The landing page's violet panels (Pro plan, closing banner) and phone frame: the same in both themes. */
+  --promo: #6a4fdb;
+  --promo-deep: #3e3aa8;
+  --on-promo: #ffffff;
+  --on-promo-soft: #e4ddff;
+  --promo-spark: #5fe0d8;
+  --device: #0b0e1a;
 
   /* Focus ring gradient (the same in both themes) */
   --ring-from: #4f63d9;
@@ -71,7 +80,12 @@
   --text-3xl: 2rem; /* 32: screen titles */
   --text-figure: 2.375rem; /* 38: Focus Score on Today */
   --text-display: 3.5rem; /* 56: Focus Score in the intro */
-  --text-hero: clamp(2.75rem, 10.5vw, 6.5rem); /* the landing page's headline, as wide as the screen allows */
+  /* Landing page */
+  --text-4xs: 0.625rem; /* 10: chart ticks, the phone mock-up's smallest labels */
+  --text-lead: clamp(1.0625rem, 1.6vw, 1.25rem); /* 17–20: the paragraph under a headline */
+  --text-heading: clamp(2rem, 3.6vw, 2.875rem); /* 32–46: section headlines */
+  --text-hero: clamp(2.5rem, 5.6vw, 4.25rem); /* 40–68: the page headline */
+  --text-price: 3rem;
   --leading-body: 1.45;
   --leading-tight: 1.15;
   --measure: 34rem;
@@ -133,6 +147,7 @@
     --on-accent: #14102b;
     --ion: #3cc7bf;
     --ion-ink: #5fd6cf;
+    --ion-soft: #173a3a;
     --chlorophyll: #4fd1a1;
     --chlorophyll-bar: #3cc08d;
     --on-good: #0e1325;
@@ -156,7 +171,9 @@
   }
 }
 
-:root[data-theme="dark"] {
+/* Also for a band that is dark in both themes: put `night` on it. */
+:root[data-theme="dark"],
+.night {
   --mist: #0e1325;
   --paper: #161c31;
   --ink: #eef0f7;
@@ -172,6 +189,7 @@
   --on-accent: #14102b;
   --ion: #3cc7bf;
   --ion-ink: #5fd6cf;
+  --ion-soft: #173a3a;
   --chlorophyll: #4fd1a1;
   --chlorophyll-bar: #3cc08d;
   --on-good: #0e1325;

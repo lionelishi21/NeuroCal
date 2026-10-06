@@ -16,6 +16,13 @@
   --color-synapse-soft: var(--synapse-soft);
   --color-synapse-faint: var(--synapse-faint);
   --color-ion-ink: var(--ion-ink);
+  --color-ion-soft: var(--ion-soft);
+  --color-promo: var(--promo);
+  --color-promo-deep: var(--promo-deep);
+  --color-on-promo: var(--on-promo);
+  --color-on-promo-soft: var(--on-promo-soft);
+  --color-promo-spark: var(--promo-spark);
+  --color-device: var(--device);
   --color-glucose-soft: var(--glucose-soft);
   --color-signal-problem: var(--signal-problem);
   --color-on-signal: var(--on-signal);
@@ -57,7 +64,11 @@
   --text-2xl: var(--text-2xl);
   --text-3xl: var(--text-3xl);
   --text-display: var(--text-display);
+  --text-4xs: var(--text-4xs);
+  --text-lead: var(--text-lead);
+  --text-heading: var(--text-heading);
   --text-hero: var(--text-hero);
+  --text-price: var(--text-price);
   --text-figure: var(--text-figure);
 
   --radius-*: initial;
@@ -120,6 +131,13 @@
 /* Someone with a session never sees the landing page flash before Today (lib/sessionHint.ts). */
 html[data-signed-in] [data-landing] {
   display: none;
+}
+
+/* The landing page's section links glide, unless motion is turned down. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-landing]) {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Radix sheet motion: answers the user's tap, so it stays. */

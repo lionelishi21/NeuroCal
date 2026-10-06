@@ -38,7 +38,7 @@ export function NightBands({ nights, label }: Props) {
 
       <div aria-hidden className="mt-3.5 grid grid-cols-[2.125rem_minmax(0,1fr)] gap-x-1.5">
         <span />
-        <div className="relative h-4 text-[0.625rem] font-semibold text-ink-faint">
+        <div className="relative h-4 text-4xs font-semibold text-ink-faint">
           {ticks.map(({ offset, label: text }) => (
             <span
               key={offset}
@@ -62,7 +62,7 @@ export function NightBands({ nights, label }: Props) {
             <span key={offset} className="absolute inset-y-0 border-l border-rule" style={{ left: pct(offset) }} />
           ))}
           <span className="absolute -top-1 bottom-0 z-[2] border-l-[1.5px] border-dashed border-glucose" style={{ left: pct(hoursIntoEvening(LATE_EATING_FROM)) }}>
-            <span className="absolute -bottom-[1.125rem] -left-3.5 text-[0.625rem] font-bold text-glucose-ink">{LATE_EATING_FROM}</span>
+            <span className="absolute -bottom-[1.125rem] -left-3.5 text-4xs font-bold text-glucose-ink">{LATE_EATING_FROM}</span>
           </span>
           {nights.map((night) => {
             const bed = night.bedtime === null ? null : hoursIntoEvening(night.bedtime);

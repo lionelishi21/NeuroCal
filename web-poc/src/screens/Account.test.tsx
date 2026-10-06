@@ -67,8 +67,8 @@ describe("Account", () => {
       </RequireAuth>,
       client,
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Eat for how you want to think." })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Create an account" })[0]).toHaveAttribute("href", "/sign-up");
+    expect(await screen.findByRole("heading", { level: 1, name: "Know why your afternoon falls apart." })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Start free" })[0]).toHaveAttribute("href", "/sign-up");
     expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/sign-in");
     expect(screen.queryByText("Private page")).not.toBeInTheDocument();
     expect(mockRouter.replace).not.toHaveBeenCalled();
