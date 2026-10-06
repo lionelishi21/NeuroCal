@@ -84,6 +84,7 @@ export const MOCK_PRODUCTS: ProtocolsResponse["products"] = [
 
 export function createDb(options: { newUser?: boolean; withoutLastNight?: boolean } = {}) {
   let nextId = 100;
+  const keyed = new Map<string, Meal>();
   let profile: Profile | null = options.newUser ? null : {
     id: "u1",
     displayName: "Lionel",
@@ -465,9 +466,13 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       if (/dark/i.test(fileName)) return { items: [], problem: "too_dark" as const };
       return { items: plates[nextId++ % plates.length] ?? [] };
     },
-    addMeal(input: CreateMealRequest): Meal {
+    addMeal({ clientKey, ...input }: CreateMealRequest): Meal {
+      // The same key again is the same meal sent twice, as on the real API.
+      const earlier = clientKey ? keyed.get(clientKey) : undefined;
+      if (earlier) return earlier;
       const meal = { ...input, id: `m${nextId++}` };
       meals.push(meal);
+      if (clientKey) keyed.set(clientKey, meal);
       return meal;
     },
     deleteMeal(id: string) {

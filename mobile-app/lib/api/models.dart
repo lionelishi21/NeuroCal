@@ -2,6 +2,8 @@
 /// Change the contract first, then these.
 library;
 
+import 'dart:math';
+
 enum MealKind { breakfast, lunch, dinner, snack }
 
 enum GlycemicLoad { low, medium, high }
@@ -96,17 +98,32 @@ class Meal {
 
 /// What `POST /meals` takes.
 class NewMeal {
-  const NewMeal({required this.kind, required this.eatenAt, required this.items});
+  const NewMeal({required this.kind, required this.eatenAt, required this.items, this.clientKey});
 
   final MealKind kind;
   final DateTime eatenAt;
   final List<FoodItem> items;
 
+  /// A UUID made up once per meal ([newClientKey]). Sending the same meal again with the same key
+  /// returns the first one instead of logging it twice.
+  final String? clientKey;
+
   Map<String, dynamic> toJson() => {
+    if (clientKey != null) 'clientKey': clientKey,
     'kind': kind.name,
     'eatenAt': isoWithOffset(eatenAt),
     'items': [for (final i in items) i.toJson()],
   };
+}
+
+/// A random version-4 UUID, for [NewMeal.clientKey].
+String newClientKey() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
 enum PhotoProblem { tooDark, noFoodFound, blurry }

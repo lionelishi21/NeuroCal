@@ -123,7 +123,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 8. ✅ **History** — the past week as aligned Focus Score / calories / sleep charts with a day-by-day table (`/history`)
 9. ✅ **Settings / profile** — profile summary with "Edit profile", appearance (match device, light, dark; saved on the device), account and sign out (`/settings`). _To do: daily summary email opt-in, once ARCHITECTURE §6.10 has a contract_
 - [x] PWA install: web manifest and icons, "Install NeuroCal" in Settings (Share-menu steps on iPhone)
-- [x] Offline queue for meal logs: a meal that gets no response is kept on the device and sent when the connection returns. _To do: an idempotency key on `POST /meals`, so a lost response can't log a meal twice; a service worker so the app itself opens offline (it must share a scope with the MSW mock worker)_
+- [x] Offline queue for meal logs: a meal that gets no response is kept on the device and sent when the connection returns. Each meal carries a `clientKey`, so a lost response can't log it twice. _To do: a service worker so the app itself opens offline (it must share a scope with the MSW mock worker)_
 
 ### Phase 3 — Backend on AWS
 - [x] Domain entities (ARCHITECTURE §3); Drizzle schema + first migration for the core tables (§4)

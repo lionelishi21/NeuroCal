@@ -141,7 +141,10 @@ export function useCreateMeal() {
   return useMutation({
     // Run even when the browser reports offline, so the meal reaches the queue instead of pausing.
     networkMode: "always",
-    mutationFn: async (meal: CreateMealRequest): Promise<Meal | "queued"> => {
+    mutationFn: async (logged: CreateMealRequest): Promise<Meal | "queued"> => {
+      // One key for this meal, kept through the queue: if the request arrived but its answer was
+      // lost, sending it again returns the meal already saved instead of logging a second one.
+      const meal = { ...logged, clientKey: logged.clientKey ?? globalThis.crypto.randomUUID() };
       try {
         return await postMeal(meal);
       } catch (error) {

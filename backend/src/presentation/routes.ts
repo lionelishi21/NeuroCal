@@ -172,7 +172,7 @@ export function createApi(uc: UseCases) {
         const body = json(req, CreateMealRequest);
         const saved = await uc.logMeal.execute({
           userId: req.userId,
-          meal: { kind: body.kind, eatenAt: new Date(body.eatenAt), items: body.items },
+          meal: { kind: body.kind, eatenAt: new Date(body.eatenAt), items: body.items, ...(body.clientKey ? { clientKey: body.clientKey } : {}) },
         });
         return ok(Meal, toMeal(saved), 201);
       },

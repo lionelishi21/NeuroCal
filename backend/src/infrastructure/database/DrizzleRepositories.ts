@@ -118,11 +118,34 @@ export class DrizzleMealRepository implements IMealRepository {
     return meal ?? null;
   }
 
+  /** The meal first saved with this key, deleted or not: a retry must never recreate it. */
+  private async findByClientKey(userId: string, clientKey: string): Promise<Meal | null> {
+    const rows = await this.db.select().from(meals).where(and(eq(meals.userId, userId), eq(meals.clientKey, clientKey)));
+    const [meal] = await this.withItems(rows);
+    return meal ?? null;
+  }
+
   async create(userId: string, meal: NewMeal): Promise<Meal> {
+    // The same key again is the same meal sent twice: keep the first.
+    if (meal.clientKey) {
+      const earlier = await this.findByClientKey(userId, meal.clientKey);
+      if (earlier) return earlier;
+    }
+    try {
+      return await this.insert(userId, meal);
+    } catch (error) {
+      // Two copies of the request racing: the unique key let one in, so hand back that one.
+      const winner = meal.clientKey ? await this.findByClientKey(userId, meal.clientKey) : null;
+      if (winner) return winner;
+      throw error;
+    }
+  }
+
+  private insert(userId: string, meal: NewMeal): Promise<Meal> {
     return this.db.transaction(async (tx) => {
       const [row] = await tx
         .insert(meals)
-        .values({ userId, kind: meal.kind, eatenAt: meal.eatenAt, photoKey: meal.photoKey ?? null })
+        .values({ userId, kind: meal.kind, eatenAt: meal.eatenAt, photoKey: meal.photoKey ?? null, clientKey: meal.clientKey ?? null })
         .returning();
       if (!row) throw new Error("Meal insert returned no row");
       await tx.insert(mealItems).values(

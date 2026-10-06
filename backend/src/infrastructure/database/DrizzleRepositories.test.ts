@@ -46,6 +46,27 @@ describe("DrizzleMealRepository", () => {
   const repo = () => new DrizzleMealRepository(db);
   const chicagoDay = { date: "2026-09-29", timeZone: "America/Chicago" };
 
+  it("keeps the first meal when the same client key is saved again, even at the same moment or after a delete", async () => {
+    const meal = {
+      kind: "snack" as const,
+      eatenAt: new Date("2026-09-29T20:00:00Z"),
+      items: [{ name: "Apple", portion: "1", calories: 95, macros: { proteinG: 0, carbsG: 25, fatG: 0 } }],
+      clientKey: "0b8f4c1e-6f0a-4b7e-9a51-2f3d7c9e1a10",
+    };
+    const [first, twin] = await Promise.all([repo().create(alice, meal), repo().create(alice, meal)]);
+    expect(twin.id).toBe(first.id);
+    expect((await repo().create(alice, meal)).items).toEqual(meal.items);
+    expect(await repo().listForDay(alice, { date: "2026-09-29", timeZone: "UTC" })).toHaveLength(1);
+
+    // Another person's identical key is their own meal.
+    expect((await repo().create(bob, meal)).id).not.toBe(first.id);
+
+    // A late retry after the meal was removed must not bring it back.
+    await repo().softDelete(alice, first.id);
+    expect((await repo().create(alice, meal)).id).toBe(first.id);
+    expect(await repo().listForDay(alice, { date: "2026-09-29", timeZone: "UTC" })).toHaveLength(0);
+  });
+
   it("stores items in order and reads meals by the user's local day", async () => {
     const created = await repo().create(alice, {
       kind: "dinner",

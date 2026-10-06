@@ -117,6 +117,7 @@ meals
   kind text not null                       -- MealKind enum
   eaten_at timestamptz not null
   photo_key text                           -- S3 key, never a public URL
+  client_key text                          -- made up by the client per meal; unique (user_id, client_key)
   created_at, updated_at, deleted_at
   index (user_id, eaten_at desc) where deleted_at is null
 
@@ -301,7 +302,7 @@ Ports: `IObjectStorage`, `IAiVisionProvider`.
 Output → `AnalyzeMealResponse`. A `problem` is a normal response (200), not an error.
 
 ### 6.2 LogMeal — `POST /meals`
-Ports: `IMealRepository`, `IClock`. Input: `CreateMealRequest` mapped to `NewMeal`. Enforce the Meal invariants (§3), create, return `Meal`. `LogMealUseCase.ts` is this use case.
+Ports: `IMealRepository`, `IClock`. Input: `CreateMealRequest` mapped to `NewMeal`. Enforce the Meal invariants (§3), create, return `Meal`. `LogMealUseCase.ts` is this use case. A request may carry a `clientKey` (a UUID the client makes up once per meal): saving the same key again returns the first meal, so a retry after a lost response or from the offline queue can't log it twice, and a retry after the meal was removed doesn't bring it back.
 
 ### 6.3 DeleteMeal — `DELETE /meals/:id`
 Soft-delete scoped to the user; `NotFound` if the meal isn't the user's (so another user's ID is indistinguishable from a missing one).

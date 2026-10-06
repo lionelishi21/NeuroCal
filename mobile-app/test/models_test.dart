@@ -43,4 +43,17 @@ void main() {
     expect((json['items'] as List).single, containsPair('macros', {'proteinG': 34.0, 'carbsG': 68.0, 'fatG': 21.0}));
     expect((json['items'] as List).single, isNot(contains('glycemicLoad')));
   });
+
+  test('a new meal carries a UUID so a retry cannot log it twice', () {
+    final key = newClientKey();
+    expect(key, matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')));
+    expect(newClientKey(), isNot(key));
+    final json = NewMeal(
+      kind: MealKind.snack,
+      eatenAt: DateTime(2026, 9, 29, 16),
+      items: const [],
+      clientKey: key,
+    ).toJson();
+    expect(json['clientKey'], key);
+  });
 }

@@ -73,7 +73,8 @@ export interface Meal {
   photoKey?: string;
 }
 
-export type NewMeal = Omit<Meal, "id" | "userId">;
+/** `clientKey` is made up by the client once per meal; saving the same key twice keeps the first meal. */
+export type NewMeal = Omit<Meal, "id" | "userId"> & { clientKey?: string };
 
 export interface CheckIn {
   id: string;

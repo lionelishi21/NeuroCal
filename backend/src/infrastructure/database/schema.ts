@@ -65,10 +65,15 @@ export const meals = pgTable(
     eatenAt: timestamp("eaten_at", { withTimezone: true }).notNull(),
     /** S3 key, never a public URL. */
     photoKey: text("photo_key"),
+    /** Made up by the client once per meal, so a retried request can't log it twice. Null from older clients. */
+    clientKey: text("client_key"),
     ...timestamps,
     deletedAt,
   },
-  (t) => [index("meals_user_eaten_at_idx").on(t.userId, t.eatenAt.desc()).where(sql`${t.deletedAt} is null`)],
+  (t) => [
+    index("meals_user_eaten_at_idx").on(t.userId, t.eatenAt.desc()).where(sql`${t.deletedAt} is null`),
+    unique("meals_user_client_key_unique").on(t.userId, t.clientKey),
+  ],
 );
 
 export const mealItems = pgTable(

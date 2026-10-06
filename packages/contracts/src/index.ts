@@ -118,7 +118,13 @@ export type Meal = z.infer<typeof Meal>;
 export const MealList = z.array(Meal);
 export type MealList = z.infer<typeof MealList>;
 
-export const CreateMealRequest = Meal.omit({ id: true });
+export const CreateMealRequest = Meal.omit({ id: true }).extend({
+  /**
+   * A UUID the client makes up once per meal. Sending the same meal again with the same key
+   * (a retry after a lost response, the offline queue) returns the first one instead of logging it twice.
+   */
+  clientKey: z.uuid().optional(),
+});
 export type CreateMealRequest = z.infer<typeof CreateMealRequest>;
 
 export const AnalyzeMealResponse = z.object({

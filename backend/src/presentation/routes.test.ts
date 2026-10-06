@@ -95,6 +95,20 @@ describe("API routes", () => {
     expect(meals.body).toEqual([expect.objectContaining({ kind: "breakfast", eatenAt: "2026-09-29T13:10:00.000Z" })]);
   });
 
+  it("POST /meals twice with the same clientKey logs one meal", async () => {
+    const meal = {
+      kind: "snack",
+      eatenAt: "2026-09-29T16:30:00-05:00",
+      items: [{ name: "Apple", portion: "1", calories: 95, macros: { proteinG: 0.5, carbsG: 25, fatG: 0.3 } }],
+      clientKey: "0b8f4c1e-6f0a-4b7e-9a51-2f3d7c9e1a10",
+    };
+    const first = await call("POST", "/meals", meal);
+    const again = await call("POST", "/meals", meal);
+    expect(again.status).toBe(201);
+    expect((again.body as { id: string }).id).toBe((first.body as { id: string }).id);
+    expect((await call("POST", "/meals", { ...meal, clientKey: "not-a-uuid" })).status).toBe(400);
+  });
+
   it("POST /meals then DELETE /meals/:id", async () => {
     const created = await call("POST", "/meals", {
       kind: "snack",

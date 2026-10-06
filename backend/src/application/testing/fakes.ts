@@ -66,9 +66,13 @@ export class InMemoryMeals implements IMealRepository {
   async get(userId: string, mealId: string) {
     return this.rows.find((m) => m.userId === userId && m.id === mealId && !m.deleted) ?? null;
   }
-  async create(userId: string, meal: NewMeal) {
+  private readonly byKey = new Map<string, Meal>();
+  async create(userId: string, { clientKey, ...meal }: NewMeal) {
+    const earlier = clientKey ? this.byKey.get(`${userId}:${clientKey}`) : undefined;
+    if (earlier) return earlier;
     const row = { ...meal, id: id("meal"), userId };
     this.rows.push(row);
+    if (clientKey) this.byKey.set(`${userId}:${clientKey}`, row);
     return row;
   }
   async softDelete(userId: string, mealId: string) {

@@ -94,6 +94,9 @@ class _LogMealState extends State<_LogMeal> {
   var _saving = false;
   var _saveFailed = false;
 
+  // One key for this meal: "Try again" after a lost answer can't log it twice.
+  final _clientKey = newClientKey();
+
   Future<void> _choose(ImageSource source) async {
     final file = await widget.picker.pickImage(source: source, maxWidth: 1600, imageQuality: 85);
     if (file == null || !mounted) return;
@@ -134,7 +137,9 @@ class _LogMealState extends State<_LogMeal> {
       _saveFailed = false;
     });
     try {
-      await AppScope.of(context).api.createMeal(NewMeal(kind: _kind, eatenAt: DateTime.now(), items: chosen));
+      await AppScope.of(
+        context,
+      ).api.createMeal(NewMeal(kind: _kind, eatenAt: DateTime.now(), items: chosen, clientKey: _clientKey));
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
