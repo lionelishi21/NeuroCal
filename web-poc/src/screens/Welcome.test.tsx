@@ -34,8 +34,7 @@ describe("Onboarding", () => {
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/welcome"));
   });
 
-  // Eleven steps of typing and clicking: over the 5 s default when the whole suite runs.
-  it("walks through the eleven bio-profile steps and saves the result", { timeout: 20_000 }, async () => {
+  it("walks through the eleven bio-profile steps and saves the result", async () => {
     const user = userEvent.setup();
     let saved: unknown;
     renderWith(<Welcome />, true);
