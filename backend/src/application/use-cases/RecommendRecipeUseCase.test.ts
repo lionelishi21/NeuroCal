@@ -75,6 +75,30 @@ describe("RecommendRecipeUseCase", () => {
     expect(saved.rows).toHaveLength(2);
   });
 
+  it("serves the same suggestions again until the day's inputs change", async () => {
+    const reasoning = new FakeReasoning(query);
+    const search = new FakeSearch([hit({ title: "Cod", url: "https://www.seriouseats.com/cod" }), hit({ title: "Lentils", url: "https://www.bbcgoodfood.com/lentils", macros: { proteinG: 20, carbsG: 60, fatG: 10 } })]);
+    const useCase = build(reasoning, search);
+
+    const first = await useCase.execute({ userId: "u1" });
+    const again = await useCase.execute({ userId: "u1" });
+    expect(again).toEqual(first);
+    expect(reasoning.calls).toHaveLength(1);
+    expect(search.calls).toHaveLength(1);
+    expect(saved.rows).toHaveLength(2);
+
+    // A snack changes the calories left, so the next request searches afresh.
+    await meals.create("u1", { kind: "snack", eatenAt: new Date("2026-09-29T20:00:00Z"), items: [item("Apple", 95, 0, 25, 0)] });
+    await useCase.execute({ userId: "u1" });
+    expect(reasoning.calls).toHaveLength(2);
+    expect(reasoning.calls[1]!.caloriesRemaining).toBe(1055);
+
+    // So does a check-in.
+    await checkIns.create("u1", { at: new Date("2026-09-29T21:00:00Z"), flags: ["stressed"] });
+    await useCase.execute({ userId: "u1" });
+    expect(reasoning.calls).toHaveLength(3);
+  });
+
   it("tells Claude what the onboarding answers ask of the meal", async () => {
     await profiles.save(profile({ bioProfile: { friction: "afternoon_crash", fasting: "16_8", movement: "none", moldSensitive: true } }));
     const reasoning = new FakeReasoning(query);

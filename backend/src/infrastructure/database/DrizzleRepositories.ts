@@ -226,7 +226,7 @@ function toCheckIn(row: typeof checkIns.$inferSelect): CheckIn {
 export class DrizzleRecommendationRepository implements IRecommendationRepository {
   constructor(private readonly db: Database) {}
 
-  async saveRecipes(userId: string, recipes: NewRecipeRecommendation[]): Promise<RecipeRecommendation[]> {
+  async saveRecipes(userId: string, recipes: NewRecipeRecommendation[], contextKey?: string): Promise<RecipeRecommendation[]> {
     const rows = await this.db
       .insert(recipeRecommendations)
       .values(
@@ -243,10 +243,36 @@ export class DrizzleRecommendationRepository implements IRecommendationRepositor
           carbsG: r.macros.carbsG,
           fatG: r.macros.fatG,
           reasoning: r.reasoning,
+          contextKey: contextKey ?? null,
         })),
       )
       .returning({ id: recipeRecommendations.id });
     return recipes.map((r, i) => ({ ...r, id: rows[i]!.id }));
+  }
+
+  async latestRecipes(userId: string, contextKey: string): Promise<RecipeRecommendation[]> {
+    const rows = await this.db
+      .select()
+      .from(recipeRecommendations)
+      .where(and(eq(recipeRecommendations.userId, userId), eq(recipeRecommendations.contextKey, contextKey)))
+      .orderBy(desc(recipeRecommendations.createdAt))
+      .limit(20);
+    // One insert is one batch: its rows share a timestamp.
+    const newest = rows[0]?.createdAt.getTime();
+    return rows
+      .filter((row) => row.createdAt.getTime() === newest)
+      .map((row) => ({
+        id: row.id,
+        title: row.title,
+        sourceName: row.sourceName,
+        sourceUrl: row.sourceUrl,
+        ...(row.imageUrl ? { imageUrl: row.imageUrl } : {}),
+        minutes: row.minutes,
+        calories: row.calories,
+        macros: { proteinG: row.proteinG, carbsG: row.carbsG, fatG: row.fatG },
+        reasoning: row.reasoning,
+        searchQuery: row.searchQuery,
+      }));
   }
 }
 

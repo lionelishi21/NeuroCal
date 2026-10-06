@@ -158,7 +158,7 @@ focus_scores                                planned
 recipe_recommendations
   id uuid pk, user_id fk, search_query text not null, title, source_name, source_url text not null,
   image_url text, minutes integer, calories numeric, protein_g, carbs_g, fat_g numeric,
-  reasoning text not null, created_at
+  reasoning text not null, context_key text, created_at
   index (user_id, created_at desc)
 
 protocols                                   catalog, synced from backend/src/infrastructure/catalog/catalog.ts
@@ -330,6 +330,8 @@ Ports: `IProfileRepository`, `IMealRepository`, `ICheckInRepository`, `IAiReason
 3. `searchRecipes(searchQuery, { allowedDomains, limit: 10 })`: Tavily search with the allow-list as `include_domains`. Tavily returns links only, so the adapter fetches each allow-listed hit's page and reads its schema.org Recipe data (time, calories, macros); guides, collection pages and pages that can't be read stay without nutrition and are dropped in the next step. `createRecipeSearch` picks the provider by which key is set: `TAVILY_API_KEY`, then `BRAVE_SEARCH_API_KEY`, then the Google Custom Search pair (Google closed that API to new projects).
 4. Rank the hits: keep only allowed domains (checked again, not just trusted to search) and hits with full nutrition (the contract requires minutes, calories and macros); drop anything over `caloriesRemaining` when calories are left; sort by protein per calorie; keep the top 3. The dietary preference is enforced by the query itself.
 5. Attach `contextualReasoning` as each recipe's `reasoning`, save, and return `NextRecommendationsResponse { searchQuery, recipes }`.
+
+**Reuse.** Before step 2 the use case hashes the day and the `BioStateContext` into a `contextKey` and looks for a batch already saved under it (`recipe_recommendations.context_key`). If there is one it is returned as is, with no Claude call and no search. A meal, a check-in, a new day or a profile change alters the key, so the next request searches afresh. A search that finds nothing usable saves nothing and is run again next time.
 
 If the reasoning call fails after one retry: `502`. If search returns nothing: `200` with `recipes: []`, and the UI says so.
 

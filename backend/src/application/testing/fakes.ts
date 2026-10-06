@@ -143,11 +143,18 @@ export class FakeExplainer implements IFocusExplainer {
 }
 
 export class InMemoryRecommendations implements IRecommendationRepository {
-  readonly rows: (RecipeRecommendation & { userId: string })[] = [];
-  async saveRecipes(userId: string, recipes: NewRecipeRecommendation[]) {
+  readonly rows: (RecipeRecommendation & { userId: string; contextKey?: string; batch: number })[] = [];
+  private batches = 0;
+  async saveRecipes(userId: string, recipes: NewRecipeRecommendation[], contextKey?: string) {
     const saved = recipes.map((r) => ({ ...r, id: id("rec") }));
-    this.rows.push(...saved.map((r) => ({ ...r, userId })));
+    const batch = ++this.batches;
+    this.rows.push(...saved.map((r) => ({ ...r, userId, batch, ...(contextKey ? { contextKey } : {}) })));
     return saved;
+  }
+  async latestRecipes(userId: string, contextKey: string) {
+    const matching = this.rows.filter((r) => r.userId === userId && r.contextKey === contextKey);
+    const newest = Math.max(...matching.map((r) => r.batch));
+    return matching.filter((r) => r.batch === newest).map(({ userId: _, contextKey: __, batch: ___, ...recipe }) => recipe);
   }
 }
 

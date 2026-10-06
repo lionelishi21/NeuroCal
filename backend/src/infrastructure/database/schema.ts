@@ -136,6 +136,8 @@ export const recipeRecommendations = pgTable(
     carbsG: decimal("carbs_g", 6, 1).notNull(),
     fatG: decimal("fat_g", 6, 1).notNull(),
     reasoning: text("reasoning").notNull(),
+    /** Hash of the day and bio-state the batch was made for; the same key means the batch can be served again. Null on older rows. */
+    contextKey: text("context_key"),
     createdAt: timestamps.createdAt,
   },
   (t) => [index("recipe_recommendations_user_created_idx").on(t.userId, t.createdAt.desc())],

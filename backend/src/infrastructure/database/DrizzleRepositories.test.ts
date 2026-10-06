@@ -103,6 +103,29 @@ describe("DrizzleRecommendationRepository", () => {
     expect(saved.map((r) => r.title)).toEqual(["A", "B"]);
     expect(new Set(saved.map((r) => r.id)).size).toBe(2);
   });
+
+  it("finds the newest batch saved under a context key, per user", async () => {
+    const base = {
+      sourceName: "Serious Eats",
+      sourceUrl: "https://www.seriouseats.com/a",
+      minutes: 30,
+      calories: 600,
+      macros: { proteinG: 40, carbsG: 50, fatG: 20 },
+      reasoning: "Fits.",
+      searchQuery: "q",
+    };
+    const repo = new DrizzleRecommendationRepository(db);
+    await repo.saveRecipes(alice, [{ ...base, title: "Old" }], "key-1");
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const newer = await repo.saveRecipes(alice, [{ ...base, title: "A" }, { ...base, title: "B", imageUrl: "https://img.example/b.jpg" }], "key-1");
+    await repo.saveRecipes(alice, [{ ...base, title: "Unkeyed" }]);
+
+    const found = await repo.latestRecipes(alice, "key-1");
+    expect(found.map((r) => r.title).sort()).toEqual(["A", "B"]);
+    expect(found.find((r) => r.title === "B")).toEqual({ ...base, title: "B", imageUrl: "https://img.example/b.jpg", id: newer[1]!.id });
+    expect(await repo.latestRecipes(alice, "key-2")).toEqual([]);
+    expect(await repo.latestRecipes(bob, "key-1")).toEqual([]);
+  });
 });
 
 describe("DrizzleTelemetryRepository", () => {

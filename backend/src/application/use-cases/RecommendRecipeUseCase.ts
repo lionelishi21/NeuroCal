@@ -1,5 +1,6 @@
 import { mealHabits } from "../../domain/bioProfile";
 import { DomainError, NotFoundError, UpstreamError } from "../../domain/errors";
+import { contentHash } from "../../domain/recommendations";
 import type { NewRecipeRecommendation, RecipeRecommendation } from "../../domain/types";
 import type { IAiReasoningProvider } from "../interfaces/IAiReasoningProvider";
 import type { IProfileRepository, IRecommendationRepository } from "../interfaces/IRepositories";
@@ -18,7 +19,13 @@ export interface RecipeRecommendations {
   recipes: RecipeRecommendation[];
 }
 
-/** Bio-state → Claude search query → recipe search → rank → save (ARCHITECTURE §6.6). */
+const proteinPerCalorie = (recipe: { calories: number; macros: { proteinG: number } }) => recipe.macros.proteinG / Math.max(recipe.calories, 1);
+
+/**
+ * Bio-state → Claude search query → recipe search → rank → save (ARCHITECTURE §6.6).
+ * The batch is saved under a key made from the day and the bio-state, and served
+ * again while that key holds: opening Today twice costs one search, not two.
+ */
 export class RecommendRecipeUseCase {
   constructor(
     private readonly profiles: IProfileRepository,
@@ -36,16 +43,23 @@ export class RecommendRecipeUseCase {
     const state = await this.bioState.forProfile(profile);
     const caloriesRemaining = state.calorieTarget - state.caloriesEaten;
     const habits = mealHabits(profile.bioProfile);
+    const context = {
+      caloriesRemaining,
+      macroFocus: state.macroFocus,
+      cognitiveFlags: state.cognitiveFlags,
+      dietaryPreference: state.dietaryPreference,
+      ...(habits.length ? { habits } : {}),
+    };
 
-    const query = await this.upstream(() =>
-      this.reasoning.generateRecipeSearchQuery({
-        caloriesRemaining,
-        macroFocus: state.macroFocus,
-        cognitiveFlags: state.cognitiveFlags,
-        dietaryPreference: state.dietaryPreference,
-        ...(habits.length ? { habits } : {}),
-      }),
-    );
+    // A meal, a check-in, a new day or a changed profile each change the key, and so the suggestions.
+    const contextKey = contentHash(JSON.stringify({ date: state.date, ...context, cognitiveFlags: [...state.cognitiveFlags].sort() }));
+    const earlier = await this.recommendations.latestRecipes(input.userId, contextKey);
+    if (earlier.length) {
+      const recipes = [...earlier].sort((a, b) => proteinPerCalorie(b) - proteinPerCalorie(a));
+      return { searchQuery: recipes[0]!.searchQuery, recipes };
+    }
+
+    const query = await this.upstream(() => this.reasoning.generateRecipeSearchQuery(context));
     const hits = await this.upstream(() =>
       this.search.searchRecipes(query.searchQuery, {
         allowedDomains: this.config.allowedDomains,
@@ -67,7 +81,7 @@ export class RecommendRecipeUseCase {
       }),
     );
 
-    const recipes = picked.length ? await this.recommendations.saveRecipes(input.userId, picked) : [];
+    const recipes = picked.length ? await this.recommendations.saveRecipes(input.userId, picked, contextKey) : [];
     return { searchQuery: query.searchQuery, recipes };
   }
 
@@ -84,7 +98,7 @@ export class RecommendRecipeUseCase {
         return hit.minutes !== undefined && hit.calories !== undefined && hit.macros !== undefined;
       })
       .filter((hit) => caloriesRemaining <= 0 || hit.calories <= caloriesRemaining)
-      .sort((a, b) => b.macros.proteinG / Math.max(b.calories, 1) - a.macros.proteinG / Math.max(a.calories, 1))
+      .sort((a, b) => proteinPerCalorie(b) - proteinPerCalorie(a))
       .slice(0, this.config.maxRecipes ?? 3);
   }
 

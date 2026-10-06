@@ -55,5 +55,8 @@ export interface IFocusScoreRepository {
 }
 
 export interface IRecommendationRepository {
-  saveRecipes(userId: string, recipes: NewRecipeRecommendation[]): Promise<RecipeRecommendation[]>;
+  /** Saves one batch. `contextKey` names what it was made for, so the batch can be found again. */
+  saveRecipes(userId: string, recipes: NewRecipeRecommendation[], contextKey?: string): Promise<RecipeRecommendation[]>;
+  /** The newest batch saved with this key, or an empty list. */
+  latestRecipes(userId: string, contextKey: string): Promise<RecipeRecommendation[]>;
 }
