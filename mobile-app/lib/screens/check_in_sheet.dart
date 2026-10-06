@@ -3,86 +3,89 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/sheet.dart';
 
-/// "How do you feel?" Pick one or more flags. Returns true when saved.
+/// "How do you feel right now?" Pick one or more feelings, with an optional note. Returns true when saved.
 Future<bool?> showCheckInSheet(BuildContext context) =>
-    showModalBottomSheet<bool>(context: context, isScrollControlled: true, builder: (_) => const _CheckInSheet());
+    showAppSheet<bool>(context, title: 'Check in', builder: (_) => const _CheckIn());
 
-class _CheckInSheet extends StatefulWidget {
-  const _CheckInSheet();
+class _CheckIn extends StatefulWidget {
+  const _CheckIn();
 
   @override
-  State<_CheckInSheet> createState() => _CheckInSheetState();
+  State<_CheckIn> createState() => _CheckInState();
 }
 
-class _CheckInSheetState extends State<_CheckInSheet> {
+class _CheckInState extends State<_CheckIn> {
   final _picked = <CognitiveFlag>{};
+  final _note = TextEditingController();
   var _busy = false;
-  String? _error;
+  var _failed = false;
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     setState(() {
       _busy = true;
-      _error = null;
+      _failed = false;
     });
     try {
-      await AppScope.of(context).api.checkIn(_picked.toList());
+      final note = _note.text.trim();
+      await AppScope.of(context).api.checkIn(_picked.toList(), note: note.isEmpty ? null : note);
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
-      setState(() {
-        _busy = false;
-        _error = "Couldn't save your check-in. Try again.";
-      });
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _failed = true;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [
+        Text(
+          'How do you feel right now? Pick any.',
+          style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+        ),
+        Wrap(
+          spacing: Space.s2,
+          runSpacing: Space.s2,
           children: [
-            Text('How do you feel?', style: text.headlineSmall),
-            const SizedBox(height: Space.s1),
-            Text(
-              'Pick any that fit. They feed the stress part of your Focus Score.',
-              style: text.bodyMedium?.copyWith(color: c.inkSoft),
-            ),
-            const SizedBox(height: Space.s4),
-            Wrap(
-              spacing: Space.s2,
-              runSpacing: Space.s2,
-              children: [
-                for (final flag in CognitiveFlag.values)
-                  FilterChip(
-                    label: Text(flag.label),
-                    selected: _picked.contains(flag),
-                    labelStyle: TextStyle(
-                      color: _picked.contains(flag) ? c.onAccent : c.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onSelected: (on) => setState(() => on ? _picked.add(flag) : _picked.remove(flag)),
-                  ),
-              ],
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Space.s3),
-                child: Text(_error!, style: TextStyle(color: c.beet)),
+            for (final flag in CognitiveFlag.values)
+              ChoicePill(
+                label: flag.label,
+                selected: _picked.contains(flag),
+                onTap: () => setState(() => _picked.contains(flag) ? _picked.remove(flag) : _picked.add(flag)),
               ),
-            const SizedBox(height: Space.s5),
-            FilledButton(
-              onPressed: _busy || _picked.isEmpty ? null : _save,
-              child: Text(_busy ? 'Saving…' : 'Save check-in'),
-            ),
           ],
         ),
-      ),
+        TextField(
+          controller: _note,
+          maxLines: 3,
+          maxLength: 280,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            labelText: 'Note (optional)',
+            hintText: 'e.g. Rough meeting, skipped lunch',
+            alignLabelWithHint: true,
+            counterText: '',
+          ),
+        ),
+        if (_failed)
+          const SheetNote(lead: "Couldn't save your check-in.", detail: 'Check your connection and try again.'),
+        SheetAction(label: _busy ? 'Saving…' : 'Save check-in', onPressed: _busy || _picked.isEmpty ? null : _save),
+      ],
     );
   }
 }

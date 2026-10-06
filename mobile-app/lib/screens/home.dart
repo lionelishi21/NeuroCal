@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../theme/tokens.dart';
 import 'settings.dart';
+import 'sleep.dart';
 import 'today.dart';
+import 'week.dart';
 
 /// The signed-in app: the main screens under a bottom tab bar. Each tab keeps its place while another is open.
 class HomeScreen extends StatefulWidget {
@@ -18,6 +20,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   var _tab = 0;
 
+  // Bumped whenever something is logged, so every tab reloads what it shows.
+  final _changes = ValueNotifier(0);
+
+  @override
+  void dispose() {
+    _changes.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -25,7 +36,18 @@ class _HomeScreenState extends State<HomeScreen> {
       (
         label: 'Today',
         icon: Icons.home_outlined,
-        screen: TodayScreen(profile: widget.profile, onOpenSettings: () => setState(() => _tab = 1)),
+        screen: TodayScreen(
+          profile: widget.profile,
+          changes: _changes,
+          onChanged: () => _changes.value++,
+          onOpenSettings: () => setState(() => _tab = 3),
+        ),
+      ),
+      (label: 'This week', icon: Icons.bar_chart_rounded, screen: WeekScreen(changes: _changes)),
+      (
+        label: 'Sleep',
+        icon: Icons.bedtime_outlined,
+        screen: SleepScreen(changes: _changes, onChanged: () => _changes.value++),
       ),
       (label: 'Settings', icon: Icons.settings_outlined, screen: SettingsScreen(profile: widget.profile)),
     ];

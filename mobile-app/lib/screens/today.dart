@@ -9,6 +9,7 @@ import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'check_in_sheet.dart';
 import 'log_meal_sheet.dart';
+import 'sleep_sheets.dart';
 
 class _Day {
   const _Day(this.focus, this.bio, this.meals, this.recipes);
@@ -60,9 +61,19 @@ String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.to
 /// Today: the Focus Score with the four signals behind it, calories left, how you feel,
 /// what to eat next and the day's meals.
 class TodayScreen extends StatefulWidget {
-  const TodayScreen({super.key, required this.profile, required this.onOpenSettings});
+  const TodayScreen({
+    super.key,
+    required this.profile,
+    required this.changes,
+    required this.onChanged,
+    required this.onOpenSettings,
+  });
 
   final Profile profile;
+
+  /// Fires when something was logged on any tab; [onChanged] tells the other tabs about this one.
+  final Listenable changes;
+  final VoidCallback onChanged;
   final VoidCallback onOpenSettings;
 
   @override
@@ -73,6 +84,18 @@ class _TodayScreenState extends State<TodayScreen> {
   Future<_Day>? _day;
 
   NeuroCalApi get _api => AppScope.of(context).api;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.changes.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    widget.changes.removeListener(_refresh);
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -104,7 +127,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final logged = await showLogMealSheet(context);
     if (logged == true && mounted) {
       showToast(context, 'Meal logged');
-      await _refresh();
+      widget.onChanged();
     }
   }
 
@@ -112,7 +135,14 @@ class _TodayScreenState extends State<TodayScreen> {
     final saved = await showCheckInSheet(context);
     if (saved == true && mounted) {
       showToast(context, 'Check-in saved');
-      await _refresh();
+      widget.onChanged();
+    }
+  }
+
+  Future<void> _log(Future<bool?> Function(BuildContext) sheet, String done) async {
+    if (await sheet(context) == true && mounted) {
+      showToast(context, done);
+      widget.onChanged();
     }
   }
 
@@ -123,7 +153,7 @@ class _TodayScreenState extends State<TodayScreen> {
     } catch (_) {
       if (mounted) showToast(context, "Couldn't remove the meal. Try again.", ToastTone.problem);
     }
-    await _refresh();
+    widget.onChanged();
   }
 
   @override
@@ -191,7 +221,12 @@ class _TodayScreenState extends State<TodayScreen> {
                   else if (!snapshot.hasData)
                     const ScreenLoading(label: 'Loading today', heights: [232, 120, 64, 150])
                   else ...[
-                    _FocusCard(snapshot.data!.focus, onCheckIn: _checkIn),
+                    _FocusCard(
+                      snapshot.data!.focus,
+                      onCheckIn: _checkIn,
+                      onLogSleep: () => _log(showLogSleepSheet, 'Sleep logged'),
+                      onLogScreens: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
+                    ),
                     const SizedBox(height: Space.s3),
                     _Calories(snapshot.data!.bio),
                     const SizedBox(height: Space.s3),
@@ -272,10 +307,12 @@ class _TodayScreenState extends State<TodayScreen> {
 
 /// The hero: the ring, a word for the score, the explanation, and the four signals behind it.
 class _FocusCard extends StatelessWidget {
-  const _FocusCard(this.focus, {required this.onCheckIn});
+  const _FocusCard(this.focus, {required this.onCheckIn, required this.onLogSleep, required this.onLogScreens});
 
   final FocusScore focus;
   final VoidCallback onCheckIn;
+  final VoidCallback onLogSleep;
+  final VoidCallback onLogScreens;
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +398,17 @@ class _FocusCard extends StatelessWidget {
                         detail: detail,
                         value: value,
                         waiting: waiting,
-                        onCheckIn: name == 'Stress' ? onCheckIn : null,
+                        action: switch (name) {
+                          'Sleep' => (label: 'Log', name: 'Log sleep', empty: 'Last night', run: onLogSleep),
+                          'Evening timing' => (
+                            label: 'Log',
+                            name: 'Log screen time',
+                            empty: 'Late food and screens',
+                            run: onLogScreens,
+                          ),
+                          'Stress' => (label: 'Check in', name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
+                          _ => null,
+                        },
                       ),
                     ),
                 ],
@@ -376,13 +423,15 @@ class _FocusCard extends StatelessWidget {
 
 /// One of the four inputs: good from 0.75, otherwise "watch this"; without data it says what fills it.
 class _Signal extends StatelessWidget {
-  const _Signal({required this.name, required this.detail, required this.value, this.waiting, this.onCheckIn});
+  const _Signal({required this.name, required this.detail, required this.value, this.waiting, this.action});
 
   final String name;
   final String detail;
   final double? value;
   final String? waiting;
-  final VoidCallback? onCheckIn;
+
+  /// What fills the signal when it has no data yet.
+  final ({String label, String name, String empty, VoidCallback run})? action;
 
   @override
   Widget build(BuildContext context) {
@@ -421,9 +470,9 @@ class _Signal extends StatelessWidget {
               ),
               Meter(value: v, color: good ? c.chlorophyllBar : c.glucose),
               Text(detail, style: small),
-            ] else if (onCheckIn != null) ...[
-              SoftButton(label: '+ Check in', semanticLabel: 'Check in', height: 32, onPressed: onCheckIn),
-              Text('No check-ins yet', style: small),
+            ] else if (action != null) ...[
+              SoftButton(label: '+ ${action!.label}', semanticLabel: action!.name, height: 32, onPressed: action!.run),
+              Text(action!.empty, style: small),
             ] else ...[
               ExcludeSemantics(
                 child: Text(

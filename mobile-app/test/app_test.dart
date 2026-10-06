@@ -122,4 +122,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Check-in saved'), findsOneWidget);
   });
+
+  testWidgets('this week and sleep tabs show the week, and screen time can be logged', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+
+    await tester.tap(find.widgetWithText(InkWell, 'This week'));
+    await tester.pumpAndSettle();
+    expect(find.text('Today so far'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Routines to try'), 300);
+    expect(find.text('Weak points this week'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Affiliate link'), 300);
+    await tester.scrollUntilVisible(find.text('Every day'), 300);
+
+    await tester.tap(find.widgetWithText(InkWell, 'Sleep').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Your nights on one clock'), findsOneWidget);
+    expect(find.text('2 of 7'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Log screen time'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('90'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Log screen time'));
+    await tester.pumpAndSettle();
+    expect(find.text('Screen time logged'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('90 min'), 300);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Log sleep'));
+    await tester.pumpAndSettle();
+    expect(find.text('Went to bed'), findsOneWidget);
+    expect(find.text('Woke up'), findsOneWidget);
+  });
 }

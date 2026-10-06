@@ -22,6 +22,16 @@ abstract interface class NeuroCalApi {
   Future<Meal> createMeal(NewMeal meal);
   Future<void> deleteMeal(String id);
   Future<void> checkIn(List<CognitiveFlag> flags, {String? note});
+
+  /// The last [days] days, oldest first, ending today.
+  Future<List<HistoryDay>> history(int days);
+
+  /// Weak points of the week with the routines and products matched to them.
+  Future<Help> help();
+  Future<void> logSleep(DateTime start, DateTime end);
+
+  /// Minutes on screens inside a window; logging the same window again replaces the earlier entry.
+  Future<void> logScreenTime(DateTime windowStart, DateTime windowEnd, int minutes);
 }
 
 class ApiException implements Exception {
@@ -128,4 +138,36 @@ class HttpNeuroCalApi implements NeuroCalApi {
     };
     _decode(await _client.post(_uri('/check-ins'), headers: await _headers(json: true), body: jsonEncode(body)));
   }
+
+  @override
+  Future<List<HistoryDay>> history(int days) async => [
+    for (final d in (await _get('/history', {'days': '$days'}) as Map<String, dynamic>)['days'] as List)
+      HistoryDay.fromJson(d as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<Help> help() async => Help.fromJson(await _get('/recommendations/protocols') as Map<String, dynamic>);
+
+  Future<void> _post(String path, Map<String, dynamic> body) async {
+    _decode(await _client.post(_uri(path), headers: await _headers(json: true), body: jsonEncode(body)));
+  }
+
+  @override
+  Future<void> logSleep(DateTime start, DateTime end) => _post('/telemetry/sleep', {
+    'sessions': [
+      {'start': start.toUtc().toIso8601String(), 'end': end.toUtc().toIso8601String(), 'source': 'manual'},
+    ],
+  });
+
+  @override
+  Future<void> logScreenTime(DateTime windowStart, DateTime windowEnd, int minutes) => _post('/telemetry/screen-time', {
+    'samples': [
+      {
+        'windowStart': windowStart.toUtc().toIso8601String(),
+        'windowEnd': windowEnd.toUtc().toIso8601String(),
+        'minutes': minutes,
+        'source': 'manual',
+      },
+    ],
+  });
 }

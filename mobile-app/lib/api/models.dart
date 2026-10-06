@@ -226,6 +226,113 @@ class Recipe {
   );
 }
 
+/// One day of the past week (`HistoryDay` in the contracts).
+class HistoryDay {
+  const HistoryDay({
+    required this.date,
+    required this.calorieTarget,
+    required this.caloriesEaten,
+    required this.proteinG,
+    this.focusScore,
+    this.sleepMinutes,
+    this.lastMealAt,
+    this.bedtime,
+    this.wakeTime,
+    this.lateScreenMinutes,
+    this.flags = const [],
+  });
+
+  /// "2026-09-29".
+  final String date;
+  final int calorieTarget;
+  final double caloriesEaten;
+  final double proteinG;
+  final int? focusScore;
+
+  /// Sleep that ended that morning.
+  final int? sleepMinutes;
+
+  /// Local "HH:MM" times.
+  final String? lastMealAt;
+  final String? bedtime;
+  final String? wakeTime;
+
+  /// Screen minutes after 22:00 the night before; null when none was recorded.
+  final int? lateScreenMinutes;
+  final List<CognitiveFlag> flags;
+
+  DateTime get day => DateTime.parse(date);
+  bool get hasData => focusScore != null || caloriesEaten > 0 || sleepMinutes != null;
+
+  factory HistoryDay.fromJson(Map<String, dynamic> j) => HistoryDay(
+    date: j['date'] as String,
+    calorieTarget: (j['calorieTarget'] as num).toInt(),
+    caloriesEaten: (j['caloriesEaten'] as num).toDouble(),
+    proteinG: (j['proteinG'] as num).toDouble(),
+    focusScore: (j['focusScore'] as num?)?.toInt(),
+    sleepMinutes: (j['sleepMinutes'] as num?)?.toInt(),
+    lastMealAt: j['lastMealAt'] as String?,
+    bedtime: j['bedtime'] as String?,
+    wakeTime: j['wakeTime'] as String?,
+    lateScreenMinutes: (j['lateScreenMinutes'] as num?)?.toInt(),
+    flags: [
+      for (final wire in j['flags'] as List? ?? const [])
+        for (final flag in CognitiveFlag.values)
+          if (flag.wire == wire) flag,
+    ],
+  );
+}
+
+/// A Focus Score input that averaged below par over the week.
+typedef WeakPoint = ({String label, double average});
+
+/// A NeuroCal-authored habit with ordered steps.
+typedef Routine = ({String title, String summary, List<String> steps});
+
+/// A product matched to the week. Affiliate and own-brand ones must be labelled wherever they show.
+typedef SuggestedProduct = ({
+  String name,
+  String description,
+  String? url,
+  bool affiliate,
+  bool ownBrand,
+  bool supplement,
+});
+
+/// What could help this week (`ProtocolsResponse` in the contracts).
+class Help {
+  const Help({required this.weakPoints, required this.routines, required this.products});
+
+  final List<WeakPoint> weakPoints;
+  final List<Routine> routines;
+  final List<SuggestedProduct> products;
+
+  factory Help.fromJson(Map<String, dynamic> j) => Help(
+    weakPoints: [
+      for (final w in j['weakPoints'] as List) (label: w['label'] as String, average: (w['average'] as num).toDouble()),
+    ],
+    routines: [
+      for (final p in j['protocols'] as List)
+        (
+          title: p['title'] as String,
+          summary: p['summary'] as String,
+          steps: [for (final step in p['steps'] as List) step as String],
+        ),
+    ],
+    products: [
+      for (final p in j['products'] as List)
+        (
+          name: p['name'] as String,
+          description: p['description'] as String,
+          url: p['url'] as String?,
+          affiliate: p['affiliate'] as bool,
+          ownBrand: p['ownBrand'] as bool,
+          supplement: p['supplement'] as bool,
+        ),
+    ],
+  );
+}
+
 /// The diet names people read, keyed by the contract's `DietaryPreference`.
 const dietLabels = <String, String>{
   'omnivore': 'Everything',

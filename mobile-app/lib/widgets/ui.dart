@@ -309,3 +309,98 @@ class ActionBar extends StatelessWidget {
     );
   }
 }
+
+/// A tab's title with a line of detail under it.
+class ScreenTitle extends StatelessWidget {
+  const ScreenTitle(this.title, {super.key, this.detail});
+
+  final String title;
+  final String? detail;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: Space.s1),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, letterSpacing: -0.4),
+          ),
+        ),
+        if (detail != null)
+          Text(
+            detail!,
+            style: TextStyle(fontSize: TextSize.xs, color: context.colors.inkSoft),
+          ),
+      ],
+    ),
+  );
+}
+
+/// A small square-cornered label on a product or meal: "Our brand", "Affiliate link", "Supplement".
+class Tag extends StatelessWidget {
+  const Tag(this.label, {super.key, required this.fill, required this.ink});
+
+  final String label;
+  final Color fill;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: Space.s2, vertical: 3),
+    decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(6)),
+    child: Text(
+      label,
+      style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w700, color: ink),
+    ),
+  );
+}
+
+/// A horizontal dashed rule, for reference lines on charts.
+class DashedLine extends StatelessWidget {
+  const DashedLine({super.key, required this.color, this.vertical = false});
+
+  final Color color;
+  final bool vertical;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    size: vertical ? const Size(1.5, double.infinity) : const Size(double.infinity, 1.5),
+    painter: _DashedLinePainter(color, vertical),
+  );
+}
+
+class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter(this.color, this.vertical);
+
+  final Color color;
+  final bool vertical;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5;
+    final length = vertical ? size.height : size.width;
+    for (var at = 0.0; at < length; at += 7) {
+      final to = (at + 4).clamp(0.0, length);
+      canvas.drawLine(
+        vertical ? Offset(0.75, at) : Offset(at, 0.75),
+        vertical ? Offset(0.75, to) : Offset(to, 0.75),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter old) => old.color != color || old.vertical != vertical;
+}
+
+const weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/// "2,200".
+String thousands(num n) => n.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => ',');

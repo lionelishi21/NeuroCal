@@ -189,4 +189,137 @@ class MockNeuroCalApi implements NeuroCalApi {
       ..clear()
       ..addAll(flags);
   }
+
+  // The week before today, oldest first; today comes from the meals and check-ins above.
+  static const _week = [
+    (
+      focus: 88,
+      kcal: 2010.0,
+      protein: 104.0,
+      sleep: 450,
+      bed: '23:15',
+      wake: '06:45',
+      meal: '19:30',
+      screens: null as int?,
+    ),
+    (
+      focus: 96,
+      kcal: 1680.0,
+      protein: 99.0,
+      sleep: 450,
+      bed: '23:00',
+      wake: '06:30',
+      meal: null as String?,
+      screens: null,
+    ),
+    (focus: 90, kcal: 1940.0, protein: 82.0, sleep: 480, bed: '22:30', wake: '06:30', meal: '19:00', screens: 0),
+    (focus: 46, kcal: 1940.0, protein: 82.0, sleep: 330, bed: '01:00', wake: '06:30', meal: '21:45', screens: 50),
+    (focus: 52, kcal: 1680.0, protein: 99.0, sleep: 360, bed: '00:30', wake: '06:30', meal: '22:10', screens: 75),
+    (focus: 98, kcal: 1680.0, protein: 99.0, sleep: 450, bed: '23:00', wake: '06:30', meal: '18:45', screens: 0),
+    (focus: 94, kcal: 1940.0, protein: 82.0, sleep: 420, bed: '23:30', wake: '06:30', meal: '20:15', screens: 20),
+  ];
+
+  // Last night, until the person logs over it.
+  ({String bed, String wake, int minutes})? _lastNight = (bed: '23:15', wake: '05:45', minutes: 390);
+  int? _lastNightScreens;
+
+  static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Future<List<HistoryDay>> history(int days) async {
+    final today = DateTime.now();
+    final eaten = await meals(today);
+    final score = await focusScore(today);
+    final all = [
+      for (final (i, d) in _week.indexed)
+        HistoryDay(
+          date: isoDate(today.subtract(Duration(days: _week.length - i))),
+          calorieTarget: 2200,
+          caloriesEaten: d.kcal,
+          proteinG: d.protein,
+          focusScore: d.focus,
+          sleepMinutes: d.sleep,
+          lastMealAt: d.meal,
+          bedtime: d.bed,
+          wakeTime: d.wake,
+          lateScreenMinutes: d.screens,
+        ),
+      HistoryDay(
+        date: isoDate(today),
+        calorieTarget: 2200,
+        caloriesEaten: eaten.fold(0, (sum, m) => sum + m.calories),
+        proteinG: eaten.fold(0, (sum, m) => sum + m.items.fold(0, (s, i) => s + i.macros.proteinG)),
+        focusScore: score.score,
+        sleepMinutes: _lastNight?.minutes,
+        lastMealAt: eaten.isEmpty ? null : _hhmm(eaten.last.eatenAt),
+        bedtime: _lastNight?.bed,
+        wakeTime: _lastNight?.wake,
+        lateScreenMinutes: _lastNightScreens,
+        flags: _flags.toList(),
+      ),
+    ];
+    return all.sublist((all.length - days).clamp(0, all.length));
+  }
+
+  @override
+  Future<Help> help() async {
+    await _wait();
+    return const Help(
+      weakPoints: [
+        (label: 'stress and low focus', average: 0.68),
+        (label: 'late eating and late-night screens', average: 0.7),
+      ],
+      routines: [
+        (
+          title: 'Two minutes of box breathing',
+          summary: 'A short, structured breathing break helps you reset when you feel stressed, wired or scattered.',
+          steps: [
+            'Breathe in for four counts.',
+            'Hold for four.',
+            'Breathe out for four.',
+            'Hold for four, and repeat for two minutes.',
+          ],
+        ),
+        (
+          title: 'The kitchen closes three hours before bed',
+          summary: 'Finishing dinner earlier gives digestion time to settle before sleep.',
+          steps: [
+            'Set a kitchen-closed time three hours before bedtime.',
+            'Plan dinner to finish by then.',
+            'After closing, stick to water or herbal tea.',
+          ],
+        ),
+      ],
+      products: [
+        (
+          name: 'Sunrise alarm clock',
+          description: 'Brightens gradually before your alarm so waking at a fixed time feels easier.',
+          url: 'https://example.com/sunrise-alarm',
+          affiliate: true,
+          ownBrand: false,
+          supplement: false,
+        ),
+        (
+          name: 'MitoProof apple cider vinegar capsules',
+          description: 'Apple cider vinegar in capsule form, for people who would rather not drink it.',
+          url: 'https://www.mitoproof.com/',
+          affiliate: false,
+          ownBrand: true,
+          supplement: true,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<void> logSleep(DateTime start, DateTime end) async {
+    await _wait();
+    _lastNight = (bed: _hhmm(start), wake: _hhmm(end), minutes: end.difference(start).inMinutes);
+  }
+
+  @override
+  Future<void> logScreenTime(DateTime windowStart, DateTime windowEnd, int minutes) async {
+    await _wait();
+    _lastNightScreens = minutes;
+  }
 }
