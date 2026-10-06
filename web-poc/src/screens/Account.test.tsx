@@ -7,6 +7,7 @@ import { z } from "zod";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { API_BASE, request } from "../api/client";
 import { AuthProvider, RequireAuth, nextPath, useAuth } from "../auth/AuthProvider";
+import { Landing } from "./Landing";
 import { MOCK_CODE, createMockAuth } from "../auth/mockAuth";
 import type { AuthClient } from "../auth/types";
 import { ToastProvider } from "../components/Toast";
@@ -56,6 +57,21 @@ describe("Account", () => {
       createMockAuth(null),
     );
     await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/sign-in"));
+  });
+
+  it("shows the landing page at the home page instead of redirecting, until someone signs in", async () => {
+    const client = createMockAuth(null);
+    renderWith(
+      <RequireAuth landing={<Landing />}>
+        <p>Private page</p>
+      </RequireAuth>,
+      client,
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Eat for how you want to think." })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Create an account" })[0]).toHaveAttribute("href", "/sign-up");
+    expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/sign-in");
+    expect(screen.queryByText("Private page")).not.toBeInTheDocument();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 
   it("creates an account, verifies the email and signs in", async () => {

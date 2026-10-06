@@ -8,6 +8,7 @@ import { OfflineMealSync } from "../components/OfflineMeals";
 import { TabBar } from "../components/TabBar";
 import { ToastProvider } from "../components/Toast";
 import { watchInstallPrompt } from "../lib/install";
+import { Landing } from "../screens/Landing";
 import { applyTheme, storedTheme } from "../lib/theme";
 
 // Without a real API, the app runs on the MSW mock API (browser-only, never bundled for the server).
@@ -25,7 +26,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
-          <RequireAuth>
+          <RequireAuth landing={<Landing />}>
             {MockGate ? (
               <MockGate>
                 <OfflineMealSync />

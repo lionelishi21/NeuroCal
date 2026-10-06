@@ -91,22 +91,28 @@ export function AuthProvider({ children, client: injected }: { children: ReactNo
 // The lab shows component states with fixed sample data: no account or API involved.
 const PUBLIC_PATHS = ["/intro", "/sign-in", "/sign-up", "/lab"];
 
-/** Sends signed-out visitors to sign-in (remembering where they were going); renders nothing until the session is known. */
-export function RequireAuth({ children }: { children: ReactNode }) {
+/**
+ * Sends signed-out visitors to sign-in (remembering where they were going); renders nothing until the
+ * session is known. With `landing`, the home page shows that to anyone not signed in instead of redirecting.
+ */
+export function RequireAuth({ children, landing }: { children: ReactNode; landing?: ReactNode }) {
   const { status } = useAuth();
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const isPublic = PUBLIC_PATHS.includes(pathname);
+  const showsLanding = landing !== undefined && pathname === "/";
 
   useEffect(() => {
-    if (!isPublic && status === "signedOut") {
+    if (!isPublic && !showsLanding && status === "signedOut") {
       // A first visit starts with the intro; after that, straight to sign in.
       if (pathname === "/" && !introSeen()) router.replace("/intro");
       else router.replace(pathname === "/" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(pathname)}`);
     }
-  }, [isPublic, status, pathname, router]);
+  }, [isPublic, showsLanding, status, pathname, router]);
 
   if (isPublic) return children;
+  // Shown while the session is still being checked too, so the server can render it.
+  if (showsLanding && status !== "signedIn") return landing;
   return status === "signedIn" ? children : null;
 }
 

@@ -116,6 +116,11 @@
   }
 }
 
+/* Someone with a session never sees the landing page flash before Today (lib/sessionHint.ts). */
+html[data-signed-in] [data-landing] {
+  display: none;
+}
+
 /* Radix sheet motion: answers the user's tap, so it stays. */
 @keyframes sheet-in {
   from {
