@@ -99,6 +99,11 @@ describe("GetProtocolsUseCase", () => {
     await fresh.useCase.execute({ userId: "u1" });
     expect(fresh.embedder.calls.at(-1)).toEqual(["Help with waking in the night."]);
 
+    // The crash at 2pm is what the coffee routine is for.
+    const crashing = await setup([], { friction: "afternoon_crash" });
+    const suggested = await crashing.useCase.execute({ userId: "u1" });
+    expect(suggested.protocols[0]!.item.id).toBe("coffee-without-the-crash");
+
     const tired = await setup([5, 5.5, 6, 5, 6, 5.5, 6], { friction: "afternoon_crash" });
     const result = await tired.useCase.execute({ userId: "u1" });
     expect(tired.embedder.calls.at(-1)).toEqual(["Help with afternoon energy crashes.", "Help with short or light sleep."]);

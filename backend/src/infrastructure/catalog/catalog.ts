@@ -85,6 +85,18 @@ export const PROTOCOLS: Protocol[] = [
     tags: ["high-glycemic meals", "focus", "energy", "protein", "morning"],
   },
   {
+    id: "coffee-without-the-crash",
+    title: "Coffee without the crash",
+    summary: "Keep the lift from your morning coffee and lose the slump after lunch.",
+    steps: [
+      "Keep coffee to the morning. Have your last cup before your caffeine curfew, eight hours after you wake.",
+      "If coffee leaves you jittery or you slump once it wears off, try L-theanine alongside it. It is the amino acid found in green tea.",
+      "When the afternoon dip comes, skip the extra cup. Drink water and walk for ten minutes instead.",
+      "Count your cups for a week. If the slump is worse on days with more coffee, drop one.",
+    ],
+    tags: ["afternoon energy crashes", "energy", "caffeine", "coffee", "low energy"],
+  },
+  {
     id: "box-breathing",
     title: "Two minutes of box breathing",
     summary: "A short, structured breathing break helps you reset when you feel stressed, wired or scattered.",

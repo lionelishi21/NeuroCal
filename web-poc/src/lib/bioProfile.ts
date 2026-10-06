@@ -185,6 +185,10 @@ export const STEPS: readonly Step[] = [
         options: [
           ["c8_mct", "C8 MCT"],
           ["magnesium_l_threonate", "Magnesium L-threonate"],
+          ["l_theanine", "L-theanine"],
+          ["creatine", "Creatine"],
+          ["ashwagandha", "Ashwagandha"],
+          ["rhodiola", "Rhodiola"],
           ["binders", "Binders / charcoal"],
           ["ketone_esters", "Ketone esters"],
           ["methyl_b", "Methyl B vitamins"],

@@ -143,6 +143,10 @@ final steps = <OnboardingStep>[
       const [
         ('c8_mct', 'C8 MCT', null),
         ('magnesium_l_threonate', 'Magnesium L-threonate', null),
+        ('l_theanine', 'L-theanine', null),
+        ('creatine', 'Creatine', null),
+        ('ashwagandha', 'Ashwagandha', null),
+        ('rhodiola', 'Rhodiola', null),
         ('binders', 'Binders / charcoal', null),
         ('ketone_esters', 'Ketone esters', null),
         ('methyl_b', 'Methyl B vitamins', null),

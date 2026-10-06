@@ -66,7 +66,7 @@ export const BioProfile = z.object({
   redLight: Frequency,
   pemf: Frequency,
   takesSupplements: z.boolean(),
-  supplements: z.array(z.enum(["c8_mct", "magnesium_l_threonate", "binders", "ketone_esters", "methyl_b", "nootropics"])),
+  supplements: z.array(z.enum(["c8_mct", "magnesium_l_threonate", "l_theanine", "creatine", "ashwagandha", "rhodiola", "binders", "ketone_esters", "methyl_b", "nootropics"])),
   movement: z.enum(["heavy_lifting", "rehit", "chronic_cardio", "mobility", "none"]),
   /** The daily problem to watch for first. */
   friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
