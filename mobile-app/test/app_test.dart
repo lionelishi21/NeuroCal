@@ -6,6 +6,9 @@ import 'package:neurocal/main.dart';
 import 'package:neurocal/theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Links the app asked to open, most recent last.
+final opened = <Uri>[];
+
 Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<String, Object> saved = const {}}) async {
   // A small phone, so layout overflows fail the test.
   tester.view.physicalSize = const Size(360, 740);
@@ -15,7 +18,18 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
   final theme = ThemeController(await SharedPreferences.getInstance());
   final auth = MockAuthClient();
   final api = MockNeuroCalApi()..latency = Duration.zero;
-  await tester.pumpWidget(NeuroCalApp(api: api, auth: auth, theme: theme));
+  opened.clear();
+  await tester.pumpWidget(
+    NeuroCalApp(
+      api: api,
+      auth: auth,
+      theme: theme,
+      openLink: (link) async {
+        opened.add(link);
+        return true;
+      },
+    ),
+  );
   return (theme, auth);
 }
 
@@ -133,6 +147,12 @@ void main() {
     await tester.scrollUntilVisible(find.text('Routines to try'), 300);
     expect(find.text('Weak points this week'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Affiliate link'), 300);
+    await tester.scrollUntilVisible(find.text('See product').first, 100);
+    await tester.ensureVisible(find.text('See product').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('See product').first);
+    await tester.pump();
+    expect(opened.single.toString(), 'https://example.com/sunrise-alarm');
     await tester.scrollUntilVisible(find.text('Every day'), 300);
 
     await tester.tap(find.widgetWithText(InkWell, 'Sleep').last);

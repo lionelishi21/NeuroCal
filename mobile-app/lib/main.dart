@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'api/api.dart';
 import 'api/mock_api.dart';
@@ -31,6 +32,9 @@ Future<void> main() async {
   runApp(NeuroCalApp(api: api, auth: auth, theme: theme));
 }
 
+/// In the person's browser, not inside the app: product pages are other companies' sites.
+Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
+
 class NeuroCalApp extends StatelessWidget {
   const NeuroCalApp({
     super.key,
@@ -38,12 +42,14 @@ class NeuroCalApp extends StatelessWidget {
     required this.auth,
     required this.theme,
     this.timeZone = deviceTimeZone,
+    this.openLink = _openOutside,
   });
 
   final NeuroCalApi api;
   final AuthClient auth;
   final ThemeController theme;
   final Future<String?> Function() timeZone;
+  final Future<bool> Function(Uri link) openLink;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +58,7 @@ class NeuroCalApp extends StatelessWidget {
       auth: auth,
       theme: theme,
       timeZone: timeZone,
+      openLink: openLink,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(

@@ -155,7 +155,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 4. Leave the web app as it is unless something is cheap to add.
 
 - [x] Flutter app on the same API and Cognito pool, same tokens, font, logo and app icon (`mobile-app/`, build steps in its README)
-- [x] Mobile: the new tokens, the Focus Score ring and the 11-step bio-profile onboarding for accounts without a profile (the time zone comes from the device). Then the tab bar, top toasts, Today and Settings from the second design file. Then This week, Sleep and evenings, and the Check in, Log sleep and Log screen time sheets. _To do: restyle the Log a meal sheet, open product links (needs a link-opening package), the intro slides, "Edit profile", custom tab icons_
+- [x] Mobile: the new tokens, the Focus Score ring and the 11-step bio-profile onboarding for accounts without a profile (the time zone comes from the device). Then the tab bar, top toasts, Today and Settings from the second design file. Then This week, Sleep and evenings, and the Check in, Log sleep and Log screen time sheets. _To do: restyle the Log a meal sheet, the intro slides, "Edit profile", custom tab icons_
 - [ ] Generate the Dart client from `openapi.json` instead of the hand-written models; add Sleep, History and protocols screens
 - [ ] Point `web-poc` at the real API (`NEXT_PUBLIC_API_URL`); E2E on the critical path
 - [ ] Accessibility and performance pass

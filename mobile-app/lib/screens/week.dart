@@ -4,6 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../nights.dart';
 import '../theme/tokens.dart';
+import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 
 const _fullWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -687,6 +688,7 @@ class _WhatHelps extends StatelessWidget {
                                     style: TextStyle(fontSize: TextSize.xxs, height: 1.4),
                                   ),
                                 ),
+                              if (product.url != null) _SeeProduct(name: product.name, url: product.url!),
                             ],
                           ),
                         ),
@@ -711,6 +713,42 @@ class _WhatHelps extends StatelessWidget {
             },
           ),
       ],
+    );
+  }
+}
+
+/// Opens the product's page outside the app. The labels above it say when the link earns NeuroCal money.
+class _SeeProduct extends StatelessWidget {
+  const _SeeProduct({required this.name, required this.url});
+
+  final String name;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      link: true,
+      label: 'See product: $name',
+      excludeSemantics: true,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          foregroundColor: c.synapseInk,
+          backgroundColor: Colors.transparent,
+          side: BorderSide(color: c.ruleStrong, width: 1.5),
+          textStyle: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+        ),
+        iconAlignment: IconAlignment.end,
+        icon: const Icon(Icons.north_east_rounded, size: 14),
+        label: const Text('See product'),
+        onPressed: () async {
+          final link = Uri.tryParse(url);
+          final opened = link != null && await AppScope.of(context).openLink(link).catchError((Object _) => false);
+          if (!opened && context.mounted) showToast(context, "Couldn't open that link.", ToastTone.problem);
+        },
+      ),
     );
   }
 }

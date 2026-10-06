@@ -12,6 +12,7 @@ class AppScope extends InheritedWidget {
     required this.auth,
     required this.theme,
     required this.timeZone,
+    required this.openLink,
     required super.child,
   });
 
@@ -22,9 +23,16 @@ class AppScope extends InheritedWidget {
   /// The device's IANA time zone, or null when it can't be read.
   final Future<String?> Function() timeZone;
 
+  /// Opens a web link outside the app; false when nothing could open it.
+  final Future<bool> Function(Uri link) openLink;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      api != oldWidget.api || auth != oldWidget.auth || theme != oldWidget.theme || timeZone != oldWidget.timeZone;
+      api != oldWidget.api ||
+      auth != oldWidget.auth ||
+      theme != oldWidget.theme ||
+      timeZone != oldWidget.timeZone ||
+      openLink != oldWidget.openLink;
 }
