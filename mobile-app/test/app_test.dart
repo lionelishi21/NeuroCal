@@ -108,14 +108,24 @@ void main() {
     await tester.tap(find.text('Log a meal'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Item'), 'Lentil soup');
+    await tester.tap(find.text('Add an item by hand instead'));
+    await tester.pumpAndSettle();
+
+    // A name and its calories are both needed.
+    await tester.tap(find.widgetWithText(FilledButton, 'Add item'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add a food name and its calories.'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Food'), 'Lentil soup');
     await tester.enterText(find.widgetWithText(TextField, 'kcal'), '320');
-    await tester.tap(find.byTooltip('Add item'));
+    await tester.enterText(find.widgetWithText(TextField, 'Protein'), '18');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add item'));
     await tester.pumpAndSettle();
     expect(find.text('Lentil soup'), findsOneWidget);
+    expect(find.text('18 g'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Log meal · 320 kcal'));
-    await tester.tap(find.text('Log meal · 320 kcal'));
+    await tester.ensureVisible(find.text('Log meal, 320 kcal'));
+    await tester.tap(find.text('Log meal, 320 kcal'));
     await tester.pumpAndSettle();
     expect(find.text('Meal logged'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Lentil soup'), 200);
