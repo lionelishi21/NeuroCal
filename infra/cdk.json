@@ -1,0 +1,5 @@
+{
+  "app": "npx tsx bin/app.ts",
+  "watch": { "include": ["bin/**", "src/**", "../backend/src/**", "../backend/drizzle/**"] },
+  "context": { "adminEmails": "lionelishmael@gmail.com" }
+}

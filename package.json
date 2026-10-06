@@ -1,0 +1,25 @@
+{
+  "name": "neurocal",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "web-poc",
+    "infra"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web-poc",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "overrides": {
+    "jsdom": "^28.1.0"
+  }
+}

@@ -1,11 +1,38 @@
 {
+  "name": "@neurocal/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p .",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --passWithNoTests",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "dev": "tsx watch src/presentation/devServer.ts",
+    "catalog:sync": "tsx src/presentation/syncCatalog.ts"
+  },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "@aws-sdk/client-s3": "^3.1145.0",
+    "@aws-sdk/client-secrets-manager": "^3.1143.0",
+    "@aws-sdk/s3-request-presigner": "^3.1145.0",
+    "@neurocal/contracts": "*",
     "drizzle-orm": "^0.45.3",
-    "pg": "^8.23.0"
+    "openai": "^7.23.0",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9",
+    "@jest/globals": "^30.5.0",
+    "@types/aws-lambda": "^8.10.164",
+    "@types/node": "^22.20.4",
     "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.11",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
     "tsx": "^4.23.15"
   }
 }

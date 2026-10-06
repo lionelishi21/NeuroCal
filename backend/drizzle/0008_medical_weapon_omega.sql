@@ -1,0 +1,1 @@
+ALTER TABLE "recipe_recommendations" ADD COLUMN "context_key" text;

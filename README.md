@@ -1,4 +1,3 @@
-# NeuroCal
 # NeuroCal AI 🧠⚡
 
 NeuroCal AI is a next-generation bio-feedback and health optimization platform. It bridges the gap between metabolic tracking (calorie/macro logging) and cognitive performance by treating the human body as an interconnected system. 
@@ -12,7 +11,7 @@ By analyzing food intake via AI computer vision, tracking circadian rhythms, and
 - **📸 Calorie & Macro Vision AI:** Frictionless meal logging using OpenAI `gpt-4o` to estimate macros, calories, and flag high glycemic loads from a single photo.
 - **🧠 Cognitive & Stress Scoring Engine:** An AI agent that analyzes sleep telemetry, diet, and self-reported stress to generate a daily baseline Focus Score.
 - **🌙 Circadian Telemetry:** Correlates late-night screen time and delayed eating with melatonin suppression and weight plateaus.
-- **🥗 Dynamic Recipe Routing:** Evaluates daily macro gaps and uses Anthropic's `Claude 3.5 Haiku` to generate optimized search queries, fetching perfectly matched recipes from trusted biohacking domains.
+- **🥗 Dynamic Recipe Routing:** Evaluates daily macro gaps and uses Anthropic's `Claude Haiku 4.5` to generate optimized search queries, fetching perfectly matched recipes from trusted biohacking domains.
 - **🧬 Vector-Based Recommendations:** Uses PostgreSQL `pgvector` (HNSW) to mathematically match user biological failure points (e.g., "poor deep sleep") to specific digital protocols or affiliate hardware (e.g., Eight Sleep, MitoProof supplements).
 
 ---
@@ -25,6 +24,7 @@ This project is structured as a **Monorepo** containing three core environments:
 - **Database:** Amazon Aurora PostgreSQL Serverless v2 + `pgvector` (Managed via Drizzle ORM).
 - **Web App (`/web-poc`):** Next.js & React (Tailwind CSS) for the progressive web app proof of concept.
 - **Mobile App (`/mobile-app`):** Flutter application for native iOS and Android deployment.
+- **Shared contracts (`/packages/contracts`):** Zod schemas for every API request and response, used by the backend and the web app.
 
 ---
 
@@ -32,9 +32,42 @@ This project is structured as a **Monorepo** containing three core environments:
 
 ```text
 neurocal-workspace/
-├── backend/          # Node.js Serverless API (Hexagonal Architecture)
-├── web-poc/          # Next.js Web Application
-├── mobile-app/       # Flutter Mobile Application
-├── ARCHITECTURE.md   # Deep-dive system specs, schemas, and AI prompts
-├── CLAUDE.md         # Instructions for AI coding agents
-└── README.md         # Project overview and setup guide
+├── backend/             # Node.js Serverless API (Hexagonal Architecture)
+├── web-poc/             # Next.js Web Application
+├── mobile-app/          # Flutter Mobile Application
+├── packages/contracts/  # Shared API schemas (Zod)
+├── docs/                # Execution plan and design direction
+├── ARCHITECTURE.md      # Deep-dive system specs, schemas, and AI prompts
+├── CLAUDE.md            # Instructions for AI coding agents
+└── README.md            # Project overview and setup guide
+```
+
+---
+
+## 🚀 Run it
+
+Requires Node 22.
+
+```sh
+npm install
+npm run dev        # web POC on http://localhost:3000, using the built-in mock API
+npm run typecheck
+npm test
+npm run build
+```
+
+- `/` — Today: bio-state dial, meals, check-in, what to eat next
+- `/history` — the past week: Focus Score, calories and sleep, day by day
+- `/welcome` — first-run setup; also where you edit your profile
+- `/lab` — component states for design review
+
+To run the web app against the real backend locally:
+
+```sh
+npm run dev -w @neurocal/backend                          # API on http://localhost:4000
+NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev     # web on http://localhost:3000
+```
+
+The backend dev server uses an in-memory Postgres and stub AI responses unless you set keys (see `backend/.env.example`). Start it with `DEV_FRESH_USER=1` to begin as a new user and go through onboarding.
+
+Roadmap and design direction: [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md).

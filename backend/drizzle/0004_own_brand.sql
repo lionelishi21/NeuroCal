@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "own_brand" boolean DEFAULT false NOT NULL;
