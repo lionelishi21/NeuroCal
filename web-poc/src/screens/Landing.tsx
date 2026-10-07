@@ -126,6 +126,7 @@ const PRO = ["This week: charts and weak points", "Sleep and evenings clock", "R
 const FAQS = [
   ["Do I need a wearable?", "No. You log bedtime and wake-up in a few seconds. Sync with Oura, Whoop and Apple Health is on the way."],
   ["How does photo logging work?", "Take a photo of your plate. We find each item and estimate the portion, calories and glycemic load. Anything we're unsure of is marked \"best guess\", and you can untick it or add items by hand."],
+  ["When can I get it?", "NeuroCal is coming to iPhone and Android. It isn't in the App Store or Google Play yet."],
   ["Is it really free?", "Yes. Meal logging, the daily Focus Score, check-ins and meal suggestions are free for good. Weekly patterns, the sleep clock and routines will be part of Pro; until Pro launches they are free too."],
   ["What happens to my data?", "Your meals, sleep and check-ins are used only to work out your score and suggestions. We don't sell your data."],
   ["Why do you suggest products?", "Sometimes a product fits a weak spot in your week. Every suggestion is labelled \"Affiliate link\" or \"Our brand\", and we say clearly when we earn a commission."],
@@ -168,12 +169,9 @@ export function Landing() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
-            <Link href="/sign-in" className="flex h-10 items-center px-3.5 text-sm font-bold text-ink no-underline hover:text-synapse-ink">
-              Sign in
-            </Link>
-            <Link href="/sign-up" className="flex h-10 items-center rounded-pill bg-synapse px-[1.125rem] text-sm font-bold text-on-accent no-underline hover:brightness-110">
-              Start free
-            </Link>
+            <a href="#app" className="flex h-10 items-center rounded-pill bg-synapse px-[1.125rem] text-sm font-bold text-on-accent no-underline hover:brightness-110">
+              Get the app
+            </a>
           </div>
         </div>
       </header>
@@ -190,15 +188,15 @@ export function Landing() {
               Snap your meals. NeuroCal reads them alongside last night's sleep and how you feel, then gives you one Focus Score and one thing to change.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href="/sign-up" className="flex h-14 items-center gap-2.5 rounded-pill bg-synapse px-7 text-base font-bold text-on-accent no-underline shadow-action hover:brightness-110">
-                Start free
+              <a href="#app" className="flex h-14 items-center gap-2.5 rounded-pill bg-synapse px-7 text-base font-bold text-on-accent no-underline shadow-action hover:brightness-110">
+                Get the app
                 {arrow}
-              </Link>
+              </a>
               <a href="#how" className="flex h-14 items-center rounded-pill border-[1.5px] border-rule-strong px-[1.375rem] text-base font-bold text-ink no-underline hover:bg-paper">
                 See how it works
               </a>
             </div>
-            <p className="m-0 text-sm text-ink-soft">Free forever plan. No card needed. Works in your browser.</p>
+            <p className="m-0 text-sm text-ink-soft">Free forever plan. No card needed. Coming soon to iPhone and Android.</p>
           </div>
           <Phone />
         </section>
@@ -422,9 +420,9 @@ export function Landing() {
                 <span className="text-price leading-none font-extrabold tracking-[-0.03em]">{symbol}0</span>
                 <span className="text-md text-ink-soft">forever</span>
               </p>
-              <Link href="/sign-up" className="flex h-[3.25rem] items-center justify-center rounded-pill border-[1.5px] border-rule-strong text-base font-bold text-ink no-underline hover:bg-mist">
-                Start free
-              </Link>
+              <a href="#app" className="flex h-[3.25rem] items-center justify-center rounded-pill border-[1.5px] border-rule-strong text-base font-bold text-ink no-underline hover:bg-mist">
+                Get the app
+              </a>
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
                 {FREE.map((item) => (
                   <li key={item} className="flex gap-2.5 text-md leading-[1.4]">
@@ -495,7 +493,7 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="bg-paper px-6 pb-16 sm:pb-24">
+        <section id="app" className="scroll-mt-20 bg-paper px-6 pb-16 sm:pb-24">
           <div className="mx-auto flex max-w-[73.75rem] flex-col items-center gap-5 rounded-[2.25rem] bg-linear-to-br from-promo to-promo-deep px-6 py-10 text-center text-on-promo sm:px-16 sm:py-20">
             <svg viewBox="0 0 28 28" aria-hidden className="size-14">
               <path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--on-promo)" strokeWidth="3.5" strokeLinecap="round" />
@@ -503,10 +501,14 @@ export function Landing() {
             </svg>
             <h2 className="m-0 max-w-[45rem] text-3xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance sm:text-display">Get your first Focus Score tomorrow morning.</h2>
             <p className="m-0 max-w-[32.5rem] text-lg leading-normal text-on-promo-soft">Log tonight's dinner and your sleep. That's all it takes.</p>
-            <Link href="/sign-up" className="mt-2 flex h-[3.625rem] items-center gap-2.5 rounded-pill bg-on-promo px-8 text-lg font-extrabold text-promo no-underline hover:brightness-95">
-              Start free
-              {arrow}
-            </Link>
+            <ul className="m-0 mt-2 flex list-none flex-wrap justify-center gap-3 p-0">
+              {["iPhone", "Android"].map((platform) => (
+                <li key={platform} className="flex h-[3.625rem] flex-col items-start justify-center rounded-control bg-on-promo/15 px-6 text-left">
+                  <span className="text-2xs font-semibold text-on-promo-soft">Coming soon</span>
+                  <span className="text-lg leading-tight font-extrabold">NeuroCal for {platform}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       </main>
@@ -523,6 +525,9 @@ export function Landing() {
             <span>Terms</span>
             <span>Affiliate disclosure</span>
             <span>Contact</span>
+            <Link href="/sign-in" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
+              Admin sign in
+            </Link>
           </p>
         </div>
       </footer>

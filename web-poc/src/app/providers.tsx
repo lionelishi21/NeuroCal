@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useEffect, useState, type ReactNode } from "react";
+import { AdminOnly } from "../auth/AdminOnly";
 import { AuthProvider, RequireAuth } from "../auth/AuthProvider";
 import { OfflineMealSync } from "../components/OfflineMeals";
 import { TabBar } from "../components/TabBar";
@@ -30,14 +31,18 @@ export function Providers({ children }: { children: ReactNode }) {
             {MockGate ? (
               <MockGate>
                 <OfflineMealSync />
-                {children}
-                <TabBar />
+                <AdminOnly>
+                  {children}
+                  <TabBar />
+                </AdminOnly>
               </MockGate>
             ) : (
               <>
                 <OfflineMealSync />
-                {children}
-                <TabBar />
+                <AdminOnly>
+                  {children}
+                  <TabBar />
+                </AdminOnly>
               </>
             )}
           </RequireAuth>

@@ -31,6 +31,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 - Copy: sentence case, plain verbs, same action name through a flow ("Log a meal" → "Meal logged").
 - The look comes from the Claude Design files (see "Design direction" in `docs/EXECUTION_PLAN.md`); build new screens from `Screen`/`ScreenHeader`/`Section`/`ActionBar` (`components/Screen.tsx`), the loading, empty and failed states in `components/ListStates.tsx`, `Sheet`, `Button`, `FocusRing`, `fieldClass` and the tokens before inventing styles.
 - Without `NEXT_PUBLIC_API_URL`, the app runs on the MSW mock API in `web-poc/src/mocks`, built from `packages/contracts`. Set `localStorage["neurocal.mock.newUser"] = "1"` to start the mock without a profile and see the onboarding.
+- The web app is for admins only (`auth/AdminOnly.tsx`); everyone else gets the landing page and the mobile app. `/sign-up` and `/intro` redirect to the home page. The local mock user is an admin.
 - The home page shows `screens/Landing.tsx` to anyone not signed in and Today to everyone else (`RequireAuth` in `auth/AuthProvider.tsx`; `lib/sessionHint.ts` stops it flashing for signed-in visitors).
 - Without `NEXT_PUBLIC_COGNITO_USER_POOL_ID` / `NEXT_PUBLIC_COGNITO_CLIENT_ID`, sign-in uses the local mock in `web-poc/src/auth` (every code is 123456).
 

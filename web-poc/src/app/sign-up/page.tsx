@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { SignUp } from "../../screens/Account";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Create an account — NeuroCal" };
-
+/** Accounts are made in the mobile app; the web app is for admins (auth/AdminOnly.tsx). */
 export default function SignUpPage() {
-  return <SignUp />;
+  redirect("/");
 }

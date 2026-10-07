@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { Intro } from "../../screens/Intro";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Welcome — NeuroCal" };
-
+/** The intro slides led into web sign-up, which is closed; the landing page does their job. */
 export default function IntroPage() {
-  return <Intro />;
+  redirect("/");
 }

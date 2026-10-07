@@ -68,8 +68,10 @@ describe("Account", () => {
       client,
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Know why your afternoon falls apart." })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Start free" })[0]).toHaveAttribute("href", "/sign-up");
-    expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/sign-in");
+    // No public sign-up on the web: the buttons point at the "coming to iPhone and Android" banner.
+    expect(screen.getAllByRole("link", { name: "Get the app" })[0]).toHaveAttribute("href", "#app");
+    expect(screen.getByRole("link", { name: "Admin sign in" })).toHaveAttribute("href", "/sign-in");
+    expect(document.querySelector('a[href="/sign-up"]')).toBeNull();
     expect(screen.queryByText("Private page")).not.toBeInTheDocument();
     expect(mockRouter.replace).not.toHaveBeenCalled();
 

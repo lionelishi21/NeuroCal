@@ -247,10 +247,12 @@ export function useUpdateProfile() {
 }
 
 /** Every product, for the admin screen. Fails with 403 for anyone who isn't an admin, so it is never retried. */
-export function useAdminProducts() {
+/** Every product, for admins; the API answers 403 to everyone else. Pass `false` to hold the request back. */
+export function useAdminProducts(enabled = true) {
   return useQuery({
     queryKey: keys.adminProducts,
     queryFn: () => request("/admin/products", AdminProductList),
+    enabled,
     retry: false,
     staleTime: 60_000,
   });

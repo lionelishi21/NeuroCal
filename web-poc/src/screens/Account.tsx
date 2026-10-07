@@ -199,10 +199,8 @@ export function SignIn() {
         <Logo />
         <ThemeToggle />
       </div>
-      <h1 className="mt-8 mb-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Eat for how you want to think.</h1>
-      <p className="mt-2 mb-0 text-base leading-normal text-pretty text-ink-soft">
-        Snap your meals. NeuroCal reads them against your sleep and stress and tells you what to eat next.
-      </p>
+      <h1 className="mt-8 mb-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Admin sign in</h1>
+      <p className="mt-2 mb-0 text-base leading-normal text-pretty text-ink-soft">The web app is for the NeuroCal team. Your own meals and scores are in the mobile app.</p>
       <form onSubmit={submit} noValidate aria-label="Sign in">
         <Credentials
           email={email}
@@ -215,9 +213,8 @@ export function SignIn() {
         <Submit busy={busy}>{busy ? "Signing in…" : "Sign in"}</Submit>
       </form>
       <p className="mt-5 mb-0 text-center text-md font-medium text-ink-soft">
-        New here?{" "}
-        <Link href="/sign-up" className={textLink}>
-          Create an account
+        <Link href="/" className={textLink}>
+          Back to the home page
         </Link>
       </p>
     </Frame>
