@@ -6,6 +6,7 @@ import { useOptionalAuth } from "../auth/AuthProvider";
 import { FocusDemo } from "../components/FocusDemo";
 import { FocusRing } from "../components/FocusRing";
 import { LogoMark } from "../components/Logo";
+import { WeekShowcase } from "../components/WeekShowcase";
 import { clearSessionHint } from "../lib/sessionHint";
 
 const wrap = "mx-auto w-full max-w-[73.75rem] px-6";
@@ -86,6 +87,13 @@ const TICKS = ["18", "21", "00", "03", "06", "09", "12"];
 
 /** Not connected yet: shown so people know sync is coming. */
 const WEARABLES = ["Oura", "Whoop", "Apple Health"] as const;
+
+/** What the sample week on the This week section would be told. */
+const WEAK_POINTS = [
+  ["Late dinners on 3 nights", "Focus was 9 points lower the morning after eating past 21:00."],
+  ["Under 7 hours of sleep on 3 nights", "Sunday and Wednesday were the two lowest scores."],
+] as const;
+const ROUTINE = ["Eat your last meal by 20:30.", "If hungry later, keep it to a protein snack under 150 kcal.", "Dim lights and switch screens to night mode after 21:00."] as const;
 
 const SCIENCE = [
   ["One formula, the same every day", "Sleep counts for 40% of the score and the other three inputs for 20% each. Nothing is hidden or adjusted behind the scenes: try it in the demo above."],
@@ -251,6 +259,51 @@ export function Landing() {
 
         <section aria-label="Try the Focus Score" className={`${wrap} pb-16 sm:pb-[6.5rem]`}>
           <FocusDemo />
+        </section>
+
+        <section id="week" className="scroll-mt-16 border-y border-rule bg-paper">
+          <div className={`${wrap} flex flex-wrap items-start justify-center gap-14 py-16 sm:py-[6.5rem]`}>
+            <div className="flex flex-[1_1_22.5rem] flex-col gap-[1.125rem] lg:sticky lg:top-28">
+              <p className={eyebrow}>This week</p>
+              <h2 className={heading}>One day is noise. A week is a pattern.</h2>
+              <p className="m-0 max-w-[30rem] text-lg leading-[1.55] text-pretty text-ink-soft">
+                Focus, calories and sleep for the last seven days, on charts that line up. Pick any day to see what was behind its score, then read where the week was weakest and what to try.
+              </p>
+              <div>
+                <h3 className="m-0 pb-2 text-xs font-bold text-ink-soft">Weak points this week</h3>
+                <ul className="m-0 list-none overflow-hidden rounded-card border border-rule bg-mist p-0">
+                  {WEAK_POINTS.map(([title, body]) => (
+                    <li key={title} className="flex gap-3 border-t border-rule px-4 py-3 first:border-t-0">
+                      <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-glucose" />
+                      <div>
+                        <p className="m-0 text-md font-bold">{title}</p>
+                        <p className="m-0 mt-0.5 text-xs leading-[1.4] text-ink-soft">{body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="m-0 pb-2 text-xs font-bold text-ink-soft">A routine to try</h3>
+                <div className="rounded-card border border-rule bg-mist p-4">
+                  <p className="m-0 text-base font-extrabold">Close the kitchen by 20:30</p>
+                  <p className="m-0 mt-0.5 text-xs text-ink-soft">For the late-dinner nights</p>
+                  <ol className="m-0 mt-3 flex list-none flex-col gap-2 p-0">
+                    {ROUTINE.map((step, i) => (
+                      <li key={step} className="flex items-start gap-2.5">
+                        <span aria-hidden className="grid size-[1.375rem] shrink-0 place-items-center rounded-full bg-synapse-soft text-2xs font-extrabold text-synapse-ink">
+                          {i + 1}
+                        </span>
+                        <span className="pt-px text-sm leading-[1.4]">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+              <p className="m-0 text-2xs text-ink-faint">A sample week. Tap a day or a bar to change it.</p>
+            </div>
+            <WeekShowcase />
+          </div>
         </section>
 
         <section className="night bg-mist text-ink">
