@@ -18,11 +18,14 @@ import type {
   NewRecipeRecommendation,
   Profile,
   RecipeRecommendation,
+  WaitlistEntry,
+  WaitlistPlatform,
 } from "../../domain/types";
 import type { BioStateContext, IAiReasoningProvider, RecipeQueryOutput } from "../interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider, MealPhoto, MealPhotoAnalysis } from "../interfaces/IAiVisionProvider";
 import type { Embedded, ICatalogRepository } from "../interfaces/ICatalogRepository";
 import type { IClock } from "../interfaces/IClock";
+import type { Email, IEmailSender } from "../interfaces/IEmailSender";
 import { EMBEDDING_DIMENSIONS, type IEmbeddingProvider } from "../interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
 import type { IObjectStorage } from "../interfaces/IObjectStorage";
@@ -33,6 +36,7 @@ import type {
   IProfileRepository,
   IRecommendationRepository,
   ITelemetryRepository,
+  IWaitlistRepository,
 } from "../interfaces/IRepositories";
 import type { ISearchEngineAdapter, RecipeSearchHit } from "../interfaces/ISearchEngineAdapter";
 
@@ -313,5 +317,45 @@ export class InMemoryStorage implements IObjectStorage {
   async read(key: string, maxBytes: number) {
     const found = this.objects.get(key);
     return found && found.bytes.byteLength <= maxBytes ? found : null;
+  }
+}
+
+export class InMemoryWaitlist implements IWaitlistRepository {
+  readonly rows: (WaitlistEntry & { unsubscribed?: boolean })[] = [];
+  async join(email: string, platform: WaitlistPlatform | undefined, unsubscribeToken: string) {
+    const existing = this.rows.find((r) => r.email === email);
+    if (!existing) {
+      const entry = { id: id("wait"), email, unsubscribeToken, ...(platform ? { platform } : {}) };
+      this.rows.push(entry);
+      return { entry, fresh: true };
+    }
+    const rejoining = existing.unsubscribed === true;
+    if (platform) existing.platform = platform;
+    if (rejoining) {
+      existing.unsubscribed = false;
+      delete existing.confirmationSentAt;
+    }
+    return { entry: existing, fresh: rejoining };
+  }
+  async markConfirmationSent(entryId: string, at: Date) {
+    const row = this.rows.find((r) => r.id === entryId);
+    if (row) row.confirmationSentAt = at;
+  }
+  async leave(unsubscribeToken: string) {
+    const row = this.rows.find((r) => r.unsubscribeToken === unsubscribeToken);
+    if (row) row.unsubscribed = true;
+    return Boolean(row);
+  }
+}
+
+export class FakeEmail implements IEmailSender {
+  sent: Email[] = [];
+  constructor(
+    readonly enabled = true,
+    private readonly failure?: Error,
+  ) {}
+  async send(email: Email) {
+    if (this.failure) throw this.failure;
+    this.sent.push(email);
   }
 }

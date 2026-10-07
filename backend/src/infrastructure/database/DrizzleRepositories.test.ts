@@ -8,6 +8,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleWaitlistRepository,
 } from "./DrizzleRepositories";
 import { createPgliteDatabase } from "./pglite";
 import { item, profile } from "../../application/testing/fakes";
@@ -146,6 +147,30 @@ describe("DrizzleRecommendationRepository", () => {
     expect(found.find((r) => r.title === "B")).toEqual({ ...base, title: "B", imageUrl: "https://img.example/b.jpg", id: newer[1]!.id });
     expect(await repo.latestRecipes(alice, "key-2")).toEqual([]);
     expect(await repo.latestRecipes(bob, "key-1")).toEqual([]);
+  });
+});
+
+describe("DrizzleWaitlistRepository", () => {
+  it("adds an address once, keeps a later platform, and starts over after an unsubscribe", async () => {
+    const repo = new DrizzleWaitlistRepository(db);
+    const first = await repo.join("sam@example.com", undefined, "token-aaaaaaaaaaaaaaaa");
+    expect(first).toMatchObject({ fresh: true, entry: { email: "sam@example.com", unsubscribeToken: "token-aaaaaaaaaaaaaaaa" } });
+    expect(first.entry.platform).toBeUndefined();
+
+    await repo.markConfirmationSent(first.entry.id, new Date("2026-10-07T09:00:00Z"));
+    const again = await repo.join("sam@example.com", "iphone", "token-bbbbbbbbbbbbbbbb");
+    expect(again.fresh).toBe(false);
+    // The first token stays: links already emailed keep working.
+    expect(again.entry).toMatchObject({ id: first.entry.id, platform: "iphone", unsubscribeToken: "token-aaaaaaaaaaaaaaaa", confirmationSentAt: new Date("2026-10-07T09:00:00Z") });
+
+    expect(await repo.leave("token-bbbbbbbbbbbbbbbb")).toBe(false);
+    expect(await repo.leave("token-aaaaaaaaaaaaaaaa")).toBe(true);
+    expect(await repo.leave("token-aaaaaaaaaaaaaaaa")).toBe(true);
+
+    const back = await repo.join("sam@example.com", undefined, "token-cccccccccccccccc");
+    expect(back.fresh).toBe(true);
+    expect(back.entry.confirmationSentAt).toBeUndefined();
+    expect(back.entry.platform).toBe("iphone");
   });
 });
 

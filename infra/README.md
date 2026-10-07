@@ -37,6 +37,8 @@ Context options:
    ```
    Replace each `…` with the whole real key before running it. `TAVILY_API_KEY` (from https://tavily.com; the free plan covers about 1,000 searches a month, one per recipe suggestion load) powers recipe search; it is not one of the placeholders the stack creates, so it only exists once you add it. `BRAVE_SEARCH_API_KEY`, or `GOOGLE_CSE_API_KEY` with `GOOGLE_CSE_ID`, are read as fallbacks in that order; Google no longer gives new projects access to its API. `RECIPE_ALLOWED_DOMAINS` (comma-separated) is optional.
 
+   **Waitlist email.** The landing page's "Tell me when it's ready" form saves addresses whether or not email is set up. To send the confirmation email, add `RESEND_API_KEY` (from https://resend.com) to the same secret, after verifying the sending domain with Resend. `EMAIL_FROM` defaults to `NeuroCal <hello@neurocal.ai>` and `WEB_URL` (where unsubscribe links point) to `https://neurocal.ai`; set either in the secret to change it. The website's address must also be in `webOrigins` when you deploy, or browsers will block the form.
+
    Lambdas read the secret once per cold start. After changing keys, force new containers, for example by redeploying or updating any environment value.
 5. **Embed the catalog.** Repeat this after every change to `backend/src/infrastructure/catalog/catalog.ts`:
    ```sh

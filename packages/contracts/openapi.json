@@ -592,6 +592,72 @@
           }
         }
       }
+    },
+    "/waitlist": {
+      "post": {
+        "operationId": "joinWaitlist",
+        "summary": "Ask to be emailed when the app is ready",
+        "description": "Public: no sign-in. Answers the same way whether or not the address was already on the list.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistRequest"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinWaitlistResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/waitlist/unsubscribe": {
+      "post": {
+        "operationId": "leaveWaitlist",
+        "summary": "Leave the waitlist",
+        "description": "Public: no sign-in. Takes the token from the unsubscribe link in a waitlist email; an unknown token is answered the same way.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveWaitlistRequest"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveWaitlistResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1436,6 +1502,64 @@
         },
         "required": [
           "sessions"
+        ]
+      },
+      "JoinWaitlistRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "iphone",
+              "android"
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "JoinWaitlistResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "joined"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "LeaveWaitlistRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "LeaveWaitlistResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "unsubscribed"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "MacroFocus": {

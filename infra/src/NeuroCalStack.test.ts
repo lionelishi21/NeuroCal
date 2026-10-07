@@ -43,13 +43,25 @@ describe("NeuroCalStack", () => {
     dev.hasResourceProperties("AWS::Lambda::Function", { Runtime: "nodejs22.x", Architectures: ["arm64"], Timeout: 29 });
   });
 
-  it("puts a Cognito JWT authorizer in front of every API route", () => {
+  it("puts a Cognito JWT authorizer in front of every API route except preflights and the waitlist", () => {
     dev.hasResourceProperties("AWS::ApiGatewayV2::Authorizer", { AuthorizerType: "JWT", IdentitySource: ["$request.header.Authorization"] });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "$default", AuthorizationType: "JWT" });
     // Preflights carry no token, so they must skip the authorizer or browsers block every call.
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "OPTIONS /{proxy+}", AuthorizationType: "NONE" });
     const routes = Object.values(dev.findResources("AWS::ApiGatewayV2::Route")) as { Properties: { RouteKey: string; AuthorizationType: string } }[];
-    expect(routes.filter((r) => r.Properties.AuthorizationType === "NONE").map((r) => r.Properties.RouteKey)).toEqual(["OPTIONS /{proxy+}"]);
+    // The only open routes: preflights, and the landing page's waitlist form and unsubscribe link.
+    expect(routes.filter((r) => r.Properties.AuthorizationType === "NONE").map((r) => r.Properties.RouteKey).sort()).toEqual([
+      "OPTIONS /{proxy+}",
+      "POST /waitlist",
+      "POST /waitlist/unsubscribe",
+    ]);
+    // Open routes are rate-limited.
+    dev.hasResourceProperties("AWS::ApiGatewayV2::Stage", {
+      RouteSettings: {
+        "POST /waitlist": { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
+        "POST /waitlist/unsubscribe": { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
+      },
+    });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Api", {
       CorsConfiguration: Match.objectLike({ AllowOrigins: ["https://app.example.com"] }),
     });

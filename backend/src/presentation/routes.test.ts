@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "@jest/globals";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import {
+  FakeEmail,
   FakeEmbedder,
   FakeExplainer,
   FakeReasoning,
@@ -16,6 +17,7 @@ import {
   InMemoryStorage,
   InMemoryRecommendations,
   InMemoryTelemetry,
+  InMemoryWaitlist,
   item,
   profile,
 } from "../application/testing/fakes";
@@ -26,10 +28,14 @@ const clock = new FixedClock(new Date("2026-09-29T22:00:00Z")); // 17:00 in Chic
 let api: ReturnType<typeof createApi>;
 let profiles: InMemoryProfiles;
 let storage: InMemoryStorage;
+let waitlist: InMemoryWaitlist;
+let email: FakeEmail;
 
 beforeEach(async () => {
   profiles = new InMemoryProfiles();
   storage = new InMemoryStorage();
+  waitlist = new InMemoryWaitlist();
+  email = new FakeEmail();
   const meals = new InMemoryMeals();
   await profiles.save(profile());
   await meals.create("u1", { kind: "breakfast", eatenAt: new Date("2026-09-29T13:10:00Z"), items: [item("Oats", 440, 12.8, 67, 15)] });
@@ -65,6 +71,9 @@ beforeEach(async () => {
       ]),
       clock,
       recipeDomains: ["seriouseats.com"],
+      waitlist,
+      email,
+      webUrl: "https://neurocal.ai",
     }),
   );
 });
@@ -241,6 +250,26 @@ describe("API routes", () => {
     const id = (created.body as { id: string }).id;
     expect((await asAdmin("DELETE", `/admin/products/${id}`)).status).toBe(204);
     expect((await asAdmin("DELETE", "/admin/products/sunrise-alarm")).status).toBe(404);
+  });
+
+  it("POST /waitlist is public, answers the same way twice, and its link unsubscribes", async () => {
+    expect(api.isPublic("POST", "/waitlist")).toBe(true);
+    expect(api.isPublic("POST", "/waitlist/unsubscribe/")).toBe(true);
+    expect(api.isPublic("GET", "/waitlist")).toBe(false);
+    expect(api.isPublic("POST", "/meals")).toBe(false);
+
+    const first = await call("POST", "/waitlist", { email: "Sam@Example.com", platform: "android" });
+    expect(first).toEqual({ status: 201, body: { status: "joined" } });
+    expect(await call("POST", "/waitlist", { email: "sam@example.com" })).toEqual(first);
+    expect(waitlist.rows).toHaveLength(1);
+    expect(email.sent).toHaveLength(1);
+
+    expect((await call("POST", "/waitlist", { email: "nope" })).status).toBe(400);
+    expect((await call("POST", "/waitlist", { email: "sam@example.com", platform: "windows" })).status).toBe(400);
+
+    const token = waitlist.rows[0]!.unsubscribeToken;
+    expect(await call("POST", "/waitlist/unsubscribe", { token })).toEqual({ status: 200, body: { status: "unsubscribed" } });
+    expect(waitlist.rows[0]!.unsubscribed).toBe(true);
   });
 
   it("answers bad JSON, unknown paths and wrong methods clearly", async () => {

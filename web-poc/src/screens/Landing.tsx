@@ -6,6 +6,7 @@ import { useOptionalAuth } from "../auth/AuthProvider";
 import { FocusDemo } from "../components/FocusDemo";
 import { FocusRing } from "../components/FocusRing";
 import { LogoMark } from "../components/Logo";
+import { WaitlistForm } from "../components/WaitlistForm";
 import { WeekShowcase } from "../components/WeekShowcase";
 import { clearSessionHint } from "../lib/sessionHint";
 
@@ -126,7 +127,7 @@ const PRO = ["This week: charts and weak points", "Sleep and evenings clock", "R
 const FAQS = [
   ["Do I need a wearable?", "No. You log bedtime and wake-up in a few seconds. Sync with Oura, Whoop and Apple Health is on the way."],
   ["How does photo logging work?", "Take a photo of your plate. We find each item and estimate the portion, calories and glycemic load. Anything we're unsure of is marked \"best guess\", and you can untick it or add items by hand."],
-  ["When can I get it?", "NeuroCal is coming to iPhone and Android. It isn't in the App Store or Google Play yet."],
+  ["When can I get it?", "NeuroCal is coming to iPhone and Android. It isn't in the App Store or Google Play yet. Leave your email at the bottom of this page and we'll send you the link the day it is."],
   ["Is it really free?", "Yes. Meal logging, the daily Focus Score, check-ins and meal suggestions are free for good. Weekly patterns, the sleep clock and routines will be part of Pro; until Pro launches they are free too."],
   ["What happens to my data?", "Your meals, sleep and check-ins are used only to work out your score and suggestions. We don't sell your data."],
   ["Why do you suggest products?", "Sometimes a product fits a weak spot in your week. Every suggestion is labelled \"Affiliate link\" or \"Our brand\", and we say clearly when we earn a commission."],
@@ -499,16 +500,13 @@ export function Landing() {
               <path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--on-promo)" strokeWidth="3.5" strokeLinecap="round" />
               <circle cx="23.5" cy="14" r="2.2" fill="var(--promo-spark)" />
             </svg>
-            <h2 className="m-0 max-w-[45rem] text-3xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance sm:text-display">Get your first Focus Score tomorrow morning.</h2>
-            <p className="m-0 max-w-[32.5rem] text-lg leading-normal text-on-promo-soft">Log tonight's dinner and your sleep. That's all it takes.</p>
-            <ul className="m-0 mt-2 flex list-none flex-wrap justify-center gap-3 p-0">
-              {["iPhone", "Android"].map((platform) => (
-                <li key={platform} className="flex h-[3.625rem] flex-col items-start justify-center rounded-control bg-on-promo/15 px-6 text-left">
-                  <span className="text-2xs font-semibold text-on-promo-soft">Coming soon</span>
-                  <span className="text-lg leading-tight font-extrabold">NeuroCal for {platform}</span>
-                </li>
-              ))}
-            </ul>
+            <h2 className="m-0 max-w-[45rem] text-3xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance sm:text-display">Get NeuroCal the day it lands.</h2>
+            <p className="m-0 max-w-[32.5rem] text-lg leading-normal text-on-promo-soft">
+              NeuroCal is coming to iPhone and Android. Leave your email and we'll send you the link the day it's ready.
+            </p>
+            <div className="mt-2 flex w-full justify-center">
+              <WaitlistForm />
+            </div>
           </div>
         </section>
       </main>

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, type StackProps } from "aws-cdk-lib";
-import { CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
+import { CfnStage, CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cognito from "aws-cdk-lib/aws-cognito";
@@ -193,6 +193,24 @@ export class NeuroCalStack extends Stack {
       integration: new HttpLambdaIntegration("PreflightIntegration", api),
       authorizer: new HttpNoneAuthorizer(),
     });
+
+    // The waitlist is open to anyone: the landing page's visitors have no account. The Lambda
+    // serves these two routes without an identity (routes.ts `isPublic`); everything else still
+    // goes through the Cognito authorizer on $default.
+    const waitlistRoutes = ["/waitlist", "/waitlist/unsubscribe"];
+    for (const path of waitlistRoutes) {
+      httpApi.addRoutes({
+        path,
+        methods: [HttpMethod.POST],
+        integration: new HttpLambdaIntegration(`Waitlist${path.split("/").length}Integration`, api),
+        authorizer: new HttpNoneAuthorizer(),
+      });
+    }
+    // An open form invites floods: a few sign-ups a second is plenty, and the rest get 429.
+    (httpApi.defaultStage!.node.defaultChild as CfnStage).routeSettings = Object.fromEntries(
+      // Route settings are passed to CloudFormation as written, so the keys take its capitals.
+      waitlistRoutes.map((path) => [`POST ${path}`, { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 }]),
+    );
 
     new CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint, description: "NEXT_PUBLIC_API_URL for the web app" });
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });

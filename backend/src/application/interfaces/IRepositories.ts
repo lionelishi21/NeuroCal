@@ -10,6 +10,8 @@ import type {
   NewRecipeRecommendation,
   Profile,
   RecipeRecommendation,
+  WaitlistEntry,
+  WaitlistPlatform,
 } from "../../domain/types";
 
 /** Maps the identity provider's subject (Cognito `sub`) to our user id, creating the user on first sign-in. */
@@ -52,6 +54,17 @@ export interface ITelemetryRepository {
 export interface IFocusScoreRepository {
   get(userId: string, date: string): Promise<FocusScore | null>;
   put(score: FocusScore): Promise<void>;
+}
+
+export interface IWaitlistRepository {
+  /**
+   * Adds the address, or returns the entry it already has. `fresh` is true for a new address and
+   * for one that had unsubscribed and is joining again; a platform given later replaces an earlier one.
+   */
+  join(email: string, platform: WaitlistPlatform | undefined, unsubscribeToken: string): Promise<{ entry: WaitlistEntry; fresh: boolean }>;
+  markConfirmationSent(id: string, at: Date): Promise<void>;
+  /** False when no entry has this token. Unsubscribing twice is fine. */
+  leave(unsubscribeToken: string): Promise<boolean>;
 }
 
 export interface IRecommendationRepository {

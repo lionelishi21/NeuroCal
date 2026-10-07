@@ -22,6 +22,8 @@ interface OperationDoc {
   params?: Record<string, string>;
   /** The request can also be a multipart form with these file fields. */
   multipart?: Record<string, string>;
+  /** No sign-in needed: the operation overrides the document's default security. */
+  public?: boolean;
 }
 
 const dateQuery = {
@@ -83,6 +85,17 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   ingestScreenTime: {
     summary: "Store screen-time samples",
     description: "Samples upsert on source and windowStart. Minutes can't exceed the window length.",
+  },
+  joinWaitlist: {
+    summary: "Ask to be emailed when the app is ready",
+    description: "Public: no sign-in. Answers the same way whether or not the address was already on the list.",
+    status: 201,
+    public: true,
+  },
+  leaveWaitlist: {
+    summary: "Leave the waitlist",
+    description: "Public: no sign-in. Takes the token from the unsubscribe link in a waitlist email; an unknown token is answered the same way.",
+    public: true,
   },
 };
 
@@ -166,6 +179,7 @@ export function buildOpenApi() {
       ...(doc.description ? { description: doc.description } : {}),
       ...(parameters.length ? { parameters } : {}),
       ...(requestBody ? { requestBody } : {}),
+      ...(doc.public ? { security: [] } : {}),
       responses: {
         [status]: {
           description: SUCCESS_TEXT[status],

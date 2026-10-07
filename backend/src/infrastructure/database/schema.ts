@@ -148,6 +148,18 @@ export const recipeRecommendations = pgTable(
   (t) => [index("recipe_recommendations_user_created_idx").on(t.userId, t.createdAt.desc())],
 );
 
+/** People to email when the mobile app is ready. Not tied to an account: they have none yet. */
+export const waitlist = pgTable("waitlist", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** Lower-cased. */
+  email: text("email").notNull().unique(),
+  platform: text("platform"),
+  unsubscribeToken: text("unsubscribe_token").notNull().unique(),
+  confirmationSentAt: timestamp("confirmation_sent_at", { withTimezone: true }),
+  unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+  ...timestamps,
+});
+
 export const sleepSessions = pgTable(
   "sleep_sessions",
   {

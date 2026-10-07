@@ -11,6 +11,9 @@ import {
   CheckIn,
   FocusScore,
   HistoryResponse,
+  type JoinWaitlistRequest,
+  JoinWaitlistResponse,
+  LeaveWaitlistResponse,
   ProtocolsResponse,
   IngestResponse,
   type IngestScreenTimeRequest,
@@ -286,5 +289,19 @@ export function useDeleteAdminProduct() {
   return useMutation({
     mutationFn: (id: string) => request(`/admin/products/${encodeURIComponent(id)}`, z.undefined(), { method: "DELETE" }),
     onSuccess: invalidate,
+  });
+}
+
+/** Joins the list of people to email when the mobile app is ready. Public: works signed out. */
+export function useJoinWaitlist() {
+  return useMutation({
+    mutationFn: (entry: JoinWaitlistRequest) => request("/waitlist", JoinWaitlistResponse, { method: "POST", body: JSON.stringify(entry) }),
+  });
+}
+
+/** Leaves that list, with the token from an email's unsubscribe link. */
+export function useLeaveWaitlist() {
+  return useMutation({
+    mutationFn: (token: string) => request("/waitlist/unsubscribe", LeaveWaitlistResponse, { method: "POST", body: JSON.stringify({ token }) }),
   });
 }

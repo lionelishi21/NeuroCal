@@ -11,6 +11,10 @@ import {
   CreatePhotoUploadRequest,
   FocusScore,
   HistoryResponse,
+  JoinWaitlistRequest,
+  JoinWaitlistResponse,
+  LeaveWaitlistRequest,
+  LeaveWaitlistResponse,
   ProtocolsResponse,
   IngestResponse,
   IngestScreenTimeRequest,
@@ -38,6 +42,7 @@ import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
+import type { JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
 import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations } from "./mappers";
 
@@ -48,7 +53,7 @@ export interface ApiRequest {
   query: URLSearchParams;
   headers: Record<string, string | undefined>;
   body?: Uint8Array;
-  /** Set by the transport from the verified identity; never read from the request. */
+  /** Set by the transport from the verified identity; never read from the request. Empty on public routes. */
   userId: string;
   /** Set by the transport when the verified email is on the admin list. */
   isAdmin?: boolean;
@@ -75,6 +80,8 @@ export interface UseCases {
   getHistory: GetHistoryUseCase;
   getProtocols: GetProtocolsUseCase;
   adminProducts: AdminProductUseCases;
+  joinWaitlist: JoinWaitlistUseCase;
+  leaveWaitlist: LeaveWaitlistUseCase;
 }
 
 class BadRequest extends Error {}
@@ -128,8 +135,32 @@ async function photoFrom(req: ApiRequest) {
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
 
+type Route = [method: string, pattern: RegExp, handler: (req: ApiRequest, params: string[]) => Promise<ApiResponse>];
+const normalise = (path: string) => path.replace(/\/+$/, "") || "/";
+
 export function createApi(uc: UseCases) {
-  const routes: [method: string, pattern: RegExp, handler: (req: ApiRequest, params: string[]) => Promise<ApiResponse>][] = [
+  // Open to anyone, signed in or not: the transport checks `isPublic` before it asks for an identity.
+  const publicRoutes: Route[] = [
+    [
+      "POST",
+      /^\/waitlist$/,
+      async (req) => {
+        await uc.joinWaitlist.execute(json(req, JoinWaitlistRequest));
+        return ok(JoinWaitlistResponse, { status: "joined" }, 201);
+      },
+    ],
+    [
+      "POST",
+      /^\/waitlist\/unsubscribe$/,
+      async (req) => {
+        await uc.leaveWaitlist.execute(json(req, LeaveWaitlistRequest));
+        return ok(LeaveWaitlistResponse, { status: "unsubscribed" });
+      },
+    ],
+  ];
+
+  const routes: Route[] = [
+    ...publicRoutes,
     ["GET", /^\/me$/, async (req) => ok(Profile, toProfile(await uc.getProfile.execute(req)))],
     [
       "PUT",
@@ -256,8 +287,8 @@ export function createApi(uc: UseCases) {
     ],
   ];
 
-  return async function handle(req: ApiRequest): Promise<ApiResponse> {
-    const path = req.path.replace(/\/+$/, "") || "/";
+  async function handle(req: ApiRequest): Promise<ApiResponse> {
+    const path = normalise(req.path);
     const matches = routes.filter(([, pattern]) => pattern.test(path));
     const route = matches.find(([method]) => method === req.method);
     if (!route) {
@@ -273,5 +304,9 @@ export function createApi(uc: UseCases) {
       console.error(JSON.stringify({ event: "unhandled_error", path, method: req.method, error: String(e) }));
       return error(500, "internal", "Something went wrong on our side. Try again in a moment.");
     }
-  };
+  }
+
+  /** True for routes that need no sign-in (the waitlist). */
+  const isPublic = (method: string, path: string) => publicRoutes.some(([m, pattern]) => m === method && pattern.test(normalise(path)));
+  return Object.assign(handle, { isPublic });
 }

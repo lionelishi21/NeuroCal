@@ -8,6 +8,8 @@ import {
   CreatePhotoUploadRequest,
   IngestScreenTimeRequest,
   IngestSleepRequest,
+  JoinWaitlistRequest,
+  LeaveWaitlistRequest,
   UpdateAdminProductRequest,
   UpdateProfileRequest,
 } from "@neurocal/contracts";
@@ -180,6 +182,19 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       const body = IngestScreenTimeRequest.safeParse(await request.json());
       if (!body.success) return invalid("That screen-time entry isn't valid.");
       return HttpResponse.json({ accepted: db.addScreenTime(body.data.samples) });
+    }),
+    // Public on the real API too: the landing page's visitors have no account.
+    http.post(url("/waitlist"), async ({ request }) => {
+      const body = JoinWaitlistRequest.safeParse(await request.json());
+      if (!body.success) return invalid("Enter a valid email address.");
+      await delay(latency);
+      return HttpResponse.json({ status: "joined" }, { status: 201 });
+    }),
+    http.post(url("/waitlist/unsubscribe"), async ({ request }) => {
+      const body = LeaveWaitlistRequest.safeParse(await request.json());
+      if (!body.success) return invalid("That unsubscribe link isn't complete.");
+      await delay(latency);
+      return HttpResponse.json({ status: "unsubscribed" });
     }),
     http.get(url("/recommendations/next"), async () => {
       if (!db.profile()) return noProfile();

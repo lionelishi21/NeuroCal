@@ -380,6 +380,25 @@ export const CreateAdminProductRequest = z.object({
 });
 export type CreateAdminProductRequest = z.infer<typeof CreateAdminProductRequest>;
 
+/** Someone asking to be told when the mobile app is ready. Public: no sign-in. */
+export const JoinWaitlistRequest = z.object({
+  email: z.email().max(254),
+  /** The phone they would install it on, when they say. */
+  platform: z.enum(["iphone", "android"]).optional(),
+});
+export type JoinWaitlistRequest = z.infer<typeof JoinWaitlistRequest>;
+
+/** The same answer whether or not the address was already on the list, so the list can't be probed. */
+export const JoinWaitlistResponse = z.object({ status: z.literal("joined") });
+export type JoinWaitlistResponse = z.infer<typeof JoinWaitlistResponse>;
+
+/** The token from the unsubscribe link in a waitlist email. */
+export const LeaveWaitlistRequest = z.object({ token: z.string().min(16).max(64) });
+export type LeaveWaitlistRequest = z.infer<typeof LeaveWaitlistRequest>;
+
+export const LeaveWaitlistResponse = z.object({ status: z.literal("unsubscribed") });
+export type LeaveWaitlistResponse = z.infer<typeof LeaveWaitlistResponse>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -412,6 +431,10 @@ export const endpoints = {
   deleteAdminProduct: { method: "DELETE", path: "/admin/products/:id" },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
+  /** Public (no sign-in): join the list to be emailed when the app is ready. */
+  joinWaitlist: { method: "POST", path: "/waitlist", body: JoinWaitlistRequest, response: JoinWaitlistResponse },
+  /** Public: leave the list with the token from an email's unsubscribe link. */
+  leaveWaitlist: { method: "POST", path: "/waitlist/unsubscribe", body: LeaveWaitlistRequest, response: LeaveWaitlistResponse },
 } as const;
 
 export function mealCalories(meal: Pick<Meal, "items">): number {

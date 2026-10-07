@@ -27,7 +27,18 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
-          <RequireAuth landing={<Landing />}>
+          {/* The landing page's waitlist form calls the API, so in mock mode it needs the mock running too. */}
+          <RequireAuth
+            landing={
+              MockGate ? (
+                <MockGate>
+                  <Landing />
+                </MockGate>
+              ) : (
+                <Landing />
+              )
+            }
+          >
             {MockGate ? (
               <MockGate>
                 <OfflineMealSync />

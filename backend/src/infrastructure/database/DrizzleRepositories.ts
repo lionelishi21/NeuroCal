@@ -7,6 +7,7 @@ import type {
   IRecommendationRepository,
   ITelemetryRepository,
   IUserRepository,
+  IWaitlistRepository,
 } from "../../application/interfaces/IRepositories";
 import type {
   CheckIn,
@@ -27,6 +28,8 @@ import type {
   ScreenTimeSample,
   SleepSession,
   TelemetrySource,
+  WaitlistEntry,
+  WaitlistPlatform,
 } from "../../domain/types";
 import type { Database } from "./client";
 import {
@@ -39,6 +42,7 @@ import {
   screenTimeSamples,
   sleepSessions,
   users,
+  waitlist,
 } from "./schema";
 
 /** Rows from a user's local calendar day, whatever time zone the database runs in. */
@@ -398,5 +402,50 @@ export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
       .insert(focusScores)
       .values({ userId: score.userId, date: score.date, ...values })
       .onConflictDoUpdate({ target: [focusScores.userId, focusScores.date], set: values });
+  }
+}
+
+const toWaitlistEntry = (row: typeof waitlist.$inferSelect): WaitlistEntry => ({
+  id: row.id,
+  email: row.email,
+  ...(row.platform ? { platform: row.platform as WaitlistPlatform } : {}),
+  unsubscribeToken: row.unsubscribeToken,
+  ...(row.confirmationSentAt ? { confirmationSentAt: row.confirmationSentAt } : {}),
+});
+
+export class DrizzleWaitlistRepository implements IWaitlistRepository {
+  constructor(private readonly db: Database) {}
+
+  async join(email: string, platform: WaitlistPlatform | undefined, unsubscribeToken: string): Promise<{ entry: WaitlistEntry; fresh: boolean }> {
+    const [added] = await this.db
+      .insert(waitlist)
+      .values({ email, platform: platform ?? null, unsubscribeToken })
+      .onConflictDoNothing({ target: waitlist.email })
+      .returning();
+    if (added) return { entry: toWaitlistEntry(added), fresh: true };
+
+    const [existing] = await this.db.select().from(waitlist).where(eq(waitlist.email, email));
+    if (!existing) throw new Error("Waitlist entry not found after a conflict");
+    const rejoining = existing.unsubscribedAt !== null;
+    const [updated] = await this.db
+      .update(waitlist)
+      // Joining again after unsubscribing starts over: back on the list, and the confirmation goes out again.
+      .set({ ...(platform ? { platform } : {}), ...(rejoining ? { unsubscribedAt: null, confirmationSentAt: null } : {}), updatedAt: new Date() })
+      .where(eq(waitlist.id, existing.id))
+      .returning();
+    return { entry: toWaitlistEntry(updated ?? existing), fresh: rejoining };
+  }
+
+  async markConfirmationSent(id: string, at: Date): Promise<void> {
+    await this.db.update(waitlist).set({ confirmationSentAt: at }).where(eq(waitlist.id, id));
+  }
+
+  async leave(unsubscribeToken: string): Promise<boolean> {
+    const rows = await this.db
+      .update(waitlist)
+      .set({ unsubscribedAt: sql`coalesce(${waitlist.unsubscribedAt}, now())` })
+      .where(eq(waitlist.unsubscribeToken, unsubscribeToken))
+      .returning({ id: waitlist.id });
+    return rows.length > 0;
   }
 }

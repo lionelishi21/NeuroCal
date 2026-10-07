@@ -156,6 +156,11 @@ focus_scores                                planned
   explanation text, model_version text, computed_at timestamptz
   primary key (user_id, date)
 
+waitlist                                   -- people to email when the mobile app is ready; no account
+  id uuid pk, email text not null unique (lower-cased), platform text ("iphone" | "android"),
+  unsubscribe_token text not null unique, confirmation_sent_at timestamptz, unsubscribed_at timestamptz,
+  created_at, updated_at
+
 recipe_recommendations
   id uuid pk, user_id fk, search_query text not null, title, source_name, source_url text not null,
   image_url text, minutes integer, calories numeric, protein_g, carbs_g, fat_g numeric,
@@ -377,6 +382,14 @@ Missing inputs drop out and the remaining weights are renormalised; the stored `
 Yesterday's intake, Focus Score and one suggestion, sent via `IEmailProvider` (Resend). Opt-in only.
 
 ---
+
+### 6.12 Waitlist — `POST /waitlist`, `POST /waitlist/unsubscribe` (public)
+The website is a landing page and the app is not in the stores yet, so visitors leave an email address to be told when it is. These are the only routes without sign-in: the gateway lets them through with no authorizer and a rate limit (5 a second, burst 10), and the Lambda serves them before it looks for an identity (`createApi(...).isPublic`).
+1. `JoinWaitlistUseCase` lower-cases the address and adds it. Joining twice changes nothing (a platform given later is kept) and is answered the same way, so the list can't be probed.
+2. A new entry gets one "You're on the NeuroCal list" email through `IEmailSender` (Resend), with an unsubscribe link to `<WEB_URL>/unsubscribe?token=…` and a List-Unsubscribe header. Without a Resend key, or if sending fails, the address is still kept and `confirmation_sent_at` stays empty, so the email goes out on a later join. Addresses are never logged.
+3. The unsubscribe page posts the token to `/waitlist/unsubscribe` only when the person clicks, because mail scanners open links. Joining again afterwards starts over.
+
+Sending the launch email to the list is not built yet.
 
 ## 7. AI integration
 

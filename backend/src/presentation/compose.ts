@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { IAiReasoningProvider } from "../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../application/interfaces/IAiVisionProvider";
 import type { ICatalogRepository } from "../application/interfaces/ICatalogRepository";
 import type { IClock } from "../application/interfaces/IClock";
+import type { IEmailSender } from "../application/interfaces/IEmailSender";
 import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
@@ -12,6 +14,7 @@ import type {
   IProfileRepository,
   IRecommendationRepository,
   ITelemetryRepository,
+  IWaitlistRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
@@ -28,6 +31,7 @@ import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
+import { JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import type { UseCases } from "./routes";
 
 export interface Ports {
@@ -46,6 +50,10 @@ export interface Ports {
   search: ISearchEngineAdapter;
   clock: IClock;
   recipeDomains: string[];
+  waitlist: IWaitlistRepository;
+  email: IEmailSender;
+  /** The website; unsubscribe links point at it. */
+  webUrl: string;
 }
 
 /** Wires use cases to whatever adapters the caller provides (ARCHITECTURE §2: composition root). */
@@ -69,6 +77,8 @@ export function buildUseCases(p: Ports): UseCases {
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock),
     adminProducts: new AdminProductUseCases(p.catalog, p.embedder),
     getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock),
+    joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
+    leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
   };
 }
 

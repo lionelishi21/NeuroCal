@@ -20,6 +20,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleWaitlistRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { createPgliteDatabase } from "../infrastructure/database/pglite";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -28,6 +29,7 @@ import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
 import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
+import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
 import { createApi } from "./routes";
 
@@ -152,6 +154,9 @@ async function main() {
       search,
       clock: systemClock,
       recipeDomains: config.recipeDomains,
+      waitlist: new DrizzleWaitlistRepository(db),
+      email: config.resendApiKey ? new ResendEmailSender({ apiKey: config.resendApiKey, from: config.emailFrom }) : noEmail,
+      webUrl: config.webUrl,
     }),
   );
 

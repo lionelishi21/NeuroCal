@@ -23,6 +23,12 @@ export interface AppConfig {
   recipeDomains: string[];
   /** Lower-cased emails allowed to use the admin routes. */
   adminEmails: string[];
+  /** Resend API key; without it no email is sent (waitlist addresses are still kept). */
+  resendApiKey?: string;
+  /** The sender, on a domain verified with Resend. */
+  emailFrom: string;
+  /** The website; unsubscribe links point at it. */
+  webUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -37,6 +43,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     googleSearchApiKey: opt("GOOGLE_CSE_API_KEY"),
     googleSearchEngineId: opt("GOOGLE_CSE_ID"),
     photoBucket: opt("PHOTO_BUCKET"),
+    resendApiKey: opt("RESEND_API_KEY"),
+    emailFrom: opt("EMAIL_FROM") ?? "NeuroCal <hello@neurocal.ai>",
+    webUrl: opt("WEB_URL") ?? "https://neurocal.ai",
     adminEmails: (opt("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,
   };

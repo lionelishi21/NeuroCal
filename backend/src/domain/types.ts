@@ -194,6 +194,20 @@ export interface ProductSettings {
 
 export type FocusComponentName = keyof FocusComponents;
 
+/** Someone waiting to hear that the mobile app is ready. */
+export interface WaitlistEntry {
+  id: string;
+  /** Lower-cased. */
+  email: string;
+  platform?: WaitlistPlatform;
+  /** Goes in the unsubscribe link; knowing it is the only proof needed to leave. */
+  unsubscribeToken: string;
+  /** When the "you're on the list" email went out; absent until it has. */
+  confirmationSentAt?: Date;
+}
+export const WAITLIST_PLATFORMS = ["iphone", "android"] as const;
+export type WaitlistPlatform = (typeof WAITLIST_PLATFORMS)[number];
+
 export interface WeakPoint {
   component: FocusComponentName;
   label: string;
