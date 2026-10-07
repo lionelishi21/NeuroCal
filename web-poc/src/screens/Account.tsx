@@ -212,6 +212,14 @@ export function SignIn() {
         <Problems problem={problem} />
         <Submit busy={busy}>{busy ? "Signing in…" : "Sign in"}</Submit>
       </form>
+      {usesMockAuth && (
+        <p className="mt-5 mb-0 text-center text-sm text-ink-soft">
+          Test mode: accounts live in this browser.{" "}
+          <Link href="/sign-up" className={textLink}>
+            Create a local account
+          </Link>
+        </p>
+      )}
       <p className="mt-5 mb-0 text-center text-md font-medium text-ink-soft">
         <Link href="/" className={textLink}>
           Back to the home page
