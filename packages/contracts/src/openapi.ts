@@ -86,6 +86,7 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Store screen-time samples",
     description: "Samples upsert on source and windowStart. Minutes can't exceed the window length.",
   },
+  getAdminWaitlist: { summary: "See who is on the waitlist", description: "Admins only; anyone else gets 403. Counts leave out people who unsubscribed; entries are newest first, at most 500." },
   joinWaitlist: {
     summary: "Ask to be emailed when the app is ready",
     description: "Public: no sign-in. Answers the same way whether or not the address was already on the list.",

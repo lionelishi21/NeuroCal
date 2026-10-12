@@ -146,7 +146,7 @@ describe("Onboarding", () => {
     expect(BioProfile.safeParse((saved as { bioProfile: unknown }).bioProfile).success).toBe(true);
 
     await user.click(screen.getByRole("button", { name: "Go to Today" }));
-    expect(mockRouter.replace).toHaveBeenCalledWith("/");
+    expect(mockRouter.replace).toHaveBeenCalledWith("/app");
   });
 
   it("pre-fills everything when editing an existing profile", async () => {

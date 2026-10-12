@@ -1,5 +1,5 @@
-import { InvalidError } from "../../domain/errors";
-import type { WaitlistPlatform } from "../../domain/types";
+import { ForbiddenError, InvalidError } from "../../domain/errors";
+import type { WaitlistOverview, WaitlistPlatform } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { IEmailSender } from "../interfaces/IEmailSender";
 import type { IWaitlistRepository } from "../interfaces/IRepositories";
@@ -64,5 +64,21 @@ export class LeaveWaitlistUseCase {
 
   async execute(input: { token: string }): Promise<void> {
     await this.waitlist.leave(input.token);
+  }
+}
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const NEWEST = 500;
+
+/** The waitlist for the admin dashboard. `isAdmin` comes from the verified sign-in. */
+export class AdminWaitlistUseCase {
+  constructor(
+    private readonly waitlist: IWaitlistRepository,
+    private readonly clock: IClock,
+  ) {}
+
+  async execute(caller: { isAdmin: boolean }): Promise<WaitlistOverview> {
+    if (!caller.isAdmin) throw new ForbiddenError("Only an admin can see the waitlist.");
+    return this.waitlist.overview(new Date(this.clock.now().getTime() - WEEK_MS), NEWEST);
   }
 }

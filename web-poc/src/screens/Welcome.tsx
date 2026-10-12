@@ -89,7 +89,7 @@ export function Welcome() {
     save.mutate(body, {
       onSuccess: () => {
         toast("Profile saved");
-        router.replace("/");
+        router.replace("/app");
       },
     });
   };
@@ -143,7 +143,7 @@ export function Welcome() {
             Back
           </Button>
         ) : editing ? (
-          <Button variant="quiet" onClick={() => router.push("/")}>
+          <Button variant="quiet" onClick={() => router.push("/app")}>
             Cancel
           </Button>
         ) : null}

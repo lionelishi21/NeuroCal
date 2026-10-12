@@ -87,7 +87,7 @@ export function Onboarding() {
     );
   };
 
-  if (done) return <ProfileSaved name={name.trim()} onContinue={() => router.replace("/")} />;
+  if (done) return <ProfileSaved name={name.trim()} onContinue={() => router.replace("/app")} />;
 
   return (
     <main className="mx-auto flex h-dvh w-full max-w-[26rem] flex-col px-6 pt-6 pb-[max(2rem,env(safe-area-inset-bottom))]">

@@ -29,6 +29,7 @@ import type {
   SleepSession,
   TelemetrySource,
   WaitlistEntry,
+  WaitlistOverview,
   WaitlistPlatform,
 } from "../../domain/types";
 import type { Database } from "./client";
@@ -447,5 +448,33 @@ export class DrizzleWaitlistRepository implements IWaitlistRepository {
       .where(eq(waitlist.unsubscribeToken, unsubscribeToken))
       .returning({ id: waitlist.id });
     return rows.length > 0;
+  }
+
+  async overview(since: Date, limit: number): Promise<WaitlistOverview> {
+    const active = sql`${waitlist.unsubscribedAt} is null`;
+    const [counts] = await this.db
+      .select({
+        total: sql<number>`count(*) filter (where ${active})::int`,
+        iphone: sql<number>`count(*) filter (where ${active} and ${waitlist.platform} = 'iphone')::int`,
+        android: sql<number>`count(*) filter (where ${active} and ${waitlist.platform} = 'android')::int`,
+        thisWeek: sql<number>`count(*) filter (where ${active} and ${waitlist.createdAt} >= ${since})::int`,
+        unsubscribed: sql<number>`count(*) filter (where not (${active}))::int`,
+      })
+      .from(waitlist);
+    const rows = await this.db.select().from(waitlist).orderBy(desc(waitlist.createdAt)).limit(limit);
+    return {
+      total: counts?.total ?? 0,
+      iphone: counts?.iphone ?? 0,
+      android: counts?.android ?? 0,
+      thisWeek: counts?.thisWeek ?? 0,
+      unsubscribed: counts?.unsubscribed ?? 0,
+      entries: rows.map((row) => ({
+        email: row.email,
+        ...(row.platform ? { platform: row.platform as WaitlistPlatform } : {}),
+        joinedAt: row.createdAt,
+        confirmed: row.confirmationSentAt !== null,
+        unsubscribed: row.unsubscribedAt !== null,
+      })),
+    };
   }
 }

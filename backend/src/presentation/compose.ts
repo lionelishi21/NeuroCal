@@ -31,7 +31,7 @@ import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
-import { JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
+import { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import type { UseCases } from "./routes";
 
 export interface Ports {
@@ -79,6 +79,7 @@ export function buildUseCases(p: Ports): UseCases {
     getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock),
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
+    adminWaitlist: new AdminWaitlistUseCase(p.waitlist, p.clock),
   };
 }
 

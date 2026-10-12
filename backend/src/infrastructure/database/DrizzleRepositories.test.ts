@@ -167,6 +167,14 @@ describe("DrizzleWaitlistRepository", () => {
     expect(await repo.leave("token-aaaaaaaaaaaaaaaa")).toBe(true);
     expect(await repo.leave("token-aaaaaaaaaaaaaaaa")).toBe(true);
 
+    await repo.join("lee@example.com", "android", "token-dddddddddddddddd");
+    const overview = await repo.overview(new Date(Date.now() - 60_000), 10);
+    expect(overview).toMatchObject({ total: 1, iphone: 0, android: 1, thisWeek: 1, unsubscribed: 1 });
+    expect(overview.entries.map((e) => [e.email, e.unsubscribed])).toEqual([
+      ["lee@example.com", false],
+      ["sam@example.com", true],
+    ]);
+
     const back = await repo.join("sam@example.com", undefined, "token-cccccccccccccccc");
     expect(back.fresh).toBe(true);
     expect(back.entry.confirmationSentAt).toBeUndefined();

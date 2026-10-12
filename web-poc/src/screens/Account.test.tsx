@@ -121,7 +121,7 @@ describe("Account", () => {
     await user.clear(code);
     await user.type(code, MOCK_CODE);
     await user.click(screen.getByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/admin"));
     expect(await screen.findByText("status: signedIn")).toBeInTheDocument();
     expect(screen.getByText("Account created")).toBeInTheDocument();
   });
@@ -153,7 +153,7 @@ describe("Account", () => {
     await user.clear(screen.getByLabelText("Password"));
     await user.type(screen.getByLabelText("Password"), "correct-horse");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/admin"));
   });
 
   it("asks an unverified account for its code when signing in", async () => {
@@ -193,8 +193,8 @@ describe("Account", () => {
 
   it("only returns to same-site paths after sign-in", () => {
     expect(nextPath("?next=%2Fhistory")).toBe("/history");
-    expect(nextPath("?next=%2F%2Fevil.example")).toBe("/");
-    expect(nextPath("?next=https%3A%2F%2Fevil.example")).toBe("/");
-    expect(nextPath("")).toBe("/");
+    expect(nextPath("?next=%2F%2Fevil.example")).toBe("/admin");
+    expect(nextPath("?next=https%3A%2F%2Fevil.example")).toBe("/admin");
+    expect(nextPath("")).toBe("/admin");
   });
 });

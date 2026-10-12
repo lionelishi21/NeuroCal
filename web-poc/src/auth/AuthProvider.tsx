@@ -116,8 +116,8 @@ export function RequireAuth({ children, landing }: { children: ReactNode; landin
   return status === "signedIn" ? children : null;
 }
 
-/** Where to go after signing in: the `next` query value if it is a same-site path. */
+/** Where to go after signing in: the `next` query value if it is a same-site path, else the admin dashboard. */
 export function nextPath(search: string = typeof window === "undefined" ? "" : window.location.search): string {
   const next = new URLSearchParams(search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
 }

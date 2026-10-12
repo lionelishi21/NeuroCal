@@ -41,7 +41,7 @@ export function Sleep() {
   return (
     <>
       <Screen actions>
-        <ScreenHeader title="Sleep and evenings" detail={`Last ${NIGHTS} nights`} back={{ href: "/", label: "Back to Today" }} />
+        <ScreenHeader title="Sleep and evenings" detail={`Last ${NIGHTS} nights`} back={{ href: "/app", label: "Back to Today" }} />
 
         {history.isPending && <ScreenLoading label="Loading your nights" heights={[5.25, 18.75, 7.5]} />}
         {history.isError && (

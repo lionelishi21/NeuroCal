@@ -593,6 +593,28 @@
         }
       }
     },
+    "/admin/waitlist": {
+      "get": {
+        "operationId": "getAdminWaitlist",
+        "summary": "See who is on the waitlist",
+        "description": "Admins only; anyone else gets 403. Counts leave out people who unsubscribed; entries are newest first, at most 500.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWaitlist"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/waitlist": {
       "post": {
         "operationId": "joinWaitlist",
@@ -755,6 +777,76 @@
         },
         "required": [
           "products"
+        ]
+      },
+      "AdminWaitlist": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "iphone": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "android": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "thisWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unsubscribed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminWaitlistEntry"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "iphone",
+          "android",
+          "thisWeek",
+          "unsubscribed",
+          "entries"
+        ]
+      },
+      "AdminWaitlistEntry": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "iphone",
+              "android"
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "unsubscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "joinedAt",
+          "confirmed",
+          "unsubscribed"
         ]
       },
       "AnalyzeMealRequest": {

@@ -11,6 +11,7 @@ import type {
   Profile,
   RecipeRecommendation,
   WaitlistEntry,
+  WaitlistOverview,
   WaitlistPlatform,
 } from "../../domain/types";
 
@@ -65,6 +66,8 @@ export interface IWaitlistRepository {
   markConfirmationSent(id: string, at: Date): Promise<void>;
   /** False when no entry has this token. Unsubscribing twice is fine. */
   leave(unsubscribeToken: string): Promise<boolean>;
+  /** Counts, with "this week" meaning joined since `since`, and the newest `limit` entries. */
+  overview(since: Date, limit: number): Promise<WaitlistOverview>;
 }
 
 export interface IRecommendationRepository {

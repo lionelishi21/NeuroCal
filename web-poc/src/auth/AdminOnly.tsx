@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { RequestFailed } from "../api/client";
 import { useAdminProducts } from "../api/queries";
-import { ScreenFailed } from "../components/ListStates";
-import { Logo } from "../components/Logo";
+import { LoadFailed } from "../components/ListStates";
+import { SiteFrame } from "../components/SiteFrame";
 import { useAuth } from "./AuthProvider";
 
 /**
@@ -25,32 +24,26 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 
   const refused = admin.error instanceof RequestFailed && admin.error.status === 403;
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[26rem] flex-col justify-center px-6 py-10">
-      <Logo />
+    <SiteFrame>
       {refused ? (
         <>
-          <h1 className="mt-8 mb-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">NeuroCal lives on your phone.</h1>
+          <h1 className="m-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">NeuroCal lives on your phone.</h1>
           <p className="mt-3 mb-0 text-base leading-normal text-pretty text-ink-soft">
             The web app is for the NeuroCal team. {auth.user?.email ? `${auth.user.email} isn't an admin account.` : "This isn't an admin account."} Your meals and scores are in the mobile app.
           </p>
           <button
             type="button"
             onClick={() => auth.signOut()}
-            className="mt-7 h-14 cursor-pointer rounded-pill bg-synapse px-7 text-lg font-bold text-on-accent hover:brightness-110"
+            className="mt-7 h-14 w-full cursor-pointer rounded-pill bg-synapse px-7 text-lg font-bold text-on-accent hover:brightness-110"
           >
             Sign out
           </button>
-          <Link href="/" className="mt-4 self-center text-md font-bold text-synapse-ink underline-offset-4 hover:underline" onClick={() => auth.signOut()}>
-            Back to the home page
-          </Link>
         </>
       ) : (
-        <div className="-mx-4 mt-4">
-          <ScreenFailed title="Couldn't check your account" onRetry={() => admin.refetch()}>
-            Check your connection and try again.
-          </ScreenFailed>
-        </div>
+        <LoadFailed title="Couldn't check your account" onRetry={() => admin.refetch()}>
+          Check your connection and try again.
+        </LoadFailed>
       )}
-    </main>
+    </SiteFrame>
   );
 }

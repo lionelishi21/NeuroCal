@@ -205,6 +205,17 @@ export interface WaitlistEntry {
   /** When the "you're on the list" email went out; absent until it has. */
   confirmationSentAt?: Date;
 }
+/** The waitlist at a glance, for admins. Counts leave out people who unsubscribed. */
+export interface WaitlistOverview {
+  total: number;
+  iphone: number;
+  android: number;
+  thisWeek: number;
+  unsubscribed: number;
+  /** Newest first. */
+  entries: { email: string; platform?: WaitlistPlatform; joinedAt: Date; confirmed: boolean; unsubscribed: boolean }[];
+}
+
 export const WAITLIST_PLATFORMS = ["iphone", "android"] as const;
 export type WaitlistPlatform = (typeof WAITLIST_PLATFORMS)[number];
 

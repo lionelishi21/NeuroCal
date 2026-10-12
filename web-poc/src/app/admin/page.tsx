@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Admin } from "../../screens/Admin";
+import { AdminDashboard } from "../../screens/AdminDashboard";
 
-export const metadata: Metadata = { title: "Manage products — NeuroCal" };
+export const metadata: Metadata = { title: "Admin — NeuroCal" };
 
 export default function AdminPage() {
-  return <Admin />;
+  return <AdminDashboard />;
 }

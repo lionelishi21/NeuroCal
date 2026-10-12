@@ -7,11 +7,10 @@ import { nextPath, useAuth, usesMockAuth } from "../auth/AuthProvider";
 import { MOCK_CODE } from "../auth/mockAuth";
 import { AuthError, PASSWORD_MIN_LENGTH, type AuthErrorCode } from "../auth/types";
 import { Button } from "../components/Button";
+import { SiteFrame } from "../components/SiteFrame";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { fieldClass, labelClass } from "../components/fields";
-import { Logo } from "../components/Logo";
 import { Spinner } from "../components/Spinner";
-import { ThemeToggle } from "../components/ThemeToggle";
 import { useToast } from "../components/Toast";
 
 interface Problem {
@@ -36,15 +35,14 @@ const problemOf = (error: unknown): Problem => PROBLEMS[error instanceof AuthErr
 const textLink = "font-bold text-synapse-ink hover:underline hover:underline-offset-4";
 
 /** Account screens: one column, phone width, with room for the logo row on top. */
+/** What the wide-screen panel beside the account forms says. */
+const ADMIN_ASIDE = {
+  title: "The NeuroCal team's side of the app.",
+  body: "See who joined the waitlist, manage the products NeuroCal suggests, and check the screens before they reach the mobile app. Your own meals and scores live on your phone.",
+};
+
 function Frame({ children }: { children: ReactNode }) {
-  return (
-    <main
-      className="mx-auto flex min-h-dvh w-full max-w-[26rem] flex-col px-6 pt-10 pb-[max(2rem,env(safe-area-inset-bottom))]"
-      style={{ animation: "enter var(--duration-step) var(--ease-settle)" }}
-    >
-      {children}
-    </main>
-  );
+  return <SiteFrame aside={ADMIN_ASIDE}>{children}</SiteFrame>;
 }
 
 function Problems({ problem }: { problem: Problem | null }) {
@@ -195,11 +193,7 @@ export function SignIn() {
 
   return (
     <Frame>
-      <div className="flex items-center justify-between gap-3">
-        <Logo />
-        <ThemeToggle />
-      </div>
-      <h1 className="mt-8 mb-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Admin sign in</h1>
+      <h1 className="m-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Admin sign in</h1>
       <p className="mt-2 mb-0 text-base leading-normal text-pretty text-ink-soft">The web app is for the NeuroCal team. Your own meals and scores are in the mobile app.</p>
       <form onSubmit={submit} noValidate aria-label="Sign in">
         <Credentials
@@ -220,11 +214,6 @@ export function SignIn() {
           </Link>
         </p>
       )}
-      <p className="mt-5 mb-0 text-center text-md font-medium text-ink-soft">
-        <Link href="/" className={textLink}>
-          Back to the home page
-        </Link>
-      </p>
     </Frame>
   );
 }
@@ -255,8 +244,7 @@ export function SignUp() {
 
   return (
     <Frame>
-      <Logo />
-      <h1 className="mt-8 mb-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Create an account</h1>
+      <h1 className="m-0 text-3xl leading-[1.12] font-extrabold tracking-[-0.025em] text-balance">Create a local account</h1>
       <p className="mt-2 mb-0 text-base leading-normal text-pretty text-ink-soft">Your meals, sleep and check-ins stay private to this account.</p>
       <form onSubmit={submit} noValidate aria-label="Create an account">
         <Credentials
@@ -319,7 +307,7 @@ function ConfirmEmail({ email, password, created, onBack }: { email: string; pas
 
   return (
     <Frame>
-      <button type="button" aria-label="Back" onClick={onBack} className="-ml-3 grid size-11 cursor-pointer place-items-center text-ink">
+      <button type="button" aria-label="Back" onClick={onBack} className="-mt-2 -ml-3 grid size-11 cursor-pointer place-items-center text-ink">
         <svg viewBox="0 0 24 24" aria-hidden className="size-[1.375rem]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 5l-7 7 7 7" />
         </svg>

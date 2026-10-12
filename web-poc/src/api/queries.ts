@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   AdminProduct,
   AdminProductList,
+  AdminWaitlist,
   AnalyzeMealResponse,
   type CreateAdminProductRequest,
   type UpdateAdminProductRequest,
@@ -40,6 +41,7 @@ export const keys = {
   history: (days: number) => ["history", days] as const,
   protocols: ["recommendations", "protocols"] as const,
   adminProducts: ["admin", "products"] as const,
+  adminWaitlist: ["admin", "waitlist"] as const,
 };
 
 export function useProfile() {
@@ -251,6 +253,10 @@ export function useUpdateProfile() {
 
 /** Every product, for the admin screen. Fails with 403 for anyone who isn't an admin, so it is never retried. */
 /** Every product, for admins; the API answers 403 to everyone else. Pass `false` to hold the request back. */
+export function useAdminWaitlist() {
+  return useQuery({ queryKey: keys.adminWaitlist, queryFn: () => request("/admin/waitlist", AdminWaitlist), retry: false });
+}
+
 export function useAdminProducts(enabled = true) {
   return useQuery({
     queryKey: keys.adminProducts,

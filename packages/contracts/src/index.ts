@@ -399,6 +399,30 @@ export type LeaveWaitlistRequest = z.infer<typeof LeaveWaitlistRequest>;
 export const LeaveWaitlistResponse = z.object({ status: z.literal("unsubscribed") });
 export type LeaveWaitlistResponse = z.infer<typeof LeaveWaitlistResponse>;
 
+/** One person on the waitlist, as the admin dashboard shows them. */
+export const AdminWaitlistEntry = z.object({
+  email: z.string(),
+  platform: z.enum(["iphone", "android"]).optional(),
+  joinedAt: IsoDateTime,
+  /** The "you're on the list" email went out. */
+  confirmed: z.boolean(),
+  unsubscribed: z.boolean(),
+});
+export type AdminWaitlistEntry = z.infer<typeof AdminWaitlistEntry>;
+
+/** The waitlist at a glance, with the newest sign-ups. Counts leave out people who unsubscribed. */
+export const AdminWaitlist = z.object({
+  total: z.number().int().nonnegative(),
+  iphone: z.number().int().nonnegative(),
+  android: z.number().int().nonnegative(),
+  /** Joined in the last seven days. */
+  thisWeek: z.number().int().nonnegative(),
+  unsubscribed: z.number().int().nonnegative(),
+  /** Newest first, at most 500. */
+  entries: z.array(AdminWaitlistEntry),
+});
+export type AdminWaitlist = z.infer<typeof AdminWaitlist>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -431,6 +455,8 @@ export const endpoints = {
   deleteAdminProduct: { method: "DELETE", path: "/admin/products/:id" },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
+  /** Admin only (403 otherwise): the waitlist at a glance. */
+  getAdminWaitlist: { method: "GET", path: "/admin/waitlist", response: AdminWaitlist },
   /** Public (no sign-in): join the list to be emailed when the app is ready. */
   joinWaitlist: { method: "POST", path: "/waitlist", body: JoinWaitlistRequest, response: JoinWaitlistResponse },
   /** Public: leave the list with the token from an email's unsubscribe link. */

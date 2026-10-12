@@ -1,6 +1,7 @@
 import {
   AdminProduct,
   AdminProductList,
+  AdminWaitlist,
   AnalyzeMealRequest,
   AnalyzeMealResponse,
   BioState,
@@ -42,7 +43,7 @@ import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
-import type { JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
+import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
 import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations } from "./mappers";
 
@@ -82,6 +83,7 @@ export interface UseCases {
   adminProducts: AdminProductUseCases;
   joinWaitlist: JoinWaitlistUseCase;
   leaveWaitlist: LeaveWaitlistUseCase;
+  adminWaitlist: AdminWaitlistUseCase;
 }
 
 class BadRequest extends Error {}
@@ -238,6 +240,14 @@ export function createApi(uc: UseCases) {
     ],
     ["GET", /^\/focus-score$/, async (req) => ok(FocusScore, toFocusScore(await uc.getFocusScore.execute({ userId: req.userId, date: date(req) })))],
     ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
+    [
+      "GET",
+      /^\/admin\/waitlist$/,
+      async (req) => {
+        const overview = await uc.adminWaitlist.execute(admin(req));
+        return ok(AdminWaitlist, { ...overview, entries: overview.entries.map((e) => ({ ...e, joinedAt: e.joinedAt.toISOString() })) });
+      },
+    ],
     [
       "POST",
       /^\/admin\/products$/,

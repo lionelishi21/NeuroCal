@@ -53,7 +53,7 @@ export function Settings() {
 
   return (
     <Screen>
-      <ScreenHeader title="Settings" back={{ href: "/", label: "Back to Today" }} />
+      <ScreenHeader title="Settings" back={{ href: "/app", label: "Back to Today" }} />
 
       <Section title="Profile" className="[&>h2]:pt-[1.125rem]">
         <div className={`${cardClass} overflow-hidden`}>
@@ -205,14 +205,14 @@ function InstallApp() {
   );
 }
 
-/** "Manage products", shown only to admins (the request is refused for everyone else). */
+/** A way back to the admin dashboard, shown only to admins (the request is refused for everyone else). */
 function AdminLink() {
   const admin = useAdminProducts();
   if (!admin.isSuccess) return null;
   return (
     <Section title="Admin">
       <Link href="/admin" className={`${cardClass} flex min-h-14 items-center justify-between py-2 pr-3 pl-4 text-ink no-underline hover:border-rule-strong`}>
-        <span className="text-md font-bold">Manage products</span>
+        <span className="text-md font-bold">Admin dashboard</span>
         <svg viewBox="0 0 24 24" aria-hidden className="size-5 text-ink-soft" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 5l7 7-7 7" />
         </svg>

@@ -54,7 +54,7 @@ export function History() {
       <ScreenHeader
         title="This week"
         {...(first && last ? { detail: `${shortDate(first.date)} – ${shortDate(last.date)}` } : {})}
-        back={{ href: "/", label: "Back to Today" }}
+        back={{ href: "/app", label: "Back to Today" }}
       />
 
       {history.isPending && <ScreenLoading label="Loading this week" heights={[3.25, 9.375, 11.875, 11.875]} />}
