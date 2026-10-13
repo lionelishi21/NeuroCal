@@ -8,6 +8,21 @@ enum MealKind { breakfast, lunch, dinner, snack }
 
 enum GlycemicLoad { low, medium, high }
 
+/// How processed a food is, after the NOVA classification (`processing` in the contracts):
+/// whole (NOVA 1–2), processed (NOVA 3) and ultra-processed (NOVA 4).
+enum FoodProcessing {
+  whole('whole', 'Whole food'),
+  processed('processed', 'Processed'),
+  ultraProcessed('ultra_processed', 'Ultra-processed');
+
+  const FoodProcessing(this.wire, this.label);
+
+  final String wire;
+  final String label;
+
+  static FoodProcessing? fromWire(Object? wire) => [for (final p in values) if (p.wire == wire) p].firstOrNull;
+}
+
 /// The check-in flags, in the order the sheet shows them, with the labels the web app uses.
 enum CognitiveFlag {
   sharp('Sharp'),
@@ -49,6 +64,7 @@ class FoodItem {
     required this.macros,
     this.confidence,
     this.glycemicLoad,
+    this.processing,
   });
 
   final String name;
@@ -58,6 +74,9 @@ class FoodItem {
   final double? confidence;
   final GlycemicLoad? glycemicLoad;
 
+  /// Null for items typed in by hand.
+  final FoodProcessing? processing;
+
   factory FoodItem.fromJson(Map<String, dynamic> j) => FoodItem(
     name: j['name'] as String,
     portion: j['portion'] as String,
@@ -65,6 +84,7 @@ class FoodItem {
     macros: Macros.fromJson(j['macros'] as Map<String, dynamic>),
     confidence: (j['confidence'] as num?)?.toDouble(),
     glycemicLoad: j['glycemicLoad'] == null ? null : GlycemicLoad.values.byName(j['glycemicLoad'] as String),
+    processing: FoodProcessing.fromWire(j['processing']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -74,6 +94,7 @@ class FoodItem {
     'macros': macros.toJson(),
     if (confidence != null) 'confidence': confidence,
     if (glycemicLoad != null) 'glycemicLoad': glycemicLoad!.name,
+    if (processing != null) 'processing': processing!.wire,
   };
 }
 
@@ -187,6 +208,9 @@ class BioState {
     required this.macrosEaten,
     required this.macroTargets,
     this.flags = const [],
+    this.wholeKcal = 0,
+    this.processedKcal = 0,
+    this.ultraProcessedKcal = 0,
   });
 
   final int calorieTarget;
@@ -196,6 +220,11 @@ class BioState {
 
   /// How the person said they feel in today's check-ins.
   final List<CognitiveFlag> flags;
+
+  /// Today's calories by processing level; items typed in by hand aren't counted.
+  final double wholeKcal;
+  final double processedKcal;
+  final double ultraProcessedKcal;
 
   factory BioState.fromJson(Map<String, dynamic> j) => BioState(
     calorieTarget: (j['calorieTarget'] as num).toInt(),
@@ -207,6 +236,9 @@ class BioState {
         for (final flag in CognitiveFlag.values)
           if (flag.wire == wire) flag,
     ],
+    wholeKcal: (j['processing']?['wholeKcal'] as num? ?? 0).toDouble(),
+    processedKcal: (j['processing']?['processedKcal'] as num? ?? 0).toDouble(),
+    ultraProcessedKcal: (j['processing']?['ultraProcessedKcal'] as num? ?? 0).toDouble(),
   );
 }
 
@@ -361,6 +393,7 @@ class CatalogFood {
     required this.macros,
     required this.fiberG,
     required this.glycemicLoad,
+    this.processing = FoodProcessing.whole,
     this.goals = const [],
     required this.why,
     this.diets = const [],
@@ -375,6 +408,7 @@ class CatalogFood {
   final Macros macros;
   final double fiberG;
   final GlycemicLoad glycemicLoad;
+  final FoodProcessing processing;
 
   /// focus, calm, energy, sleep (the contract's `CognitiveGoal`).
   final List<String> goals;
@@ -397,6 +431,7 @@ class CatalogFood {
     ),
     fiberG: (j['fiberG'] as num).toDouble(),
     glycemicLoad: GlycemicLoad.values.byName(j['glycemicLoad'] as String),
+    processing: FoodProcessing.fromWire(j['processing']) ?? FoodProcessing.whole,
     goals: [for (final g in j['goals'] as List) g as String],
     why: j['why'] as String,
     diets: [for (final d in j['diets'] as List) d as String],
@@ -415,6 +450,7 @@ class CatalogFood {
         fatG: _r(macros.fatG * servings),
       ),
       glycemicLoad: glycemicLoad,
+      processing: processing,
     );
   }
 

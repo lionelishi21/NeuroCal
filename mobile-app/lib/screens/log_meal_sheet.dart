@@ -646,6 +646,8 @@ class _ItemRow extends StatelessWidget {
                           ),
                           if (item.confidence != null && item.confidence! < 0.85)
                             Tag('Best guess', fill: c.mist, ink: c.inkSoft),
+                          if (item.processing == FoodProcessing.ultraProcessed)
+                            Tag('Ultra-processed', fill: c.beetSoft, ink: c.beet),
                         ],
                       ),
                       Text.rich(

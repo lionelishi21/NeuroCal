@@ -65,6 +65,8 @@ class MockNeuroCalApi implements NeuroCalApi {
         calories: kcal,
         macros: Macros(proteinG: p, carbsG: c, fatG: f),
         confidence: confidence,
+        // The sample meals and photo plates are all whole foods.
+        processing: FoodProcessing.whole,
       );
 
   static bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
@@ -201,6 +203,9 @@ class MockNeuroCalApi implements NeuroCalApi {
       ),
       macroTargets: _profile?.macroTargets ?? const Macros(proteinG: 130, carbsG: 240, fatG: 75),
       flags: _flags.toList(),
+      wholeKcal: sum((i) => i.processing == FoodProcessing.whole ? i.calories : 0),
+      processedKcal: sum((i) => i.processing == FoodProcessing.processed ? i.calories : 0),
+      ultraProcessedKcal: sum((i) => i.processing == FoodProcessing.ultraProcessed ? i.calories : 0),
     );
   }
 

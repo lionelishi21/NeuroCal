@@ -304,6 +304,10 @@ class _TodayScreenState extends State<TodayScreen> {
                     ],
                     const SizedBox(height: Space.s3),
                     _Calories(snapshot.data!.bio),
+                    if (snapshot.data!.bio.wholeKcal + snapshot.data!.bio.processedKcal + snapshot.data!.bio.ultraProcessedKcal > 0) ...[
+                      const SizedBox(height: Space.s3),
+                      _Processing(snapshot.data!.bio),
+                    ],
                     const SizedBox(height: Space.s3),
                     _Feeling(snapshot.data!.bio.flags, onCheckIn: _checkIn),
                     const BlockTitle('What to eat next'),
@@ -985,6 +989,73 @@ class _BrowseFoods extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// How processed today's food was: a bar of whole, processed and ultra-processed calories, and the
+/// ultra-processed share in words. Items typed in by hand aren't counted.
+class _Processing extends StatelessWidget {
+  const _Processing(this.bio);
+
+  final BioState bio;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final total = bio.wholeKcal + bio.processedKcal + bio.ultraProcessedKcal;
+    final ultra = (bio.ultraProcessedKcal / total * 100).round();
+    final parts = [
+      (bio.wholeKcal, c.chlorophyll, 'Whole'),
+      (bio.processedKcal, c.glucose, 'Processed'),
+      (bio.ultraProcessedKcal, c.beet, 'Ultra-processed'),
+    ];
+    return AppCard(
+      padding: const EdgeInsets.all(Space.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: Space.s2,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: Space.s2,
+            children: [
+              const Expanded(
+                child: Text('How processed', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+              ),
+              // Both sides may wrap: with large text the label alone can be wider than the card.
+              Flexible(
+                child: Text(
+                  ultra == 0 ? 'No ultra-processed food' : '$ultra% ultra-processed',
+                  textAlign: TextAlign.end,
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: ultra >= 25 ? c.beet : c.inkSoft),
+                ),
+              ),
+            ],
+          ),
+          Semantics(
+            label: [for (final (kcal, _, name) in parts) if (kcal > 0) '$name ${(kcal / total * 100).round()}%'].join(', '),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(Radii.pill),
+              child: SizedBox(
+                height: 10,
+                child: Row(
+                  children: [
+                    for (final (kcal, color, _) in parts)
+                      if (kcal > 0) Expanded(flex: kcal.round().clamp(1, 1 << 20), child: ColoredBox(color: color)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Text(
+            ultra >= 25
+                ? 'Ultra-processed food is easy to overeat: in studies people ate about 500 kcal more a day on it without noticing. Swap one item for a whole food.'
+                : 'Mostly whole food today. That keeps you full for fewer calories.',
+            style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+          ),
+        ],
       ),
     );
   }

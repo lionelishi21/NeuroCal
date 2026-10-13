@@ -120,4 +120,23 @@ void main() {
     expect(find.textContaining(RegExp(r'Goal 16 h at \d\d:\d\d\. 2 h (39|40) m to go')), findsOneWidget);
     expect(find.textContaining('habit hunger'), findsOneWidget);
   });
+
+  test('a catalog food keeps its processing level when it becomes a meal item', () {
+    const bread = CatalogFood(
+      id: 'sourdough',
+      name: 'Sourdough bread',
+      category: 'grains',
+      serving: '1 large slice (64 g)',
+      grams: 64,
+      calories: 174,
+      macros: Macros(proteinG: 7, carbsG: 33, fatG: 1.5),
+      fiberG: 1.5,
+      glycemicLoad: GlycemicLoad.medium,
+      processing: FoodProcessing.processed,
+      why: 'Long fermentation.',
+    );
+    expect(bread.toItem().processing, FoodProcessing.processed);
+    expect(bread.toItem().toJson()['processing'], 'processed');
+    expect(FoodItem.fromJson({...bread.toItem().toJson(), 'processing': 'ultra_processed'}).processing, FoodProcessing.ultraProcessed);
+  });
 }
