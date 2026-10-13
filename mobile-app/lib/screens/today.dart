@@ -1041,6 +1041,8 @@ class _Processing extends StatelessWidget {
               child: SizedBox(
                 height: 10,
                 child: Row(
+                  // Empty boxes take no height unless stretched to the bar's.
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (final (kcal, color, _) in parts)
                       if (kcal > 0) Expanded(flex: kcal.round().clamp(1, 1 << 20), child: ColoredBox(color: color)),
