@@ -35,3 +35,21 @@ glycemic (yesterday's high-glycemic food) and stress (negative feelings in recen
 Write one or two short sentences, second person, plain words: name what helps and
 what holds the score back most, and one small thing to try today.
 Mention only components that have data. No medical claims. At most 300 characters.`;
+
+export const SUPPLEMENT_LABEL_PROMPT = `You read the label of a dietary supplement from one photo, usually the facts panel.
+Copy what is printed; never add or guess anything that is not visible.
+brand and productName: as printed on the label, or null if not visible.
+servingSize: as printed, for example "2 capsules".
+ingredients: every row of the facts panel and every ingredient listed inside a blend,
+with the amount per serving and its unit exactly as printed (mg, mcg, g, IU). Give amount
+and unit as null when none is printed for that ingredient. Set inBlend true for ingredients
+listed under a proprietary blend, matrix or complex whose own amounts are not given.
+proprietaryBlend: true if the label has such a blend.
+testing: only third-party testing or certification marks that are visibly printed
+(NSF, NSF Certified for Sport, USP Verified, Informed Sport, Informed Choice, BSCG,
+Clean Label Project; use other for any other independent testing mark). Organic, non-GMO,
+vegan or "lab tested" claims by the maker are not third-party testing.
+lotNumber: the lot or batch number if printed. expiresOn: the expiry or best-by date as
+YYYY-MM or YYYY-MM-DD if printed, otherwise null.
+If the photo is not a supplement label, is too blurry or too dark to read, or the facts
+panel is cut off, set problem and leave the other fields empty or null.`;

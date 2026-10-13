@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
+import { SupplementLabelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import {
@@ -16,6 +17,7 @@ import {
   InMemoryProfiles,
   InMemoryStorage,
   InMemoryUsers,
+  FakeLabelReader,
   FakeIdentity,
   InMemoryRecommendations,
   InMemoryTelemetry,
@@ -65,6 +67,13 @@ beforeEach(async () => {
       embedder: new FakeEmbedder(),
       explainer: new FakeExplainer("Short sleep is holding you back."),
       storage,
+      labels: new FakeLabelReader({
+        brand: "Calm Labs",
+        productName: "Zinc",
+        ingredients: [{ name: "Zinc", amount: 50, unit: "mg", inBlend: false }],
+        proprietaryBlend: false,
+        testing: ["usp_verified"],
+      }),
       vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
       reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
       search: new FakeSearch([
@@ -110,6 +119,19 @@ describe("API routes", () => {
     expect(users.rows.has("u1")).toBe(false);
     expect(identity.deleted).toEqual(["sub-1"]);
     expect([...storage.objects.keys()]).toEqual(["uploads/u2/b"]);
+  });
+
+  it("POST /supplements/analyze reads an uploaded label photo and flags it", async () => {
+    storage.objects.set("uploads/u1/label", { bytes: new Uint8Array([0xff, 0xd8]), mediaType: "image/jpeg" });
+    const res = await call("POST", "/supplements/analyze", { photoKey: "uploads/u1/label" });
+    expect(res.status).toBe(200);
+    expect(SupplementLabelResponse.parse(res.body)).toMatchObject({
+      productName: "Zinc",
+      testing: ["usp_verified"],
+      summary: "Calm Labs Zinc: 1 ingredient, tested by USP.",
+      flags: [{ kind: "above_upper_limit" }],
+    });
+    expect((await call("POST", "/supplements/analyze", { photoKey: "uploads/u2/label" })).status).toBe(404);
   });
 
   it("GET /me returns the contract profile", async () => {

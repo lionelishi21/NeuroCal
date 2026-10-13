@@ -19,6 +19,9 @@ abstract interface class NeuroCalApi {
   Future<List<Recipe>> recommendations();
   Future<List<Meal>> meals(DateTime day);
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
+
+  /// Reads a supplement label photo. Nothing is saved.
+  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename);
   Future<Meal> createMeal(NewMeal meal);
   Future<void> deleteMeal(String id);
 
@@ -115,6 +118,15 @@ class HttpNeuroCalApi implements NeuroCalApi {
       ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: filename));
     final res = await http.Response.fromStream(await _client.send(req));
     return AnalyzeMealResult.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename) async {
+    final req = http.MultipartRequest('POST', _uri('/supplements/analyze'))
+      ..headers.addAll(await _headers())
+      ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: filename));
+    final res = await http.Response.fromStream(await _client.send(req));
+    return SupplementLabel.fromJson(_decode(res) as Map<String, dynamic>);
   }
 
   @override

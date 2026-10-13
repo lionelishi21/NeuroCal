@@ -4,6 +4,7 @@ import {
   AdminWaitlist,
   AnalyzeMealRequest,
   AnalyzeMealResponse,
+  SupplementLabelResponse,
   BioState,
   CheckIn,
   CreateAdminProductRequest,
@@ -31,6 +32,7 @@ import {
 import { z } from "zod";
 import type { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import type { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
+import type { AnalyzeSupplementLabelUseCase } from "../application/use-cases/AnalyzeSupplementLabelUseCase";
 import type { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
 import type { DeleteAccountUseCase } from "../application/use-cases/DeleteAccountUseCase";
 import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
@@ -46,7 +48,7 @@ import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendR
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
-import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -74,6 +76,7 @@ export interface UseCases {
   recordCheckIn: RecordCheckInUseCase;
   createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
+  analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
   logMeal: LogMealUseCase;
   listMeals: ListMealsUseCase;
   deleteMeal: DeleteMealUseCase;
@@ -198,6 +201,17 @@ export function createApi(uc: UseCases) {
           ? await uc.analyzeMealPhoto.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
           : await uc.analyzeMealPhoto.execute(await photoFrom(req));
         return ok(AnalyzeMealResponse, toAnalysis(analysis));
+      },
+    ],
+    [
+      "POST",
+      /^\/supplements\/analyze$/,
+      async (req) => {
+        // Same two ways in as a meal photo: a photoKey from an upload, or multipart.
+        const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
+          ? await uc.analyzeSupplementLabel.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
+          : await uc.analyzeSupplementLabel.execute(await photoFrom(req));
+        return ok(SupplementLabelResponse, toSupplementLabel(analysis));
       },
     ],
     [

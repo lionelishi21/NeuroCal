@@ -227,6 +227,38 @@
         }
       }
     },
+    "/supplements/analyze": {
+      "post": {
+        "operationId": "analyzeSupplement",
+        "summary": "Read a supplement label photo",
+        "description": "Upload the photo as for meals (POST /uploads/meal-photo) and pass its photoKey, or send it as multipart/form-data in a `photo` field. Returns what the label says, flags such as proprietary blends, doses above upper limits, missing third-party testing and expiry, and a close own-brand alternative when there is one. It reports the label only and is not a safety or quality verdict. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplementLabelResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/meals": {
       "post": {
         "operationId": "createMeal",
@@ -2048,6 +2080,126 @@
           "start",
           "end",
           "source"
+        ]
+      },
+      "SupplementFlag": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "proprietary_blend",
+              "above_upper_limit",
+              "no_third_party_testing",
+              "expired",
+              "expires_soon",
+              "doses_missing"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "message"
+        ]
+      },
+      "SupplementIngredient": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "type": "string"
+          },
+          "inBlend": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "inBlend"
+        ]
+      },
+      "SupplementLabelResponse": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string",
+            "enum": [
+              "not_a_label",
+              "blurry",
+              "too_dark",
+              "cut_off"
+            ]
+          },
+          "brand": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "servingSize": {
+            "type": "string"
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplementIngredient"
+            }
+          },
+          "testing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplementTestingMark"
+            }
+          },
+          "lotNumber": {
+            "type": "string"
+          },
+          "expiresOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplementFlag"
+            }
+          },
+          "alternative": {
+            "$ref": "#/components/schemas/ProductRecommendation"
+          }
+        },
+        "required": [
+          "ingredients",
+          "testing",
+          "summary",
+          "flags"
+        ]
+      },
+      "SupplementTestingMark": {
+        "type": "string",
+        "enum": [
+          "nsf_certified",
+          "nsf_sport",
+          "usp_verified",
+          "informed_sport",
+          "informed_choice",
+          "bscg",
+          "clean_label_project",
+          "other"
         ]
       },
       "TelemetrySource": {

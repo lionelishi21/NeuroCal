@@ -333,6 +333,51 @@ export const ProtocolsResponse = z.object({
 });
 export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
 
+/** Third-party testing marks a supplement label can carry. */
+export const SupplementTestingMark = z.enum(["nsf_certified", "nsf_sport", "usp_verified", "informed_sport", "informed_choice", "bscg", "clean_label_project", "other"]);
+export type SupplementTestingMark = z.infer<typeof SupplementTestingMark>;
+
+export const SupplementIngredient = z.object({
+  name: z.string().min(1),
+  /** Per serving, as printed. Missing when the label hides it (a proprietary blend) or it couldn't be read. */
+  amount: z.number().nonnegative().optional(),
+  /** As printed, e.g. "mg", "mcg", "IU", "g". */
+  unit: z.string().optional(),
+  /** Part of a proprietary blend, so only the blend's total is given. */
+  inBlend: z.boolean(),
+});
+export type SupplementIngredient = z.infer<typeof SupplementIngredient>;
+
+/** Something on (or missing from) the label worth knowing. Worded by the server; clients show `message` as is. */
+export const SupplementFlag = z.object({
+  kind: z.enum(["proprietary_blend", "above_upper_limit", "no_third_party_testing", "expired", "expires_soon", "doses_missing"]),
+  message: z.string().min(1),
+});
+export type SupplementFlag = z.infer<typeof SupplementFlag>;
+
+/**
+ * What a supplement label says, plus flags. It reports the label: a photo can't show what is in the
+ * bottle, so clients never present this as a safety or quality verdict.
+ */
+export const SupplementLabelResponse = z.object({
+  /** Set when the photo isn't a readable supplement label; the other fields are then empty. */
+  problem: z.enum(["not_a_label", "blurry", "too_dark", "cut_off"]).optional(),
+  brand: z.string().optional(),
+  productName: z.string().optional(),
+  servingSize: z.string().optional(),
+  ingredients: z.array(SupplementIngredient),
+  testing: z.array(SupplementTestingMark),
+  lotNumber: z.string().optional(),
+  /** "YYYY-MM" or "YYYY-MM-DD", as printed. */
+  expiresOn: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/).optional(),
+  /** One plain sentence: what it is, and what the label does and doesn't show. */
+  summary: z.string(),
+  flags: z.array(SupplementFlag),
+  /** A close own-brand (MitoProof) supplement, when there is one; labelled like other suggestions. */
+  alternative: ProductRecommendation.optional(),
+});
+export type SupplementLabelResponse = z.infer<typeof SupplementLabelResponse>;
+
 /** A product as the admin screen manages it. */
 export const AdminProduct = z.object({
   id: Id,
@@ -441,6 +486,8 @@ export const endpoints = {
   createPhotoUpload: { method: "POST", path: "/uploads/meal-photo", body: CreatePhotoUploadRequest, response: PhotoUpload },
   /** Takes the key of an uploaded photo, or (older clients) the photo itself as multipart `photo`. */
   analyzeMeal: { method: "POST", path: "/meals/analyze", body: AnalyzeMealRequest, response: AnalyzeMealResponse },
+  /** Reads a supplement label photo (an uploaded photoKey, or multipart like analyzeMeal). Nothing is saved. */
+  analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeMealRequest, response: SupplementLabelResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },
   listMeals: { method: "GET", path: "/meals", response: MealList },
   deleteMeal: { method: "DELETE", path: "/meals/:id" },

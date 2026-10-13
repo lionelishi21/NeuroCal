@@ -2,6 +2,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
+import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { applyAwsSecrets } from "../infrastructure/aws/secrets";
 import { loadConfig } from "../infrastructure/config";
@@ -51,6 +52,7 @@ const api = createApi(
     embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     search: required("TAVILY_API_KEY (or BRAVE_SEARCH_API_KEY, or GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID)", createRecipeSearch(config)),

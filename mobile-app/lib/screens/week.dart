@@ -4,7 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../nights.dart';
 import '../theme/tokens.dart';
-import '../widgets/toast.dart';
+import '../widgets/product_card.dart';
 import '../widgets/ui.dart';
 
 const _fullWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -654,44 +654,7 @@ class _WhatHelps extends StatelessWidget {
                     for (final (i, product) in data.products.indexed)
                       Padding(
                         padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
-                        child: AppCard(
-                          padding: const EdgeInsets.fromLTRB(Space.s4, 14, 14, 14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: Space.s2,
-                            children: [
-                              if (product.ownBrand || product.affiliate || product.supplement)
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: [
-                                    if (product.ownBrand) Tag('Our brand', fill: c.synapseSoft, ink: c.synapseInk),
-                                    if (product.affiliate)
-                                      Tag('Affiliate link', fill: c.glucoseSoft, ink: c.glucoseInk),
-                                    if (product.supplement) Tag('Supplement', fill: c.mist, ink: c.inkSoft),
-                                  ],
-                                ),
-                              Text(
-                                product.name,
-                                style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
-                              ),
-                              Text(
-                                product.description,
-                                style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
-                              ),
-                              if (product.supplement)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: Space.s2),
-                                  decoration: BoxDecoration(color: c.mist, borderRadius: BorderRadius.circular(10)),
-                                  child: const Text(
-                                    "Supplement. Check with your doctor before starting it, especially if you're pregnant or take medication.",
-                                    style: TextStyle(fontSize: TextSize.xxs, height: 1.4),
-                                  ),
-                                ),
-                              if (product.url != null) _SeeProduct(name: product.name, url: product.url!),
-                            ],
-                          ),
-                        ),
+                        child: ProductCard(product),
                       ),
                     if (data.products.any((p) => p.affiliate || p.ownBrand))
                       Padding(
@@ -713,42 +676,6 @@ class _WhatHelps extends StatelessWidget {
             },
           ),
       ],
-    );
-  }
-}
-
-/// Opens the product's page outside the app. The labels above it say when the link earns NeuroCal money.
-class _SeeProduct extends StatelessWidget {
-  const _SeeProduct({required this.name, required this.url});
-
-  final String name;
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Semantics(
-      link: true,
-      label: 'See product: $name',
-      excludeSemantics: true,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 40),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          foregroundColor: c.synapseInk,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: c.ruleStrong, width: 1.5),
-          textStyle: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
-        ),
-        iconAlignment: IconAlignment.end,
-        icon: const Icon(Icons.north_east_rounded, size: 14),
-        label: const Text('See product'),
-        onPressed: () async {
-          final link = Uri.tryParse(url);
-          final opened = link != null && await AppScope.of(context).openLink(link).catchError((Object _) => false);
-          if (!opened && context.mounted) showToast(context, "Couldn't open that link.", ToastTone.problem);
-        },
-      ),
     );
   }
 }

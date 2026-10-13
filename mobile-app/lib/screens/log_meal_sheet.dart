@@ -11,11 +11,13 @@ import '../widgets/ui.dart';
 
 /// Log a meal in three steps: take or choose a photo, wait while it is read, then check the items
 /// before logging. Items can also be typed in, with or without a photo. Returns true when logged.
-Future<bool?> showLogMealSheet(BuildContext context, {ImagePicker? picker}) => showAppSheet<bool>(
-  context,
-  title: 'Log a meal',
-  builder: (_) => _LogMeal(picker: picker ?? ImagePicker()),
-);
+/// [onScanSupplement] offers a supplement label scan instead; the sheet closes first.
+Future<bool?> showLogMealSheet(BuildContext context, {ImagePicker? picker, VoidCallback? onScanSupplement}) =>
+    showAppSheet<bool>(
+      context,
+      title: 'Log a meal',
+      builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement),
+    );
 
 MealKind kindFor(DateTime t) => switch (t.hour) {
   < 11 => MealKind.breakfast,
@@ -73,9 +75,10 @@ class _Draft {
 }
 
 class _LogMeal extends StatefulWidget {
-  const _LogMeal({required this.picker});
+  const _LogMeal({required this.picker, this.onScanSupplement});
 
   final ImagePicker picker;
+  final VoidCallback? onScanSupplement;
 
   @override
   State<_LogMeal> createState() => _LogMealState();
@@ -230,6 +233,19 @@ class _LogMealState extends State<_LogMeal> {
           }),
           child: const Text('Add an item by hand instead'),
         ),
+        if (widget.onScanSupplement != null)
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              widget.onScanSupplement!();
+            },
+            icon: const Icon(Icons.medication_outlined, size: 18),
+            label: const Text('Scan a supplement label instead'),
+          ),
       ],
     );
   }

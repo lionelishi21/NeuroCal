@@ -1,6 +1,8 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
+import type { SupplementLabelReading } from "../../domain/supplement";
 import type { IIdentityProvider } from "../interfaces/IIdentityProvider";
+import type { ISupplementLabelReader } from "../interfaces/ISupplementLabelReader";
 import type {
   AdminProduct,
   Product,
@@ -173,6 +175,16 @@ export class FakeVision implements IAiVisionProvider {
   calls: MealPhoto[] = [];
   constructor(private readonly result: MealPhotoAnalysis | Error) {}
   async analyzeMealPhoto(photo: MealPhoto) {
+    this.calls.push(photo);
+    if (this.result instanceof Error) throw this.result;
+    return this.result;
+  }
+}
+
+export class FakeLabelReader implements ISupplementLabelReader {
+  calls: MealPhoto[] = [];
+  constructor(public result: SupplementLabelReading | Error) {}
+  async readLabel(photo: MealPhoto) {
     this.calls.push(photo);
     if (this.result instanceof Error) throw this.result;
     return this.result;

@@ -10,6 +10,7 @@ import '../widgets/ui.dart';
 import 'check_in_sheet.dart';
 import 'log_meal_sheet.dart';
 import 'sleep_sheets.dart';
+import 'supplement_sheet.dart';
 
 class _Day {
   const _Day(this.focus, this.bio, this.meals, this.recipes);
@@ -124,7 +125,7 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   Future<void> _logMeal() async {
-    final logged = await showLogMealSheet(context);
+    final logged = await showLogMealSheet(context, onScanSupplement: () => showSupplementSheet(context));
     if (logged == true && mounted) {
       showToast(context, 'Meal logged');
       widget.onChanged();

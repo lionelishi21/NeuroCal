@@ -336,17 +336,94 @@ class Help {
           steps: [for (final step in p['steps'] as List) step as String],
         ),
     ],
-    products: [
-      for (final p in j['products'] as List)
+    products: [for (final p in j['products'] as List) productFromJson(p as Map<String, dynamic>)],
+  );
+}
+
+SuggestedProduct productFromJson(Map<String, dynamic> p) => (
+  name: p['name'] as String,
+  description: p['description'] as String,
+  url: p['url'] as String?,
+  affiliate: p['affiliate'] as bool,
+  ownBrand: p['ownBrand'] as bool,
+  supplement: p['supplement'] as bool,
+);
+
+/// Why a supplement label photo couldn't be read.
+enum LabelProblem { notALabel, blurry, tooDark, cutOff }
+
+typedef SupplementIngredient = ({String name, double? amount, String? unit, bool inBlend});
+
+/// Something on (or missing from) a label. [message] is written by the API; show it as is.
+typedef SupplementFlag = ({String kind, String message});
+
+/// The names people know third-party testing marks by, keyed by the contract's `SupplementTestingMark`.
+const testingLabels = <String, String>{
+  'nsf_certified': 'NSF',
+  'nsf_sport': 'NSF Certified for Sport',
+  'usp_verified': 'USP Verified',
+  'informed_sport': 'Informed Sport',
+  'informed_choice': 'Informed Choice',
+  'bscg': 'BSCG',
+  'clean_label_project': 'Clean Label Project',
+  'other': 'Third-party tested',
+};
+
+/// What a supplement label says, plus flags (`SupplementLabelResponse` in the contracts). It reports
+/// the label only: never present it as a verdict on the product's safety or quality.
+class SupplementLabel {
+  const SupplementLabel({
+    this.problem,
+    this.brand,
+    this.productName,
+    this.servingSize,
+    this.ingredients = const [],
+    this.testing = const [],
+    this.lotNumber,
+    this.expiresOn,
+    required this.summary,
+    this.flags = const [],
+    this.alternative,
+  });
+
+  final LabelProblem? problem;
+  final String? brand;
+  final String? productName;
+  final String? servingSize;
+  final List<SupplementIngredient> ingredients;
+  final List<String> testing;
+  final String? lotNumber;
+  final String? expiresOn;
+  final String summary;
+  final List<SupplementFlag> flags;
+  final SuggestedProduct? alternative;
+
+  factory SupplementLabel.fromJson(Map<String, dynamic> j) => SupplementLabel(
+    problem: switch (j['problem']) {
+      'not_a_label' => LabelProblem.notALabel,
+      'blurry' => LabelProblem.blurry,
+      'too_dark' => LabelProblem.tooDark,
+      'cut_off' => LabelProblem.cutOff,
+      _ => null,
+    },
+    brand: j['brand'] as String?,
+    productName: j['productName'] as String?,
+    servingSize: j['servingSize'] as String?,
+    ingredients: [
+      for (final i in j['ingredients'] as List)
         (
-          name: p['name'] as String,
-          description: p['description'] as String,
-          url: p['url'] as String?,
-          affiliate: p['affiliate'] as bool,
-          ownBrand: p['ownBrand'] as bool,
-          supplement: p['supplement'] as bool,
+          name: i['name'] as String,
+          amount: (i['amount'] as num?)?.toDouble(),
+          unit: i['unit'] as String?,
+          inBlend: i['inBlend'] as bool,
         ),
     ],
+    testing: [for (final t in j['testing'] as List) t as String],
+    lotNumber: j['lotNumber'] as String?,
+    expiresOn: j['expiresOn'] as String?,
+    summary: j['summary'] as String,
+    flags: [for (final f in j['flags'] as List) (kind: f['kind'] as String, message: f['message'] as String)],
+    alternative: j['alternative'] == null ? null : productFromJson(j['alternative'] as Map<String, dynamic>),
   );
 }
 

@@ -1,9 +1,10 @@
 /** Domain → wire format (packages/contracts). The only place both vocabularies meet. */
 import type * as C from "@neurocal/contracts";
 import type { MealPhotoAnalysis } from "../application/interfaces/IAiVisionProvider";
+import type { SupplementLabelAnalysis } from "../application/use-cases/AnalyzeSupplementLabelUseCase";
 import type { ProtocolMatches } from "../application/use-cases/GetProtocolsUseCase";
 import type { RecipeRecommendations } from "../application/use-cases/RecommendRecipeUseCase";
-import type { BioState, CheckIn, FocusScore, FoodItem, Meal, Profile } from "../domain/types";
+import type { BioState, CheckIn, FocusScore, FoodItem, Meal, Product, Profile } from "../domain/types";
 
 export const toProfile = (p: Profile): C.Profile => ({
   id: p.userId,
@@ -65,16 +66,25 @@ export const toProtocols = (m: ProtocolMatches): C.ProtocolsResponse => ({
     steps: item.steps,
     match: match(similarity),
   })),
-  products: m.products.map(({ item, similarity }) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    ...(item.url ? { url: item.url } : {}),
-    affiliate: item.affiliate,
-    ownBrand: item.ownBrand,
-    supplement: item.supplement,
-    match: match(similarity),
-  })),
+  products: m.products.map(toProductRecommendation),
+});
+
+const toProductRecommendation = ({ item, similarity }: { item: Product; similarity: number }): C.ProductRecommendation => ({
+  id: item.id,
+  name: item.name,
+  description: item.description,
+  ...(item.url ? { url: item.url } : {}),
+  affiliate: item.affiliate,
+  ownBrand: item.ownBrand,
+  supplement: item.supplement,
+  match: match(similarity),
+});
+
+export const toSupplementLabel = ({ reading: { proprietaryBlend: _, ...reading }, summary, flags, alternative }: SupplementLabelAnalysis): C.SupplementLabelResponse => ({
+  ...reading,
+  summary,
+  flags,
+  ...(alternative ? { alternative: toProductRecommendation(alternative) } : {}),
 });
 
 export const toRecommendations = (r: RecipeRecommendations): C.NextRecommendationsResponse => ({

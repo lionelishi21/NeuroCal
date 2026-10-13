@@ -19,8 +19,10 @@ import type {
   IWaitlistRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
+import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
+import { AnalyzeSupplementLabelUseCase } from "../application/use-cases/AnalyzeSupplementLabelUseCase";
 import { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
 import { DeleteAccountUseCase } from "../application/use-cases/DeleteAccountUseCase";
 import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
@@ -49,6 +51,7 @@ export interface Ports {
   catalog: ICatalogRepository;
   embedder: IEmbeddingProvider;
   vision: IAiVisionProvider;
+  labels: ISupplementLabelReader;
   storage: IObjectStorage;
   explainer: IFocusExplainer;
   reasoning: IAiReasoningProvider;
@@ -72,6 +75,7 @@ export function buildUseCases(p: Ports): UseCases {
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
+    analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),
     logMeal: new LogMealUseCase(p.meals, p.clock),
     listMeals: new ListMealsUseCase(p.profiles, p.meals, p.clock),
     deleteMeal: new DeleteMealUseCase(p.meals),

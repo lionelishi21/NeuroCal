@@ -8,6 +8,7 @@ import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
+import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
@@ -27,7 +28,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubReasoning, stubSearch, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubReasoning, stubSearch, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -128,6 +129,7 @@ async function main() {
   if (!config.databaseUrl && !FRESH_USER) await seed(db, devUserId);
 
   const vision = config.openAiApiKey ? new OpenAiVisionProvider({ apiKey: config.openAiApiKey }) : stubVision;
+  const labels = config.openAiApiKey ? new OpenAiSupplementLabelReader({ apiKey: config.openAiApiKey }) : stubLabels;
   const reasoning = config.anthropicApiKey ? new ClaudeReasoningProvider({ apiKey: config.anthropicApiKey }) : stubReasoning;
   const explainer = config.anthropicApiKey ? new ClaudeFocusExplainer({ apiKey: config.anthropicApiKey }) : stubExplainer;
   const embedder = config.openAiApiKey ? new OpenAiEmbeddingProvider({ apiKey: config.openAiApiKey }) : keywordEmbedder;
@@ -151,6 +153,7 @@ async function main() {
       catalog: new DrizzleCatalogRepository(db),
       embedder,
       vision,
+      labels,
       storage,
       explainer,
       reasoning,

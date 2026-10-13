@@ -6,6 +6,7 @@ import type { IAiReasoningProvider } from "../../application/interfaces/IAiReaso
 import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionProvider";
 import type { ISearchEngineAdapter } from "../../application/interfaces/ISearchEngineAdapter";
 import type { IFocusExplainer } from "../../application/interfaces/IFocusExplainer";
+import type { ISupplementLabelReader } from "../../application/interfaces/ISupplementLabelReader";
 
 export const stubVision: IAiVisionProvider = {
   async analyzeMealPhoto() {
@@ -15,6 +16,25 @@ export const stubVision: IAiVisionProvider = {
         { name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.81, glycemicLoad: "medium" },
         { name: "Roasted broccoli", portion: "1 cup", calories: 55, macros: { proteinG: 3.7, carbsG: 11, fatG: 0.6 }, confidence: 0.88, glycemicLoad: "low" },
       ],
+    };
+  },
+};
+
+/** A typical magnesium label, with one blend and no testing mark, so every flag path shows. */
+export const stubLabels: ISupplementLabelReader = {
+  async readLabel() {
+    return {
+      brand: "Calm Labs",
+      productName: "Magnesium Glycinate",
+      servingSize: "2 capsules",
+      ingredients: [
+        { name: "Magnesium (as magnesium glycinate)", amount: 200, unit: "mg", inBlend: false },
+        { name: "Calm blend (L-theanine, chamomile)", amount: 150, unit: "mg", inBlend: true },
+      ],
+      proprietaryBlend: true,
+      testing: [],
+      lotNumber: "MG2405",
+      expiresOn: "2027-03",
     };
   },
 };

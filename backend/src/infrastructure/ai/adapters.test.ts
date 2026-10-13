@@ -3,7 +3,8 @@ import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
-import { MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT } from "./prompts";
+import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
+import { MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -119,5 +120,58 @@ describe("OpenAiEmbeddingProvider", () => {
   it("rejects vectors of the wrong size", async () => {
     const create = jest.fn(async () => ({ data: [{ index: 0, embedding: [1, 2, 3] }] }));
     await expect(new OpenAiEmbeddingProvider({ embeddings: { create } as unknown as CreateEmbeddings }).embed(["a"])).rejects.toThrow();
+  });
+});
+
+describe("OpenAiSupplementLabelReader", () => {
+  const readerWith = (choice: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ choices: [choice], usage: { prompt_tokens: 900, completion_tokens: 200 } }));
+    return { parse, reader: new OpenAiSupplementLabelReader({ completions: { parse } as unknown as ParseCompletion }) };
+  };
+  const parsed = {
+    problem: null,
+    brand: "Calm Labs",
+    productName: "Magnesium Glycinate",
+    servingSize: "2 capsules",
+    ingredients: [
+      { name: "Magnesium", amount: 200, unit: "mg", inBlend: false },
+      { name: "Chamomile", amount: null, unit: null, inBlend: true },
+    ],
+    proprietaryBlend: true,
+    testing: ["nsf_certified", "nsf_certified"],
+    lotNumber: null,
+    expiresOn: "2027-03",
+  };
+
+  it("sends the photo to gpt-4o with the label schema and drops empty fields", async () => {
+    const { parse, reader } = readerWith({ finish_reason: "stop", message: { parsed, refusal: null } });
+    await expect(reader.readLabel(photo)).resolves.toEqual({
+      brand: "Calm Labs",
+      productName: "Magnesium Glycinate",
+      servingSize: "2 capsules",
+      ingredients: [
+        { name: "Magnesium", amount: 200, unit: "mg", inBlend: false },
+        { name: "Chamomile", inBlend: true },
+      ],
+      proprietaryBlend: true,
+      testing: ["nsf_certified"],
+      expiresOn: "2027-03",
+    });
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(SUPPLEMENT_LABEL_MODEL);
+    expect(params.messages[0].content).toBe(SUPPLEMENT_LABEL_PROMPT);
+    expect(params.response_format.type).toBe("json_schema");
+  });
+
+  it("returns only the problem for an unreadable photo, and throws on a refusal or bad output", async () => {
+    const blurry = { ...parsed, problem: "blurry" };
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: blurry, refusal: null } }).reader.readLabel(photo)).resolves.toEqual({
+      problem: "blurry",
+      ingredients: [],
+      proprietaryBlend: false,
+      testing: [],
+    });
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel(photo)).rejects.toThrow();
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: { ...parsed, expiresOn: "soon" }, refusal: null } }).reader.readLabel(photo)).rejects.toThrow();
   });
 });

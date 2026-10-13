@@ -168,6 +168,58 @@ class MockNeuroCalApi implements NeuroCalApi {
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
+  /// A typical label: one blend and no testing mark, so the flags show. A filename with "dark" in it reads as too dark.
+  @override
+  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename) async {
+    await Future.delayed(latency * 4);
+    if (RegExp('dark', caseSensitive: false).hasMatch(filename)) {
+      return const SupplementLabel(
+        problem: LabelProblem.tooDark,
+        summary: 'The label is too dark to read. Try again in better light.',
+      );
+    }
+    return const SupplementLabel(
+      brand: 'Calm Labs',
+      productName: 'Magnesium Glycinate',
+      servingSize: '2 capsules',
+      ingredients: [
+        (name: 'Magnesium (as magnesium glycinate)', amount: 200, unit: 'mg', inBlend: false),
+        (name: 'Zinc', amount: 50, unit: 'mg', inBlend: false),
+        (name: 'Calm blend (L-theanine, chamomile)', amount: 150, unit: 'mg', inBlend: false),
+        (name: 'L-theanine', amount: null, unit: null, inBlend: true),
+        (name: 'Chamomile', amount: null, unit: null, inBlend: true),
+      ],
+      lotNumber: 'MG2405',
+      expiresOn: '2027-03',
+      summary: 'Calm Labs Magnesium Glycinate: 5 ingredients, expires March 2027.',
+      flags: [
+        (
+          kind: 'proprietary_blend',
+          message:
+              "Part of this is a proprietary blend: the label gives the blend's total weight but not how much of each ingredient is in it.",
+        ),
+        (
+          kind: 'above_upper_limit',
+          message:
+              'One serving has 50 mg of zinc, above the 40 mg a day that health authorities set as the upper limit for adults. Check with your doctor before taking it.',
+        ),
+        (
+          kind: 'no_third_party_testing',
+          message:
+              "No third-party testing mark (such as NSF, USP or Informed Sport) was found, so nobody outside the maker is shown to have checked what's inside.",
+        ),
+      ],
+      alternative: (
+        name: 'MitoProof Magnesium Glycinate',
+        description: 'Magnesium in its glycinate form as capsules, commonly taken in the evening.',
+        url: 'https://www.mitoproof.com/products/magnesium-glycinate',
+        affiliate: false,
+        ownBrand: true,
+        supplement: true,
+      ),
+    );
+  }
+
   @override
   Future<Meal> createMeal(NewMeal meal) async {
     await _wait();
