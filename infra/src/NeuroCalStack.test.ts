@@ -43,17 +43,19 @@ describe("NeuroCalStack", () => {
     dev.hasResourceProperties("AWS::Lambda::Function", { Runtime: "nodejs22.x", Architectures: ["arm64"], Timeout: 29 });
   });
 
-  it("puts a Cognito JWT authorizer in front of every API route except preflights and the waitlist", () => {
+  it("puts a Cognito JWT authorizer in front of every API route except preflights, the waitlist and the store webhook", () => {
     dev.hasResourceProperties("AWS::ApiGatewayV2::Authorizer", { AuthorizerType: "JWT", IdentitySource: ["$request.header.Authorization"] });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "$default", AuthorizationType: "JWT" });
     // Preflights carry no token, so they must skip the authorizer or browsers block every call.
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "OPTIONS /{proxy+}", AuthorizationType: "NONE" });
     const routes = Object.values(dev.findResources("AWS::ApiGatewayV2::Route")) as { Properties: { RouteKey: string; AuthorizationType: string } }[];
-    // The only open routes: preflights, and the landing page's waitlist form and unsubscribe link.
+    // The only open routes: preflights, the landing page's waitlist form and unsubscribe link, and
+    // RevenueCat's webhook (which the Lambda checks with a shared secret).
     expect(routes.filter((r) => r.Properties.AuthorizationType === "NONE").map((r) => r.Properties.RouteKey).sort()).toEqual([
       "OPTIONS /{proxy+}",
       "POST /waitlist",
       "POST /waitlist/unsubscribe",
+      "POST /webhooks/revenuecat",
     ]);
     // Open routes are rate-limited.
     dev.hasResourceProperties("AWS::ApiGatewayV2::Stage", {

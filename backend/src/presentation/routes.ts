@@ -6,6 +6,7 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  SubscriptionStatus,
   FastingStatus,
   LogWeightRequest,
   WeightEntry,
@@ -50,6 +51,7 @@ import type { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsU
 import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
+import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -58,6 +60,7 @@ import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendR
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
+import { storeEventFrom } from "../infrastructure/billing/RevenueCat";
 import { imageTypeOf } from "../domain/photo";
 import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
@@ -92,6 +95,9 @@ export interface UseCases {
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
   getFasting: GetFastingUseCase;
+  getSubscription: GetSubscriptionUseCase;
+  handleStoreEvent: HandleStoreEventUseCase;
+  gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
   logMeal: LogMealUseCase;
   listMeals: ListMealsUseCase;
@@ -109,7 +115,7 @@ export interface UseCases {
 
 class BadRequest extends Error {}
 
-const STATUS: Record<string, number> = { invalid_request: 400, forbidden: 403, not_found: 404, upstream_failed: 502 };
+const STATUS: Record<string, number> = { invalid_request: 400, subscription_required: 402, forbidden: 403, not_found: 404, upstream_failed: 502 };
 
 const error = (status: number, code: string, message: string): ApiResponse => ({
   status,
@@ -194,6 +200,21 @@ export function createApi(uc: UseCases) {
         return ok(LeaveWaitlistResponse, { status: "unsubscribed" });
       },
     ],
+    // RevenueCat calls this on purchases, renewals and expiries; it proves itself with a shared secret.
+    [
+      "POST",
+      /^\/webhooks\/revenuecat$/,
+      async (req) => {
+        let body: unknown = null;
+        try {
+          body = JSON.parse(Buffer.from(req.body ?? new Uint8Array()).toString("utf8"));
+        } catch {
+          // Checked as "no event" after the secret.
+        }
+        const result = await uc.handleStoreEvent.execute(req.headers.authorization, storeEventFrom(body));
+        return { status: 200, body: { result } };
+      },
+    ],
   ];
 
   const routes: Route[] = [
@@ -226,6 +247,7 @@ export function createApi(uc: UseCases) {
       "POST",
       /^\/meals\/analyze$/,
       async (req) => {
+        await uc.gate.require(req);
         // JSON names a photo uploaded first; multipart carries the photo itself (older clients, small photos).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
           ? await uc.analyzeMealPhoto.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
@@ -255,12 +277,27 @@ export function createApi(uc: UseCases) {
         return { status: 204 };
       },
     ],
+    [
+      "GET",
+      /^\/me\/subscription$/,
+      async (req) => {
+        const s = await uc.getSubscription.execute(req);
+        return ok(SubscriptionStatus, {
+          active: s.active,
+          status: s.status,
+          ...(s.productId ? { productId: s.productId } : {}),
+          ...(s.expiresAt ? { expiresAt: s.expiresAt.toISOString() } : {}),
+          willRenew: s.willRenew,
+        });
+      },
+    ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
     ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: uc.listFoods.execute().map(({ kind: _, ...food }) => food) })],
     [
       "POST",
       /^\/supplements\/analyze$/,
       async (req) => {
+        await uc.gate.require(req);
         // Same two ways in as a meal photo: photoKeys from uploads, or multipart (one `photo` field per side).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
           ? await uc.analyzeSupplementLabel.executeForKeys({ userId: req.userId, photoKeys: json(req, AnalyzeSupplementRequest).photoKeys })
@@ -300,7 +337,10 @@ export function createApi(uc: UseCases) {
     [
       "GET",
       /^\/recommendations\/next$/,
-      async (req) => ok(NextRecommendationsResponse, toRecommendations(await uc.recommendRecipe.execute(req))),
+      async (req) => {
+        await uc.gate.require(req);
+        return ok(NextRecommendationsResponse, toRecommendations(await uc.recommendRecipe.execute(req)));
+      },
     ],
     [
       "GET",

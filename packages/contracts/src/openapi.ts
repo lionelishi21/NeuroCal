@@ -53,6 +53,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     query: { days: { description: "How many days back, 1–730. Defaults to 90.", schema: { type: "integer", minimum: 1, maximum: 730 } } },
   },
   deleteWeight: { summary: "Remove a weigh-in", status: 204, params: { date: "The weigh-in's day, YYYY-MM-DD." } },
+  getSubscription: {
+    summary: "Your subscription",
+    description: "As last reported by RevenueCat. Without access it asks RevenueCat directly once, so a purchase made seconds ago already counts. When the paywall is on, photo and label reading and recipe suggestions answer 402 `subscription_required` without access.",
+  },
   getFasting: {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",

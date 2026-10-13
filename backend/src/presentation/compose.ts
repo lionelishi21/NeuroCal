@@ -21,6 +21,7 @@ import type {
   IWeightRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
+import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
@@ -36,6 +37,7 @@ import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetry
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
 import { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
+import { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -67,6 +69,13 @@ export interface Ports {
   recipeDomains: string[];
   waitlist: IWaitlistRepository;
   weights: IWeightRepository;
+  subscriptions: ISubscriptionRepository;
+  /** RevenueCat's REST API, when its key is set. */
+  subscriptionLookup: ISubscriptionLookup | null;
+  /** The Authorization header RevenueCat's webhook sends. */
+  storeWebhookAuth?: string;
+  /** PAYWALL=on. */
+  paywall: boolean;
   email: IEmailSender;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
@@ -74,6 +83,7 @@ export interface Ports {
 
 /** Wires use cases to whatever adapters the caller provides (ARCHITECTURE §2: composition root). */
 export function buildUseCases(p: Ports): UseCases {
+  const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock);
   return {
     getProfile: new GetProfileUseCase(p.profiles),
@@ -88,6 +98,9 @@ export function buildUseCases(p: Ports): UseCases {
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),
     getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock),
+    getSubscription,
+    handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
+    gate: new SubscriptionGate(getSubscription, p.paywall),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),
     logMeal: new LogMealUseCase(p.meals, p.clock),
     listMeals: new ListMealsUseCase(p.profiles, p.meals, p.clock),

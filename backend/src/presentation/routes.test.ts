@@ -19,6 +19,7 @@ import {
   InMemoryStorage,
   InMemoryUsers,
   InMemoryWeights,
+  InMemorySubscriptions,
   FakeLabelReader,
   FakeIdentity,
   InMemoryRecommendations,
@@ -27,7 +28,7 @@ import {
   item,
   profile,
 } from "../application/testing/fakes";
-import { buildUseCases } from "./compose";
+import { type Ports, buildUseCases } from "./compose";
 import { createApi, type ApiRequest } from "./routes";
 
 const clock = new FixedClock(new Date("2026-09-29T22:00:00Z")); // 17:00 in Chicago
@@ -36,6 +37,8 @@ let profiles: InMemoryProfiles;
 let storage: InMemoryStorage;
 let users: InMemoryUsers;
 let labels: FakeLabelReader;
+let subscriptions: InMemorySubscriptions;
+let ports: Ports;
 let identity: FakeIdentity;
 let waitlist: InMemoryWaitlist;
 let email: FakeEmail;
@@ -56,49 +59,53 @@ beforeEach(async () => {
   users = new InMemoryUsers();
   users.rows.set("u1", { subject: "sub-1", email: "maya@example.com" });
   identity = new FakeIdentity();
-  api = createApi(
-    buildUseCases({
-      users,
-      identity,
-      profiles,
-      meals,
-      checkIns: new InMemoryCheckIns(),
-      recommendations: new InMemoryRecommendations(),
-      telemetry: new InMemoryTelemetry(),
-      focusScores: new InMemoryFocusScores(),
-      catalog,
-      embedder: new FakeEmbedder(),
-      explainer: new FakeExplainer("Short sleep is holding you back."),
-      storage,
-      foods: FOODS,
-      weights: new InMemoryWeights(),
-      labels: (labels = new FakeLabelReader({
-        brand: "Calm Labs",
-        productName: "Zinc",
-        ingredients: [{ name: "Zinc", amount: 50, unit: "mg", inBlend: false }],
-        proprietaryBlend: false,
-        testing: ["usp_verified"],
-      })),
-      vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
-      reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
-      search: new FakeSearch([
-        {
-          title: "Cod",
-          url: "https://www.seriouseats.com/cod",
-          sourceName: "Serious Eats",
-          snippet: "",
-          minutes: 30,
-          calories: 640,
-          macros: { proteinG: 46, carbsG: 62, fatG: 18 },
-        },
-      ]),
-      clock,
-      recipeDomains: ["seriouseats.com"],
-      waitlist,
-      email,
-      webUrl: "https://neurocal.ai",
-    }),
-  );
+  subscriptions = new InMemorySubscriptions();
+  ports = {
+    users,
+    identity,
+    profiles,
+    meals,
+    checkIns: new InMemoryCheckIns(),
+    recommendations: new InMemoryRecommendations(),
+    telemetry: new InMemoryTelemetry(),
+    focusScores: new InMemoryFocusScores(),
+    catalog,
+    embedder: new FakeEmbedder(),
+    explainer: new FakeExplainer("Short sleep is holding you back."),
+    storage,
+    foods: FOODS,
+    weights: new InMemoryWeights(),
+    labels: (labels = new FakeLabelReader({
+      brand: "Calm Labs",
+      productName: "Zinc",
+      ingredients: [{ name: "Zinc", amount: 50, unit: "mg", inBlend: false }],
+      proprietaryBlend: false,
+      testing: ["usp_verified"],
+    })),
+    vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
+    reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
+    search: new FakeSearch([
+      {
+        title: "Cod",
+        url: "https://www.seriouseats.com/cod",
+        sourceName: "Serious Eats",
+        snippet: "",
+        minutes: 30,
+        calories: 640,
+        macros: { proteinG: 46, carbsG: 62, fatG: 18 },
+      },
+    ]),
+    clock,
+    recipeDomains: ["seriouseats.com"],
+    waitlist,
+    email,
+    webUrl: "https://neurocal.ai",
+    subscriptions,
+    subscriptionLookup: null,
+    storeWebhookAuth: "Bearer rc-secret",
+    paywall: false,
+  };
+  api = createApi(buildUseCases(ports));
 });
 
 const call = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}, isAdmin = false) => {
@@ -224,6 +231,40 @@ describe("API routes", () => {
       }),
     );
     expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12 });
+  });
+
+  it("takes RevenueCat's webhook only with its secret, and reports the subscription", async () => {
+    const trial = {
+      event: { type: "INITIAL_PURCHASE", app_user_id: "u1", product_id: "neurocal_pro_yearly", period_type: "TRIAL", expiration_at_ms: Date.parse("2026-10-13T22:00:00Z"), event_timestamp_ms: Date.parse("2026-09-29T21:00:00Z") },
+    };
+    expect(api.isPublic("POST", "/webhooks/revenuecat")).toBe(true);
+    expect((await call("POST", "/webhooks/revenuecat", trial)).status).toBe(403);
+    expect((await call("POST", "/webhooks/revenuecat", trial, { authorization: "Bearer wrong" })).status).toBe(403);
+    expect(await call("POST", "/webhooks/revenuecat", trial, { authorization: "Bearer rc-secret" })).toMatchObject({ status: 200, body: { result: "applied" } });
+    // Events for ids we don't know, and ones we don't use, are acknowledged so RevenueCat stops retrying.
+    expect((await call("POST", "/webhooks/revenuecat", { event: { ...trial.event, app_user_id: "someone-else" } }, { authorization: "Bearer rc-secret" })).body).toEqual({ result: "ignored" });
+    expect((await call("POST", "/webhooks/revenuecat", { event: { ...trial.event, type: "TEST" } }, { authorization: "Bearer rc-secret" })).body).toEqual({ result: "ignored" });
+
+    expect((await call("GET", "/me/subscription")).body).toEqual({
+      active: true,
+      status: "trial",
+      productId: "neurocal_pro_yearly",
+      expiresAt: "2026-10-13T22:00:00.000Z",
+      willRenew: true,
+    });
+  });
+
+  it("with the paywall on, the AI features need a subscription or trial; admins always pass", async () => {
+    api = createApi(buildUseCases({ ...ports, paywall: true }));
+    const refused = await call("GET", "/recommendations/next");
+    expect(refused).toMatchObject({ status: 402, body: { code: "subscription_required" } });
+    expect((await call("POST", "/supplements/analyze", { photoKeys: ["uploads/u1/x"] })).status).toBe(402);
+    expect((await call("GET", "/recommendations/next", undefined, {}, true)).status).toBe(200);
+    // Everything else keeps working, so people can still see their data and subscribe.
+    expect((await call("GET", "/me")).status).toBe(200);
+
+    await subscriptions.save("u1", { status: "active", expiresAt: new Date("2027-01-01T00:00:00Z"), willRenew: true, eventAt: new Date("2026-09-01T00:00:00Z") });
+    expect((await call("GET", "/recommendations/next")).status).toBe(200);
   });
 
   it("GET /me returns the contract profile", async () => {

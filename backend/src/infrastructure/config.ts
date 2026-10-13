@@ -20,6 +20,11 @@ export interface AppConfig {
   googleSearchEngineId?: string;
   /** S3 bucket for meal photos; set by the stack. */
   photoBucket?: string;
+  /** RevenueCat: the webhook's Authorization header, and the REST key for looking up a subscriber. */
+  revenueCatWebhookAuth?: string;
+  revenueCatSecretKey?: string;
+  /** PAYWALL=on: the AI features need a subscription or trial. Off until the store products exist. */
+  paywall: boolean;
   /** The Cognito user pool, for deleting sign-ins with the account. */
   userPoolId?: string;
   recipeDomains: string[];
@@ -46,6 +51,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     googleSearchEngineId: opt("GOOGLE_CSE_ID"),
     photoBucket: opt("PHOTO_BUCKET"),
     userPoolId: opt("USER_POOL_ID"),
+    revenueCatWebhookAuth: opt("REVENUECAT_WEBHOOK_AUTH"),
+    revenueCatSecretKey: opt("REVENUECAT_SECRET_KEY"),
+    paywall: opt("PAYWALL") === "on",
     resendApiKey: opt("RESEND_API_KEY"),
     emailFrom: opt("EMAIL_FROM") ?? "NeuroCal <hello@neurocal.ai>",
     webUrl: opt("WEB_URL") ?? "https://neurocal.ai",

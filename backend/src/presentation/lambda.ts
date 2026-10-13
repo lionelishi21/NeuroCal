@@ -16,11 +16,13 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { CognitoIdentityProvider } from "../infrastructure/aws/CognitoIdentityProvider";
 import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
+import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
@@ -56,6 +58,10 @@ const api = createApi(
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     foods: FOODS,
     weights: new DrizzleWeightRepository(db),
+    subscriptions: new DrizzleSubscriptionRepository(db),
+    subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
+    ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
+    paywall: config.paywall,
     labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),

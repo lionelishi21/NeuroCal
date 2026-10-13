@@ -583,6 +583,18 @@ export const AdminWaitlist = z.object({
 });
 export type AdminWaitlist = z.infer<typeof AdminWaitlist>;
 
+/** The caller's subscription (RevenueCat), and whether it gives access right now. */
+export const SubscriptionStatus = z.object({
+  active: z.boolean(),
+  status: z.enum(["trial", "active", "grace", "expired", "none"]),
+  productId: z.string().optional(),
+  /** When access ends unless it renews. */
+  expiresAt: IsoDateTime.optional(),
+  /** False once cancelled; access lasts until `expiresAt`. */
+  willRenew: z.boolean(),
+});
+export type SubscriptionStatus = z.infer<typeof SubscriptionStatus>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -607,6 +619,7 @@ export const endpoints = {
   getWeights: { method: "GET", path: "/weights", response: WeightHistory },
   deleteWeight: { method: "DELETE", path: "/weights/:date" },
   getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
+  getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },
   /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */

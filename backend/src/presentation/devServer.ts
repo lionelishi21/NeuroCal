@@ -21,6 +21,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
 } from "../infrastructure/database/DrizzleRepositories";
@@ -33,6 +34,7 @@ import { stubExplainer, stubReasoning, stubSearch, stubLabels, stubVision } from
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
+import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { createApi } from "./routes";
 
@@ -159,6 +161,10 @@ async function main() {
       labels,
       foods: FOODS,
       weights: new DrizzleWeightRepository(db),
+      subscriptions: new DrizzleSubscriptionRepository(db),
+      subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
+      ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
+      paywall: config.paywall,
       storage,
       explainer,
       reasoning,

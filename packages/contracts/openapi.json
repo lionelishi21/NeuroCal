@@ -339,6 +339,28 @@
         }
       }
     },
+    "/me/subscription": {
+      "get": {
+        "operationId": "getSubscription",
+        "summary": "Your subscription",
+        "description": "As last reported by RevenueCat. Without access it asks RevenueCat directly once, so a purchase made seconds ago already counts. When the paywall is on, photo and label reading and recipe suggestions answer 402 `subscription_required` without access.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/foods": {
       "get": {
         "operationId": "listFoods",
@@ -2522,6 +2544,39 @@
           "start",
           "end",
           "source"
+        ]
+      },
+      "SubscriptionStatus": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "active",
+              "grace",
+              "expired",
+              "none"
+            ]
+          },
+          "productId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "willRenew": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active",
+          "status",
+          "willRenew"
         ]
       },
       "SupplementFlag": {

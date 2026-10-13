@@ -214,6 +214,14 @@ export class NeuroCalStack extends Stack {
         authorizer: new HttpNoneAuthorizer(),
       });
     }
+    // RevenueCat reports purchases here. It has no Cognito token; the Lambda checks its shared secret.
+    httpApi.addRoutes({
+      path: "/webhooks/revenuecat",
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration("StoreWebhookIntegration", api),
+      authorizer: new HttpNoneAuthorizer(),
+    });
+
     // An open form invites floods: a few sign-ups a second is plenty, and the rest get 429.
     (httpApi.defaultStage!.node.defaultChild as CfnStage).routeSettings = Object.fromEntries(
       // Route settings are passed to CloudFormation as written, so the keys take its capitals.

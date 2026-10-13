@@ -34,7 +34,9 @@ import type {
   WaitlistOverview,
   WaitlistPlatform,
 } from "../../domain/types";
+import type { Subscription, SubscriptionStatus } from "../../domain/subscription";
 import type { WeightEntry } from "../../domain/weight";
+import type { ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
   checkIns,
@@ -45,6 +47,7 @@ import {
   recipeRecommendations,
   screenTimeSamples,
   sleepSessions,
+  subscriptions,
   users,
   waitlist,
   weightEntries,
@@ -80,6 +83,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(screenTimeSamples).where(eq(screenTimeSamples.userId, userId));
       await tx.delete(focusScores).where(eq(focusScores.userId, userId));
       await tx.delete(weightEntries).where(eq(weightEntries.userId, userId));
+      await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -540,5 +544,33 @@ export class DrizzleWeightRepository implements IWeightRepository {
       .where(and(eq(weightEntries.userId, userId), eq(weightEntries.date, date)))
       .returning({ date: weightEntries.date });
     return rows.length > 0;
+  }
+}
+
+export class DrizzleSubscriptionRepository implements ISubscriptionRepository {
+  constructor(private readonly db: Database) {}
+
+  async get(userId: string): Promise<Subscription | null> {
+    const [row] = await this.db.select().from(subscriptions).where(eq(subscriptions.userId, userId));
+    if (!row) return null;
+    return {
+      status: row.status as SubscriptionStatus,
+      ...(row.productId ? { productId: row.productId } : {}),
+      ...(row.expiresAt ? { expiresAt: row.expiresAt } : {}),
+      willRenew: row.willRenew,
+      eventAt: row.eventAt,
+    };
+  }
+
+  async save(userId: string, s: Subscription): Promise<boolean> {
+    // Store events can name ids that aren't ours (test events, deleted accounts): skip those.
+    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+    if (!user) return false;
+    const values = { status: s.status, productId: s.productId ?? null, expiresAt: s.expiresAt ?? null, willRenew: s.willRenew, eventAt: s.eventAt };
+    await this.db
+      .insert(subscriptions)
+      .values({ userId, ...values })
+      .onConflictDoUpdate({ target: subscriptions.userId, set: values });
+    return true;
   }
 }

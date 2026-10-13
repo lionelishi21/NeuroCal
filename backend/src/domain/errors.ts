@@ -22,6 +22,11 @@ export class ForbiddenError extends DomainError {
   readonly code = "forbidden";
 }
 
+/** → 402. The feature needs a subscription or trial. */
+export class PaymentRequiredError extends DomainError {
+  readonly code = "subscription_required";
+}
+
 /** → 502. A model or external service failed or returned something unusable. */
 export class UpstreamError extends DomainError {
   readonly code = "upstream_failed";

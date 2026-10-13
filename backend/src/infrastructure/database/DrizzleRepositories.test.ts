@@ -8,6 +8,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
 } from "./DrizzleRepositories";
@@ -256,12 +257,24 @@ describe("DrizzleWeightRepository", () => {
   });
 });
 
+describe("DrizzleSubscriptionRepository", () => {
+  it("keeps one subscription per user and skips ids that aren't users", async () => {
+    const repo = new DrizzleSubscriptionRepository(db);
+    const trial = { status: "trial" as const, productId: "neurocal_pro_yearly", expiresAt: new Date("2026-10-15T12:00:00Z"), willRenew: true, eventAt: new Date("2026-10-01T12:00:00Z") };
+    expect(await repo.save(alice, trial)).toBe(true);
+    expect(await repo.save(alice, { ...trial, status: "active" })).toBe(true);
+    expect(await repo.get(alice)).toEqual({ ...trial, status: "active" });
+    expect(await repo.save("00000000-0000-0000-0000-000000000000", trial)).toBe(false);
+    expect(await repo.get(bob)).toBeNull();
+  });
+});
+
 // Last on purpose: by now the earlier tests have given alice rows in every user table.
 describe("DrizzleUserRepository.delete", () => {
   it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
     // Her sign-in email is new@example.com since the first test.
     await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
-    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries];
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions];
     const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
     const before = await rowsOf(alice);
     const bobBefore = await rowsOf(bob);

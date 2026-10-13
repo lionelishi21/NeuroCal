@@ -1,7 +1,9 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
+import type { Subscription } from "../../domain/subscription";
 import type { WeightEntry } from "../../domain/weight";
+import type { ISubscriptionRepository } from "../interfaces/ISubscriptions";
 import type { IIdentityProvider } from "../interfaces/IIdentityProvider";
 import type { ISupplementLabelReader } from "../interfaces/ISupplementLabelReader";
 import type {
@@ -384,6 +386,20 @@ export class InMemoryWeights implements IWeightRepository {
   }
   async delete(userId: string, date: string) {
     return this.rows.delete(`${userId}:${date}`);
+  }
+}
+
+export class InMemorySubscriptions implements ISubscriptionRepository {
+  readonly rows = new Map<string, Subscription>();
+  /** Users that exist; events for others are skipped, as in the database. */
+  known = new Set(["u1", "u2"]);
+  async get(userId: string) {
+    return this.rows.get(userId) ?? null;
+  }
+  async save(userId: string, s: Subscription) {
+    if (!this.known.has(userId)) return false;
+    this.rows.set(userId, s);
+    return true;
   }
 }
 

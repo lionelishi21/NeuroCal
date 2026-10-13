@@ -204,6 +204,23 @@ export const screenTimeSamples = pgTable(
   ],
 );
 
+/** One row per user: the subscription as last reported by RevenueCat. */
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id),
+    status: text("status").notNull(),
+    productId: text("product_id"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    willRenew: boolean("will_renew").notNull(),
+    eventAt: timestamp("event_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [check("subscriptions_status_known", sql`${t.status} in ('trial', 'active', 'grace', 'expired', 'none')`)],
+);
+
 /** One weigh-in per user and local day; a second the same day replaces it. */
 export const weightEntries = pgTable(
   "weight_entries",
