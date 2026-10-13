@@ -7,4 +7,6 @@ export interface IObjectStorage {
   createUploadUrl(key: string, mediaType: string, sizeBytes: number): Promise<{ url: string; headers: Record<string, string>; expiresAt: Date }>;
   /** The object, or null when nothing was uploaded under the key. Refuses objects over `maxBytes`. */
   read(key: string, maxBytes: number): Promise<{ bytes: Uint8Array; mediaType: string } | null>;
+  /** Deletes every object whose key starts with `prefix`. */
+  deleteAll(prefix: string): Promise<void>;
 }

@@ -2,7 +2,8 @@
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 /** Every uploaded photo's key starts with its owner, so a key can be checked against the caller. */
-const prefix = (userId: string) => `uploads/${userId}/`;
+export const photoPrefixFor = (userId: string) => `uploads/${userId}/`;
+const prefix = photoPrefixFor;
 
 export const photoKeyFor = (userId: string, id: string) => `${prefix(userId)}${id}`;
 

@@ -20,6 +20,8 @@ export interface AppConfig {
   googleSearchEngineId?: string;
   /** S3 bucket for meal photos; set by the stack. */
   photoBucket?: string;
+  /** The Cognito user pool, for deleting sign-ins with the account. */
+  userPoolId?: string;
   recipeDomains: string[];
   /** Lower-cased emails allowed to use the admin routes. */
   adminEmails: string[];
@@ -43,6 +45,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     googleSearchApiKey: opt("GOOGLE_CSE_API_KEY"),
     googleSearchEngineId: opt("GOOGLE_CSE_ID"),
     photoBucket: opt("PHOTO_BUCKET"),
+    userPoolId: opt("USER_POOL_ID"),
     resendApiKey: opt("RESEND_API_KEY"),
     emailFrom: opt("EMAIL_FROM") ?? "NeuroCal <hello@neurocal.ai>",
     webUrl: opt("WEB_URL") ?? "https://neurocal.ai",

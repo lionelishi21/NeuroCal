@@ -53,6 +53,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   createMeal: { summary: "Log a confirmed meal", status: 201 },
   listMeals: { summary: "List a day's meals, earliest first", query: dateQuery },
+  deleteAccount: {
+    summary: "Delete your account",
+    status: 204,
+    description: "Removes the profile, meals, check-ins, scores, imported sleep and screen time, meal photos, any waitlist entry for the email, and the sign-in. It cannot be undone.",
+  },
   deleteMeal: { summary: "Remove a meal", status: 204, params: { id: "The meal's id." } },
   nextRecommendations: { summary: "Suggest recipes for the current bio-state" },
   getFocusScore: { summary: "Get a day's Focus Score with its inputs and explanation", query: dateQuery },

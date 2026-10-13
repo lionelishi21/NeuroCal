@@ -18,101 +18,33 @@ import { MOCK_PRODUCTS, createDb } from "./db";
 import { todayIso } from "../lib/format";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const invalid = (message: string) =>
-  HttpResponse.json({ code: "invalid_request", message }, { status: 400 });
-const noProfile = () =>
-  HttpResponse.json(
-    { code: "not_found", message: "Set up your profile first." },
-    { status: 404 },
-  );
+const invalid = (message: string) => HttpResponse.json({ code: "invalid_request", message }, { status: 400 });
+const noProfile = () => HttpResponse.json({ code: "not_found", message: "Set up your profile first." }, { status: 404 });
 
 export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   const url = (path: string) => `${base}${path}`;
   // The mock user is an admin. Products start from what the mock suggests, plus two partner brands.
   const catalogUrls = new Map<string, string | undefined>();
   const adminProducts: AdminProduct[] = [
-    ...MOCK_PRODUCTS.map(({ match: _, ...p }) => ({
-      ...p,
-      tags: [],
-      enabled: true,
-      managedBy: "catalog" as const,
-    })),
-    {
-      id: "truedark-evening-glasses",
-      name: "TrueDark evening glasses",
-      description:
-        "Glasses with amber or red lenses that block blue and green light, worn before bed.",
-      url: "https://truedark.com/",
-      affiliate: true,
-      ownBrand: false,
-      supplement: false,
-      tags: ["sleep", "late-night screens"],
-      enabled: true,
-      managedBy: "catalog",
-    },
-    {
-      id: "lmnt-electrolytes",
-      name: "LMNT electrolyte drink mix",
-      description: "A sugar-free sodium, potassium and magnesium drink mix.",
-      url: "https://drinklmnt.com/",
-      affiliate: false,
-      ownBrand: false,
-      supplement: true,
-      tags: ["energy"],
-      enabled: true,
-      managedBy: "catalog",
-    },
+    ...MOCK_PRODUCTS.map(({ match: _, ...p }) => ({ ...p, tags: [], enabled: true, managedBy: "catalog" as const })),
+    { id: "truedark-evening-glasses", name: "TrueDark evening glasses", description: "Glasses with amber or red lenses that block blue and green light, worn before bed.", url: "https://truedark.com/", affiliate: true, ownBrand: false, supplement: false, tags: ["sleep", "late-night screens"], enabled: true, managedBy: "catalog" },
+    { id: "lmnt-electrolytes", name: "LMNT electrolyte drink mix", description: "A sugar-free sodium, potassium and magnesium drink mix.", url: "https://drinklmnt.com/", affiliate: false, ownBrand: false, supplement: true, tags: ["energy"], enabled: true, managedBy: "catalog" },
   ];
   for (const p of adminProducts) catalogUrls.set(p.id, p.url);
   let adminCount = 0;
   // A few sign-ups so the admin dashboard has something to show. Newest first.
-  const joined = (days: number) =>
-    new Date(Date.now() - days * DAY_MS).toISOString();
+  const joined = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
   const waitlist: AdminWaitlistEntry[] = [
-    {
-      email: "priya@example.com",
-      platform: "iphone",
-      joinedAt: joined(0.2),
-      confirmed: true,
-      unsubscribed: false,
-    },
-    {
-      email: "marcus@example.com",
-      platform: "android",
-      joinedAt: joined(1.5),
-      confirmed: true,
-      unsubscribed: false,
-    },
-    {
-      email: "jo@example.com",
-      joinedAt: joined(3),
-      confirmed: true,
-      unsubscribed: false,
-    },
-    {
-      email: "sam@example.com",
-      platform: "iphone",
-      joinedAt: joined(9),
-      confirmed: true,
-      unsubscribed: true,
-    },
-    {
-      email: "alex@example.com",
-      platform: "iphone",
-      joinedAt: joined(16),
-      confirmed: false,
-      unsubscribed: false,
-    },
+    { email: "priya@example.com", platform: "iphone", joinedAt: joined(0.2), confirmed: true, unsubscribed: false },
+    { email: "marcus@example.com", platform: "android", joinedAt: joined(1.5), confirmed: true, unsubscribed: false },
+    { email: "jo@example.com", joinedAt: joined(3), confirmed: true, unsubscribed: false },
+    { email: "sam@example.com", platform: "iphone", joinedAt: joined(9), confirmed: true, unsubscribed: true },
+    { email: "alex@example.com", platform: "iphone", joinedAt: joined(16), confirmed: false, unsubscribed: false },
   ];
-  const noProduct = () =>
-    HttpResponse.json(
-      { code: "not_found", message: "That product no longer exists." },
-      { status: 404 },
-    );
+  const noProduct = () => HttpResponse.json({ code: "not_found", message: "That product no longer exists." }, { status: 404 });
   let uploadCount = 0;
   const uploaded = new Set<string>();
-  const dateParam = (request: Request) =>
-    new URL(request.url).searchParams.get("date") ?? todayIso();
+  const dateParam = (request: Request) => new URL(request.url).searchParams.get("date") ?? todayIso();
 
   return [
     http.get(url("/me"), async () => {
@@ -125,9 +57,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       const result = db.updateProfile(body.data);
       return "missing" in result
-        ? invalid(
-            `To set up your profile, also send: ${result.missing.join(", ")}.`,
-          )
+        ? invalid(`To set up your profile, also send: ${result.missing.join(", ")}.`)
         : HttpResponse.json(result);
     }),
     http.get(url("/bio-state"), async ({ request }) => {
@@ -142,18 +72,14 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     }),
     http.post(url("/uploads/meal-photo"), async ({ request }) => {
       const body = CreatePhotoUploadRequest.safeParse(await request.json());
-      if (!body.success)
-        return invalid("The photo must be an image of at most 8 MB.");
+      if (!body.success) return invalid("The photo must be an image of at most 8 MB.");
       await delay(latency);
       const photoKey = `uploads/u1/${++uploadCount}`;
       return HttpResponse.json(
         {
           photoKey,
           // Stands in for the presigned S3 URL; the PUT handler below receives the bytes.
-          uploadUrl: new URL(
-            url(`/_uploads/${uploadCount}`),
-            globalThis.location?.origin ?? "http://localhost",
-          ).href,
+          uploadUrl: new URL(url(`/_uploads/${uploadCount}`), globalThis.location?.origin ?? "http://localhost").href,
           headers: { "content-type": body.data.mediaType },
           expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
         },
@@ -169,13 +95,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       if (request.headers.get("content-type")?.startsWith("application/json")) {
         const body = AnalyzeMealRequest.safeParse(await request.json());
         if (!body.success || !uploaded.has(body.data.photoKey)) {
-          return HttpResponse.json(
-            {
-              code: "not_found",
-              message: "That photo isn't there. Choose it again.",
-            },
-            { status: 404 },
-          );
+          return HttpResponse.json({ code: "not_found", message: "That photo isn't there. Choose it again." }, { status: 404 });
         }
         await delay(latency * 4);
         return HttpResponse.json(db.analyze(body.data.photoKey));
@@ -183,8 +103,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       const form = await request.formData();
       const photo = form.get("photo");
       // Not `instanceof File`: in tests the File comes from jsdom, not Node.
-      if (!photo || typeof photo === "string")
-        return invalid("Attach a photo of the meal.");
+      if (!photo || typeof photo === "string") return invalid("Attach a photo of the meal.");
       await delay(latency * 4);
       return HttpResponse.json(db.analyze(photo.name));
     }),
@@ -198,10 +117,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       return db.deleteMeal(String(params.id))
         ? new HttpResponse(null, { status: 204 })
-        : HttpResponse.json(
-            { code: "not_found", message: "That meal no longer exists." },
-            { status: 404 },
-          );
+        : HttpResponse.json({ code: "not_found", message: "That meal no longer exists." }, { status: 404 });
     }),
     http.post(url("/check-ins"), async ({ request }) => {
       const body = CreateCheckInRequest.safeParse(await request.json());
@@ -211,29 +127,15 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     }),
     http.get(url("/admin/products"), async () => {
       await delay(latency);
-      return HttpResponse.json({
-        products: [...adminProducts].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
-      });
+      return HttpResponse.json({ products: [...adminProducts].sort((a, b) => a.name.localeCompare(b.name)) });
     }),
     http.post(url("/admin/products"), async ({ request }) => {
       const body = CreateAdminProductRequest.safeParse(await request.json());
-      if (!body.success)
-        return invalid(
-          "A product needs a name, a description and an https link.",
-        );
-      if ((body.data.affiliate || body.data.ownBrand) && !body.data.url)
-        return invalid("An affiliate or own-brand product needs a link.");
+      if (!body.success) return invalid("A product needs a name, a description and an https link.");
+      if ((body.data.affiliate || body.data.ownBrand) && !body.data.url) return invalid("An affiliate or own-brand product needs a link.");
       await delay(latency);
       const { url: link, ...rest } = body.data;
-      const product: AdminProduct = {
-        ...rest,
-        ...(link ? { url: link } : {}),
-        id: `admin-${++adminCount}`,
-        enabled: true,
-        managedBy: "admin",
-      };
+      const product: AdminProduct = { ...rest, ...(link ? { url: link } : {}), id: `admin-${++adminCount}`, enabled: true, managedBy: "admin" };
       adminProducts.push(product);
       return HttpResponse.json(product, { status: 201 });
     }),
@@ -243,23 +145,14 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       const index = adminProducts.findIndex((p) => p.id === params.id);
       if (index < 0) return noProduct();
       await delay(latency);
-      const {
-        url: _url,
-        catalogUrl: _catalogUrl,
-        ...current
-      } = adminProducts[index]!;
+      const { url: _url, catalogUrl: _catalogUrl, ...current } = adminProducts[index]!;
       const original = catalogUrls.get(current.id);
       // undefined keeps the current link, null goes back to the catalog's, a string replaces it.
-      const link =
-        body.data.url === undefined ? _url : (body.data.url ?? original);
+      const link = body.data.url === undefined ? _url : (body.data.url ?? original);
       const next: AdminProduct = {
         ...current,
-        ...(body.data.affiliate === undefined
-          ? {}
-          : { affiliate: body.data.affiliate }),
-        ...(body.data.enabled === undefined
-          ? {}
-          : { enabled: body.data.enabled }),
+        ...(body.data.affiliate === undefined ? {} : { affiliate: body.data.affiliate }),
+        ...(body.data.enabled === undefined ? {} : { enabled: body.data.enabled }),
         ...(link ? { url: link } : {}),
         ...(original && link !== original ? { catalogUrl: original } : {}),
       };
@@ -267,9 +160,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       return HttpResponse.json(next);
     }),
     http.delete(url("/admin/products/:id"), async ({ params }) => {
-      const index = adminProducts.findIndex(
-        (p) => p.id === params.id && p.managedBy === "admin",
-      );
+      const index = adminProducts.findIndex((p) => p.id === params.id && p.managedBy === "admin");
       if (index < 0) return noProduct();
       await delay(latency);
       adminProducts.splice(index, 1);
@@ -283,8 +174,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     http.get(url("/history"), async ({ request }) => {
       if (!db.profile()) return noProfile();
       const days = Number(new URL(request.url).searchParams.get("days") ?? 7);
-      if (!Number.isInteger(days) || days < 1 || days > 31)
-        return invalid("Ask for between 1 and 31 days.");
+      if (!Number.isInteger(days) || days < 1 || days > 31) return invalid("Ask for between 1 and 31 days.");
       await delay(latency);
       return HttpResponse.json({ days: db.history(days) });
     }),
@@ -295,19 +185,14 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     }),
     http.post(url("/telemetry/sleep"), async ({ request }) => {
       const body = IngestSleepRequest.safeParse(await request.json());
-      if (!body.success)
-        return invalid(
-          body.error.issues[0]?.message ?? "That sleep entry isn't valid.",
-        );
+      if (!body.success) return invalid(body.error.issues[0]?.message ?? "That sleep entry isn't valid.");
       await delay(latency);
       return HttpResponse.json({ accepted: db.addSleep(body.data.sessions) });
     }),
     http.post(url("/telemetry/screen-time"), async ({ request }) => {
       const body = IngestScreenTimeRequest.safeParse(await request.json());
       if (!body.success) return invalid("That screen-time entry isn't valid.");
-      return HttpResponse.json({
-        accepted: db.addScreenTime(body.data.samples),
-      });
+      return HttpResponse.json({ accepted: db.addScreenTime(body.data.samples) });
     }),
     // Public on the real API too: the landing page's visitors have no account.
     http.post(url("/waitlist"), async ({ request }) => {
@@ -316,13 +201,7 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       await delay(latency);
       const email = body.data.email.trim().toLowerCase();
       if (!waitlist.some((e) => e.email === email)) {
-        waitlist.unshift({
-          email,
-          ...(body.data.platform ? { platform: body.data.platform } : {}),
-          joinedAt: new Date().toISOString(),
-          confirmed: true,
-          unsubscribed: false,
-        });
+        waitlist.unshift({ email, ...(body.data.platform ? { platform: body.data.platform } : {}), joinedAt: new Date().toISOString(), confirmed: true, unsubscribed: false });
       }
       return HttpResponse.json({ status: "joined" }, { status: 201 });
     }),
@@ -334,16 +213,14 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
         total: active.length,
         iphone: active.filter((e) => e.platform === "iphone").length,
         android: active.filter((e) => e.platform === "android").length,
-        thisWeek: active.filter((e) => Date.parse(e.joinedAt) >= weekAgo)
-          .length,
+        thisWeek: active.filter((e) => Date.parse(e.joinedAt) >= weekAgo).length,
         unsubscribed: waitlist.length - active.length,
         entries: waitlist,
       });
     }),
     http.post(url("/waitlist/unsubscribe"), async ({ request }) => {
       const body = LeaveWaitlistRequest.safeParse(await request.json());
-      if (!body.success)
-        return invalid("That unsubscribe link isn't complete.");
+      if (!body.success) return invalid("That unsubscribe link isn't complete.");
       await delay(latency);
       return HttpResponse.json({ status: "unsubscribed" });
     }),

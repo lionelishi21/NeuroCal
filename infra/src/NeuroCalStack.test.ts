@@ -77,16 +77,23 @@ describe("NeuroCalStack", () => {
     });
   });
 
-  it("lets only the API Lambda sign uploads to and read from the photo bucket", () => {
+  it("lets only the API Lambda use the photo bucket, and only under uploads/", () => {
     dev.hasResourceProperties("AWS::Lambda::Function", {
       Handler: "index.handler",
-      Environment: { Variables: Match.objectLike({ PHOTO_BUCKET: Match.anyValue() }) },
+      Environment: { Variables: Match.objectLike({ PHOTO_BUCKET: Match.anyValue(), USER_POOL_ID: Match.anyValue() }) },
     });
     const policies = JSON.stringify(dev.findResources("AWS::IAM::Policy"));
-    expect(policies).toContain('["s3:PutObject","s3:GetObject"]');
+    expect(policies).toContain('["s3:PutObject","s3:GetObject","s3:DeleteObject"]');
     expect(policies).toContain("/uploads/*");
-    // Nothing broader: no listing, deleting, tagging or wildcards on the bucket.
-    expect(policies.match(/s3:[A-Za-z*]+/g)).toEqual(["s3:PutObject", "s3:GetObject"]);
+    // Listing (to delete an account's photos) is limited to the uploads/ prefix.
+    expect(policies).toContain('"s3:prefix":["uploads/*"]');
+    // Nothing broader: no tagging, bucket-wide deletes or wildcards.
+    expect(policies.match(/s3:[A-Za-z*]+/g)).toEqual(["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket", "s3:prefix"]);
+  });
+
+  it("lets the API delete sign-ins, and nothing else in the user pool", () => {
+    const policies = JSON.stringify(dev.findResources("AWS::IAM::Policy"));
+    expect(policies.match(/cognito-idp:[A-Za-z*]+/g)).toEqual(["cognito-idp:AdminDeleteUser"]);
   });
 
   it("applies migrations on deploy and keeps prod data on stack deletion", () => {

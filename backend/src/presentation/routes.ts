@@ -32,6 +32,7 @@ import { z } from "zod";
 import type { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import type { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
 import type { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
+import type { DeleteAccountUseCase } from "../application/use-cases/DeleteAccountUseCase";
 import type { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import type { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import type { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
@@ -68,6 +69,7 @@ export interface ApiResponse {
 export interface UseCases {
   getProfile: GetProfileUseCase;
   updateProfile: UpdateProfileUseCase;
+  deleteAccount: DeleteAccountUseCase;
   getBioState: GetBioStateUseCase;
   recordCheckIn: RecordCheckInUseCase;
   createPhotoUpload: CreatePhotoUploadUseCase;
@@ -211,6 +213,14 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["GET", /^\/meals$/, async (req) => ok(z.array(Meal), (await uc.listMeals.execute({ userId: req.userId, date: date(req) })).map(toMeal))],
+    [
+      "DELETE",
+      /^\/me$/,
+      async (req) => {
+        await uc.deleteAccount.execute(req.userId);
+        return { status: 204 };
+      },
+    ],
     [
       "DELETE",
       /^\/meals\/([^/]+)$/,

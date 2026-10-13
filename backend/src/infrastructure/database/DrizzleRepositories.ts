@@ -63,6 +63,23 @@ export class DrizzleUserRepository implements IUserRepository {
     if (!row) throw new Error("User upsert returned no row");
     return row.id;
   }
+
+  async delete(userId: string): Promise<{ authSubject: string } | null> {
+    return this.db.transaction(async (tx) => {
+      const [user] = await tx.select({ subject: users.cognitoSub, email: users.email }).from(users).where(eq(users.id, userId));
+      if (!user) return null;
+      // Meal items and the profile go with their meal and user (on delete cascade).
+      await tx.delete(meals).where(eq(meals.userId, userId));
+      await tx.delete(checkIns).where(eq(checkIns.userId, userId));
+      await tx.delete(recipeRecommendations).where(eq(recipeRecommendations.userId, userId));
+      await tx.delete(sleepSessions).where(eq(sleepSessions.userId, userId));
+      await tx.delete(screenTimeSamples).where(eq(screenTimeSamples.userId, userId));
+      await tx.delete(focusScores).where(eq(focusScores.userId, userId));
+      await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
+      await tx.delete(users).where(eq(users.id, userId));
+      return { authSubject: user.subject };
+    });
+  }
 }
 
 export class DrizzleProfileRepository implements IProfileRepository {

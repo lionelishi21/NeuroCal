@@ -33,4 +33,8 @@ export class DevObjectStorage implements IObjectStorage {
     const found = this.objects.get(key);
     return found && found.bytes.byteLength <= maxBytes ? found : null;
   }
+
+  async deleteAll(prefix: string) {
+    for (const key of [...this.objects.keys()]) if (key.startsWith(prefix)) this.objects.delete(key);
+  }
 }

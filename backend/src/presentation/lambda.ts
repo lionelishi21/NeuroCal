@@ -17,6 +17,7 @@ import {
   DrizzleUserRepository,
   DrizzleWaitlistRepository,
 } from "../infrastructure/database/DrizzleRepositories";
+import { CognitoIdentityProvider } from "../infrastructure/aws/CognitoIdentityProvider";
 import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
@@ -38,6 +39,8 @@ const db = createDatabase(required("DATABASE_URL", config.databaseUrl));
 const users = new DrizzleUserRepository(db);
 const api = createApi(
   buildUseCases({
+    users,
+    identity: new CognitoIdentityProvider({ userPoolId: required("USER_POOL_ID", config.userPoolId) }),
     profiles: new DrizzleProfileRepository(db),
     meals: new DrizzleMealRepository(db),
     checkIns: new DrizzleCheckInRepository(db),
@@ -91,7 +94,10 @@ export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): P
     userIds.set(subject, userId);
   }
 
-  return toResult(await api({ ...request, userId, isAdmin: isAdminClaim(claims) }));
+  const response = await api({ ...request, userId, isAdmin: isAdminClaim(claims) });
+  // A deleted account's id must not be reused if the same sign-in comes back to this container.
+  if (request.method === "DELETE" && request.path === "/me" && response.status === 204) userIds.delete(subject);
+  return toResult(response);
 }
 
 function toResult(response: ApiResponse): APIGatewayProxyResultV2 {

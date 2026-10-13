@@ -37,6 +37,19 @@
             "$ref": "#/components/responses/Error"
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteAccount",
+        "summary": "Delete your account",
+        "description": "Removes the profile, meals, check-ins, scores, imported sleep and screen time, meal photos, any waitlist entry for the email, and the sign-in. It cannot be undone.",
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
       }
     },
     "/me/profile": {

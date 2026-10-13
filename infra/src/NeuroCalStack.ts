@@ -133,12 +133,16 @@ export class NeuroCalStack extends Stack {
     };
 
     const api = fn("ApiFunction", "lambda.ts", { timeout: Duration.seconds(29) });
-    // The API signs upload URLs for the bucket and reads uploaded photos; it never lists or deletes.
+    // The API signs upload URLs for the bucket and reads uploaded photos. It lists and deletes only
+    // to remove a person's photos when they delete their account.
     api.addEnvironment("PHOTO_BUCKET", photos.bucketName);
     // Sign-in emails allowed to manage products (the admin screen). Not a secret: access still needs that account's sign-in.
     api.addEnvironment("ADMIN_EMAILS", (props.adminEmails ?? []).join(","));
     api.addToRolePolicy(
-      new iam.PolicyStatement({ actions: ["s3:PutObject", "s3:GetObject"], resources: [photos.arnForObjects("uploads/*")] }),
+      new iam.PolicyStatement({ actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"], resources: [photos.arnForObjects("uploads/*")] }),
+    );
+    api.addToRolePolicy(
+      new iam.PolicyStatement({ actions: ["s3:ListBucket"], resources: [photos.bucketArn], conditions: { StringLike: { "s3:prefix": ["uploads/*"] } } }),
     );
 
     const migrate = fn("MigrateFunction", "migrateLambda.ts", {
@@ -167,6 +171,10 @@ export class NeuroCalStack extends Stack {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: retain,
     });
+    // Deleting an account also deletes its sign-in.
+    api.addEnvironment("USER_POOL_ID", userPool.userPoolId);
+    userPool.grant(api, "cognito-idp:AdminDeleteUser");
+
     const webClient = userPool.addClient("WebClient", {
       authFlows: { userSrp: true },
       preventUserExistenceErrors: true,

@@ -1,10 +1,10 @@
-import { GetObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { IObjectStorage } from "../../application/interfaces/IObjectStorage";
 
 const UPLOAD_SECONDS = 300;
 
-/** Meal photos in the stack's private bucket (ARCHITECTURE §10): presigned PUT in, read by key. */
+/** Meal photos in the stack's private bucket (ARCHITECTURE §10): presigned PUT in, read by key, deleted with the account. */
 export class S3ObjectStorage implements IObjectStorage {
   private readonly client: S3Client;
 
@@ -32,5 +32,15 @@ export class S3ObjectStorage implements IObjectStorage {
       if (error instanceof S3ServiceException && ["NoSuchKey", "AccessDenied"].includes(error.name)) return null;
       throw error;
     }
+  }
+
+  async deleteAll(prefix: string) {
+    let token: string | undefined;
+    do {
+      const page = await this.client.send(new ListObjectsV2Command({ Bucket: this.options.bucket, Prefix: prefix, ContinuationToken: token }));
+      const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
+      if (keys.length) await this.client.send(new DeleteObjectsCommand({ Bucket: this.options.bucket, Delete: { Objects: keys, Quiet: true } }));
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
   }
 }

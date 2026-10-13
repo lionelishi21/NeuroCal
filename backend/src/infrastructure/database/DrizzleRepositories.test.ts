@@ -10,7 +10,9 @@ import {
   DrizzleUserRepository,
   DrizzleWaitlistRepository,
 } from "./DrizzleRepositories";
+import { eq } from "drizzle-orm";
 import { createPgliteDatabase } from "./pglite";
+import * as schema from "./schema";
 import { item, profile } from "../../application/testing/fakes";
 
 let db: Database;
@@ -224,5 +226,28 @@ describe("DrizzleFocusScoreRepository", () => {
     await repo.put({ ...score, score: 70 });
     expect(await repo.get(alice, "2026-09-29")).toEqual({ ...score, score: 70 });
     expect(await repo.get(bob, "2026-09-29")).toBeNull();
+  });
+});
+
+// Last on purpose: by now the earlier tests have given alice rows in every user table.
+describe("DrizzleUserRepository.delete", () => {
+  it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
+    // Her sign-in email is new@example.com since the first test.
+    await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores];
+    const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
+    const before = await rowsOf(alice);
+    const bobBefore = await rowsOf(bob);
+
+    const users = new DrizzleUserRepository(db);
+    expect(await users.delete(alice)).toEqual({ authSubject: "sub-alice" });
+
+    expect(await rowsOf(alice)).toEqual(owned.map(() => 0));
+    expect(await db.select().from(schema.waitlist).where(eq(schema.waitlist.email, "new@example.com"))).toEqual([]);
+    expect(await db.select().from(schema.users).where(eq(schema.users.id, alice))).toEqual([]);
+    expect(await rowsOf(bob)).toEqual(bobBefore);
+    expect(before.every((n) => n > 0)).toBe(true);
+    // Deleting twice finds nobody.
+    expect(await users.delete(alice)).toBeNull();
   });
 });

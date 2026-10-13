@@ -6,6 +6,7 @@ import type { IClock } from "../application/interfaces/IClock";
 import type { IEmailSender } from "../application/interfaces/IEmailSender";
 import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingProvider";
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
+import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
 import type {
   ICheckInRepository,
@@ -14,12 +15,14 @@ import type {
   IProfileRepository,
   IRecommendationRepository,
   ITelemetryRepository,
+  IUserRepository,
   IWaitlistRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
 import { CreatePhotoUploadUseCase } from "../application/use-cases/CreatePhotoUploadUseCase";
+import { DeleteAccountUseCase } from "../application/use-cases/DeleteAccountUseCase";
 import { DeleteMealUseCase } from "../application/use-cases/DeleteMealUseCase";
 import { GetBioStateUseCase } from "../application/use-cases/GetBioStateUseCase";
 import { GetFocusScoreUseCase } from "../application/use-cases/GetFocusScoreUseCase";
@@ -35,6 +38,8 @@ import { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from 
 import type { UseCases } from "./routes";
 
 export interface Ports {
+  users: IUserRepository;
+  identity: IIdentityProvider;
   profiles: IProfileRepository;
   meals: IMealRepository;
   checkIns: ICheckInRepository;
@@ -62,6 +67,7 @@ export function buildUseCases(p: Ports): UseCases {
   return {
     getProfile: new GetProfileUseCase(p.profiles),
     updateProfile: new UpdateProfileUseCase(p.profiles),
+    deleteAccount: new DeleteAccountUseCase(p.users, p.storage, p.identity),
     getBioState,
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),

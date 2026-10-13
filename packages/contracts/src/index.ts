@@ -433,6 +433,8 @@ export type ApiError = z.infer<typeof ApiError>;
 export const endpoints = {
   getMe: { method: "GET", path: "/me", response: Profile },
   updateProfile: { method: "PUT", path: "/me/profile", body: UpdateProfileRequest, response: Profile },
+  /** Deletes the account for good: profile, meals, scores, photos, waitlist entry and the sign-in itself. */
+  deleteAccount: { method: "DELETE", path: "/me" },
   getBioState: { method: "GET", path: "/bio-state", response: BioState },
   createCheckIn: { method: "POST", path: "/check-ins", body: CreateCheckInRequest, response: CheckIn },
   /** Step 1 of logging a photo: get a short-lived URL to upload it to. */

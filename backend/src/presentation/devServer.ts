@@ -124,7 +124,7 @@ async function main() {
   const config = loadConfig();
   const db = config.databaseUrl ? createDatabase(config.databaseUrl) : (await createPgliteDatabase()).db;
   const users = new DrizzleUserRepository(db);
-  const devUserId = await users.findOrCreateByAuthSubject(DEV_SUBJECT, "dev@localhost");
+  let devUserId = await users.findOrCreateByAuthSubject(DEV_SUBJECT, "dev@localhost");
   if (!config.databaseUrl && !FRESH_USER) await seed(db, devUserId);
 
   const vision = config.openAiApiKey ? new OpenAiVisionProvider({ apiKey: config.openAiApiKey }) : stubVision;
@@ -139,6 +139,9 @@ async function main() {
 
   const api = createApi(
     buildUseCases({
+      users,
+      // No sign-in service locally: deleting the account starts the dev user afresh.
+      identity: { deleteLogin: async () => {} },
       profiles: new DrizzleProfileRepository(db),
       meals: new DrizzleMealRepository(db),
       checkIns: new DrizzleCheckInRepository(db),
@@ -183,6 +186,9 @@ async function main() {
       // The local dev user can manage products.
       isAdmin: true,
     });
+    if (req.method === "DELETE" && url.pathname === "/me" && response.status === 204) {
+      devUserId = await users.findOrCreateByAuthSubject(DEV_SUBJECT, "dev@localhost");
+    }
     res.writeHead(response.status, { "content-type": "application/json" });
     res.end(response.body === undefined ? undefined : JSON.stringify(response.body));
   }).listen(PORT, () => {

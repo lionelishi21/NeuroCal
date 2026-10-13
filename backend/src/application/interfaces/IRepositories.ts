@@ -18,6 +18,11 @@ import type {
 /** Maps the identity provider's subject (Cognito `sub`) to our user id, creating the user on first sign-in. */
 export interface IUserRepository {
   findOrCreateByAuthSubject(subject: string, email: string): Promise<string>;
+  /**
+   * Deletes the user and every row that belongs to them, plus any waitlist entry for their email,
+   * in one transaction. Returns their sign-in subject, or null when there was no such user.
+   */
+  delete(userId: string): Promise<{ authSubject: string } | null>;
 }
 
 /** Every method below is scoped to one user; implementations must filter by userId (ARCHITECTURE §10). */
