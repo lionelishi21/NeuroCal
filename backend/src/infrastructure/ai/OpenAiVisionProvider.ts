@@ -21,6 +21,7 @@ export const MealVisionSchema = z.object({
       fatG: z.number().nonnegative(),
       confidence: z.number().min(0).max(1),
       glycemicLoad: z.enum(["low", "medium", "high"]),
+      processing: z.enum(["whole", "processed", "ultra_processed"]),
     }),
   ),
   problem: z.enum(["too_dark", "no_food_found", "blurry"]).nullable(),
@@ -83,6 +84,7 @@ export class OpenAiVisionProvider implements IAiVisionProvider {
         macros: { proteinG: i.proteinG, carbsG: i.carbsG, fatG: i.fatG },
         confidence: i.confidence,
         glycemicLoad: i.glycemicLoad,
+        processing: i.processing,
       })),
       ...(result.problem ? { problem: result.problem } : {}),
     };

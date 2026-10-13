@@ -117,6 +117,8 @@ export const FoodItem = z.object({
   confidence: z.number().min(0).max(1).optional(),
   /** Estimated glycemic load from photo analysis; feeds the Focus Score. */
   glycemicLoad: z.enum(["low", "medium", "high"]).optional(),
+  /** NOVA-style: whole (NOVA 1–2), processed (NOVA 3), ultra_processed (NOVA 4). Missing for items typed in by hand. */
+  processing: z.enum(["whole", "processed", "ultra_processed"]).optional(),
 });
 export type FoodItem = z.infer<typeof FoodItem>;
 
@@ -195,6 +197,12 @@ export const BioState = z.object({
   macroFocus: MacroFocus,
   cognitiveFlags: z.array(CognitiveFlag),
   dietaryPreference: DietaryPreference,
+  /** The day's calories by how processed the food was; items without a level aren't counted. */
+  processing: z.object({
+    wholeKcal: z.number().nonnegative(),
+    processedKcal: z.number().nonnegative(),
+    ultraProcessedKcal: z.number().nonnegative(),
+  }),
 });
 export type BioState = z.infer<typeof BioState>;
 
@@ -416,6 +424,7 @@ export const CatalogFood = z.object({
   macros: Macros,
   fiberG: z.number().nonnegative(),
   glycemicLoad: z.enum(["low", "medium", "high"]),
+  processing: z.enum(["whole", "processed", "ultra_processed"]),
   /** The goals it suits; empty for everyday foods. */
   goals: z.array(CognitiveGoal),
   /** One plain sentence on what it brings. */

@@ -12,9 +12,9 @@ export const stubVision: IAiVisionProvider = {
   async analyzeMealPhoto() {
     return {
       items: [
-        { name: "Grilled chicken breast", portion: "150 g", calories: 248, macros: { proteinG: 46, carbsG: 0, fatG: 5.4 }, confidence: 0.92, glycemicLoad: "low" },
-        { name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.81, glycemicLoad: "medium" },
-        { name: "Roasted broccoli", portion: "1 cup", calories: 55, macros: { proteinG: 3.7, carbsG: 11, fatG: 0.6 }, confidence: 0.88, glycemicLoad: "low" },
+        { name: "Grilled chicken breast", portion: "150 g", calories: 248, macros: { proteinG: 46, carbsG: 0, fatG: 5.4 }, confidence: 0.92, glycemicLoad: "low", processing: "whole" },
+        { name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.81, glycemicLoad: "medium", processing: "whole" },
+        { name: "Roasted broccoli", portion: "1 cup", calories: 55, macros: { proteinG: 3.7, carbsG: 11, fatG: 0.6 }, confidence: 0.88, glycemicLoad: "low", processing: "whole" },
       ],
     };
   },

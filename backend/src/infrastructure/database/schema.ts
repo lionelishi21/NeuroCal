@@ -96,6 +96,8 @@ export const mealItems = pgTable(
     /** Null for items the user entered by hand. */
     confidence: real("confidence"),
     glycemicLoad: text("glycemic_load"),
+    /** whole, processed or ultra_processed; null for items typed in by hand. */
+    processing: text("processing"),
   },
   (t) => [
     unique("meal_items_meal_position_unique").on(t.mealId, t.position),

@@ -1,5 +1,5 @@
 import { mealCalories, sumMacros } from "./meal";
-import type { BioState, CheckIn, MacroFocus, Macros, Meal, Profile } from "./types";
+import type { BioState, CheckIn, FoodItem, FoodProcessing, MacroFocus, Macros, Meal, Profile } from "./types";
 
 /** The largest gap must beat the runner-up by this much to become the focus. */
 const FOCUS_MARGIN = 0.1;
@@ -39,5 +39,12 @@ export function computeBioState(
     macroFocus: macroFocus(macrosEaten, profile.macroTargets),
     cognitiveFlags: latestCheckIn?.flags ?? [],
     dietaryPreference: profile.dietaryPreference,
+    processing: processingOf(meals.flatMap((m) => m.items)),
   };
+}
+
+/** Calories by processing level, rounded; items without a level are left out. */
+export function processingOf(items: FoodItem[]): BioState["processing"] {
+  const kcal = (level: FoodProcessing) => Math.round(items.filter((i) => i.processing === level).reduce((sum, i) => sum + i.calories, 0));
+  return { wholeKcal: kcal("whole"), processedKcal: kcal("processed"), ultraProcessedKcal: kcal("ultra_processed") };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { computeBioState, macroFocus } from "./bioState";
+import { computeBioState, macroFocus, processingOf } from "./bioState";
 import type { Meal } from "./types";
 import { item, profile } from "../application/testing/fakes";
 
@@ -48,5 +48,22 @@ describe("computeBioState", () => {
     const state = computeBioState(profile(), "2026-09-29", [], null);
     expect(state.caloriesEaten).toBe(0);
     expect(state.cognitiveFlags).toEqual([]);
+  });
+});
+
+describe("processingOf", () => {
+  it("adds up calories by processing level and leaves out items without one", () => {
+    const item = (calories: number, processing?: "whole" | "processed" | "ultra_processed") => ({
+      name: "x",
+      portion: "1",
+      calories,
+      macros: { proteinG: 0, carbsG: 0, fatG: 0 },
+      ...(processing ? { processing } : {}),
+    });
+    expect(processingOf([item(300.4, "whole"), item(150, "processed"), item(250.6, "ultra_processed"), item(99.6, "ultra_processed"), item(500)])).toEqual({
+      wholeKcal: 300,
+      processedKcal: 150,
+      ultraProcessedKcal: 350,
+    });
   });
 });

@@ -1,4 +1,4 @@
-import type { CognitiveGoal, DietaryPreference, GlycemicLoad, Macros } from "./types";
+import type { CognitiveGoal, DietaryPreference, FoodProcessing, GlycemicLoad, Macros } from "./types";
 
 export type FoodCategory = "fish" | "meat" | "eggs_dairy" | "plant_protein" | "grains" | "vegetables" | "fruit" | "nuts_seeds" | "fats" | "drinks" | "extras";
 
@@ -18,6 +18,7 @@ export interface Food {
   macros: Macros;
   fiberG: number;
   glycemicLoad: GlycemicLoad;
+  processing: FoodProcessing;
   /** The goals it suits; empty for everyday foods. */
   goals: CognitiveGoal[];
   /** One plain sentence on what it brings. No medical claims. */

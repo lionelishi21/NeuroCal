@@ -9,6 +9,12 @@ a portion in everyday units (g, cup, slice, piece) and your best estimate of
 calories, protein, carbs and fat for that portion.
 Set confidence between 0 and 1 for each item; below 0.85 means the user should check it.
 Set glycemicLoad to low, medium or high for each item.
+Set processing for each item, following the NOVA classification: whole for fresh or minimally
+processed foods and home cooking (meat, fish, eggs, vegetables, fruit, plain grains, milk, plain
+yogurt, nuts); processed for simple foods made with salt, sugar or oil (cheese, canned fish, plain
+bread from a bakery, cured ham); ultra_processed for industrial products (soft drinks, sweets,
+packaged snacks and pastries, most breakfast cereals, flavoured yogurts, sausages and nuggets,
+instant noodles, fast food, ready meals). When unsure, choose the less processed level.
 If the photo is too dark, too blurry, or shows no food, return no items and set problem.
 Never guess brands. Never add items you cannot see.`;
 

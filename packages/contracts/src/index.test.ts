@@ -25,6 +25,7 @@ describe("contracts", () => {
       macroFocus: "protein",
       cognitiveFlags: ["low_focus"],
       dietaryPreference: "omnivore",
+      processing: { wholeKcal: 1800, processedKcal: 200, ultraProcessedKcal: 150 },
     });
     expect(caloriesRemaining(state)).toBe(-150);
   });

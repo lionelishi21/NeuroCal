@@ -213,6 +213,7 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       macrosEaten,
       macroTargets: profile.macroTargets,
       macroFocus: macroFocus(macrosEaten, profile.macroTargets),
+      processing: processingOf(day.flatMap((m) => m.items)),
       cognitiveFlags: latest?.flags ?? [],
       dietaryPreference: profile.dietaryPreference,
     };
@@ -490,4 +491,10 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       return checkIn;
     },
   };
+}
+
+/** The day's calories by processing level, as the API works it out (backend/src/domain/bioState.ts). */
+function processingOf(items: FoodItem[]): BioState["processing"] {
+  const kcal = (level: NonNullable<FoodItem["processing"]>) => Math.round(items.filter((i) => i.processing === level).reduce((sum, i) => sum + i.calories, 0));
+  return { wholeKcal: kcal("whole"), processedKcal: kcal("processed"), ultraProcessedKcal: kcal("ultra_processed") };
 }

@@ -231,6 +231,19 @@ describe("API routes", () => {
     expect(res).toEqual({ status: 200, body: expect.objectContaining({ id: "u1", timeZone: "America/Chicago" }) });
   });
 
+  it("GET /bio-state splits the day's calories by how processed the food was", async () => {
+    await call("POST", "/meals", {
+      kind: "snack",
+      eatenAt: "2026-09-29T16:30:00-05:00",
+      items: [
+        { name: "Cola", portion: "1 can", calories: 140, macros: { proteinG: 0, carbsG: 39, fatG: 0 }, processing: "ultra_processed" },
+        { name: "Apple", portion: "1", calories: 95, macros: { proteinG: 0.5, carbsG: 25, fatG: 0.3 }, processing: "whole" },
+      ],
+    });
+    // The breakfast logged in setup has no level and isn't counted.
+    expect((await call("GET", "/bio-state")).body).toMatchObject({ processing: { wholeKcal: 95, processedKcal: 0, ultraProcessedKcal: 140 } });
+  });
+
   it("GET /bio-state and GET /meals use today in the user's time zone", async () => {
     expect((await call("GET", "/bio-state")).body).toMatchObject({ date: "2026-09-29", caloriesEaten: 440 });
     const meals = await call("GET", "/meals");

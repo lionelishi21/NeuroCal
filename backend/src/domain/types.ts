@@ -35,6 +35,15 @@ export type MealKind = (typeof MEAL_KINDS)[number];
 export const GLYCEMIC_LOADS = ["low", "medium", "high"] as const;
 export type GlycemicLoad = (typeof GLYCEMIC_LOADS)[number];
 
+/**
+ * How processed a food is, after the NOVA classification: whole (NOVA 1–2: fresh or minimally
+ * processed foods and cooking basics), processed (NOVA 3: simple foods made with salt, sugar or oil,
+ * like cheese, canned fish or plain bread) and ultra-processed (NOVA 4: industrial products such as
+ * soft drinks, packaged snacks, most breakfast cereals and ready meals).
+ */
+export const FOOD_PROCESSING = ["whole", "processed", "ultra_processed"] as const;
+export type FoodProcessing = (typeof FOOD_PROCESSING)[number];
+
 export interface Macros {
   proteinG: number;
   carbsG: number;
@@ -65,6 +74,8 @@ export interface FoodItem {
   /** 0–1, only on AI-proposed items. */
   confidence?: number;
   glycemicLoad?: GlycemicLoad;
+  /** Missing for items typed in by hand. */
+  processing?: FoodProcessing;
 }
 
 export interface Meal {
@@ -104,6 +115,8 @@ export interface BioState {
   macroFocus: MacroFocus;
   cognitiveFlags: CognitiveFlag[];
   dietaryPreference: DietaryPreference;
+  /** The day's calories by how processed the food was; items without a level aren't counted. */
+  processing: { wholeKcal: number; processedKcal: number; ultraProcessedKcal: number };
 }
 
 export interface RecipeRecommendation {

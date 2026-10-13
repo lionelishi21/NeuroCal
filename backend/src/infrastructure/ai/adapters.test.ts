@@ -51,7 +51,7 @@ const photo = { bytes: new Uint8Array([0xff, 0xd8, 0xff]), mediaType: "image/jpe
 describe("OpenAiVisionProvider", () => {
   it("sends the photo to gpt-4o and maps items to the domain shape", async () => {
     const parsed = {
-      items: [{ name: "Quinoa", portion: "¾ cup", calories: 166, proteinG: 6, carbsG: 29, fatG: 2.7, confidence: 0.8, glycemicLoad: "medium" }],
+      items: [{ name: "Quinoa", portion: "¾ cup", calories: 166, proteinG: 6, carbsG: 29, fatG: 2.7, confidence: 0.8, glycemicLoad: "medium", processing: "whole" }],
       problem: null,
     };
     const { parse, provider } = openAiWith({ finish_reason: "stop", message: { parsed, refusal: null } });
@@ -59,7 +59,7 @@ describe("OpenAiVisionProvider", () => {
     const result = await provider.analyzeMealPhoto(photo);
 
     expect(result).toEqual({
-      items: [{ name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.8, glycemicLoad: "medium" }],
+      items: [{ name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.8, glycemicLoad: "medium", processing: "whole" }],
     });
     const params = parse.mock.calls[0]![0] as Record<string, any>;
     expect(params.model).toBe(MEAL_VISION_MODEL);

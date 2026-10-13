@@ -1293,6 +1293,28 @@
           },
           "dietaryPreference": {
             "$ref": "#/components/schemas/DietaryPreference"
+          },
+          "processing": {
+            "type": "object",
+            "properties": {
+              "wholeKcal": {
+                "type": "number",
+                "minimum": 0
+              },
+              "processedKcal": {
+                "type": "number",
+                "minimum": 0
+              },
+              "ultraProcessedKcal": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "wholeKcal",
+              "processedKcal",
+              "ultraProcessedKcal"
+            ]
           }
         },
         "required": [
@@ -1303,7 +1325,8 @@
           "macroTargets",
           "macroFocus",
           "cognitiveFlags",
-          "dietaryPreference"
+          "dietaryPreference",
+          "processing"
         ]
       },
       "CatalogFood": {
@@ -1347,6 +1370,14 @@
               "high"
             ]
           },
+          "processing": {
+            "type": "string",
+            "enum": [
+              "whole",
+              "processed",
+              "ultra_processed"
+            ]
+          },
           "goals": {
             "type": "array",
             "items": {
@@ -1378,6 +1409,7 @@
           "macros",
           "fiberG",
           "glycemicLoad",
+          "processing",
           "goals",
           "why",
           "diets",
@@ -1848,6 +1880,14 @@
               "low",
               "medium",
               "high"
+            ]
+          },
+          "processing": {
+            "type": "string",
+            "enum": [
+              "whole",
+              "processed",
+              "ultra_processed"
             ]
           }
         },

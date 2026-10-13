@@ -40,6 +40,7 @@ const toFoodItem = (i: FoodItem): C.FoodItem => ({
   macros: i.macros,
   ...(i.confidence === undefined ? {} : { confidence: i.confidence }),
   ...(i.glycemicLoad === undefined ? {} : { glycemicLoad: i.glycemicLoad }),
+  ...(i.processing === undefined ? {} : { processing: i.processing }),
 });
 
 export const toMeal = (m: Meal): C.Meal => ({

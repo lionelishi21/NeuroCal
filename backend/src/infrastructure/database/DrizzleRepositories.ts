@@ -17,6 +17,7 @@ import type {
   DietaryPreference,
   FocusScore,
   FoodItem,
+  FoodProcessing,
   GlycemicLoad,
   LocalDay,
   Meal,
@@ -197,6 +198,7 @@ export class DrizzleMealRepository implements IMealRepository {
           fatG: item.macros.fatG,
           confidence: item.confidence ?? null,
           glycemicLoad: item.glycemicLoad ?? null,
+          processing: item.processing ?? null,
         })),
       );
       return { id: row.id, userId, kind: meal.kind, eatenAt: row.eatenAt, items: meal.items, ...(meal.photoKey ? { photoKey: meal.photoKey } : {}) };
@@ -235,6 +237,7 @@ export class DrizzleMealRepository implements IMealRepository {
             macros: { proteinG: i.proteinG, carbsG: i.carbsG, fatG: i.fatG },
             ...(i.confidence === null ? {} : { confidence: i.confidence }),
             ...(i.glycemicLoad === null ? {} : { glycemicLoad: i.glycemicLoad as GlycemicLoad }),
+            ...(i.processing === null ? {} : { processing: i.processing as FoodProcessing }),
           }),
         ),
     }));
