@@ -5,9 +5,11 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
+import '../widgets/food_image.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'check_in_sheet.dart';
+import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
@@ -132,6 +134,24 @@ class _TodayScreenState extends State<TodayScreen> {
     }
   }
 
+  /// The food catalog; choosing "Log it" on a food opens Log a meal with it filled in.
+  Future<void> _browseFoods() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (route) => FoodsScreen(
+          onLog: (picked) async {
+            Navigator.of(route).pop();
+            final logged = await showLogMealSheet(context, initialItems: [picked.food.toItem(picked.servings)]);
+            if (logged == true && mounted) {
+              showToast(context, 'Meal logged');
+              widget.onChanged();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _checkIn() async {
     final saved = await showCheckInSheet(context);
     if (saved == true && mounted) {
@@ -234,6 +254,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     _Feeling(snapshot.data!.bio.flags, onCheckIn: _checkIn),
                     const BlockTitle('What to eat next'),
                     _Suggestions(snapshot.data!.recipes),
+                    const SizedBox(height: Space.s3),
+                    _BrowseFoods(onTap: _browseFoods),
                     BlockTitle(
                       'Meals today',
                       note: snapshot.data!.meals.isEmpty
@@ -848,6 +870,67 @@ class _MealRow extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A way into the food catalog from Today: a strip of foods for focus and a link.
+class _BrowseFoods extends StatelessWidget {
+  const _BrowseFoods({required this.onTap});
+
+  final VoidCallback onTap;
+
+  static const _preview = [('salmon', 'fish'), ('blueberries', 'fruit'), ('walnuts', 'nuts_seeds'), ('eggs', 'eggs_dairy')];
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      label: 'Browse foods for focus, energy and sleep',
+      excludeSemantics: true,
+      child: Material(
+        color: c.paper,
+        borderRadius: BorderRadius.circular(Radii.card),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+            child: Row(
+              spacing: Space.s3,
+              children: [
+                SizedBox(
+                  width: 104,
+                  height: 40,
+                  child: Stack(
+                    children: [
+                      for (final (i, (id, category)) in _preview.indexed)
+                        Positioned(
+                          left: i * 21.0,
+                          child: Container(
+                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.paper, width: 2)),
+                            child: ClipOval(child: FoodImage(id: id, category: category, size: 36, radius: 18)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Browse foods', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                      Text('For focus, energy, sleep and calm', style: TextStyle(fontSize: TextSize.xs)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

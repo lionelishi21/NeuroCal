@@ -49,6 +49,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
   - `cd backend && npm run db:generate` - Generate a SQL migration from `schema.ts` into `backend/drizzle/`
   - `cd backend && npm run catalog:sync` - Embed new or edited protocols/products from `src/infrastructure/catalog/catalog.ts` into `DATABASE_URL` (needs `OPENAI_API_KEY`)
   - `cd backend && npm run dev` - Local API on :4000 (in-memory Postgres + stub AI unless `backend/.env` sets keys; see `backend/.env.example`)
+  - `cd backend && npm run foods:images` - Generate missing food photos (`mobile-app/assets/foods/<id>.webp`) for the food catalog in `src/infrastructure/catalog/foods.ts` (needs `OPENAI_API_KEY`; nutrition there comes from USDA FoodData Central)
   - Backend tests run Jest with `--experimental-vm-modules` so repository tests can use PGlite (in-process Postgres)
 - **Web POC (`/web-poc`):**
   - `cd web-poc && npm run dev` - Run Next.js local dev server (mock API); `NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev` to use the local backend

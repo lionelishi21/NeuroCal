@@ -32,6 +32,7 @@ import { stubExplainer, stubReasoning, stubSearch, stubLabels, stubVision } from
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
+import { FOODS } from "../infrastructure/catalog/foods";
 import { createApi } from "./routes";
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -122,6 +123,7 @@ async function seedPastWeek(db: Database, userId: string, today: (h: number, m: 
 }
 
 async function main() {
+  loadDotEnv();
   const config = loadConfig();
   const db = config.databaseUrl ? createDatabase(config.databaseUrl) : (await createPgliteDatabase()).db;
   const users = new DrizzleUserRepository(db);
@@ -154,6 +156,7 @@ async function main() {
       embedder,
       vision,
       labels,
+      foods: FOODS,
       storage,
       explainer,
       reasoning,
@@ -205,6 +208,15 @@ async function main() {
     console.log(`  vision: ${mode(vision !== stubVision)}, reasoning: ${mode(reasoning !== stubReasoning)}, search: ${mode(search !== stubSearch)}, embeddings: ${mode(embedder !== keywordEmbedder)}`);
     console.log(`  catalog: ${synced.embedded} entries embedded`);
   });
+}
+
+/** Reads backend/.env (see .env.example) into the environment when it exists. Variables already set win. */
+function loadDotEnv() {
+  try {
+    process.loadEnvFile(".env");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
 }
 
 main().catch((e) => {

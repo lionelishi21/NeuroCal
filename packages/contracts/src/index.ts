@@ -333,6 +333,35 @@ export const ProtocolsResponse = z.object({
 });
 export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
 
+export const FoodCategory = z.enum(["fish", "meat", "eggs_dairy", "plant_protein", "grains", "vegetables", "fruit", "nuts_seeds", "fats", "drinks", "extras"]);
+export type FoodCategory = z.infer<typeof FoodCategory>;
+
+/** A food in the catalog, per serving. Clients show its photo by `id`. */
+export const CatalogFood = z.object({
+  id: Id,
+  name: z.string().min(1),
+  category: FoodCategory,
+  /** How the serving reads, e.g. "1 fillet (120 g)". */
+  serving: z.string().min(1),
+  grams: z.number().positive(),
+  calories: z.number().nonnegative(),
+  macros: Macros,
+  fiberG: z.number().nonnegative(),
+  glycemicLoad: z.enum(["low", "medium", "high"]),
+  /** The goals it suits; empty for everyday foods. */
+  goals: z.array(CognitiveGoal),
+  /** One plain sentence on what it brings. */
+  why: z.string().min(1),
+  /** The diets it fits. */
+  diets: z.array(DietaryPreference),
+  /** Source entry in USDA FoodData Central. */
+  fdcId: z.number().int().positive(),
+});
+export type CatalogFood = z.infer<typeof CatalogFood>;
+
+export const FoodCatalog = z.object({ foods: z.array(CatalogFood) });
+export type FoodCatalog = z.infer<typeof FoodCatalog>;
+
 /** The most photos of one bottle a label scan takes: its sides, as the bottle turns. */
 export const MAX_LABEL_PHOTOS = 4;
 
@@ -495,6 +524,8 @@ export const endpoints = {
   createPhotoUpload: { method: "POST", path: "/uploads/meal-photo", body: CreatePhotoUploadRequest, response: PhotoUpload },
   /** Takes the key of an uploaded photo, or (older clients) the photo itself as multipart `photo`. */
   analyzeMeal: { method: "POST", path: "/meals/analyze", body: AnalyzeMealRequest, response: AnalyzeMealResponse },
+  /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
+  listFoods: { method: "GET", path: "/foods", response: FoodCatalog },
   /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */
   analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeSupplementRequest, response: SupplementLabelResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },

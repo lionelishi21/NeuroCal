@@ -20,6 +20,9 @@ abstract interface class NeuroCalApi {
   Future<List<Meal>> meals(DateTime day);
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
 
+  /// The food catalog, sorted by name. Fetched once and kept for the session.
+  Future<List<CatalogFood>> foods();
+
   /// Reads 1–4 photos of one supplement bottle as a single label. Nothing is saved.
   Future<SupplementLabel> analyzeSupplement(List<Uint8List> photos, {List<String> names = const []});
   Future<Meal> createMeal(NewMeal meal);
@@ -119,6 +122,19 @@ class HttpNeuroCalApi implements NeuroCalApi {
     final res = await http.Response.fromStream(await _client.send(req));
     return AnalyzeMealResult.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  Future<List<CatalogFood>>? _foods;
+
+  @override
+  Future<List<CatalogFood>> foods() => _foods ??= () async {
+    try {
+      final body = await _get('/foods') as Map<String, dynamic>;
+      return [for (final f in body['foods'] as List) CatalogFood.fromJson(f as Map<String, dynamic>)];
+    } catch (_) {
+      _foods = null; // Try again next time.
+      rethrow;
+    }
+  }();
 
   @override
   Future<SupplementLabel> analyzeSupplement(List<Uint8List> photos, {List<String> names = const []}) async {

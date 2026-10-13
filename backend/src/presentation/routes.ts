@@ -5,6 +5,7 @@ import {
   AnalyzeMealRequest,
   AnalyzeMealResponse,
   SupplementLabelResponse,
+  FoodCatalog,
   AnalyzeSupplementRequest,
   MAX_LABEL_PHOTOS,
   BioState,
@@ -44,6 +45,7 @@ import type { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCa
 import type { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
+import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
@@ -79,6 +81,7 @@ export interface UseCases {
   recordCheckIn: RecordCheckInUseCase;
   createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
+  listFoods: ListFoodsUseCase;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
   logMeal: LogMealUseCase;
   listMeals: ListMealsUseCase;
@@ -220,6 +223,7 @@ export function createApi(uc: UseCases) {
         return ok(AnalyzeMealResponse, toAnalysis(analysis));
       },
     ],
+    ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: uc.listFoods.execute().map(({ kind: _, ...food }) => food) })],
     [
       "POST",
       /^\/supplements\/analyze$/,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { SupplementLabelResponse } from "@neurocal/contracts";
+import { FoodCatalog, SupplementLabelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
+import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import {
   FakeEmail,
@@ -68,6 +69,7 @@ beforeEach(async () => {
       embedder: new FakeEmbedder(),
       explainer: new FakeExplainer("Short sleep is holding you back."),
       storage,
+      foods: FOODS,
       labels: (labels = new FakeLabelReader({
         brand: "Calm Labs",
         productName: "Zinc",
@@ -165,6 +167,17 @@ describe("API routes", () => {
       flags: [{ kind: "above_upper_limit" }],
     });
     expect((await call("POST", "/supplements/analyze", { photoKeys: ["uploads/u1/label", "uploads/u2/label"] })).status).toBe(404);
+  });
+
+  it("GET /foods returns the catalog with the diets each food fits", async () => {
+    const res = await call("GET", "/foods");
+    expect(res.status).toBe(200);
+    const { foods } = FoodCatalog.parse(res.body);
+    expect(foods.length).toBe(FOODS.length);
+    const salmon = foods.find((f) => f.id === "salmon")!;
+    expect(salmon).toMatchObject({ category: "fish", goals: expect.arrayContaining(["focus"]), fdcId: 175168 });
+    expect(salmon.diets).toEqual(expect.arrayContaining(["pescatarian", "keto", "paleo"]));
+    expect(salmon.diets).not.toContain("vegan");
   });
 
   it("GET /me returns the contract profile", async () => {

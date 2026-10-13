@@ -28,6 +28,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/foods/
   fonts:
     # Plus Jakarta Sans, the same face as the web app (SIL OFL, assets/fonts/OFL.txt).
     - family: PlusJakartaSans

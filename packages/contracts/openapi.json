@@ -227,6 +227,28 @@
         }
       }
     },
+    "/foods": {
+      "get": {
+        "operationId": "listFoods",
+        "summary": "List the food catalog",
+        "description": "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits. Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodCatalog"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/supplements/analyze": {
       "post": {
         "operationId": "analyzeSupplement",
@@ -1171,6 +1193,84 @@
           "dietaryPreference"
         ]
       },
+      "CatalogFood": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "$ref": "#/components/schemas/FoodCategory"
+          },
+          "serving": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grams": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "calories": {
+            "type": "number",
+            "minimum": 0
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "fiberG": {
+            "type": "number",
+            "minimum": 0
+          },
+          "glycemicLoad": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CognitiveGoal"
+            }
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          },
+          "diets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DietaryPreference"
+            }
+          },
+          "fdcId": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "serving",
+          "grams",
+          "calories",
+          "macros",
+          "fiberG",
+          "glycemicLoad",
+          "goals",
+          "why",
+          "diets",
+          "fdcId"
+        ]
+      },
       "CheckIn": {
         "type": "object",
         "properties": {
@@ -1453,6 +1553,36 @@
           "score",
           "components",
           "explanation"
+        ]
+      },
+      "FoodCatalog": {
+        "type": "object",
+        "properties": {
+          "foods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFood"
+            }
+          }
+        },
+        "required": [
+          "foods"
+        ]
+      },
+      "FoodCategory": {
+        "type": "string",
+        "enum": [
+          "fish",
+          "meat",
+          "eggs_dairy",
+          "plant_protein",
+          "grains",
+          "vegetables",
+          "fruit",
+          "nuts_seeds",
+          "fats",
+          "drinks",
+          "extras"
         ]
       },
       "FoodItem": {

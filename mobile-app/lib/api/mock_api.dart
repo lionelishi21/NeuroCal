@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'api.dart';
+import 'mock_foods.dart';
 import 'models.dart';
 
 /// In-memory API used when no API_URL is set, seeded like the web app's mock (`web-poc/src/mocks/db.ts`).
@@ -166,6 +167,12 @@ class MockNeuroCalApi implements NeuroCalApi {
     }
     final plate = _plates[_nextId % _plates.length];
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
+  }
+
+  @override
+  Future<List<CatalogFood>> foods() async {
+    await _wait();
+    return mockFoods;
   }
 
   /// A typical label: one blend and no testing mark, so the flags show. A name with "dark" in it reads as too dark.

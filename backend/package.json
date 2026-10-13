@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "dev": "tsx watch src/presentation/devServer.ts",
-    "catalog:sync": "tsx src/presentation/syncCatalog.ts"
+    "catalog:sync": "tsx src/presentation/syncCatalog.ts",
+    "foods:images": "tsx src/presentation/generateFoodImages.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
@@ -33,6 +34,7 @@
     "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.11",
     "jest": "^30.5.2",
+    "sharp": "^0.35.5",
     "ts-jest": "^29.4.14",
     "tsx": "^4.23.15"
   }

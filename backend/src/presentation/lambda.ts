@@ -20,6 +20,7 @@ import {
 } from "../infrastructure/database/DrizzleRepositories";
 import { CognitoIdentityProvider } from "../infrastructure/aws/CognitoIdentityProvider";
 import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
+import { FOODS } from "../infrastructure/catalog/foods";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { buildUseCases, systemClock } from "./compose";
@@ -52,6 +53,7 @@ const api = createApi(
     embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    foods: FOODS,
     labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),

@@ -6,6 +6,7 @@ import '../app_scope.dart';
 import '../onboarding/bio_profile.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
+import '../widgets/food_image.dart';
 
 /// Devices that will feed sleep and activity in automatically. Not connected yet: shown so people know it is coming.
 const _devices = [('Oura', 'Ring'), ('Whoop', 'Strap'), ('Apple Health', 'iPhone and Watch')];
@@ -346,6 +347,17 @@ class _QuestionField extends StatelessWidget {
   bool get _multi => question.kind == QuestionKind.multi;
   bool _isOn(String value) => _multi ? supplementsOf(answers).contains(value) : answers[question.key] == value;
 
+  /// A food photo for a choice, where one says it at a glance.
+  static const _choiceFoods = <String, Map<String, (String, String)>>{
+    'diet': {
+      'cyclical_keto': ('avocado', 'vegetables'),
+      'low_toxin': ('butter', 'fats'),
+      'carnivore': ('sirloin-steak', 'meat'),
+      'paleo': ('sweet-potato', 'grains'),
+      'standard': ('oats', 'grains'),
+    },
+  };
+
   Widget _option(Choice choice, {required double radius, required double scale, required Widget child}) {
     final on = _isOn(choice.$1);
     return _Option(
@@ -380,6 +392,10 @@ class _QuestionField extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: Space.s4, vertical: 10),
                   child: Row(
                     children: [
+                      if (_choiceFoods[question.key]?[choice.$1] case (final id, final category)) ...[
+                        FoodImage(id: id, category: category, size: 48, radius: Radii.option),
+                        const SizedBox(width: Space.s3),
+                      ],
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

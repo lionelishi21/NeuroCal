@@ -349,6 +349,78 @@ SuggestedProduct productFromJson(Map<String, dynamic> p) => (
   supplement: p['supplement'] as bool,
 );
 
+/// A food in the catalog, per serving (`CatalogFood` in the contracts). Its photo is found by [id].
+class CatalogFood {
+  const CatalogFood({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.serving,
+    required this.grams,
+    required this.calories,
+    required this.macros,
+    required this.fiberG,
+    required this.glycemicLoad,
+    this.goals = const [],
+    required this.why,
+    this.diets = const [],
+  });
+
+  final String id;
+  final String name;
+  final String category;
+  final String serving;
+  final double grams;
+  final double calories;
+  final Macros macros;
+  final double fiberG;
+  final GlycemicLoad glycemicLoad;
+
+  /// focus, calm, energy, sleep (the contract's `CognitiveGoal`).
+  final List<String> goals;
+  final String why;
+
+  /// The contract's `DietaryPreference` values it fits.
+  final List<String> diets;
+
+  factory CatalogFood.fromJson(Map<String, dynamic> j) => CatalogFood(
+    id: j['id'] as String,
+    name: j['name'] as String,
+    category: j['category'] as String,
+    serving: j['serving'] as String,
+    grams: (j['grams'] as num).toDouble(),
+    calories: (j['calories'] as num).toDouble(),
+    macros: Macros(
+      proteinG: (j['macros']['proteinG'] as num).toDouble(),
+      carbsG: (j['macros']['carbsG'] as num).toDouble(),
+      fatG: (j['macros']['fatG'] as num).toDouble(),
+    ),
+    fiberG: (j['fiberG'] as num).toDouble(),
+    glycemicLoad: GlycemicLoad.values.byName(j['glycemicLoad'] as String),
+    goals: [for (final g in j['goals'] as List) g as String],
+    why: j['why'] as String,
+    diets: [for (final d in j['diets'] as List) d as String],
+  );
+
+  /// As a meal item, for [servings] servings.
+  FoodItem toItem([double servings = 1]) {
+    String n(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return FoodItem(
+      name: name,
+      portion: servings == 1 ? serving : '${n(servings)} × $serving',
+      calories: (calories * servings).roundToDouble(),
+      macros: Macros(
+        proteinG: _r(macros.proteinG * servings),
+        carbsG: _r(macros.carbsG * servings),
+        fatG: _r(macros.fatG * servings),
+      ),
+      glycemicLoad: glycemicLoad,
+    );
+  }
+
+  static double _r(double v) => (v * 10).roundToDouble() / 10;
+}
+
 /// Why a supplement label photo couldn't be read.
 enum LabelProblem { notALabel, blurry, tooDark, cutOff }
 

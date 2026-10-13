@@ -8,16 +8,22 @@ import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
+import 'foods.dart';
 
 /// Log a meal in three steps: take or choose a photo, wait while it is read, then check the items
 /// before logging. Items can also be typed in, with or without a photo. Returns true when logged.
 /// [onScanSupplement] offers a supplement label scan instead; the sheet closes first.
-Future<bool?> showLogMealSheet(BuildContext context, {ImagePicker? picker, VoidCallback? onScanSupplement}) =>
-    showAppSheet<bool>(
-      context,
-      title: 'Log a meal',
-      builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement),
-    );
+/// [initialItems] start the meal already filled in (a food chosen while browsing).
+Future<bool?> showLogMealSheet(
+  BuildContext context, {
+  ImagePicker? picker,
+  VoidCallback? onScanSupplement,
+  List<FoodItem> initialItems = const [],
+}) => showAppSheet<bool>(
+  context,
+  title: 'Log a meal',
+  builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement, initialItems: initialItems),
+);
 
 MealKind kindFor(DateTime t) => switch (t.hour) {
   < 11 => MealKind.breakfast,
@@ -75,10 +81,11 @@ class _Draft {
 }
 
 class _LogMeal extends StatefulWidget {
-  const _LogMeal({required this.picker, this.onScanSupplement});
+  const _LogMeal({required this.picker, this.onScanSupplement, this.initialItems = const []});
 
   final ImagePicker picker;
   final VoidCallback? onScanSupplement;
+  final List<FoodItem> initialItems;
 
   @override
   State<_LogMeal> createState() => _LogMealState();
@@ -99,6 +106,25 @@ class _LogMealState extends State<_LogMeal> {
 
   // One key for this meal: "Try again" after a lost answer can't log it twice.
   final _clientKey = newClientKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _items.addAll([for (final item in widget.initialItems) _Draft(item, manual: true)]);
+    _byHand = _items.isNotEmpty;
+  }
+
+  /// Adds a food from the catalog, then shows the items.
+  Future<void> _addFromCatalog() async {
+    final picked = await showFoodPicker(context);
+    if (picked == null || !mounted) return;
+    setState(() {
+      _items.add(_Draft(picked.food.toItem(picked.servings), manual: true));
+      _picking = false;
+      _byHand = true;
+      _formOpen = false;
+    });
+  }
 
   Future<void> _choose(ImageSource source) async {
     final file = await widget.picker.pickImage(source: source, maxWidth: 1600, imageQuality: 85);
@@ -220,6 +246,17 @@ class _LogMealState extends State<_LogMeal> {
           'Photos up to 8 MB. Get the whole plate in, from above.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+        ),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: c.synapseInk,
+            side: BorderSide(color: c.ruleStrong, width: 1.5),
+            textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+          ),
+          onPressed: _addFromCatalog,
+          icon: const Icon(Icons.search_rounded, size: 18),
+          label: const Text('Search foods'),
         ),
         TextButton(
           style: TextButton.styleFrom(
@@ -394,6 +431,16 @@ class _LogMealState extends State<_LogMeal> {
             ),
             onPressed: () => setState(() => _formOpen = true),
             child: const Text('+ Add an item by hand'),
+          ),
+        if (!_formOpen)
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            ),
+            onPressed: _addFromCatalog,
+            icon: const Icon(Icons.search_rounded, size: 18),
+            label: const Text('Add from foods'),
           ),
         if (_items.isNotEmpty) ...[
           const Text(

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { Food } from "../domain/foods";
 import type { IAiReasoningProvider } from "../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../application/interfaces/IAiVisionProvider";
 import type { ICatalogRepository } from "../application/interfaces/ICatalogRepository";
@@ -32,6 +33,7 @@ import { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
 import { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
+import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
@@ -51,6 +53,8 @@ export interface Ports {
   catalog: ICatalogRepository;
   embedder: IEmbeddingProvider;
   vision: IAiVisionProvider;
+  /** The food catalog (infrastructure/catalog/foods.ts). */
+  foods: readonly Food[];
   labels: ISupplementLabelReader;
   storage: IObjectStorage;
   explainer: IFocusExplainer;
@@ -75,6 +79,7 @@ export function buildUseCases(p: Ports): UseCases {
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
+    listFoods: new ListFoodsUseCase(p.foods),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),
     logMeal: new LogMealUseCase(p.meals, p.clock),
     listMeals: new ListMealsUseCase(p.profiles, p.meals, p.clock),
