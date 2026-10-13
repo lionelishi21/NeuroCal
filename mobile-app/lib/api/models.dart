@@ -560,6 +560,7 @@ const goalLabels = <String, String>{
 /// The signed-in person's profile (`Profile` in the contracts): the parts the app reads.
 class Profile {
   const Profile({
+    this.id,
     required this.displayName,
     this.timeZone,
     this.diet,
@@ -570,6 +571,8 @@ class Profile {
     this.weightGoal,
   });
 
+  /// The account's id on the API; purchases are tied to it.
+  final String? id;
   final String displayName;
   final String? timeZone;
 
@@ -587,6 +590,7 @@ class Profile {
   bool get losingWeight => bioProfile?['goal'] == 'weight_loss' || weightGoal != null;
 
   factory Profile.fromJson(Map<String, dynamic> j) => Profile(
+    id: j['id'] as String?,
     displayName: j['displayName'] as String,
     timeZone: j['timeZone'] as String?,
     diet: j['dietaryPreference'] as String?,

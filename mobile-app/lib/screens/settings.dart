@@ -220,6 +220,8 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          const GroupLabel('Subscription'),
+          const _Subscription(),
           Padding(
             padding: const EdgeInsets.only(top: Space.s2),
             child: Align(
@@ -293,12 +295,64 @@ class _DeleteAccountState extends State<_DeleteAccount> {
       children: [
         Text(
           'This deletes your profile, meals, check-ins, scores, sleep and screen time, meal photos and your sign-in. '
-          "It can't be undone, and we can't get any of it back for you.",
+          "It can't be undone, and we can't get any of it back for you. "
+          "It doesn't cancel a subscription: cancel that in your App Store or Google Play subscriptions first.",
           style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
         ),
         if (_failed) const SheetNote(lead: "Couldn't delete your account.", detail: 'Check your connection and try again.'),
         SheetAction(label: _busy ? 'Deleting…' : 'Delete account', destructive: true, onPressed: _busy ? null : _delete),
       ],
+    );
+  }
+}
+
+/// Manage or restore the subscription. Cancelling happens in the store, so this links there.
+class _Subscription extends StatefulWidget {
+  const _Subscription();
+
+  @override
+  State<_Subscription> createState() => _SubscriptionState();
+}
+
+class _SubscriptionState extends State<_Subscription> {
+  var _busy = false;
+
+  Future<void> _restore() async {
+    setState(() => _busy = true);
+    final billing = AppScope.of(context).billing;
+    try {
+      final found = await billing.restore();
+      if (mounted) showToast(context, found ? 'Subscription restored' : 'No subscription found for this account.', ToastTone.info);
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't reach the store. Try again.", ToastTone.problem);
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final scope = AppScope.of(context);
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s3, Space.s3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: Space.s2,
+        children: [
+          Text(
+            'Change plans or cancel in your App Store or Google Play subscriptions.',
+            style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+          ),
+          Wrap(
+            spacing: Space.s2,
+            runSpacing: Space.s2,
+            children: [
+              SoftButton(label: 'Manage subscription', onPressed: () => scope.openLink(scope.billing.manageUrl)),
+              SoftButton(label: _busy ? 'Checking…' : 'Restore purchases', onPressed: _busy ? null : _restore),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

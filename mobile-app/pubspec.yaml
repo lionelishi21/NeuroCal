@@ -17,6 +17,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.16.0
   http: ^1.6.0
   image_picker: ^1.2.3
+  # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
+  purchases_flutter: ^10.15.2
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.3
 

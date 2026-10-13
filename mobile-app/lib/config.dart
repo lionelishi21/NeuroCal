@@ -11,6 +11,10 @@ abstract final class AppConfig {
   /// With the mock API: start without a profile, to see the onboarding (`--dart-define=MOCK_NEW_USER=true`).
   static const mockNewUser = bool.fromEnvironment('MOCK_NEW_USER');
 
+  /// RevenueCat's public SDK keys, one per store. Without them, test-mode billing is used.
+  static const revenueCatIosKey = String.fromEnvironment('REVENUECAT_IOS_KEY');
+  static const revenueCatAndroidKey = String.fromEnvironment('REVENUECAT_ANDROID_KEY');
+
   static bool get usesMockApi => apiUrl.isEmpty;
   static bool get usesMockAuth => userPoolId.isEmpty || clientId.isEmpty;
 }

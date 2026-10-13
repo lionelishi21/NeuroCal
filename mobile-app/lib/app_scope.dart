@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'api/api.dart';
 import 'auth/auth.dart';
+import 'billing/billing.dart';
 import 'theme/theme_controller.dart';
 
 /// The app's services, wired once in main.dart (the composition root) and read by screens.
@@ -13,6 +14,7 @@ class AppScope extends InheritedWidget {
     required this.theme,
     required this.timeZone,
     required this.openLink,
+    required this.billing,
     required super.child,
   });
 
@@ -25,6 +27,7 @@ class AppScope extends InheritedWidget {
 
   /// Opens a web link outside the app; false when nothing could open it.
   final Future<bool> Function(Uri link) openLink;
+  final Billing billing;
 
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
@@ -34,5 +37,6 @@ class AppScope extends InheritedWidget {
       auth != oldWidget.auth ||
       theme != oldWidget.theme ||
       timeZone != oldWidget.timeZone ||
-      openLink != oldWidget.openLink;
+      openLink != oldWidget.openLink ||
+      billing != oldWidget.billing;
 }

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:neurocal/api/mock_api.dart';
 import 'package:neurocal/app_scope.dart';
 import 'package:neurocal/auth/auth.dart';
+import 'package:neurocal/billing/billing.dart';
 import 'package:neurocal/scan/label_camera.dart';
 import 'package:neurocal/screens/supplement_sheet.dart';
 import 'package:neurocal/theme/theme.dart';
@@ -84,6 +85,7 @@ Future<void> pumpSheet(WidgetTester tester, String photoName, {LabelCamera? came
       theme: theme,
       timeZone: () async => 'Europe/London',
       openLink: (_) async => true,
+      billing: MockBilling(active: true),
       child: MaterialApp(
         theme: buildTheme(Brightness.light),
         home: Scaffold(

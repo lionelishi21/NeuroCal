@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
 import 'package:neurocal/app_scope.dart';
 import 'package:neurocal/auth/auth.dart';
+import 'package:neurocal/billing/billing.dart';
 import 'package:neurocal/screens/foods.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
@@ -23,6 +24,7 @@ Future<List<PickedFood>> pumpFoods(WidgetTester tester) async {
       theme: ThemeController(await SharedPreferences.getInstance()),
       timeZone: () async => 'Europe/London',
       openLink: (_) async => true,
+      billing: MockBilling(active: true),
       child: MaterialApp(theme: buildTheme(Brightness.light), home: FoodsScreen(onLog: logged.add)),
     ),
   );

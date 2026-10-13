@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,12 +9,14 @@ import 'api/mock_api.dart';
 import 'app_scope.dart';
 import 'auth/auth.dart';
 import 'auth/cognito_auth.dart';
+import 'billing/billing.dart';
 import 'config.dart';
 import 'device_time_zone.dart';
 import 'api/models.dart';
 import 'screens/account.dart';
 import 'screens/onboarding.dart';
 import 'screens/home.dart';
+import 'screens/paywall.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
 import 'theme/tokens.dart';
@@ -29,8 +33,14 @@ Future<void> main() async {
   final NeuroCalApi api = AppConfig.usesMockApi
       ? MockNeuroCalApi(newUser: AppConfig.mockNewUser)
       : HttpNeuroCalApi(baseUrl: AppConfig.apiUrl, token: auth.idToken);
-  runApp(NeuroCalApp(api: api, auth: auth, theme: theme));
+  final revenueCatKey = Platform.isIOS ? AppConfig.revenueCatIosKey : AppConfig.revenueCatAndroidKey;
+  // Test mode starts locked, so the paywall shows; its "purchase" is free and instant.
+  final Billing billing = revenueCatKey.isEmpty ? MockBilling() : RevenueCatBilling(revenueCatKey);
+  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing));
 }
+
+/// Tests and previews: already subscribed, so the paywall stays out of the way.
+final _unlocked = MockBilling(active: true);
 
 /// In the person's browser, not inside the app: product pages are other companies' sites.
 Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
@@ -43,6 +53,7 @@ class NeuroCalApp extends StatelessWidget {
     required this.theme,
     this.timeZone = deviceTimeZone,
     this.openLink = _openOutside,
+    this.billing,
   });
 
   final NeuroCalApi api;
@@ -50,6 +61,9 @@ class NeuroCalApp extends StatelessWidget {
   final ThemeController theme;
   final Future<String?> Function() timeZone;
   final Future<bool> Function(Uri link) openLink;
+
+  /// Subscriptions; unlocked test billing when left out.
+  final Billing? billing;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +73,7 @@ class NeuroCalApp extends StatelessWidget {
       theme: theme,
       timeZone: timeZone,
       openLink: openLink,
+      billing: billing ?? _unlocked,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(
@@ -89,11 +104,35 @@ class _SignedIn extends StatefulWidget {
 
 class _SignedInState extends State<_SignedIn> {
   Future<Profile?>? _profile;
+  Billing? _billing;
+
+  /// Whether the subscription or trial gives access, per profile loaded.
+  final _access = <Profile, Future<bool>>{};
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _profile ??= AppScope.of(context).api.me();
+    _billing = AppScope.of(context).billing;
+  }
+
+  @override
+  void dispose() {
+    // Signed out: purchases on this device stop following that account.
+    _billing?.signOut().catchError((Object _) {});
+    super.dispose();
+  }
+
+  /// Ties purchases to the account, then checks for access. If the store can't be reached the app stays
+  /// open: the API still refuses its paid features to anyone without a subscription.
+  Future<bool> _hasAccess(Profile profile) async {
+    final billing = _billing!;
+    try {
+      if (profile.id != null) await billing.signIn(profile.id!);
+      return await billing.isActive();
+    } catch (_) {
+      return true;
+    }
   }
 
   @override
@@ -138,7 +177,22 @@ class _SignedInState extends State<_SignedIn> {
             }),
           );
         }
-        return HomeScreen(profile: snapshot.data!);
+        final profile = snapshot.data!;
+        return FutureBuilder(
+          future: _access[profile] ??= _hasAccess(profile),
+          builder: (context, access) {
+            if (!access.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            if (access.data!) return HomeScreen(profile: profile);
+            return PaywallScreen(
+              profile: profile,
+              billing: scope.billing,
+              // A block, not an arrow: setState must not return the Future being stored.
+              onUnlocked: () => setState(() {
+                _access[profile] = Future.value(true);
+              }),
+            );
+          },
+        );
       },
     );
   }

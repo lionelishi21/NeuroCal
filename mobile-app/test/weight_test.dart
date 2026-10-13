@@ -4,6 +4,7 @@ import 'package:neurocal/api/mock_api.dart';
 import 'package:neurocal/api/models.dart';
 import 'package:neurocal/app_scope.dart';
 import 'package:neurocal/auth/auth.dart';
+import 'package:neurocal/billing/billing.dart';
 import 'package:neurocal/screens/weight_cards.dart';
 import 'package:neurocal/screens/weight_sheets.dart';
 import 'package:neurocal/theme/theme.dart';
@@ -24,6 +25,7 @@ Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildConte
       theme: ThemeController(await SharedPreferences.getInstance()),
       timeZone: () async => 'Europe/London',
       openLink: (_) async => true,
+      billing: MockBilling(active: true),
       child: MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(body: Builder(builder: body))),
     ),
   );

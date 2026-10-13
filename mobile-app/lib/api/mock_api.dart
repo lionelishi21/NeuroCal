@@ -12,6 +12,7 @@ class MockNeuroCalApi implements NeuroCalApi {
     : _profile = newUser
           ? null
           : const Profile(
+              id: 'u1',
               displayName: 'Sam Rivera',
               timeZone: 'Europe/London',
               diet: 'pescatarian',
@@ -84,6 +85,7 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     final macros = fields['macroTargets'] as Map<String, dynamic>?;
     return _profile = Profile(
+      id: 'u1',
       displayName: fields['displayName'] as String? ?? _profile?.displayName ?? '',
       timeZone: fields['timeZone'] as String? ?? _profile?.timeZone,
       diet: fields['dietaryPreference'] as String? ?? _profile?.diet,
