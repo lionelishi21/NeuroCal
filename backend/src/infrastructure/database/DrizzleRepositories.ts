@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
@@ -8,6 +8,7 @@ import type {
   ITelemetryRepository,
   IUserRepository,
   IWaitlistRepository,
+  IWeightRepository,
 } from "../../application/interfaces/IRepositories";
 import type {
   CheckIn,
@@ -32,6 +33,7 @@ import type {
   WaitlistOverview,
   WaitlistPlatform,
 } from "../../domain/types";
+import type { WeightEntry } from "../../domain/weight";
 import type { Database } from "./client";
 import {
   checkIns,
@@ -44,6 +46,7 @@ import {
   sleepSessions,
   users,
   waitlist,
+  weightEntries,
 } from "./schema";
 
 /** Rows from a user's local calendar day, whatever time zone the database runs in. */
@@ -75,6 +78,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(sleepSessions).where(eq(sleepSessions.userId, userId));
       await tx.delete(screenTimeSamples).where(eq(screenTimeSamples.userId, userId));
       await tx.delete(focusScores).where(eq(focusScores.userId, userId));
+      await tx.delete(weightEntries).where(eq(weightEntries.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -97,6 +101,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       dailyCalorieTarget: row.dailyCalorieTarget,
       macroTargets: { proteinG: row.proteinTargetG, carbsG: row.carbsTargetG, fatG: row.fatTargetG },
       ...(row.bioProfile ? { bioProfile: row.bioProfile } : {}),
+      ...(row.weightGoal ? { weightGoal: row.weightGoal } : {}),
     };
   }
 
@@ -111,6 +116,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       carbsTargetG: profile.macroTargets.carbsG,
       fatTargetG: profile.macroTargets.fatG,
       bioProfile: profile.bioProfile ?? null,
+      weightGoal: profile.weightGoal ?? null,
     };
     await this.db
       .insert(profiles)
@@ -121,6 +127,15 @@ export class DrizzleProfileRepository implements IProfileRepository {
 
 export class DrizzleMealRepository implements IMealRepository {
   constructor(private readonly db: Database) {}
+
+  async eatenSince(userId: string, since: Date): Promise<Date[]> {
+    const rows = await this.db
+      .select({ eatenAt: meals.eatenAt })
+      .from(meals)
+      .where(and(eq(meals.userId, userId), isNull(meals.deletedAt), gte(meals.eatenAt, since)))
+      .orderBy(asc(meals.eatenAt));
+    return rows.map((r) => r.eatenAt);
+  }
 
   async listForDay(userId: string, day: LocalDay): Promise<Meal[]> {
     const rows = await this.db
@@ -493,5 +508,34 @@ export class DrizzleWaitlistRepository implements IWaitlistRepository {
         unsubscribed: row.unsubscribedAt !== null,
       })),
     };
+  }
+}
+
+export class DrizzleWeightRepository implements IWeightRepository {
+  constructor(private readonly db: Database) {}
+
+  async upsert(userId: string, entry: WeightEntry): Promise<WeightEntry> {
+    await this.db
+      .insert(weightEntries)
+      .values({ userId, date: entry.date, kg: entry.kg })
+      .onConflictDoUpdate({ target: [weightEntries.userId, weightEntries.date], set: { kg: entry.kg } });
+    return entry;
+  }
+
+  async list(userId: string, since: string): Promise<WeightEntry[]> {
+    const rows = await this.db
+      .select({ date: weightEntries.date, kg: weightEntries.kg })
+      .from(weightEntries)
+      .where(and(eq(weightEntries.userId, userId), gte(weightEntries.date, since)))
+      .orderBy(asc(weightEntries.date));
+    return rows;
+  }
+
+  async delete(userId: string, date: string): Promise<boolean> {
+    const rows = await this.db
+      .delete(weightEntries)
+      .where(and(eq(weightEntries.userId, userId), eq(weightEntries.date, date)))
+      .returning({ date: weightEntries.date });
+    return rows.length > 0;
   }
 }

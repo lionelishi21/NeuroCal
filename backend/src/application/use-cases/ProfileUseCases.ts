@@ -1,5 +1,6 @@
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { COGNITIVE_GOALS, DIETARY_PREFERENCES, type Profile } from "../../domain/types";
+import { MAX_KG, MIN_KG, PACES, type WeightGoal } from "../../domain/weight";
 import type { IProfileRepository } from "../interfaces/IRepositories";
 
 export class GetProfileUseCase {
@@ -12,7 +13,8 @@ export class GetProfileUseCase {
   }
 }
 
-export type ProfilePatch = Partial<Omit<Profile, "userId">>;
+/** `weightGoal: null` removes the weight goal. */
+export type ProfilePatch = Partial<Omit<Profile, "userId" | "weightGoal">> & { weightGoal?: WeightGoal | null };
 
 const REQUIRED: (keyof ProfilePatch)[] = ["displayName", "dietaryPreference", "dailyCalorieTarget", "macroTargets"];
 
@@ -26,13 +28,16 @@ export class UpdateProfileUseCase {
       const missing = REQUIRED.filter((key) => input.patch[key] === undefined);
       if (missing.length) throw new InvalidError(`To set up your profile, also send: ${missing.join(", ")}.`);
     }
+    const { weightGoal, ...patch } = input.patch;
     const next = {
       timeZone: "UTC",
       cognitiveGoals: [],
       ...existing,
-      ...input.patch,
+      ...patch,
       userId: input.userId,
     } as Profile;
+    if (weightGoal === null) delete next.weightGoal;
+    else if (weightGoal) next.weightGoal = weightGoal;
     assertValidProfile(next);
     await this.profiles.save(next);
     return next;
@@ -48,6 +53,13 @@ function assertValidProfile(profile: Profile): void {
   }
   const { proteinG, carbsG, fatG } = profile.macroTargets;
   if ([proteinG, carbsG, fatG].some((n) => !Number.isFinite(n) || n < 0)) throw new InvalidError("Macro targets can't be negative.");
+  const goal = profile.weightGoal;
+  if (goal) {
+    const inRange = (kg: number) => Number.isFinite(kg) && kg >= MIN_KG && kg <= MAX_KG;
+    if (!inRange(goal.startKg) || !inRange(goal.targetKg)) throw new InvalidError(`Weights must be between ${MIN_KG} and ${MAX_KG} kg.`);
+    if (goal.targetKg >= goal.startKg) throw new InvalidError("The target weight must be below the starting weight.");
+    if (!(PACES as readonly number[]).includes(goal.pacePctPerWeek)) throw new InvalidError("Choose a pace of 0.5%, 0.75% or 1% a week.");
+  }
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: profile.timeZone });
   } catch {

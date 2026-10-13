@@ -9,6 +9,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
   DrizzleWaitlistRepository,
+  DrizzleWeightRepository,
 } from "./DrizzleRepositories";
 import { eq } from "drizzle-orm";
 import { createPgliteDatabase } from "./pglite";
@@ -229,12 +230,38 @@ describe("DrizzleFocusScoreRepository", () => {
   });
 });
 
+describe("DrizzleWeightRepository", () => {
+  it("keeps one weigh-in per day, lists from a date and deletes", async () => {
+    const repo = new DrizzleWeightRepository(db);
+    await repo.upsert(alice, { date: "2026-09-01", kg: 95.2 });
+    await repo.upsert(alice, { date: "2026-09-02", kg: 94.9 });
+    await repo.upsert(alice, { date: "2026-09-02", kg: 94.6 }); // replaces
+    await repo.upsert(bob, { date: "2026-09-02", kg: 80 });
+    expect(await repo.list(alice, "2026-09-02")).toEqual([{ date: "2026-09-02", kg: 94.6 }]);
+    expect(await repo.list(alice, "2026-01-01")).toHaveLength(2);
+    expect(await repo.delete(alice, "2026-09-01")).toBe(true);
+    expect(await repo.delete(alice, "2026-09-01")).toBe(false);
+  });
+
+  it("stores the weight goal on the profile and lists meal times for the fasting timer", async () => {
+    const profiles = new DrizzleProfileRepository(db);
+    const weightGoal = { startKg: 95, targetKg: 85, startedOn: "2026-09-01", pacePctPerWeek: 0.75, fastingCaution: false };
+    await profiles.save(profile({ userId: alice, weightGoal }));
+    expect((await profiles.get(alice))?.weightGoal).toEqual(weightGoal);
+
+    const times = await new DrizzleMealRepository(db).eatenSince(alice, new Date("2026-09-29T00:00:00Z"));
+    expect(times.length).toBeGreaterThan(0);
+    expect(times.every((t) => t >= new Date("2026-09-29T00:00:00Z"))).toBe(true);
+    expect([...times].sort((a, b) => a.getTime() - b.getTime())).toEqual(times);
+  });
+});
+
 // Last on purpose: by now the earlier tests have given alice rows in every user table.
 describe("DrizzleUserRepository.delete", () => {
   it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
     // Her sign-in email is new@example.com since the first test.
     await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
-    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores];
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries];
     const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
     const before = await rowsOf(alice);
     const bobBefore = await rowsOf(bob);

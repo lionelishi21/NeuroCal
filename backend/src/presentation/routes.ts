@@ -6,6 +6,10 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  FastingStatus,
+  LogWeightRequest,
+  WeightEntry,
+  WeightHistory,
   AnalyzeSupplementRequest,
   MAX_LABEL_PHOTOS,
   BioState,
@@ -45,6 +49,8 @@ import type { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCa
 import type { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
+import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
+import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -53,7 +59,7 @@ import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckI
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
 import { imageTypeOf } from "../domain/photo";
-import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -82,6 +88,10 @@ export interface UseCases {
   createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
   listFoods: ListFoodsUseCase;
+  logWeight: LogWeightUseCase;
+  getWeightHistory: GetWeightHistoryUseCase;
+  deleteWeight: DeleteWeightUseCase;
+  getFasting: GetFastingUseCase;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
   logMeal: LogMealUseCase;
   listMeals: ListMealsUseCase;
@@ -223,6 +233,29 @@ export function createApi(uc: UseCases) {
         return ok(AnalyzeMealResponse, toAnalysis(analysis));
       },
     ],
+    [
+      "POST",
+      /^\/weights$/,
+      async (req) => ok(WeightEntry, await uc.logWeight.execute({ userId: req.userId, ...json(req, LogWeightRequest) }), 201),
+    ],
+    [
+      "GET",
+      /^\/weights$/,
+      async (req) => {
+        const days = req.query.get("days");
+        if (days !== null && !/^\d+$/.test(days)) throw new BadRequest("days must be a whole number.");
+        return ok(WeightHistory, await uc.getWeightHistory.execute({ userId: req.userId, ...(days ? { days: Number(days) } : {}) }));
+      },
+    ],
+    [
+      "DELETE",
+      /^\/weights\/(\d{4}-\d{2}-\d{2})$/,
+      async (req, [day]) => {
+        await uc.deleteWeight.execute({ userId: req.userId, date: day! });
+        return { status: 204 };
+      },
+    ],
+    ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
     ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: uc.listFoods.execute().map(({ kind: _, ...food }) => food) })],
     [
       "POST",

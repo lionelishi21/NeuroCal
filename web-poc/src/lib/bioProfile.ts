@@ -244,6 +244,7 @@ export const STEPS: readonly Step[] = [
           ["deep_sleep", "Deep sleep architecture", "More deep and REM sleep"],
           ["steady_energy", "Steady energy", "No peaks, no crashes"],
           ["longevity", "Longevity", "Long-term healthspan"],
+          ["weight_loss", "Lose weight", "Burn fat, keep your focus"],
         ],
       },
     ],
@@ -344,7 +345,7 @@ export function dayPlan(answers: Pick<Answers, "wake" | "fasting">): { label: st
 
 export const dietLabelOf = (diet: string | undefined) => DIETS.find(([value]) => value === diet)?.[1];
 
-const GOALS: Record<string, CognitiveGoal[]> = { focus: ["focus"], deep_sleep: ["sleep"], steady_energy: ["energy"], longevity: [] };
+const GOALS: Record<string, CognitiveGoal[]> = { focus: ["focus"], deep_sleep: ["sleep"], steady_energy: ["energy"], longevity: [], weight_loss: ["energy"] };
 
 /** The completed form as the API's profile fields. Call only when every step is complete. */
 export function toProfileFields(answers: Answers): {

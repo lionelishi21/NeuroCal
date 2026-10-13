@@ -70,9 +70,24 @@ export const BioProfile = z.object({
   movement: z.enum(["heavy_lifting", "rehit", "chronic_cardio", "mobility", "none"]),
   /** The daily problem to watch for first. */
   friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
-  goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity"]),
+  goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity", "weight_loss"]),
 });
 export type BioProfile = z.infer<typeof BioProfile>;
+
+/** A weight-loss plan. Weights are in kilograms; clients convert for display. */
+export const WeightGoal = z.object({
+  startKg: z.number().min(25).max(350),
+  targetKg: z.number().min(25).max(350),
+  startedOn: IsoDate,
+  /** Planned loss per week as a share of body weight. */
+  pacePctPerWeek: z.union([z.literal(0.5), z.literal(0.75), z.literal(1)]),
+  /**
+   * The person takes diabetes medication, is pregnant or breastfeeding, is under 18, or has had an
+   * eating disorder. Long fasts (one meal a day) are then never suggested.
+   */
+  fastingCaution: z.boolean(),
+});
+export type WeightGoal = z.infer<typeof WeightGoal>;
 
 export const Profile = z.object({
   id: Id,
@@ -85,10 +100,12 @@ export const Profile = z.object({
   macroTargets: Macros,
   /** Set by the bio-profile onboarding; absent for profiles made before it existed. */
   bioProfile: BioProfile.optional(),
+  weightGoal: WeightGoal.optional(),
 });
 export type Profile = z.infer<typeof Profile>;
 
-export const UpdateProfileRequest = Profile.omit({ id: true }).partial();
+/** Any profile fields; `weightGoal: null` removes the weight goal. */
+export const UpdateProfileRequest = Profile.omit({ id: true }).partial().extend({ weightGoal: WeightGoal.nullable().optional() });
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileRequest>;
 
 export const FoodItem = z.object({
@@ -333,6 +350,57 @@ export const ProtocolsResponse = z.object({
 });
 export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
 
+export const LogWeightRequest = z.object({
+  kg: z.number().min(25).max(350),
+  /** The day weighed; today (in the profile's time zone) when left out. One weigh-in per day: a second replaces it. */
+  date: IsoDate.optional(),
+});
+export type LogWeightRequest = z.infer<typeof LogWeightRequest>;
+
+export const WeightEntry = z.object({ date: IsoDate, kg: z.number() });
+export type WeightEntry = z.infer<typeof WeightEntry>;
+
+export const WeightHistory = z.object({
+  /** Oldest first. */
+  entries: z.array(WeightEntry),
+  /** Smoothed weight, which evens out day-to-day water swings. Absent with no weigh-ins. */
+  trendKg: z.number().optional(),
+  /** Change in the trend over the last 7 days; negative is a loss. Absent with under a week of data. */
+  weeklyChangeKg: z.number().optional(),
+  /** Present with a weight goal and at least one weigh-in. */
+  goal: z
+    .object({
+      targetKg: z.number(),
+      toGoKg: z.number().nonnegative(),
+      /** The planned weekly loss at the goal's pace. */
+      plannedWeeklyLossKg: z.number(),
+      /** When the trend reaches the target at its current rate; absent if it isn't heading there. */
+      projectedOn: IsoDate.optional(),
+    })
+    .optional(),
+});
+export type WeightHistory = z.infer<typeof WeightHistory>;
+
+/** The fasting timer, worked out from logged meals. */
+export const FastingStatus = z.object({
+  /** From the bio-profile; "12_12" for anyone who answered the weight goal's safety question. */
+  protocol: z.enum(["16_8", "omad", "12_12", "none"]),
+  /** Absent when protocol is "none". */
+  fastHours: z.number().int().positive().optional(),
+  state: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("off") }),
+    /** No meals logged yet. */
+    z.object({ kind: z.literal("unknown") }),
+    z.object({ kind: z.literal("fasting"), since: IsoDateTime, goalAt: IsoDateTime }),
+    /** Fasted long enough; the next meal opens the eating window. */
+    z.object({ kind: z.literal("fasted"), since: IsoDateTime, goalAt: IsoDateTime }),
+    z.object({ kind: z.literal("eating"), openedAt: IsoDateTime, closesAt: IsoDateTime }),
+  ]),
+  /** Days in a row with a completed fast. */
+  streakDays: z.number().int().nonnegative(),
+});
+export type FastingStatus = z.infer<typeof FastingStatus>;
+
 export const FoodCategory = z.enum(["fish", "meat", "eggs_dairy", "plant_protein", "grains", "vegetables", "fruit", "nuts_seeds", "fats", "drinks", "extras"]);
 export type FoodCategory = z.infer<typeof FoodCategory>;
 
@@ -524,6 +592,12 @@ export const endpoints = {
   createPhotoUpload: { method: "POST", path: "/uploads/meal-photo", body: CreatePhotoUploadRequest, response: PhotoUpload },
   /** Takes the key of an uploaded photo, or (older clients) the photo itself as multipart `photo`. */
   analyzeMeal: { method: "POST", path: "/meals/analyze", body: AnalyzeMealRequest, response: AnalyzeMealResponse },
+  /** Logs a weigh-in; one per day, a second the same day replaces the first. */
+  logWeight: { method: "POST", path: "/weights", body: LogWeightRequest, response: WeightEntry },
+  /** Weigh-ins for the last `days` days (default 90, at most 730) with the trend and goal progress. */
+  getWeights: { method: "GET", path: "/weights", response: WeightHistory },
+  deleteWeight: { method: "DELETE", path: "/weights/:date" },
+  getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },
   /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */

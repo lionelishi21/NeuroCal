@@ -46,6 +46,17 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Get a short-lived URL to upload a meal photo to",
     description: "PUT the photo's bytes to `uploadUrl` with exactly the returned `headers`, then pass `photoKey` to POST /meals/analyze. The photo must be an image of at most 8 MB, and the bytes sent must match `sizeBytes`.",
   },
+  logWeight: { summary: "Log a weigh-in", description: "One per day in the profile's time zone; logging the same day again replaces it. Kilograms." },
+  getWeights: {
+    summary: "Weigh-ins with the trend and goal progress",
+    description: "The trend is an exponential moving average that evens out day-to-day water swings; goal progress and the projected date are read from it, not from single weigh-ins.",
+    query: { days: { description: "How many days back, 1–730. Defaults to 90.", schema: { type: "integer", minimum: 1, maximum: 730 } } },
+  },
+  deleteWeight: { summary: "Remove a weigh-in", status: 204, params: { date: "The weigh-in's day, YYYY-MM-DD." } },
+  getFasting: {
+    summary: "Where you are in your fast",
+    description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
+  },
   listFoods: {
     summary: "List the food catalog",
     description: "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits. Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",

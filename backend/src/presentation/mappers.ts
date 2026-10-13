@@ -2,6 +2,7 @@
 import type * as C from "@neurocal/contracts";
 import type { MealPhotoAnalysis } from "../application/interfaces/IAiVisionProvider";
 import type { SupplementLabelAnalysis } from "../application/use-cases/AnalyzeSupplementLabelUseCase";
+import type { FastingStatus } from "../application/use-cases/GetFastingUseCase";
 import type { ProtocolMatches } from "../application/use-cases/GetProtocolsUseCase";
 import type { RecipeRecommendations } from "../application/use-cases/RecommendRecipeUseCase";
 import type { BioState, CheckIn, FocusScore, FoodItem, Meal, Product, Profile } from "../domain/types";
@@ -16,6 +17,20 @@ export const toProfile = (p: Profile): C.Profile => ({
   macroTargets: p.macroTargets,
   // Stored as given; the response schema checks the shape before it is sent.
   ...(p.bioProfile ? { bioProfile: p.bioProfile as C.BioProfile } : {}),
+  // The use case only accepts the contract's paces.
+  ...(p.weightGoal ? { weightGoal: p.weightGoal as C.WeightGoal } : {}),
+});
+
+export const toFasting = (f: FastingStatus): C.FastingStatus => ({
+  protocol: f.protocol,
+  ...(f.fastHours ? { fastHours: f.fastHours } : {}),
+  state:
+    f.state.kind === "fasting" || f.state.kind === "fasted"
+      ? { kind: f.state.kind, since: f.state.since.toISOString(), goalAt: f.state.goalAt.toISOString() }
+      : f.state.kind === "eating"
+        ? { kind: "eating", openedAt: f.state.openedAt.toISOString(), closesAt: f.state.closesAt.toISOString() }
+        : { kind: f.state.kind },
+  streakDays: f.streakDays,
 });
 
 const toFoodItem = (i: FoodItem): C.FoodItem => ({

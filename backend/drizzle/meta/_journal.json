@@ -78,6 +78,13 @@
       "when": 1791360957767,
       "tag": "0010_fresh_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791925154548,
+      "tag": "0011_nosy_lightspeed",
+      "breakpoints": true
     }
   ]
 }

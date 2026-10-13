@@ -3,6 +3,7 @@
  * Migration 0002 enables the `vector` extension before the catalog tables use it.
  */
 import { sql } from "drizzle-orm";
+import type { WeightGoal } from "../../domain/weight";
 import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -43,6 +44,8 @@ export const profiles = pgTable(
     fatTargetG: decimal("fat_target_g", 6, 1).notNull(),
     /** Bio-profile onboarding answers (packages/contracts BioProfile), or null. */
     bioProfile: jsonb("bio_profile").$type<Record<string, string | boolean | string[]>>(),
+    /** Weight-loss plan (packages/contracts WeightGoal), or null. */
+    weightGoal: jsonb("weight_goal").$type<WeightGoal>(),
     ...timestamps,
   },
   (t) => [
@@ -197,6 +200,20 @@ export const screenTimeSamples = pgTable(
     unique("screen_time_user_source_window_unique").on(t.userId, t.source, t.windowStart),
     check("screen_time_minutes_fit_window", sql`${t.minutes} >= 0 and ${t.windowEnd} > ${t.windowStart}`),
   ],
+);
+
+/** One weigh-in per user and local day; a second the same day replaces it. */
+export const weightEntries = pgTable(
+  "weight_entries",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: date("date", { mode: "string" }).notNull(),
+    kg: decimal("kg", 5, 2).notNull(),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] }), check("weight_entries_kg_range", sql`${t.kg} between 25 and 350`)],
 );
 
 export const focusScores = pgTable(

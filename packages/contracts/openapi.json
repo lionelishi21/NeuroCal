@@ -227,6 +227,118 @@
         }
       }
     },
+    "/weights": {
+      "post": {
+        "operationId": "logWeight",
+        "summary": "Log a weigh-in",
+        "description": "One per day in the profile's time zone; logging the same day again replaces it. Kilograms.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogWeightRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeightEntry"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getWeights",
+        "summary": "Weigh-ins with the trend and goal progress",
+        "description": "The trend is an exponential moving average that evens out day-to-day water swings; goal progress and the projected date are read from it, not from single weigh-ins.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "How many days back, 1–730. Defaults to 90.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 730
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeightHistory"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/weights/{date}": {
+      "delete": {
+        "operationId": "deleteWeight",
+        "summary": "Remove a weigh-in",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "description": "The weigh-in's day, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/fasting": {
+      "get": {
+        "operationId": "getFasting",
+        "summary": "Where you are in your fast",
+        "description": "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FastingStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/foods": {
       "get": {
         "operationId": "listFoods",
@@ -1125,7 +1237,8 @@
               "focus",
               "deep_sleep",
               "steady_energy",
-              "longevity"
+              "longevity",
+              "weight_loss"
             ]
           }
         },
@@ -1455,6 +1568,127 @@
           "carnivore",
           "paleo",
           "standard"
+        ]
+      },
+      "FastingStatus": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "16_8",
+              "omad",
+              "12_12",
+              "none"
+            ]
+          },
+          "fastHours": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "state": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "off"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "unknown"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "fasting"
+                  },
+                  "since": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "goalAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "since",
+                  "goalAt"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "fasted"
+                  },
+                  "since": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "goalAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "since",
+                  "goalAt"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "eating"
+                  },
+                  "openedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "closesAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "openedAt",
+                  "closesAt"
+                ]
+              }
+            ]
+          },
+          "streakDays": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "protocol",
+          "state",
+          "streakDays"
         ]
       },
       "FocusComponentName": {
@@ -1847,6 +2081,23 @@
           "status"
         ]
       },
+      "LogWeightRequest": {
+        "type": "object",
+        "properties": {
+          "kg": {
+            "type": "number",
+            "minimum": 25,
+            "maximum": 350
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "kg"
+        ]
+      },
       "MacroFocus": {
         "type": "string",
         "enum": [
@@ -2053,6 +2304,9 @@
           },
           "bioProfile": {
             "$ref": "#/components/schemas/BioProfile"
+          },
+          "weightGoal": {
+            "$ref": "#/components/schemas/WeightGoal"
           }
         },
         "required": [
@@ -2410,6 +2664,16 @@
           },
           "bioProfile": {
             "$ref": "#/components/schemas/BioProfile"
+          },
+          "weightGoal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WeightGoal"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -2432,6 +2696,111 @@
           "component",
           "label",
           "average"
+        ]
+      },
+      "WeightEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "kg": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "kg"
+        ]
+      },
+      "WeightGoal": {
+        "type": "object",
+        "properties": {
+          "startKg": {
+            "type": "number",
+            "minimum": 25,
+            "maximum": 350
+          },
+          "targetKg": {
+            "type": "number",
+            "minimum": 25,
+            "maximum": 350
+          },
+          "startedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "pacePctPerWeek": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 0.5
+              },
+              {
+                "type": "number",
+                "const": 0.75
+              },
+              {
+                "type": "number",
+                "const": 1
+              }
+            ]
+          },
+          "fastingCaution": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "startKg",
+          "targetKg",
+          "startedOn",
+          "pacePctPerWeek",
+          "fastingCaution"
+        ]
+      },
+      "WeightHistory": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightEntry"
+            }
+          },
+          "trendKg": {
+            "type": "number"
+          },
+          "weeklyChangeKg": {
+            "type": "number"
+          },
+          "goal": {
+            "type": "object",
+            "properties": {
+              "targetKg": {
+                "type": "number"
+              },
+              "toGoKg": {
+                "type": "number",
+                "minimum": 0
+              },
+              "plannedWeeklyLossKg": {
+                "type": "number"
+              },
+              "projectedOn": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "targetKg",
+              "toGoKg",
+              "plannedWeeklyLossKg"
+            ]
+          }
+        },
+        "required": [
+          "entries"
         ]
       }
     }

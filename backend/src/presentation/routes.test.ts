@@ -18,6 +18,7 @@ import {
   InMemoryProfiles,
   InMemoryStorage,
   InMemoryUsers,
+  InMemoryWeights,
   FakeLabelReader,
   FakeIdentity,
   InMemoryRecommendations,
@@ -70,6 +71,7 @@ beforeEach(async () => {
       explainer: new FakeExplainer("Short sleep is holding you back."),
       storage,
       foods: FOODS,
+      weights: new InMemoryWeights(),
       labels: (labels = new FakeLabelReader({
         brand: "Calm Labs",
         productName: "Zinc",
@@ -178,6 +180,50 @@ describe("API routes", () => {
     expect(salmon).toMatchObject({ category: "fish", goals: expect.arrayContaining(["focus"]), fdcId: 175168 });
     expect(salmon.diets).toEqual(expect.arrayContaining(["pescatarian", "keto", "paleo"]));
     expect(salmon.diets).not.toContain("vegan");
+  });
+
+  it("logs weigh-ins, sets a weight goal and reports the trend and progress", async () => {
+    expect(await call("POST", "/weights", { kg: 92.4 })).toMatchObject({ status: 201, body: { date: "2026-09-29", kg: 92.4 } });
+    expect((await call("POST", "/weights", { kg: 92.4, date: "2026-09-30" })).status).toBe(400); // tomorrow in Chicago
+    expect((await call("POST", "/weights", { kg: 10 })).status).toBe(400);
+
+    const goal = { startKg: 95, targetKg: 85, startedOn: "2026-09-01", pacePctPerWeek: 0.75, fastingCaution: false };
+    expect((await call("PUT", "/me/profile", { weightGoal: { ...goal, targetKg: 96 } })).status).toBe(400);
+    expect((await call("PUT", "/me/profile", { weightGoal: goal })).body).toMatchObject({ weightGoal: goal });
+
+    const history = await call("GET", "/weights?days=30");
+    expect(history.status).toBe(200);
+    expect(history.body).toEqual({
+      entries: [{ date: "2026-09-29", kg: 92.4 }],
+      trendKg: 92.4,
+      goal: { targetKg: 85, toGoKg: 7.4, plannedWeeklyLossKg: 0.71 },
+    });
+    expect((await call("GET", "/weights?days=0")).status).toBe(400);
+
+    expect((await call("DELETE", "/weights/2026-09-29")).status).toBe(204);
+    expect((await call("DELETE", "/weights/2026-09-29")).status).toBe(404);
+    expect((await call("PUT", "/me/profile", { weightGoal: null })).body).not.toHaveProperty("weightGoal");
+  });
+
+  it("GET /fasting times the fast from logged meals, capped at 12 hours after the safety answer", async () => {
+    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0 });
+
+    // The day's only meal was at 13:10Z; the 8-hour window closed at 21:10Z and it's 22:00Z now.
+    await profiles.save(profile({ bioProfile: { fasting: "16_8" } }));
+    expect((await call("GET", "/fasting")).body).toEqual({
+      protocol: "16_8",
+      fastHours: 16,
+      state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T05:10:00.000Z" },
+      streakDays: 0,
+    });
+
+    await profiles.save(
+      profile({
+        bioProfile: { fasting: "omad" },
+        weightGoal: { startKg: 95, targetKg: 85, startedOn: "2026-09-01", pacePctPerWeek: 0.5, fastingCaution: true },
+      }),
+    );
+    expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12 });
   });
 
   it("GET /me returns the contract profile", async () => {

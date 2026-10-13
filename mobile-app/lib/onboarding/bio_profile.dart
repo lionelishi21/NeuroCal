@@ -182,6 +182,7 @@ final steps = <OnboardingStep>[
       ('deep_sleep', 'Deep sleep architecture', 'More deep and REM sleep'),
       ('steady_energy', 'Steady energy', 'No peaks, no crashes'),
       ('longevity', 'Longevity', 'Long-term healthspan'),
+      ('weight_loss', 'Lose weight', 'Burn fat, keep your focus'),
     ]),
   ]),
 ];
@@ -259,6 +260,7 @@ const _goals = <String, List<String>>{
   'deep_sleep': ['sleep'],
   'steady_energy': ['energy'],
   'longevity': [],
+  'weight_loss': ['energy'],
 };
 
 /// The completed form as the API's profile fields (`UpdateProfileRequest`).

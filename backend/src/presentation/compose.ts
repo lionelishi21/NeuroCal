@@ -18,6 +18,7 @@ import type {
   ITelemetryRepository,
   IUserRepository,
   IWaitlistRepository,
+  IWeightRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
@@ -33,6 +34,8 @@ import { GetHistoryUseCase } from "../application/use-cases/GetHistoryUseCase";
 import { GetProtocolsUseCase } from "../application/use-cases/GetProtocolsUseCase";
 import { IngestTelemetryUseCase } from "../application/use-cases/IngestTelemetryUseCase";
 import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
+import { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
+import { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -63,6 +66,7 @@ export interface Ports {
   clock: IClock;
   recipeDomains: string[];
   waitlist: IWaitlistRepository;
+  weights: IWeightRepository;
   email: IEmailSender;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
@@ -80,6 +84,10 @@ export function buildUseCases(p: Ports): UseCases {
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
     listFoods: new ListFoodsUseCase(p.foods),
+    logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
+    getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
+    deleteWeight: new DeleteWeightUseCase(p.weights),
+    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),
     logMeal: new LogMealUseCase(p.meals, p.clock),
     listMeals: new ListMealsUseCase(p.profiles, p.meals, p.clock),

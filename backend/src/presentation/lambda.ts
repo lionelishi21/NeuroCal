@@ -17,6 +17,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
   DrizzleWaitlistRepository,
+  DrizzleWeightRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { CognitoIdentityProvider } from "../infrastructure/aws/CognitoIdentityProvider";
 import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
@@ -54,6 +55,7 @@ const api = createApi(
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     foods: FOODS,
+    weights: new DrizzleWeightRepository(db),
     labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),

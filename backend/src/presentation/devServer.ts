@@ -22,6 +22,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
   DrizzleWaitlistRepository,
+  DrizzleWeightRepository,
 } from "../infrastructure/database/DrizzleRepositories";
 import { createPgliteDatabase } from "../infrastructure/database/pglite";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -157,6 +158,7 @@ async function main() {
       vision,
       labels,
       foods: FOODS,
+      weights: new DrizzleWeightRepository(db),
       storage,
       explainer,
       reasoning,

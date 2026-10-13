@@ -14,6 +14,7 @@ import type {
   WaitlistOverview,
   WaitlistPlatform,
 } from "../../domain/types";
+import type { WeightEntry } from "../../domain/weight";
 
 /** Maps the identity provider's subject (Cognito `sub`) to our user id, creating the user on first sign-in. */
 export interface IUserRepository {
@@ -39,6 +40,17 @@ export interface IMealRepository {
   create(userId: string, meal: NewMeal): Promise<Meal>;
   /** False when the meal doesn't exist or isn't this user's. */
   softDelete(userId: string, mealId: string): Promise<boolean>;
+  /** When each non-deleted meal since `since` was eaten, oldest first (for the fasting timer). */
+  eatenSince(userId: string, since: Date): Promise<Date[]>;
+}
+
+export interface IWeightRepository {
+  /** One weigh-in per day: a second the same day replaces the first. */
+  upsert(userId: string, entry: WeightEntry): Promise<WeightEntry>;
+  /** Weigh-ins on or after `since` (YYYY-MM-DD), oldest first. */
+  list(userId: string, since: string): Promise<WeightEntry[]>;
+  /** False when there was no weigh-in that day. */
+  delete(userId: string, date: string): Promise<boolean>;
 }
 
 export interface ICheckInRepository {

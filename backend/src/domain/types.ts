@@ -1,3 +1,5 @@
+import type { WeightGoal } from "./weight";
+
 /**
  * Domain types. No external dependencies: the wire format lives in
  * packages/contracts and is mapped in presentation/ (ARCHITECTURE §2–3).
@@ -50,6 +52,7 @@ export interface Profile {
   macroTargets: Macros;
   /** Onboarding answers, stored as given. The contract (presentation) validates their shape in and out. */
   bioProfile?: BioProfileAnswers;
+  weightGoal?: WeightGoal;
 }
 
 export type BioProfileAnswers = Readonly<Record<string, string | boolean | string[]>>;

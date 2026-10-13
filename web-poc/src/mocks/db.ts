@@ -15,6 +15,7 @@ import {
   type Meal,
   type NextRecommendationsResponse,
   type Profile,
+  type UpdateProfileRequest,
   type RecipeRecommendation,
   mealCalories,
 } from "@neurocal/contracts";
@@ -448,15 +449,18 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
     },
     profile: () => profile,
     /** Mirrors the backend: the first save needs every required field; later saves can be partial. */
-    updateProfile(patch: Partial<Omit<Profile, "id">>): Profile | { missing: string[] } {
+    /** `weightGoal: null` removes the weight goal, as on the real API. */
+    updateProfile({ weightGoal, ...patch }: UpdateProfileRequest): Profile | { missing: string[] } {
       if (!profile) {
         const required = ["displayName", "dietaryPreference", "dailyCalorieTarget", "macroTargets"] as const;
         const missing = required.filter((key) => patch[key] === undefined);
         if (missing.length) return { missing };
-        profile = { id: "u1", timeZone: "UTC", ...(patch as Omit<Profile, "id">), cognitiveGoals: patch.cognitiveGoals ?? [] };
+        profile = { id: "u1", timeZone: "UTC", ...(patch as Omit<Profile, "id">), cognitiveGoals: patch.cognitiveGoals ?? [], ...(weightGoal ? { weightGoal } : {}) };
         return profile;
       }
       profile = { ...profile, ...patch };
+      if (weightGoal === null) delete profile.weightGoal;
+      else if (weightGoal) profile.weightGoal = weightGoal;
       return profile;
     },
     mealsOn,

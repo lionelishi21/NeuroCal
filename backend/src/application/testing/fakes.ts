@@ -1,6 +1,7 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
+import type { WeightEntry } from "../../domain/weight";
 import type { IIdentityProvider } from "../interfaces/IIdentityProvider";
 import type { ISupplementLabelReader } from "../interfaces/ISupplementLabelReader";
 import type {
@@ -42,6 +43,7 @@ import type {
   ITelemetryRepository,
   IUserRepository,
   IWaitlistRepository,
+  IWeightRepository,
 } from "../interfaces/IRepositories";
 import type { ISearchEngineAdapter, RecipeSearchHit } from "../interfaces/ISearchEngineAdapter";
 
@@ -74,6 +76,12 @@ export class InMemoryMeals implements IMealRepository {
   }
   async get(userId: string, mealId: string) {
     return this.rows.find((m) => m.userId === userId && m.id === mealId && !m.deleted) ?? null;
+  }
+  async eatenSince(userId: string, since: Date) {
+    return this.rows
+      .filter((m) => m.userId === userId && !m.deleted && m.eatenAt >= since)
+      .map((m) => m.eatenAt)
+      .sort((a, b) => a.getTime() - b.getTime());
   }
   private readonly byKey = new Map<string, Meal>();
   async create(userId: string, { clientKey, ...meal }: NewMeal) {
@@ -359,6 +367,23 @@ export class FakeIdentity implements IIdentityProvider {
   readonly deleted: string[] = [];
   async deleteLogin(subject: string) {
     this.deleted.push(subject);
+  }
+}
+
+export class InMemoryWeights implements IWeightRepository {
+  readonly rows = new Map<string, WeightEntry>();
+  async upsert(userId: string, entry: WeightEntry) {
+    this.rows.set(`${userId}:${entry.date}`, entry);
+    return entry;
+  }
+  async list(userId: string, since: string) {
+    return [...this.rows]
+      .filter(([key, e]) => key.startsWith(`${userId}:`) && e.date >= since)
+      .map(([, e]) => e)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+  async delete(userId: string, date: string) {
+    return this.rows.delete(`${userId}:${date}`);
   }
 }
 
