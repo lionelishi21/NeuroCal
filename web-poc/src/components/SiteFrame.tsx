@@ -9,7 +9,8 @@ import { ThemeToggle } from "./ThemeToggle";
  * screens a violet panel beside the card says what the page is for, so it reads as a website page
  * rather than a phone screen.
  */
-export function SiteFrame({ aside, children }: { aside?: { title: string; body: string }; children: ReactNode }) {
+/** `wide` gives long reading pages (terms, privacy) a measure that suits text. */
+export function SiteFrame({ aside, wide = false, children }: { aside?: { title: string; body: string }; wide?: boolean; children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-b border-rule bg-mist/90 backdrop-blur-md">
@@ -23,7 +24,7 @@ export function SiteFrame({ aside, children }: { aside?: { title: string; body: 
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6 py-10 sm:py-16">
-        <div className={`grid w-full items-stretch gap-0 overflow-hidden rounded-[2rem] border border-rule bg-paper ${aside ? "max-w-[60rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]" : "max-w-[30rem]"}`}>
+        <div className={`grid w-full items-stretch gap-0 overflow-hidden rounded-[2rem] border border-rule bg-paper ${aside ? "max-w-[60rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]" : wide ? "max-w-[46rem]" : "max-w-[30rem]"}`}>
           {aside && (
             <div className="hidden flex-col justify-between gap-10 bg-linear-to-br from-promo to-promo-deep p-12 text-on-promo lg:flex">
               <svg viewBox="0 0 28 28" aria-hidden className="size-12">

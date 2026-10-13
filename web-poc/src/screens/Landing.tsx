@@ -519,8 +519,12 @@ export function Landing() {
             <span className="ml-2 text-xs text-ink-soft">© 2026</span>
           </p>
           <p className="m-0 flex flex-wrap gap-5 text-sm font-semibold text-ink-soft">
-            <span>Privacy</span>
-            <span>Terms</span>
+            <Link href="/privacy" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
+              Terms
+            </Link>
             <span>Affiliate disclosure</span>
             <span>Contact</span>
             <Link href="/delete-account" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
