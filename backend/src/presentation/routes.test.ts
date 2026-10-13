@@ -33,6 +33,7 @@ let api: ReturnType<typeof createApi>;
 let profiles: InMemoryProfiles;
 let storage: InMemoryStorage;
 let users: InMemoryUsers;
+let labels: FakeLabelReader;
 let identity: FakeIdentity;
 let waitlist: InMemoryWaitlist;
 let email: FakeEmail;
@@ -67,13 +68,13 @@ beforeEach(async () => {
       embedder: new FakeEmbedder(),
       explainer: new FakeExplainer("Short sleep is holding you back."),
       storage,
-      labels: new FakeLabelReader({
+      labels: (labels = new FakeLabelReader({
         brand: "Calm Labs",
         productName: "Zinc",
         ingredients: [{ name: "Zinc", amount: 50, unit: "mg", inBlend: false }],
         proprietaryBlend: false,
         testing: ["usp_verified"],
-      }),
+      })),
       vision: new FakeVision({ items: [{ ...item("Quinoa", 166, 6, 29, 2.7), confidence: 0.8, glycemicLoad: "medium" }] }),
       reasoning: new FakeReasoning({ searchQuery: "pescatarian dinner", contextualReasoning: "Fits your day." }),
       search: new FakeSearch([
@@ -123,7 +124,9 @@ describe("API routes", () => {
 
   it("POST /supplements/analyze takes a multipart photo labelled as a generic file, as the app sends it", async () => {
     const form = new FormData();
-    form.append("photo", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])], { type: "application/octet-stream" }), "label.jpg");
+    // Two sides of the bottle, as live scan sends them.
+    form.append("photo", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])], { type: "application/octet-stream" }), "side-1.jpg");
+    form.append("photo", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 3, 4])], { type: "application/octet-stream" }), "side-2.jpg");
     const request = new Request("http://local/", { method: "POST", body: form });
     const body = new Uint8Array(await request.arrayBuffer());
     const res = await api({
@@ -135,6 +138,7 @@ describe("API routes", () => {
       userId: "u1",
     });
     expect(res.status).toBe(200);
+    expect(labels.calls.at(-1)).toHaveLength(2);
     // Bytes that aren't an image are still refused.
     const text = new FormData();
     text.append("photo", new Blob(["not a photo"], { type: "application/octet-stream" }), "notes.txt");
@@ -152,7 +156,7 @@ describe("API routes", () => {
 
   it("POST /supplements/analyze reads an uploaded label photo and flags it", async () => {
     storage.objects.set("uploads/u1/label", { bytes: new Uint8Array([0xff, 0xd8]), mediaType: "image/jpeg" });
-    const res = await call("POST", "/supplements/analyze", { photoKey: "uploads/u1/label" });
+    const res = await call("POST", "/supplements/analyze", { photoKeys: ["uploads/u1/label"] });
     expect(res.status).toBe(200);
     expect(SupplementLabelResponse.parse(res.body)).toMatchObject({
       productName: "Zinc",
@@ -160,7 +164,7 @@ describe("API routes", () => {
       summary: "Calm Labs Zinc: 1 ingredient, tested by USP.",
       flags: [{ kind: "above_upper_limit" }],
     });
-    expect((await call("POST", "/supplements/analyze", { photoKey: "uploads/u2/label" })).status).toBe(404);
+    expect((await call("POST", "/supplements/analyze", { photoKeys: ["uploads/u1/label", "uploads/u2/label"] })).status).toBe(404);
   });
 
   it("GET /me returns the contract profile", async () => {

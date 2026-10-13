@@ -168,11 +168,11 @@ class MockNeuroCalApi implements NeuroCalApi {
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
-  /// A typical label: one blend and no testing mark, so the flags show. A filename with "dark" in it reads as too dark.
+  /// A typical label: one blend and no testing mark, so the flags show. A name with "dark" in it reads as too dark.
   @override
-  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename) async {
+  Future<SupplementLabel> analyzeSupplement(List<Uint8List> photos, {List<String> names = const []}) async {
     await Future.delayed(latency * 4);
-    if (RegExp('dark', caseSensitive: false).hasMatch(filename)) {
+    if (names.any(RegExp('dark', caseSensitive: false).hasMatch)) {
       return const SupplementLabel(
         problem: LabelProblem.tooDark,
         summary: 'The label is too dark to read. Try again in better light.',

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>NeuroCal uses the camera to photograph your meals so it can estimate what is on the plate.</string>
+	<string>NeuroCal uses the camera to photograph your meals and scan supplement labels.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NeuroCal reads the meal photo you choose so it can estimate what is on the plate.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

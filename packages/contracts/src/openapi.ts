@@ -47,8 +47,8 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "PUT the photo's bytes to `uploadUrl` with exactly the returned `headers`, then pass `photoKey` to POST /meals/analyze. The photo must be an image of at most 8 MB, and the bytes sent must match `sizeBytes`.",
   },
   analyzeSupplement: {
-    summary: "Read a supplement label photo",
-    description: "Upload the photo as for meals (POST /uploads/meal-photo) and pass its photoKey, or send it as multipart/form-data in a `photo` field. Returns what the label says, flags such as proprietary blends, doses above upper limits, missing third-party testing and expiry, and a close own-brand alternative when there is one. It reports the label only and is not a safety or quality verdict. Nothing is saved.",
+    summary: "Read a supplement label from 1–4 photos",
+    description: "Photos of the same bottle from different sides are read as one label, so a label that wraps around the bottle comes out whole. Upload each photo as for meals (POST /uploads/meal-photo) and pass the photoKeys, or send them as multipart/form-data, one `photo` field per photo. Returns what the label says, flags such as proprietary blends, doses above upper limits, missing third-party testing and expiry, and a close own-brand alternative when there is one. It reports the label only and is not a safety or quality verdict. Nothing is saved.",
   },
   analyzeMeal: {
     summary: "Propose food items from a meal photo",

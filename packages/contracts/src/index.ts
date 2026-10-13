@@ -333,6 +333,15 @@ export const ProtocolsResponse = z.object({
 });
 export type ProtocolsResponse = z.infer<typeof ProtocolsResponse>;
 
+/** The most photos of one bottle a label scan takes: its sides, as the bottle turns. */
+export const MAX_LABEL_PHOTOS = 4;
+
+export const AnalyzeSupplementRequest = z.object({
+  /** Uploaded photos of the same bottle, each from POST /uploads/meal-photo. */
+  photoKeys: z.array(z.string().min(1).max(200)).min(1).max(MAX_LABEL_PHOTOS),
+});
+export type AnalyzeSupplementRequest = z.infer<typeof AnalyzeSupplementRequest>;
+
 /** Third-party testing marks a supplement label can carry. */
 export const SupplementTestingMark = z.enum(["nsf_certified", "nsf_sport", "usp_verified", "informed_sport", "informed_choice", "bscg", "clean_label_project", "other"]);
 export type SupplementTestingMark = z.infer<typeof SupplementTestingMark>;
@@ -486,8 +495,8 @@ export const endpoints = {
   createPhotoUpload: { method: "POST", path: "/uploads/meal-photo", body: CreatePhotoUploadRequest, response: PhotoUpload },
   /** Takes the key of an uploaded photo, or (older clients) the photo itself as multipart `photo`. */
   analyzeMeal: { method: "POST", path: "/meals/analyze", body: AnalyzeMealRequest, response: AnalyzeMealResponse },
-  /** Reads a supplement label photo (an uploaded photoKey, or multipart like analyzeMeal). Nothing is saved. */
-  analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeMealRequest, response: SupplementLabelResponse },
+  /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */
+  analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeSupplementRequest, response: SupplementLabelResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },
   listMeals: { method: "GET", path: "/meals", response: MealList },
   deleteMeal: { method: "DELETE", path: "/meals/:id" },

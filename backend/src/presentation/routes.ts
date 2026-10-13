@@ -5,6 +5,8 @@ import {
   AnalyzeMealRequest,
   AnalyzeMealResponse,
   SupplementLabelResponse,
+  AnalyzeSupplementRequest,
+  MAX_LABEL_PHOTOS,
   BioState,
   CheckIn,
   CreateAdminProductRequest,
@@ -123,6 +125,12 @@ function json<S extends z.ZodType>(req: ApiRequest, schema: S): z.infer<S> {
 }
 
 async function photoFrom(req: ApiRequest) {
+  const [photo] = await photosFrom(req, 1);
+  return photo!;
+}
+
+/** Up to `max` photos from a multipart body, one `photo` field each. */
+async function photosFrom(req: ApiRequest, max: number) {
   const contentType = req.headers["content-type"] ?? "";
   if (!contentType.startsWith("multipart/form-data")) throw new BadRequest("Send the photo's key as JSON, or the photo as multipart/form-data.");
   let form: FormData;
@@ -135,12 +143,17 @@ async function photoFrom(req: ApiRequest) {
   } catch {
     throw new BadRequest("The upload couldn't be read. Choose the photo again.");
   }
-  const photo = form.get("photo");
-  if (!photo || typeof photo === "string") throw new BadRequest("Attach a photo of the meal.");
-  const bytes = new Uint8Array(await photo.arrayBuffer());
-  // Trust a declared image type; otherwise tell from the bytes (the Flutter app sends application/octet-stream).
-  const mediaType = photo.type.startsWith("image/") ? photo.type : (imageTypeOf(bytes) ?? (photo.type || "application/octet-stream"));
-  return { bytes, mediaType };
+  const files = form.getAll("photo").filter((p): p is File => typeof p !== "string");
+  if (files.length === 0) throw new BadRequest("Attach a photo of the meal.");
+  if (files.length > max) throw new BadRequest(`Send at most ${max} photos.`);
+  return Promise.all(
+    files.map(async (photo) => {
+      const bytes = new Uint8Array(await photo.arrayBuffer());
+      // Trust a declared image type; otherwise tell from the bytes (the Flutter app sends application/octet-stream).
+      const mediaType = photo.type.startsWith("image/") ? photo.type : (imageTypeOf(bytes) ?? (photo.type || "application/octet-stream"));
+      return { bytes, mediaType };
+    }),
+  );
 }
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
@@ -211,10 +224,10 @@ export function createApi(uc: UseCases) {
       "POST",
       /^\/supplements\/analyze$/,
       async (req) => {
-        // Same two ways in as a meal photo: a photoKey from an upload, or multipart.
+        // Same two ways in as a meal photo: photoKeys from uploads, or multipart (one `photo` field per side).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
-          ? await uc.analyzeSupplementLabel.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
-          : await uc.analyzeSupplementLabel.execute(await photoFrom(req));
+          ? await uc.analyzeSupplementLabel.executeForKeys({ userId: req.userId, photoKeys: json(req, AnalyzeSupplementRequest).photoKeys })
+          : await uc.analyzeSupplementLabel.execute(await photosFrom(req, MAX_LABEL_PHOTOS));
         return ok(SupplementLabelResponse, toSupplementLabel(analysis));
       },
     ],

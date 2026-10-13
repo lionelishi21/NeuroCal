@@ -30,7 +30,7 @@ export const SupplementLabelSchema = z.object({
 
 const present = <K extends string, V>(key: K, value: V | null): { [P in K]?: V } => (value === null || value === "" ? {} : ({ [key]: value } as { [P in K]?: V }));
 
-/** Supplement label photo → what is printed on it, via gpt-4o with a strict JSON schema. */
+/** Photos of a supplement label → what is printed on it, via gpt-4o with a strict JSON schema. */
 export class OpenAiSupplementLabelReader implements ISupplementLabelReader {
   private readonly completions: ParseCompletion;
 
@@ -39,9 +39,12 @@ export class OpenAiSupplementLabelReader implements ISupplementLabelReader {
       "completions" in options ? options.completions : new OpenAI({ apiKey: options.apiKey, maxRetries: 1, timeout: 25_000 }).chat.completions;
   }
 
-  async readLabel(photo: MealPhoto): Promise<SupplementLabelReading> {
+  async readLabel(photos: MealPhoto[]): Promise<SupplementLabelReading> {
     const started = Date.now();
-    const dataUrl = `data:${photo.mediaType};base64,${Buffer.from(photo.bytes).toString("base64")}`;
+    const images = photos.map((photo) => ({
+      type: "image_url" as const,
+      image_url: { url: `data:${photo.mediaType};base64,${Buffer.from(photo.bytes).toString("base64")}`, detail: "high" as const },
+    }));
     const completion = await this.completions.parse({
       model: SUPPLEMENT_LABEL_MODEL,
       messages: [
@@ -49,8 +52,11 @@ export class OpenAiSupplementLabelReader implements ISupplementLabelReader {
         {
           role: "user",
           content: [
-            { type: "image_url", image_url: { url: dataUrl, detail: "high" } },
-            { type: "text", text: "Read this supplement label." },
+            ...images,
+            {
+              type: "text",
+              text: photos.length === 1 ? "Read this supplement label." : `These ${photos.length} photos show the same bottle from different sides. Read them as one label.`,
+            },
           ],
         },
       ],

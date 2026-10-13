@@ -5,19 +5,22 @@ import 'package:image_picker/image_picker.dart';
 
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../scan/label_camera.dart';
 import '../theme/tokens.dart';
 import '../widgets/product_card.dart';
 import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
+import 'live_scan.dart';
 import 'log_meal_sheet.dart' show maxPhotoBytes;
 
-/// Scan a supplement label: take or choose a photo of the facts panel, wait while it is read, then
-/// see what the label says and anything worth knowing. Nothing is saved.
-Future<void> showSupplementSheet(BuildContext context, {ImagePicker? picker}) => showAppSheet<void>(
-  context,
-  title: 'Scan a supplement',
-  builder: (_) => _ScanSupplement(picker: picker ?? ImagePicker()),
-);
+/// Scan a supplement label: live scan while turning the bottle (or choose a photo), wait while it is
+/// read, then see what the label says and anything worth knowing. Nothing is saved.
+Future<void> showSupplementSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
+    showAppSheet<void>(
+      context,
+      title: 'Scan a supplement',
+      builder: (_) => _ScanSupplement(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new),
+    );
 
 /// A short lead for each flag; the API's message is the detail.
 const _leads = <String, String>{
@@ -33,37 +36,48 @@ const _leads = <String, String>{
 const _serious = {'above_upper_limit', 'expired'};
 
 class _ScanSupplement extends StatefulWidget {
-  const _ScanSupplement({required this.picker});
+  const _ScanSupplement({required this.picker, required this.camera});
 
   final ImagePicker picker;
+  final LabelCamera Function() camera;
 
   @override
   State<_ScanSupplement> createState() => _ScanSupplementState();
 }
 
 class _ScanSupplementState extends State<_ScanSupplement> {
-  Uint8List? _photo;
+  List<Uint8List> _photos = const [];
   SupplementLabel? _label;
   String? _failure;
   var _reading = false;
 
-  Future<void> _choose(ImageSource source) async {
-    final file = await widget.picker.pickImage(source: source, maxWidth: 2000, imageQuality: 90);
+  Future<void> _liveScan() async {
+    final photos = await showLiveScan(context, widget.camera());
+    if (photos == null || photos.isEmpty || !mounted) return;
+    await _read(photos, const []);
+  }
+
+  Future<void> _choose() async {
+    final file = await widget.picker.pickImage(source: ImageSource.gallery, maxWidth: 2000, imageQuality: 90);
     if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
     if (!mounted) return;
     if (bytes.length > maxPhotoBytes) {
-      setState(() => _failure = 'This photo is over 8 MB. Choose a smaller one, or take a new one with the camera.');
+      setState(() => _failure = 'This photo is over 8 MB. Choose a smaller one, or use live scan.');
       return;
     }
+    await _read([bytes], [file.name]);
+  }
+
+  Future<void> _read(List<Uint8List> photos, List<String> names) async {
     setState(() {
-      _photo = bytes;
+      _photos = photos;
       _label = null;
       _failure = null;
       _reading = true;
     });
     try {
-      final label = await AppScope.of(context).api.analyzeSupplement(bytes, file.name);
+      final label = await AppScope.of(context).api.analyzeSupplement(photos, names: names);
       if (mounted) setState(() => _label = label);
     } catch (_) {
       if (mounted) setState(() => _failure = "We couldn't read this label. Check your connection and try again.");
@@ -73,7 +87,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   }
 
   void _again() => setState(() {
-    _photo = null;
+    _photos = const [];
     _label = null;
     _failure = null;
   });
@@ -94,14 +108,14 @@ class _ScanSupplementState extends State<_ScanSupplement> {
       children: [
         if (problem != null) SheetNote(lead: "Couldn't read the label.", detail: problem),
         Text(
-          'Photograph the side of the bottle with the facts panel, so every row and any dates are in the frame.',
+          "Point the camera at the facts panel and turn the bottle slowly. We'll keep a photo of each side as it comes into view.",
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
         FilledButton.icon(
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-          onPressed: () => _choose(ImageSource.camera),
-          icon: const Icon(Icons.photo_camera_outlined, size: 20),
-          label: Text(problem == null ? 'Take a photo' : 'Take it again'),
+          onPressed: _liveScan,
+          icon: const Icon(Icons.document_scanner_outlined, size: 20),
+          label: Text(problem == null ? 'Start live scan' : 'Scan again'),
         ),
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
@@ -109,7 +123,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
             foregroundColor: c.synapseInk,
             side: BorderSide(color: c.ruleStrong, width: 1.5),
           ),
-          onPressed: () => _choose(ImageSource.gallery),
+          onPressed: _choose,
           icon: const Icon(Icons.image_outlined, size: 20),
           label: const Text('Choose a photo'),
         ),
@@ -123,12 +137,20 @@ class _ScanSupplementState extends State<_ScanSupplement> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        if (_photo != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(Radii.hero),
-            child: SizedBox(
-              height: 220,
-              child: Image.memory(_photo!, fit: BoxFit.cover, semanticLabel: 'Your label photo'),
+        if (_photos.isNotEmpty)
+          SizedBox(
+            height: 180,
+            child: Row(
+              spacing: Space.s2,
+              children: [
+                for (final (i, photo) in _photos.indexed)
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(Radii.option),
+                      child: Image.memory(photo, fit: BoxFit.cover, height: 180, semanticLabel: 'Label photo ${i + 1}'),
+                    ),
+                  ),
+              ],
             ),
           ),
         Semantics(

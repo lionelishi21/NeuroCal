@@ -9,6 +9,9 @@ import type { MealPhoto } from "../interfaces/IAiVisionProvider";
 import type { IObjectStorage } from "../interfaces/IObjectStorage";
 import type { ISupplementLabelReader } from "../interfaces/ISupplementLabelReader";
 
+/** Sides of one bottle a scan may send (`MAX_LABEL_PHOTOS` in the contracts). */
+export const MAX_LABEL_PHOTOS = 4;
+
 export interface SupplementLabelAnalysis {
   reading: SupplementLabelReading;
   summary: string;
@@ -17,7 +20,7 @@ export interface SupplementLabelAnalysis {
 }
 
 /**
- * Supplement label photo → what the label says, NeuroCal's flags, and a close own-brand alternative.
+ * Supplement label photos (sides of one bottle) → what the label says, NeuroCal's flags, and a close own-brand alternative.
  * Nothing is saved. The flags come from rules in the domain, not from the model.
  */
 export class AnalyzeSupplementLabelUseCase {
@@ -31,23 +34,31 @@ export class AnalyzeSupplementLabelUseCase {
     private readonly options: { minAlternativeMatch: number } = { minAlternativeMatch: 0.45 },
   ) {}
 
-  /** For a photo the client uploaded first. Someone else's key reads as missing (ARCHITECTURE §10). */
-  async executeForKey(input: { userId: string; photoKey: string }): Promise<SupplementLabelAnalysis> {
-    const missing = new NotFoundError("That photo isn't there. Choose it again.");
-    if (!ownsPhotoKey(input.userId, input.photoKey)) throw missing;
-    const photo = await this.storage.read(input.photoKey, MAX_PHOTO_BYTES);
-    if (!photo) throw missing;
-    return this.execute(photo);
+  /** For photos the client uploaded first. Someone else's key reads as missing (ARCHITECTURE §10). */
+  async executeForKeys(input: { userId: string; photoKeys: string[] }): Promise<SupplementLabelAnalysis> {
+    const photos: MealPhoto[] = [];
+    for (const key of input.photoKeys) {
+      const missing = new NotFoundError("A photo isn't there. Scan the label again.");
+      if (!ownsPhotoKey(input.userId, key)) throw missing;
+      const photo = await this.storage.read(key, MAX_PHOTO_BYTES);
+      if (!photo) throw missing;
+      photos.push(photo);
+    }
+    return this.execute(photos);
   }
 
-  async execute(photo: MealPhoto): Promise<SupplementLabelAnalysis> {
-    if (!photo.mediaType.startsWith("image/")) throw new InvalidError("Attach a photo of the label.");
-    if (photo.bytes.byteLength === 0) throw new InvalidError("The photo is empty. Choose it again.");
-    if (photo.bytes.byteLength > MAX_PHOTO_BYTES) throw new InvalidError("The photo is larger than 8 MB.");
+  async execute(photos: MealPhoto[]): Promise<SupplementLabelAnalysis> {
+    if (photos.length === 0) throw new InvalidError("Attach a photo of the label.");
+    if (photos.length > MAX_LABEL_PHOTOS) throw new InvalidError(`Send at most ${MAX_LABEL_PHOTOS} photos of the label.`);
+    for (const photo of photos) {
+      if (!photo.mediaType.startsWith("image/")) throw new InvalidError("Attach a photo of the label.");
+      if (photo.bytes.byteLength === 0) throw new InvalidError("A photo is empty. Scan the label again.");
+      if (photo.bytes.byteLength > MAX_PHOTO_BYTES) throw new InvalidError("A photo is larger than 8 MB.");
+    }
 
     let reading: SupplementLabelReading;
     try {
-      reading = await this.reader.readLabel(photo);
+      reading = await this.reader.readLabel(photos);
     } catch (error) {
       if (error instanceof DomainError) throw error;
       throw new UpstreamError("The label couldn't be read right now. Try again in a moment.");

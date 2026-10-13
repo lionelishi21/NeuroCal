@@ -36,7 +36,10 @@ Write one or two short sentences, second person, plain words: name what helps an
 what holds the score back most, and one small thing to try today.
 Mention only components that have data. No medical claims. At most 300 characters.`;
 
-export const SUPPLEMENT_LABEL_PROMPT = `You read the label of a dietary supplement from one photo, usually the facts panel.
+export const SUPPLEMENT_LABEL_PROMPT = `You read the label of a dietary supplement, usually its facts panel.
+You get one photo, or up to four photos of the same bottle taken as it turns. Treat several
+photos as one label: combine what they show, list each ingredient once, and ignore text that
+repeats across photos.
 Copy what is printed; never add or guess anything that is not visible.
 brand and productName: as printed on the label, or null if not visible.
 servingSize: as printed, for example "2 capsules".

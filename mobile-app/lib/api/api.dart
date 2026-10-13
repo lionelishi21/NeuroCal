@@ -20,8 +20,8 @@ abstract interface class NeuroCalApi {
   Future<List<Meal>> meals(DateTime day);
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
 
-  /// Reads a supplement label photo. Nothing is saved.
-  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename);
+  /// Reads 1–4 photos of one supplement bottle as a single label. Nothing is saved.
+  Future<SupplementLabel> analyzeSupplement(List<Uint8List> photos, {List<String> names = const []});
   Future<Meal> createMeal(NewMeal meal);
   Future<void> deleteMeal(String id);
 
@@ -121,10 +121,13 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<SupplementLabel> analyzeSupplement(Uint8List photo, String filename) async {
+  Future<SupplementLabel> analyzeSupplement(List<Uint8List> photos, {List<String> names = const []}) async {
     final req = http.MultipartRequest('POST', _uri('/supplements/analyze'))
       ..headers.addAll(await _headers())
-      ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: filename));
+      ..files.addAll([
+        for (final (i, photo) in photos.indexed)
+          http.MultipartFile.fromBytes('photo', photo, filename: i < names.length ? names[i] : 'side-${i + 1}.jpg'),
+      ]);
     final res = await http.Response.fromStream(await _client.send(req));
     return SupplementLabel.fromJson(_decode(res) as Map<String, dynamic>);
   }

@@ -182,10 +182,10 @@ export class FakeVision implements IAiVisionProvider {
 }
 
 export class FakeLabelReader implements ISupplementLabelReader {
-  calls: MealPhoto[] = [];
+  calls: MealPhoto[][] = [];
   constructor(public result: SupplementLabelReading | Error) {}
-  async readLabel(photo: MealPhoto) {
-    this.calls.push(photo);
+  async readLabel(photos: MealPhoto[]) {
+    this.calls.push(photos);
     if (this.result instanceof Error) throw this.result;
     return this.result;
   }

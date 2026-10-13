@@ -145,7 +145,7 @@ describe("OpenAiSupplementLabelReader", () => {
 
   it("sends the photo to gpt-4o with the label schema and drops empty fields", async () => {
     const { parse, reader } = readerWith({ finish_reason: "stop", message: { parsed, refusal: null } });
-    await expect(reader.readLabel(photo)).resolves.toEqual({
+    await expect(reader.readLabel([photo])).resolves.toEqual({
       brand: "Calm Labs",
       productName: "Magnesium Glycinate",
       servingSize: "2 capsules",
@@ -163,15 +163,23 @@ describe("OpenAiSupplementLabelReader", () => {
     expect(params.response_format.type).toBe("json_schema");
   });
 
+  it("sends every side of the bottle in one message and says they are one label", async () => {
+    const { parse, reader } = readerWith({ finish_reason: "stop", message: { parsed, refusal: null } });
+    await reader.readLabel([photo, photo, photo]);
+    const content = (parse.mock.calls[0]![0] as Record<string, any>).messages[1].content;
+    expect(content.filter((part: { type: string }) => part.type === "image_url")).toHaveLength(3);
+    expect(content.at(-1).text).toBe("These 3 photos show the same bottle from different sides. Read them as one label.");
+  });
+
   it("returns only the problem for an unreadable photo, and throws on a refusal or bad output", async () => {
     const blurry = { ...parsed, problem: "blurry" };
-    await expect(readerWith({ finish_reason: "stop", message: { parsed: blurry, refusal: null } }).reader.readLabel(photo)).resolves.toEqual({
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: blurry, refusal: null } }).reader.readLabel([photo])).resolves.toEqual({
       problem: "blurry",
       ingredients: [],
       proprietaryBlend: false,
       testing: [],
     });
-    await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel(photo)).rejects.toThrow();
-    await expect(readerWith({ finish_reason: "stop", message: { parsed: { ...parsed, expiresOn: "soon" }, refusal: null } }).reader.readLabel(photo)).rejects.toThrow();
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel([photo])).rejects.toThrow();
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: { ...parsed, expiresOn: "soon" }, refusal: null } }).reader.readLabel([photo])).rejects.toThrow();
   });
 });
