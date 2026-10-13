@@ -121,6 +121,35 @@ describe("API routes", () => {
     expect([...storage.objects.keys()]).toEqual(["uploads/u2/b"]);
   });
 
+  it("POST /supplements/analyze takes a multipart photo labelled as a generic file, as the app sends it", async () => {
+    const form = new FormData();
+    form.append("photo", new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])], { type: "application/octet-stream" }), "label.jpg");
+    const request = new Request("http://local/", { method: "POST", body: form });
+    const body = new Uint8Array(await request.arrayBuffer());
+    const res = await api({
+      method: "POST",
+      path: "/supplements/analyze",
+      query: new URLSearchParams(),
+      headers: { "content-type": request.headers.get("content-type")! },
+      body,
+      userId: "u1",
+    });
+    expect(res.status).toBe(200);
+    // Bytes that aren't an image are still refused.
+    const text = new FormData();
+    text.append("photo", new Blob(["not a photo"], { type: "application/octet-stream" }), "notes.txt");
+    const textRequest = new Request("http://local/", { method: "POST", body: text });
+    const refused = await api({
+      method: "POST",
+      path: "/supplements/analyze",
+      query: new URLSearchParams(),
+      headers: { "content-type": textRequest.headers.get("content-type")! },
+      body: new Uint8Array(await textRequest.arrayBuffer()),
+      userId: "u1",
+    });
+    expect(refused.status).toBe(400);
+  });
+
   it("POST /supplements/analyze reads an uploaded label photo and flags it", async () => {
     storage.objects.set("uploads/u1/label", { bytes: new Uint8Array([0xff, 0xd8]), mediaType: "image/jpeg" });
     const res = await call("POST", "/supplements/analyze", { photoKey: "uploads/u1/label" });

@@ -48,6 +48,7 @@ import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendR
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { DomainError } from "../domain/errors";
+import { imageTypeOf } from "../domain/photo";
 import { toAnalysis, toBioState, toCheckIn, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
@@ -136,7 +137,10 @@ async function photoFrom(req: ApiRequest) {
   }
   const photo = form.get("photo");
   if (!photo || typeof photo === "string") throw new BadRequest("Attach a photo of the meal.");
-  return { bytes: new Uint8Array(await photo.arrayBuffer()), mediaType: photo.type || "application/octet-stream" };
+  const bytes = new Uint8Array(await photo.arrayBuffer());
+  // Trust a declared image type; otherwise tell from the bytes (the Flutter app sends application/octet-stream).
+  const mediaType = photo.type.startsWith("image/") ? photo.type : (imageTypeOf(bytes) ?? (photo.type || "application/octet-stream"));
+  return { bytes, mediaType };
 }
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
