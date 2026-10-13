@@ -89,6 +89,83 @@ class MockNeuroCalApi implements NeuroCalApi {
       calorieTarget: fields['dailyCalorieTarget'] as int? ?? _profile?.calorieTarget,
       macroTargets: macros == null ? _profile?.macroTargets : Macros.fromJson(macros),
       bioProfile: fields['bioProfile'] as Map<String, dynamic>? ?? _profile?.bioProfile,
+      // `weightGoal: null` removes it, as on the real API.
+      weightGoal: fields.containsKey('weightGoal')
+          ? (fields['weightGoal'] == null ? null : WeightGoal.fromJson(fields['weightGoal'] as Map<String, dynamic>))
+          : _profile?.weightGoal,
+    );
+  }
+
+  final _weighIns = <String, double>{};
+
+  @override
+  Future<void> logWeight(double kg, {String? date}) async {
+    await _wait();
+    _weighIns[date ?? isoDate(DateTime.now())] = kg;
+  }
+
+  @override
+  Future<void> deleteWeight(String date) async {
+    await _wait();
+    _weighIns.remove(date);
+  }
+
+  /// The same smoothed trend as the API (backend/src/domain/weight.ts), simplified for sample data.
+  @override
+  Future<WeightHistory> weights({int days = 90}) async {
+    await _wait();
+    final dates = _weighIns.keys.toList()..sort();
+    final entries = [for (final d in dates) (date: d, kg: _weighIns[d]!)];
+    if (entries.isEmpty) return const WeightHistory();
+    var trend = entries.first.kg;
+    final byDay = <String, double>{};
+    for (final e in entries) {
+      trend += 0.1 * (e.kg - trend);
+      byDay[e.date] = trend;
+    }
+    final last = DateTime.parse(entries.last.date);
+    final weekAgo = byDay[isoDate(last.subtract(const Duration(days: 7)))];
+    double r(double v) => (v * 10).roundToDouble() / 10;
+    final goal = _profile?.weightGoal;
+    return WeightHistory(
+      entries: entries,
+      trendKg: r(trend),
+      weeklyChangeKg: weekAgo == null ? null : ((trend - weekAgo) * 100).roundToDouble() / 100,
+      targetKg: goal?.targetKg,
+      toGoKg: goal == null ? null : r((trend - goal.targetKg).clamp(0, 999)),
+      plannedWeeklyLossKg: goal == null ? null : (goal.startKg * goal.pacePctPerWeek).roundToDouble() / 100,
+    );
+  }
+
+  /// Times the fast from the sample meals, like the API (backend/src/domain/fasting.ts).
+  @override
+  Future<FastingStatus> fasting() async {
+    await _wait();
+    final chosen = _profile?.bioProfile?['fasting'] as String? ?? 'none';
+    final protocol = chosen != 'none' && (_profile?.weightGoal?.fastingCaution ?? false) ? '12_12' : chosen;
+    final hours = const {'16_8': 16, 'omad': 23, '12_12': 12}[protocol];
+    if (hours == null) return const FastingStatus(protocol: 'none', kind: FastingKind.off);
+    final now = DateTime.now();
+    final eaten = [for (final m in _meals) m.eatenAt]..sort();
+    final past = eaten.where((t) => !t.isAfter(now)).toList();
+    if (past.isEmpty) return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.unknown);
+    var opened = past.last;
+    for (var i = past.length - 1; i > 0; i--) {
+      if (past[i].difference(past[i - 1]).inMinutes >= hours * 60) break;
+      opened = past[i - 1];
+    }
+    final closes = opened.add(Duration(hours: 24 - hours));
+    if (now.isBefore(closes)) {
+      return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.eating, openedAt: opened, closesAt: closes, streakDays: 2);
+    }
+    final goalAt = past.last.add(Duration(hours: hours));
+    return FastingStatus(
+      protocol: protocol,
+      fastHours: hours,
+      kind: now.isBefore(goalAt) ? FastingKind.fasting : FastingKind.fasted,
+      since: past.last,
+      goalAt: goalAt,
+      streakDays: 2,
     );
   }
 

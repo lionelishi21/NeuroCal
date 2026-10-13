@@ -531,6 +531,7 @@ class Profile {
     this.calorieTarget,
     this.macroTargets,
     this.bioProfile,
+    this.weightGoal,
   });
 
   final String displayName;
@@ -544,6 +545,10 @@ class Profile {
 
   /// The onboarding answers, keyed as in the contract's `BioProfile`; null for profiles made before it existed.
   final Map<String, dynamic>? bioProfile;
+  final WeightGoal? weightGoal;
+
+  /// Chose "Lose weight" in onboarding.
+  bool get losingWeight => bioProfile?['goal'] == 'weight_loss' || weightGoal != null;
 
   factory Profile.fromJson(Map<String, dynamic> j) => Profile(
     displayName: j['displayName'] as String,
@@ -553,8 +558,139 @@ class Profile {
     calorieTarget: (j['dailyCalorieTarget'] as num?)?.toInt(),
     macroTargets: j['macroTargets'] == null ? null : Macros.fromJson(j['macroTargets'] as Map<String, dynamic>),
     bioProfile: j['bioProfile'] as Map<String, dynamic>?,
+    weightGoal: j['weightGoal'] == null ? null : WeightGoal.fromJson(j['weightGoal'] as Map<String, dynamic>),
   );
 }
+
+/// A weight-loss plan (`WeightGoal` in the contracts). Kilograms; the app converts for display.
+class WeightGoal {
+  const WeightGoal({
+    required this.startKg,
+    required this.targetKg,
+    required this.startedOn,
+    required this.pacePctPerWeek,
+    required this.fastingCaution,
+  });
+
+  final double startKg;
+  final double targetKg;
+
+  /// YYYY-MM-DD.
+  final String startedOn;
+
+  /// 0.5, 0.75 or 1 (% of body weight a week).
+  final double pacePctPerWeek;
+
+  /// Answered yes to the safety question: fasting stays at 12 hours at most.
+  final bool fastingCaution;
+
+  factory WeightGoal.fromJson(Map<String, dynamic> j) => WeightGoal(
+    startKg: (j['startKg'] as num).toDouble(),
+    targetKg: (j['targetKg'] as num).toDouble(),
+    startedOn: j['startedOn'] as String,
+    pacePctPerWeek: (j['pacePctPerWeek'] as num).toDouble(),
+    fastingCaution: j['fastingCaution'] as bool,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'startKg': startKg,
+    'targetKg': targetKg,
+    'startedOn': startedOn,
+    'pacePctPerWeek': pacePctPerWeek,
+    'fastingCaution': fastingCaution,
+  };
+}
+
+typedef WeighIn = ({String date, double kg});
+
+/// Weigh-ins with the smoothed trend and goal progress (`WeightHistory` in the contracts).
+class WeightHistory {
+  const WeightHistory({
+    this.entries = const [],
+    this.trendKg,
+    this.weeklyChangeKg,
+    this.targetKg,
+    this.toGoKg,
+    this.plannedWeeklyLossKg,
+    this.projectedOn,
+  });
+
+  /// Oldest first.
+  final List<WeighIn> entries;
+  final double? trendKg;
+
+  /// Negative is a loss.
+  final double? weeklyChangeKg;
+
+  /// Set with a goal and at least one weigh-in.
+  final double? targetKg;
+  final double? toGoKg;
+  final double? plannedWeeklyLossKg;
+  final String? projectedOn;
+
+  bool get hasGoal => targetKg != null;
+
+  factory WeightHistory.fromJson(Map<String, dynamic> j) {
+    final goal = j['goal'] as Map<String, dynamic>?;
+    return WeightHistory(
+      entries: [for (final e in j['entries'] as List) (date: e['date'] as String, kg: (e['kg'] as num).toDouble())],
+      trendKg: (j['trendKg'] as num?)?.toDouble(),
+      weeklyChangeKg: (j['weeklyChangeKg'] as num?)?.toDouble(),
+      targetKg: (goal?['targetKg'] as num?)?.toDouble(),
+      toGoKg: (goal?['toGoKg'] as num?)?.toDouble(),
+      plannedWeeklyLossKg: (goal?['plannedWeeklyLossKg'] as num?)?.toDouble(),
+      projectedOn: goal?['projectedOn'] as String?,
+    );
+  }
+}
+
+/// Where someone is in their fast (`FastingStatus` in the contracts).
+enum FastingKind { off, unknown, fasting, fasted, eating }
+
+class FastingStatus {
+  const FastingStatus({
+    required this.protocol,
+    this.fastHours,
+    required this.kind,
+    this.since,
+    this.goalAt,
+    this.openedAt,
+    this.closesAt,
+    this.streakDays = 0,
+  });
+
+  /// 16_8, omad, 12_12 or none.
+  final String protocol;
+  final int? fastHours;
+  final FastingKind kind;
+
+  /// Fasting or fasted: the last meal, and when the fast reaches its goal.
+  final DateTime? since;
+  final DateTime? goalAt;
+
+  /// Eating: when the window opened and when it closes.
+  final DateTime? openedAt;
+  final DateTime? closesAt;
+  final int streakDays;
+
+  factory FastingStatus.fromJson(Map<String, dynamic> j) {
+    final s = j['state'] as Map<String, dynamic>;
+    DateTime? t(String key) => s[key] == null ? null : DateTime.parse(s[key] as String).toLocal();
+    return FastingStatus(
+      protocol: j['protocol'] as String,
+      fastHours: (j['fastHours'] as num?)?.toInt(),
+      kind: FastingKind.values.byName(s['kind'] as String),
+      since: t('since'),
+      goalAt: t('goalAt'),
+      openedAt: t('openedAt'),
+      closesAt: t('closesAt'),
+      streakDays: (j['streakDays'] as num).toInt(),
+    );
+  }
+}
+
+/// How the app shows the protocol: "16:8", "One meal a day", "12:12".
+const fastingLabels = <String, String>{'16_8': '16:8', 'omad': 'One meal a day', '12_12': '12:12'};
 
 /// "2026-09-29" in local time.
 String isoDate(DateTime d) =>

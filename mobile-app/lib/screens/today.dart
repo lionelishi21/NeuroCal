@@ -4,6 +4,7 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../weight_units.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
 import '../widgets/toast.dart';
@@ -13,9 +14,11 @@ import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
+import 'weight_cards.dart';
+import 'weight_sheets.dart';
 
 class _Day {
-  const _Day(this.focus, this.bio, this.meals, this.recipes);
+  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.unit = WeightUnit.kg});
 
   final FocusScore focus;
   final BioState bio;
@@ -23,6 +26,13 @@ class _Day {
 
   /// Null when suggestions didn't load; the rest of the day still shows.
   final List<Recipe>? recipes;
+
+  /// Null when fasting is off or didn't load.
+  final FastingStatus? fasting;
+
+  /// Null for people not losing weight, or when it didn't load.
+  final WeightHistory? weights;
+  final WeightUnit unit;
 }
 
 const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -110,8 +120,14 @@ class _TodayScreenState extends State<TodayScreen> {
     final now = DateTime.now();
     final api = _api;
     final recipes = api.recommendations().then<List<Recipe>?>((r) => r).catchError((Object _) => null);
+    // Fasting and weight are extras: if they fail, the rest of Today still shows.
+    final fasting = api.fasting().then<FastingStatus?>((f) => f.kind == FastingKind.off ? null : f).catchError((Object _) => null);
+    final weights = widget.profile.losingWeight
+        ? api.weights(days: 30).then<WeightHistory?>((w) => w).catchError((Object _) => null)
+        : Future<WeightHistory?>.value(null);
+    final unit = WeightUnit.load(Localizations.localeOf(context));
     final (focus, bio, meals) = await (api.focusScore(now), api.bioState(now), api.meals(now)).wait;
-    return _Day(focus, bio, meals, await recipes);
+    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, unit: await unit);
   }
 
   Future<void> _refresh() async {
@@ -131,6 +147,31 @@ class _TodayScreenState extends State<TodayScreen> {
     if (logged == true && mounted) {
       showToast(context, 'Meal logged');
       widget.onChanged();
+    }
+  }
+
+  Future<void> _logWeight(_Day day) async {
+    final saved = await showLogWeightSheet(context, unit: day.unit, lastKg: day.weights?.entries.lastOrNull?.kg);
+    if (saved == true && mounted) {
+      showToast(context, 'Weight logged');
+      _refresh();
+    }
+  }
+
+  Future<void> _weightGoal(_Day day) async {
+    final unit = WeightUnit.load(Localizations.localeOf(context));
+    final profile = await _api.me().catchError((Object _) => null);
+    final chosen = await unit;
+    if (!mounted) return;
+    final saved = await showWeightGoalSheet(
+      context,
+      unit: chosen,
+      current: profile?.weightGoal,
+      lastKg: day.weights?.entries.lastOrNull?.kg,
+    );
+    if (saved == true && mounted) {
+      showToast(context, 'Weight goal saved');
+      _refresh();
     }
   }
 
@@ -248,6 +289,19 @@ class _TodayScreenState extends State<TodayScreen> {
                       onLogSleep: () => _log(showLogSleepSheet, 'Sleep logged'),
                       onLogScreens: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
                     ),
+                    if (snapshot.data!.fasting != null) ...[
+                      const SizedBox(height: Space.s3),
+                      FastingCard(snapshot.data!.fasting!, onBoundary: _refresh),
+                    ],
+                    if (snapshot.data!.weights != null) ...[
+                      const SizedBox(height: Space.s3),
+                      WeightCard(
+                        snapshot.data!.weights!,
+                        unit: snapshot.data!.unit,
+                        onLog: () => _logWeight(snapshot.data!),
+                        onGoal: () => _weightGoal(snapshot.data!),
+                      ),
+                    ],
                     const SizedBox(height: Space.s3),
                     _Calories(snapshot.data!.bio),
                     const SizedBox(height: Space.s3),

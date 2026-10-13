@@ -20,6 +20,12 @@ abstract interface class NeuroCalApi {
   Future<List<Meal>> meals(DateTime day);
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
 
+  /// Logs a weigh-in for today (or [date]); a second the same day replaces it.
+  Future<void> logWeight(double kg, {String? date});
+  Future<WeightHistory> weights({int days = 90});
+  Future<void> deleteWeight(String date);
+  Future<FastingStatus> fasting();
+
   /// The food catalog, sorted by name. Fetched once and kept for the session.
   Future<List<CatalogFood>> foods();
 
@@ -122,6 +128,21 @@ class HttpNeuroCalApi implements NeuroCalApi {
     final res = await http.Response.fromStream(await _client.send(req));
     return AnalyzeMealResult.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  @override
+  Future<void> logWeight(double kg, {String? date}) => _post('/weights', {'kg': kg, 'date': ?date});
+
+  @override
+  Future<WeightHistory> weights({int days = 90}) async =>
+      WeightHistory.fromJson(await _get('/weights', {'days': '$days'}) as Map<String, dynamic>);
+
+  @override
+  Future<void> deleteWeight(String date) async {
+    _decode(await _client.delete(_uri('/weights/$date'), headers: await _headers()));
+  }
+
+  @override
+  Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
 
   Future<List<CatalogFood>>? _foods;
 
