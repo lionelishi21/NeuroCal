@@ -176,6 +176,15 @@ class MockNeuroCalApi implements NeuroCalApi {
     return created;
   }
 
+  /// Starts over as a new user: signing in again shows the onboarding.
+  @override
+  Future<void> deleteAccount() async {
+    await _wait();
+    _profile = null;
+    _meals.clear();
+    _flags.clear();
+  }
+
   @override
   Future<void> deleteMeal(String id) async {
     await _wait();

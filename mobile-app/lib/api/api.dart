@@ -21,6 +21,9 @@ abstract interface class NeuroCalApi {
   Future<AnalyzeMealResult> analyzeMeal(Uint8List photo, String filename);
   Future<Meal> createMeal(NewMeal meal);
   Future<void> deleteMeal(String id);
+
+  /// Deletes the account and everything in it, including the sign-in. It cannot be undone.
+  Future<void> deleteAccount();
   Future<void> checkIn(List<CognitiveFlag> flags, {String? note});
 
   /// The last [days] days, oldest first, ending today.
@@ -122,6 +125,11 @@ class HttpNeuroCalApi implements NeuroCalApi {
       body: jsonEncode(meal.toJson()),
     );
     return Meal.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    _decode(await _client.delete(_uri('/me'), headers: await _headers()));
   }
 
   @override

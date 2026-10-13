@@ -1,11 +1,12 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { RequestFailed } from "../api/client";
 import { useAdminProducts } from "../api/queries";
 import { LoadFailed } from "../components/ListStates";
 import { SiteFrame } from "../components/SiteFrame";
-import { useAuth } from "./AuthProvider";
+import { PUBLIC_PATHS, useAuth } from "./AuthProvider";
 
 /**
  * The web app is for admins: NeuroCal's product is the mobile app, and the website is its landing
@@ -14,11 +15,12 @@ import { useAuth } from "./AuthProvider";
  */
 export function AdminOnly({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const isPublic = PUBLIC_PATHS.includes(usePathname() ?? "");
   const signedIn = auth.status === "signedIn";
-  const admin = useAdminProducts(signedIn);
+  const admin = useAdminProducts(signedIn && !isPublic);
 
-  // Signed-out pages (sign in, the landing page) are not this gate's business.
-  if (!signedIn) return children;
+  // Signed-out and public pages (sign in, the landing page, deleting an account) are not this gate's business.
+  if (!signedIn || isPublic) return children;
   if (admin.isPending) return null;
   if (admin.isSuccess) return children;
 

@@ -5,6 +5,7 @@ import '../app_scope.dart';
 import '../config.dart';
 import '../theme/theme_controller.dart';
 import '../theme/tokens.dart';
+import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 
@@ -219,6 +220,17 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(top: Space.s2),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                style: TextButton.styleFrom(foregroundColor: c.beet, minimumSize: const Size(0, 44)),
+                onPressed: () => _confirmDeleteAccount(context),
+                child: const Text('Delete account', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ),
           if (AppConfig.usesMockApi || AppConfig.usesMockAuth)
             Padding(
               padding: const EdgeInsets.fromLTRB(Space.s1, Space.s3, Space.s1, 0),
@@ -229,6 +241,64 @@ class SettingsScreen extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _confirmDeleteAccount(BuildContext context) async {
+  final deleted = await showAppSheet<bool>(context, title: 'Delete your account?', builder: (_) => const _DeleteAccount());
+  if (deleted == true && context.mounted) {
+    final auth = AppScope.of(context).auth;
+    // Before signing out: Settings is gone once the sign-in screen replaces it.
+    showToast(context, 'Account deleted', ToastTone.info);
+    await auth.accountDeleted();
+  }
+}
+
+class _DeleteAccount extends StatefulWidget {
+  const _DeleteAccount();
+
+  @override
+  State<_DeleteAccount> createState() => _DeleteAccountState();
+}
+
+class _DeleteAccountState extends State<_DeleteAccount> {
+  var _busy = false;
+  var _failed = false;
+
+  Future<void> _delete() async {
+    setState(() {
+      _busy = true;
+      _failed = false;
+    });
+    try {
+      await AppScope.of(context).api.deleteAccount();
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [
+        Text(
+          'This deletes your profile, meals, check-ins, scores, sleep and screen time, meal photos and your sign-in. '
+          "It can't be undone, and we can't get any of it back for you.",
+          style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+        ),
+        if (_failed) const SheetNote(lead: "Couldn't delete your account.", detail: 'Check your connection and try again.'),
+        SheetAction(label: _busy ? 'Deleting…' : 'Delete account', destructive: true, onPressed: _busy ? null : _delete),
+      ],
     );
   }
 }

@@ -523,6 +523,9 @@ export function Landing() {
             <span>Terms</span>
             <span>Affiliate disclosure</span>
             <span>Contact</span>
+            <Link href="/delete-account" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
+              Delete your account
+            </Link>
             <Link href="/sign-in" className="text-ink-soft underline-offset-4 hover:text-ink hover:underline">
               Admin sign in
             </Link>

@@ -89,7 +89,8 @@ export function AuthProvider({ children, client: injected }: { children: ReactNo
 }
 
 // The lab shows component states with fixed sample data: no account or API involved.
-const PUBLIC_PATHS = ["/intro", "/sign-in", "/sign-up", "/lab", "/unsubscribe"];
+/** Pages anyone can open, signed in or not. */
+export const PUBLIC_PATHS = ["/intro", "/sign-in", "/sign-up", "/lab", "/unsubscribe", "/delete-account"];
 
 /**
  * Sends signed-out visitors to sign-in (remembering where they were going); renders nothing until the

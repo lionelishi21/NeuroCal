@@ -64,7 +64,7 @@ export class NeuroCalStack extends Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       storageEncrypted: true,
-      backup: { retention: Duration.days(prod ? 14 : 1) },
+      backup: { retention: Duration.days(prod ? 14 : 1) }, // The delete-account page (web-poc DeleteAccount.tsx) promises 14 days.
       deletionProtection: prod,
       removalPolicy: prod ? RemovalPolicy.SNAPSHOT : RemovalPolicy.DESTROY,
     });

@@ -92,16 +92,21 @@ class SheetNote extends StatelessWidget {
 
 /// The sheet's one main action: 56 px, full width.
 class SheetAction extends StatelessWidget {
-  const SheetAction({super.key, required this.label, required this.onPressed});
+  const SheetAction({super.key, required this.label, required this.onPressed, this.destructive = false});
 
   final String label;
   final VoidCallback? onPressed;
+
+  /// Red, for an action that can't be undone.
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) => FilledButton(
     style: FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(56),
       textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
+      backgroundColor: destructive ? context.colors.beet : null,
+      foregroundColor: destructive ? context.colors.onAccent : null,
     ),
     onPressed: onPressed,
     child: Text(label),

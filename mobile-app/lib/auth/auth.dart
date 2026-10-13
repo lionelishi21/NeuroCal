@@ -39,6 +39,9 @@ abstract class AuthClient extends ChangeNotifier {
   Future<void> resendCode(String email);
   Future<void> signOut();
 
+  /// Called once the API has deleted the account (and its sign-in): forgets it on this device.
+  Future<void> accountDeleted() => signOut();
+
   /// A current ID token for the API, refreshed when needed; null when signed out.
   Future<String?> idToken();
 }
@@ -101,6 +104,12 @@ class MockAuthClient extends AuthClient {
   Future<void> signOut() async {
     _email = null;
     notifyListeners();
+  }
+
+  @override
+  Future<void> accountDeleted() async {
+    _accounts.remove(_email?.toLowerCase());
+    await signOut();
   }
 
   @override

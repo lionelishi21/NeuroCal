@@ -147,6 +147,32 @@ void main() {
     expect(find.text('Check-in saved'), findsOneWidget);
   });
 
+  testWidgets('delete account asks first, then signs out and forgets the account', (tester) async {
+    final (_, auth) = await pumpApp(tester);
+    await signIn(tester);
+
+    await tester.tap(find.widgetWithText(InkWell, 'Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.widgetWithText(TextButton, 'Delete account'), 300);
+    await tester.tap(find.widgetWithText(TextButton, 'Delete account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete your account?'), findsOneWidget);
+
+    // Closing the sheet keeps everything.
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    expect(auth.signedIn, isTrue);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Delete account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete account'));
+    await tester.pumpAndSettle();
+    expect(auth.signedIn, isFalse);
+    expect(find.text('Eat for how you want to think.'), findsOneWidget);
+    // The mock forgot the account: the old password no longer matters.
+    expect(await auth.signIn('sam@example.com', 'a-different-password'), SignInStep.done);
+  });
+
   testWidgets('this week and sleep tabs show the week, and screen time can be logged', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
