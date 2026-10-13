@@ -112,6 +112,7 @@ class MockAuthClient extends AuthClient {
     await signOut();
   }
 
+  /// Names the account, so the local dev server (backend `npm run dev`) gives each test account its own data.
   @override
-  Future<String?> idToken() async => _email == null ? null : 'mock-token';
+  Future<String?> idToken() async => _email == null ? null : 'mock:${_email!.trim().toLowerCase()}';
 }

@@ -168,7 +168,7 @@ async function main() {
 
   createServer(async (req, res) => {
     res.setHeader("access-control-allow-origin", "*");
-    res.setHeader("access-control-allow-headers", "content-type");
+    res.setHeader("access-control-allow-headers", "authorization, content-type");
     res.setHeader("access-control-allow-methods", "GET,POST,PUT,DELETE,OPTIONS");
     if (req.method === "OPTIONS") return void res.writeHead(204).end();
 
@@ -179,17 +179,21 @@ async function main() {
       const stored = storage.put(decodeURIComponent(url.pathname.slice(DevObjectStorage.PATH.length)), Buffer.concat(chunks), req.headers["content-type"]);
       return void res.writeHead(stored ? 200 : 403).end();
     }
+    // The apps' mock sign-in sends "Bearer mock:<email>": each test account gets its own, empty
+    // account, as with the real sign-in. Anything else is the seeded dev user.
+    const mockEmail = /^Bearer mock:(.+@.+)$/.exec(req.headers.authorization ?? "")?.[1];
+    const userId = mockEmail ? await users.findOrCreateByAuthSubject(`mock:${mockEmail}`, mockEmail) : devUserId;
     const response = await api({
       method: req.method ?? "GET",
       path: url.pathname,
       query: url.searchParams,
       headers: req.headers as Record<string, string | undefined>,
       ...(chunks.length ? { body: Buffer.concat(chunks) } : {}),
-      userId: devUserId,
-      // The local dev user can manage products.
+      userId,
+      // Local accounts can manage products.
       isAdmin: true,
     });
-    if (req.method === "DELETE" && url.pathname === "/me" && response.status === 204) {
+    if (!mockEmail && req.method === "DELETE" && url.pathname === "/me" && response.status === 204) {
       devUserId = await users.findOrCreateByAuthSubject(DEV_SUBJECT, "dev@localhost");
     }
     res.writeHead(response.status, { "content-type": "application/json" });

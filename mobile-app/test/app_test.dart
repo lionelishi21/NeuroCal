@@ -85,6 +85,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check your email'), findsOneWidget);
+    // The code field takes focus with a number pad of its own, not the email field's keyboard.
+    final code = tester.widget<EditableText>(
+      find.descendant(of: find.widgetWithText(TextFormField, 'Verification code'), matching: find.byType(EditableText)),
+    );
+    expect(code.focusNode.hasFocus, isTrue);
+    final client = tester.testTextInput.log.lastWhere((call) => call.method == 'TextInput.setClient');
+    expect(((client.arguments as List)[1] as Map)['inputType']['name'], 'TextInputType.number');
     await tester.enterText(find.widgetWithText(TextFormField, 'Verification code'), MockAuthClient.mockCode);
     await tester.ensureVisible(find.widgetWithText(FilledButton, 'Verify email'));
     await tester.tap(find.widgetWithText(FilledButton, 'Verify email'));

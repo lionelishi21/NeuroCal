@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_scope.dart';
 import '../auth/auth.dart';
@@ -211,9 +212,14 @@ class _AccountScreenState extends State<AccountScreen> {
     Text('Enter the 6-digit code we sent to ${_email.text}.', style: text.bodyLarge?.copyWith(color: c.inkSoft)),
     const SizedBox(height: Space.s5),
     TextFormField(
+      // Its own key: without it Flutter reuses the email field's text input in this spot, so the
+      // keyboard stays on letters, offers to autofill an email and drops digits.
+      key: const ValueKey('verification-code'),
+      autofocus: true,
       controller: _code,
       decoration: const InputDecoration(labelText: 'Verification code', counterText: ''),
       keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       autofillHints: const [AutofillHints.oneTimeCode],
       maxLength: 6,
       style: text.headlineMedium?.copyWith(letterSpacing: 10),
