@@ -69,6 +69,15 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
   },
+  scanFood: {
+    summary: "Read a food package's label",
+    description: "1–4 photos of the same package (nutrition panel, ingredients, dates), as uploaded photoKeys or multipart `photo` fields. NeuroCal grades the ingredient list (NOVA: whole, processed, ultra-processed, naming the industrial ingredients) and flags added sugar, sodium and best-before dates. Nothing is saved.",
+  },
+  lookupBarcode: {
+    summary: "Look up a barcode",
+    description: "From Open Food Facts (Open Database License: credit it where the data shows), graded the same way as a label scan. 404 when the barcode isn't in the database: photograph the label instead.",
+    params: { code: "The barcode's 8 to 14 digits." },
+  },
   listFoods: {
     summary: "List the food catalog",
     description: "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits. Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",

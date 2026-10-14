@@ -6,6 +6,7 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  FoodScanResponse,
   AddStackItemRequest,
   SetTakenRequest,
   StackItem,
@@ -59,6 +60,7 @@ import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } f
 import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
+import type { FoodScan, ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -68,7 +70,7 @@ import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } 
 import { DomainError } from "../domain/errors";
 import { storeEventFrom } from "../infrastructure/billing/RevenueCat";
 import { imageTypeOf } from "../domain/photo";
-import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toFoodItem, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -97,6 +99,7 @@ export interface UseCases {
   createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
   listFoods: ListFoodsUseCase;
+  scanFood: ScanFoodUseCase;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -181,6 +184,14 @@ async function photosFrom(req: ApiRequest, max: number) {
     }),
   );
 }
+
+/** A food scan over the wire: the label as read, NeuroCal's grading, and a serving to log. */
+const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, flags, item }: FoodScan) => ({
+  ...reading,
+  processing,
+  flags,
+  ...(item ? { item: toFoodItem(item) } : {}),
+});
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
@@ -326,6 +337,25 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
+    [
+      "POST",
+      /^\/foods\/scan$/,
+      async (req) => {
+        await uc.gate.require(req);
+        const scan = (req.headers["content-type"] ?? "").startsWith("application/json")
+          ? await uc.scanFood.byPhotoKeys({ userId: req.userId, photoKeys: json(req, AnalyzeSupplementRequest).photoKeys })
+          : await uc.scanFood.byPhotos(await photosFrom(req, MAX_LABEL_PHOTOS));
+        return ok(FoodScanResponse, toFoodScan(scan));
+      },
+    ],
+    [
+      "GET",
+      /^\/foods\/barcode\/([^/]+)$/,
+      async (req, [code]) => {
+        await uc.gate.require(req);
+        return ok(FoodScanResponse, toFoodScan(await uc.scanFood.byBarcode(code!)));
+      },
+    ],
     ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: uc.listFoods.execute().map(({ kind: _, ...food }) => food) })],
     [
       "POST",

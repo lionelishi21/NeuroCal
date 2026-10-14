@@ -7,6 +7,7 @@ import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionPr
 import type { ISearchEngineAdapter } from "../../application/interfaces/ISearchEngineAdapter";
 import type { IFocusExplainer } from "../../application/interfaces/IFocusExplainer";
 import type { ISupplementLabelReader } from "../../application/interfaces/ISupplementLabelReader";
+import type { IFoodLabelReader } from "../../application/interfaces/IFoodLabels";
 
 export const stubVision: IAiVisionProvider = {
   async analyzeMealPhoto() {
@@ -36,6 +37,22 @@ export const stubLabels: ISupplementLabelReader = {
       testing: [],
       lotNumber: "MG2405",
       expiresOn: "2027-03",
+    };
+  },
+};
+
+/** A typical supermarket granola: industrial ingredients and added sugar, so the flags show. */
+export const stubFoodLabels: IFoodLabelReader = {
+  async readLabel() {
+    return {
+      brand: "Crunchy Co",
+      productName: "Honey Almond Granola",
+      servingSize: "2/3 cup (55 g)",
+      servingsPerContainer: 8,
+      nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, sugarsG: 14, addedSugarsG: 12, sodiumMg: 140 },
+      ingredients: ["Whole grain rolled oats", "sugar", "canola oil", "almonds", "honey", "soy lecithin", "natural flavor"],
+      bestBefore: "2027-02",
+      source: "label",
     };
   },
 };

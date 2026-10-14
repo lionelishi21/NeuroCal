@@ -2,7 +2,9 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
+import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
+import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { applyAwsSecrets } from "../infrastructure/aws/secrets";
 import { loadConfig } from "../infrastructure/config";
@@ -65,6 +67,8 @@ const api = createApi(
     ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
     paywall: config.paywall,
     labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    foodLabels: new OpenAiFoodLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    products: new OpenFoodFactsDatabase(),
     explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     search: required("TAVILY_API_KEY (or BRAVE_SEARCH_API_KEY, or GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID)", createRecipeSearch(config)),

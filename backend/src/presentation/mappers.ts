@@ -33,7 +33,7 @@ export const toFasting = (f: FastingStatus): C.FastingStatus => ({
   streakDays: f.streakDays,
 });
 
-const toFoodItem = (i: FoodItem): C.FoodItem => ({
+export const toFoodItem = (i: FoodItem): C.FoodItem => ({
   name: i.name,
   portion: i.portion,
   calories: i.calories,

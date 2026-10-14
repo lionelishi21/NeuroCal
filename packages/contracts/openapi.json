@@ -542,6 +542,71 @@
         }
       }
     },
+    "/foods/scan": {
+      "post": {
+        "operationId": "scanFood",
+        "summary": "Read a food package's label",
+        "description": "1–4 photos of the same package (nutrition panel, ingredients, dates), as uploaded photoKeys or multipart `photo` fields. NeuroCal grades the ingredient list (NOVA: whole, processed, ultra-processed, naming the industrial ingredients) and flags added sugar, sodium and best-before dates. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeSupplementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodScanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/foods/barcode/{code}": {
+      "get": {
+        "operationId": "lookupBarcode",
+        "summary": "Look up a barcode",
+        "description": "From Open Food Facts (Open Database License: credit it where the data shows), graded the same way as a label scan. 404 when the barcode isn't in the database: photograph the label instead.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "The barcode's 8 to 14 digits.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodScanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/supplements/analyze": {
       "post": {
         "operationId": "analyzeSupplement",
@@ -2117,6 +2182,155 @@
           "portion",
           "calories",
           "macros"
+        ]
+      },
+      "FoodScanResponse": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string",
+            "enum": [
+              "not_a_label",
+              "blurry",
+              "too_dark",
+              "cut_off"
+            ]
+          },
+          "brand": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "servingSize": {
+            "type": "string"
+          },
+          "servingsPerContainer": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "nutrition": {
+            "type": "object",
+            "properties": {
+              "calories": {
+                "type": "number",
+                "minimum": 0
+              },
+              "proteinG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "carbsG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "fatG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "fiberG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "sugarsG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "addedSugarsG": {
+                "type": "number",
+                "minimum": 0
+              },
+              "sodiumMg": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "calories",
+              "proteinG",
+              "carbsG",
+              "fatG"
+            ]
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bestBefore": {
+            "type": "string"
+          },
+          "lotNumber": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "label",
+              "open_food_facts"
+            ]
+          },
+          "processing": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "whole",
+                  "processed",
+                  "ultra_processed"
+                ]
+              },
+              "markers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "level",
+              "markers"
+            ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ultra_processed",
+                    "high_added_sugar",
+                    "high_sodium",
+                    "expired",
+                    "expires_soon"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "message"
+              ]
+            }
+          },
+          "item": {
+            "$ref": "#/components/schemas/FoodItem"
+          }
+        },
+        "required": [
+          "ingredients",
+          "source",
+          "processing",
+          "flags"
         ]
       },
       "HistoryDay": {

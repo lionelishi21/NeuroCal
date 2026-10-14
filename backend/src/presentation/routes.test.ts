@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { FoodCatalog, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
+import { FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -22,6 +22,8 @@ import {
   InMemorySubscriptions,
   InMemoryStack,
   FakeLabelReader,
+  FakeFoodLabelReader,
+  FakeProductDatabase,
   FakeIdentity,
   InMemoryRecommendations,
   InMemoryTelemetry,
@@ -76,6 +78,24 @@ beforeEach(async () => {
     storage,
     foods: FOODS,
     weights: new InMemoryWeights(),
+    foodLabels: new FakeFoodLabelReader({
+      brand: "Crunchy Co",
+      productName: "Granola",
+      servingSize: "55 g",
+      nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, addedSugarsG: 12 },
+      ingredients: ["Oats", "sugar", "soy lecithin"],
+      source: "label",
+    }),
+    products: new FakeProductDatabase({
+      "0123456789012": {
+        productName: "Peanuts",
+        servingSize: "28 g",
+        nutrition: { calories: 166, proteinG: 7, carbsG: 6, fatG: 14 },
+        ingredients: ["Peanuts", "salt"],
+        source: "open_food_facts",
+        sourceNovaGroup: 3,
+      },
+    }),
     labels: (labels = new FakeLabelReader({
       brand: "Calm Labs",
       productName: "Zinc",
@@ -293,6 +313,32 @@ describe("API routes", () => {
       items: [{ name: "Zinc 25" }],
       flags: [{ message: "You take 50 mg of zinc a day, above the 40 mg upper limit for adults. Check with your doctor." }],
     });
+  });
+
+  it("grades a barcode from the product database, and a food label from photos", async () => {
+    const peanuts = await call("GET", "/foods/barcode/0123456789012");
+    expect(FoodScanResponse.parse(peanuts.body)).toMatchObject({
+      productName: "Peanuts",
+      source: "open_food_facts",
+      processing: { level: "processed", markers: [] },
+      flags: [],
+      item: { name: "Peanuts", portion: "28 g", calories: 166, processing: "processed", glycemicLoad: "low" },
+    });
+    expect((await call("GET", "/foods/barcode/99999999")).status).toBe(404);
+    expect((await call("GET", "/foods/barcode/12ab")).status).toBe(400);
+
+    storage.objects.set("uploads/u1/pack", { bytes: new Uint8Array([0xff, 0xd8]), mediaType: "image/jpeg" });
+    const granola = await call("POST", "/foods/scan", { photoKeys: ["uploads/u1/pack"] });
+    expect(FoodScanResponse.parse(granola.body)).toMatchObject({
+      source: "label",
+      processing: { level: "ultra_processed", markers: ["emulsifier"] },
+      flags: [{ kind: "ultra_processed" }, { kind: "high_added_sugar" }],
+      item: { name: "Crunchy Co Granola", processing: "ultra_processed" },
+    });
+
+    // A paid feature, like photo reading.
+    api = createApi(buildUseCases({ ...ports, paywall: true }));
+    expect((await call("GET", "/foods/barcode/0123456789012")).status).toBe(402);
   });
 
   it("GET /me returns the contract profile", async () => {

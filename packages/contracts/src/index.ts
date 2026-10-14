@@ -494,6 +494,40 @@ export const SupplementLabelResponse = z.object({
 });
 export type SupplementLabelResponse = z.infer<typeof SupplementLabelResponse>;
 
+/** A packaged food, by barcode or label photos, graded by NeuroCal. */
+export const FoodScanResponse = z.object({
+  problem: z.enum(["not_a_label", "blurry", "too_dark", "cut_off"]).optional(),
+  brand: z.string().optional(),
+  productName: z.string().optional(),
+  barcode: z.string().optional(),
+  servingSize: z.string().optional(),
+  servingsPerContainer: z.number().positive().optional(),
+  /** Per serving. */
+  nutrition: z
+    .object({
+      calories: z.number().nonnegative(),
+      proteinG: z.number().nonnegative(),
+      carbsG: z.number().nonnegative(),
+      fatG: z.number().nonnegative(),
+      fiberG: z.number().nonnegative().optional(),
+      sugarsG: z.number().nonnegative().optional(),
+      addedSugarsG: z.number().nonnegative().optional(),
+      sodiumMg: z.number().nonnegative().optional(),
+    })
+    .optional(),
+  ingredients: z.array(z.string()),
+  bestBefore: z.string().optional(),
+  lotNumber: z.string().optional(),
+  /** "open_food_facts" data must be credited where it shows (Open Database License). */
+  source: z.enum(["label", "open_food_facts"]),
+  /** NOVA-style level from the ingredient list, and the industrial ingredients that made it ultra-processed. */
+  processing: z.object({ level: z.enum(["whole", "processed", "ultra_processed"]), markers: z.array(z.string()) }),
+  flags: z.array(z.object({ kind: z.enum(["ultra_processed", "high_added_sugar", "high_sodium", "expired", "expires_soon"]), message: z.string() })),
+  /** One serving ready to log; its glycemic load is an estimate. Missing without nutrition. */
+  item: FoodItem.optional(),
+});
+export type FoodScanResponse = z.infer<typeof FoodScanResponse>;
+
 export const StackTiming = z.enum(["morning", "with_food", "evening", "any"]);
 export type StackTiming = z.infer<typeof StackTiming>;
 
@@ -692,6 +726,10 @@ export const endpoints = {
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },
+  /** Reads 1–4 photos of a food package (photoKeys, or multipart) and grades it. Nothing is saved. */
+  scanFood: { method: "POST", path: "/foods/scan", body: AnalyzeSupplementRequest, response: FoodScanResponse },
+  /** Looks a barcode up in Open Food Facts and grades it. 404 when it isn't known. */
+  lookupBarcode: { method: "GET", path: "/foods/barcode/:code", response: FoodScanResponse },
   /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */
   analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeSupplementRequest, response: SupplementLabelResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },

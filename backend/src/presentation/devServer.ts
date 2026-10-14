@@ -8,7 +8,9 @@ import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
+import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
+import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
@@ -31,7 +33,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubReasoning, stubSearch, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubReasoning, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -160,6 +162,9 @@ async function main() {
       embedder,
       vision,
       labels,
+      foodLabels: config.openAiApiKey ? new OpenAiFoodLabelReader({ apiKey: config.openAiApiKey }) : stubFoodLabels,
+      // Real lookups even locally: Open Food Facts needs no key.
+      products: new OpenFoodFactsDatabase(),
       foods: FOODS,
       weights: new DrizzleWeightRepository(db),
       subscriptions: new DrizzleSubscriptionRepository(db),

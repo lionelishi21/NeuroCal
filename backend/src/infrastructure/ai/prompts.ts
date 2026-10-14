@@ -63,3 +63,18 @@ lotNumber: the lot or batch number if printed. expiresOn: the expiry or best-by 
 YYYY-MM or YYYY-MM-DD if printed, otherwise null.
 If the photo is not a supplement label, is too blurry or too dark to read, or the facts
 panel is cut off, set problem and leave the other fields empty or null.`;
+
+export const FOOD_LABEL_PROMPT = `You read the label of a packaged food from one to four photos of the same package.
+Copy what is printed; never add or guess anything that is not visible.
+brand and productName: as printed. barcode: the digits under the barcode if readable, else null.
+servingSize as printed (for example "1/2 cup (55 g)"); servingsPerContainer as printed, or null.
+nutrition: per serving, from the nutrition panel: calories, protein, total carbohydrate and total
+fat in grams, and fibre, total sugars, added sugars (grams) and sodium (milligrams) when printed,
+else null. If the panel only gives values per 100 g, use those and set servingSize to "100 g".
+If no nutrition panel is visible, set nutrition to null.
+ingredients: each ingredient from the ingredient list in order, as printed, keeping sub-ingredients
+in brackets with their parent. Empty if no ingredient list is visible.
+bestBefore: the best-before, use-by or expiry date as YYYY-MM-DD or YYYY-MM, else null.
+lotNumber: the lot or batch code if printed.
+If the photos are not a food label, are too blurry or too dark to read, or the panel is cut off,
+set problem and leave the other fields empty or null.`;

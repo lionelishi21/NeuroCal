@@ -21,6 +21,7 @@ import type {
   IWeightRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
+import type { IFoodLabelReader, IProductDatabase } from "../application/interfaces/IFoodLabels";
 import type { IStackRepository } from "../application/interfaces/IStackRepository";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
@@ -40,6 +41,7 @@ import { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "
 import { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import { StackUseCases } from "../application/use-cases/StackUseCases";
+import { ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -63,6 +65,8 @@ export interface Ports {
   /** The food catalog (infrastructure/catalog/foods.ts). */
   foods: readonly Food[];
   labels: ISupplementLabelReader;
+  foodLabels: IFoodLabelReader;
+  products: IProductDatabase;
   storage: IObjectStorage;
   explainer: IFocusExplainer;
   reasoning: IAiReasoningProvider;
@@ -97,6 +101,7 @@ export function buildUseCases(p: Ports): UseCases {
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
     listFoods: new ListFoodsUseCase(p.foods),
+    scanFood: new ScanFoodUseCase(p.foodLabels, p.products, p.storage, p.clock),
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),

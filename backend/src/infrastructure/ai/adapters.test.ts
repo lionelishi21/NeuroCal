@@ -3,8 +3,9 @@ import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
+import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
-import { MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -183,5 +184,51 @@ describe("OpenAiSupplementLabelReader", () => {
     });
     await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel([photo])).rejects.toThrow();
     await expect(readerWith({ finish_reason: "stop", message: { parsed: { ...parsed, expiresOn: "soon" }, refusal: null } }).reader.readLabel([photo])).rejects.toThrow();
+  });
+});
+
+describe("OpenAiFoodLabelReader", () => {
+  const readerWith = (choice: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ choices: [choice], usage: { prompt_tokens: 900, completion_tokens: 200 } }));
+    return { parse, reader: new OpenAiFoodLabelReader({ completions: { parse } as unknown as ParseCompletion }) };
+  };
+  const parsed = {
+    problem: null,
+    brand: "Crunchy Co",
+    productName: "Granola",
+    barcode: null,
+    servingSize: "55 g",
+    servingsPerContainer: 8,
+    nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, sugarsG: null, addedSugarsG: 12, sodiumMg: null },
+    ingredients: ["Oats", "sugar"],
+    bestBefore: "2027-02",
+    lotNumber: null,
+  };
+
+  it("sends every photo with the food label prompt and drops empty fields", async () => {
+    const { parse, reader } = readerWith({ finish_reason: "stop", message: { parsed, refusal: null } });
+    await expect(reader.readLabel([photo, photo])).resolves.toEqual({
+      brand: "Crunchy Co",
+      productName: "Granola",
+      servingSize: "55 g",
+      servingsPerContainer: 8,
+      nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, addedSugarsG: 12 },
+      ingredients: ["Oats", "sugar"],
+      bestBefore: "2027-02",
+      source: "label",
+    });
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(FOOD_LABEL_MODEL);
+    expect(params.messages[0].content).toBe(FOOD_LABEL_PROMPT);
+    expect(params.messages[1].content.filter((p: { type: string }) => p.type === "image_url")).toHaveLength(2);
+  });
+
+  it("returns only the problem for an unreadable photo, and throws on a refusal", async () => {
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: { ...parsed, problem: "blurry" }, refusal: null } }).reader.readLabel([photo])).resolves.toEqual({
+      problem: "blurry",
+      ingredients: [],
+      source: "label",
+    });
+    await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel([photo])).rejects.toThrow();
   });
 });

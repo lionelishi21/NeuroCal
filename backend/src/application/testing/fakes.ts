@@ -1,7 +1,9 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
+import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { StackItem } from "../../domain/stack";
+import type { IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
 import type { Subscription } from "../../domain/subscription";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../interfaces/IStackRepository";
 import type { WeightEntry } from "../../domain/weight";
@@ -200,6 +202,28 @@ export class FakeLabelReader implements ISupplementLabelReader {
     this.calls.push(photos);
     if (this.result instanceof Error) throw this.result;
     return this.result;
+  }
+}
+
+export class FakeFoodLabelReader implements IFoodLabelReader {
+  calls: MealPhoto[][] = [];
+  constructor(public result: FoodLabelReading | Error) {}
+  async readLabel(photos: MealPhoto[]) {
+    this.calls.push(photos);
+    if (this.result instanceof Error) throw this.result;
+    return this.result;
+  }
+}
+
+/** Products by barcode; `failure` makes every lookup throw (the database is down). */
+export class FakeProductDatabase implements IProductDatabase {
+  constructor(
+    readonly products: Record<string, FoodLabelReading> = {},
+    private readonly failure?: Error,
+  ) {}
+  async lookup(barcode: string) {
+    if (this.failure) throw this.failure;
+    return this.products[barcode] ?? null;
   }
 }
 
