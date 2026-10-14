@@ -133,16 +133,38 @@ class Meter extends StatelessWidget {
   final Color color;
   final double height;
 
+  /// Fills from empty on first show, and from the old value when it changes.
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.pill),
-      child: LinearProgressIndicator(
-        value: value.clamp(0, 1),
-        minHeight: height,
-        backgroundColor: context.colors.track,
-        color: color,
+    child: TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: value.clamp(0, 1).toDouble()),
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.dial,
+      curve: Motion.settle,
+      builder: (context, v, _) => ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: LinearProgressIndicator(value: v, minHeight: height, backgroundColor: context.colors.track, color: color),
       ),
+    ),
+  );
+}
+
+/// A number that counts to [value] on first show and when it changes, e.g. calories left after a meal.
+class CountUp extends StatelessWidget {
+  const CountUp({super.key, required this.value, required this.format, this.style});
+
+  final double value;
+  final String Function(double) format;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: format(value),
+    excludeSemantics: true,
+    child: TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: value),
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.dial,
+      curve: Motion.settle,
+      builder: (context, v, _) => Text(format(v), style: style),
     ),
   );
 }

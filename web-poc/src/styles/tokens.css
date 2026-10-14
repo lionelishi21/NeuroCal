@@ -36,6 +36,8 @@
   --glucose-soft: #fcf1de; /* "watch this" panel fill */
   --oil: #8a6d2a; /* fats */
   --sleep: #2b5fdc;
+  --sleep-soft: #e3ebfc; /* sleep icon tile */
+  --chlorophyll-soft: #dff3ea; /* "good" icon tile */
   --beet: #c2412d; /* errors, over budget */
   --beet-soft: #fbe6e2; /* error panel fill */
   --signal-problem: #c2412d; /* the toast's problem dot, the same in both themes */
@@ -156,6 +158,8 @@
     --glucose-soft: #3a2e17;
     --oil: #c9a760;
     --sleep: #5b8dff;
+    --sleep-soft: #182a52;
+    --chlorophyll-soft: #163a2d;
     --beet: #ff8a73;
     --beet-soft: #3d1f1b;
     --glow: #1b2550;
@@ -198,6 +202,8 @@
   --glucose-soft: #3a2e17;
   --oil: #c9a760;
   --sleep: #5b8dff;
+  --sleep-soft: #182a52;
+  --chlorophyll-soft: #163a2d;
   --beet: #ff8a73;
   --beet-soft: #3d1f1b;
   --glow: #1b2550;

@@ -4,45 +4,36 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
-import '../weight_units.dart';
 import '../widgets/focus_ring.dart';
-import '../widgets/food_image.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
-import 'brain_check.dart';
-import 'check_in_sheet.dart';
-import 'food_scan_sheet.dart';
-import 'foods.dart';
-import 'log_meal_sheet.dart';
-import 'sleep_sheets.dart';
+import 'capture.dart';
 import 'stack.dart';
-import 'supplement_sheet.dart';
-import 'weight_cards.dart';
-import 'weight_sheets.dart';
 
 class _Day {
-  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.stack, this.brain, this.unit = WeightUnit.kg});
+  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain});
 
+  final DateTime date;
   final FocusScore focus;
   final BioState bio;
   final List<Meal> meals;
 
-  /// Null when suggestions didn't load; the rest of the day still shows.
+  /// Null when suggestions didn't load, or for a past day; the rest of the day still shows.
   final List<Recipe>? recipes;
 
   /// Null when fasting is off or didn't load.
   final FastingStatus? fasting;
-
-  /// Null for people not losing weight, or when it didn't load.
-  final WeightHistory? weights;
-  final WeightUnit unit;
 
   /// Null when the stack is empty or didn't load.
   final SupplementStack? stack;
 
   /// Null when it didn't load; the card then still offers the check.
   final BrainCheckHistory? brain;
+
+  bool get isToday => _sameDay(date, DateTime.now());
 }
+
+bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
 const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const _months = [
@@ -79,16 +70,22 @@ String scoreWord(int score) => switch (score) {
 
 String _kcal(num n) => n.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => ',');
 String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+String _hm(Duration d) => d.inHours > 0 ? '${d.inHours}h ${d.inMinutes % 60}m' : '${d.inMinutes}m';
 
-/// Today: the Focus Score with the four signals behind it, calories left, how you feel,
-/// what to eat next and the day's meals.
+/// "SR" for "Sam Rivera".
+String initials(String name) => name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
+
+/// Today: a top bar with the week to look back on, the Focus Score and Brain speed, calories and how
+/// processed the food was, how you feel, your supplements, what to eat next and the day's meals.
 class TodayScreen extends StatefulWidget {
   const TodayScreen({
     super.key,
     required this.profile,
     required this.changes,
     required this.onChanged,
-    required this.onOpenSettings,
+    required this.onCapture,
+    required this.onOpenMe,
+    required this.onOpenStack,
   });
 
   final Profile profile;
@@ -96,7 +93,11 @@ class TodayScreen extends StatefulWidget {
   /// Fires when something was logged on any tab; [onChanged] tells the other tabs about this one.
   final Listenable changes;
   final VoidCallback onChanged;
-  final VoidCallback onOpenSettings;
+
+  /// Runs a flow from the add menu (log a meal, check in, …).
+  final void Function(Capture) onCapture;
+  final VoidCallback onOpenMe;
+  final VoidCallback onOpenStack;
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
@@ -104,6 +105,9 @@ class TodayScreen extends StatefulWidget {
 
 class _TodayScreenState extends State<TodayScreen> {
   Future<_Day>? _day;
+
+  /// The day shown; null is today.
+  DateTime? _date;
 
   NeuroCalApi get _api => AppScope.of(context).api;
 
@@ -126,19 +130,20 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   Future<_Day> _load() async {
-    final now = DateTime.now();
     final api = _api;
+    final date = _date ?? DateTime.now();
+    if (_date != null) {
+      // A past day: what happened, without today's suggestions and timers.
+      final (focus, bio, meals) = await (api.focusScore(date), api.bioState(date), api.meals(date)).wait;
+      return _Day(date, focus, bio, meals);
+    }
     final recipes = api.recommendations().then<List<Recipe>?>((r) => r).catchError((Object _) => null);
-    // Fasting and weight are extras: if they fail, the rest of Today still shows.
+    // The extras: if they fail, the rest of Today still shows.
     final fasting = api.fasting().then<FastingStatus?>((f) => f.kind == FastingKind.off ? null : f).catchError((Object _) => null);
-    final weights = widget.profile.losingWeight
-        ? api.weights(days: 30).then<WeightHistory?>((w) => w).catchError((Object _) => null)
-        : Future<WeightHistory?>.value(null);
-    final unit = WeightUnit.load(Localizations.localeOf(context));
     final stack = api.stack().then<SupplementStack?>((s) => s.items.isEmpty ? null : s).catchError((Object _) => null);
     final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
-    final (focus, bio, meals) = await (api.focusScore(now), api.bioState(now), api.meals(now)).wait;
-    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, stack: await stack, brain: await brain, unit: await unit);
+    final (focus, bio, meals) = await (api.focusScore(date), api.bioState(date), api.meals(date)).wait;
+    return _Day(date, focus, bio, meals, recipes: await recipes, fasting: await fasting, stack: await stack, brain: await brain);
   }
 
   Future<void> _refresh() async {
@@ -153,97 +158,14 @@ class _TodayScreenState extends State<TodayScreen> {
     }
   }
 
-  Future<void> _logMeal() async {
-    final logged = await showLogMealSheet(context, onScanSupplement: _scanSupplement, onScanFood: _scanFood);
-    if (logged == true && mounted) {
-      showToast(context, 'Meal logged');
-      widget.onChanged();
-    }
-  }
-
-  Future<void> _logWeight(_Day day) async {
-    final saved = await showLogWeightSheet(context, unit: day.unit, lastKg: day.weights?.entries.lastOrNull?.kg);
-    if (saved == true && mounted) {
-      showToast(context, 'Weight logged');
-      _refresh();
-    }
-  }
-
-  Future<void> _weightGoal(_Day day) async {
-    final unit = WeightUnit.load(Localizations.localeOf(context));
-    final profile = await _api.me().catchError((Object _) => null);
-    final chosen = await unit;
-    if (!mounted) return;
-    final saved = await showWeightGoalSheet(
-      context,
-      unit: chosen,
-      current: profile?.weightGoal,
-      lastKg: day.weights?.entries.lastOrNull?.kg,
-    );
-    if (saved == true && mounted) {
-      showToast(context, 'Weight goal saved');
-      _refresh();
-    }
-  }
-
-  /// A packaged food: "Log it" opens Log a meal with its serving filled in.
-  Future<void> _scanFood() async {
-    final item = await showFoodScanSheet(context);
-    if (item == null || !mounted) return;
-    final logged = await showLogMealSheet(context, initialItems: [item]);
-    if (logged == true && mounted) {
-      showToast(context, 'Meal logged');
-      widget.onChanged();
-    }
-  }
-
-  Future<void> _brainCheck() async {
-    if (await showBrainCheck(context) != null && mounted) _refresh();
-  }
-
-  Future<void> _scanSupplement() async {
-    if (await showSupplementSheet(context) == true && mounted) {
-      showToast(context, 'Added to your stack');
-      _refresh();
-    }
+  void _show(DateTime day) {
+    _date = _sameDay(day, DateTime.now()) ? null : day;
+    _refresh();
   }
 
   Future<void> _manageStack() async {
     await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StackScreen()));
     if (mounted) _refresh();
-  }
-
-  /// The food catalog; choosing "Log it" on a food opens Log a meal with it filled in.
-  Future<void> _browseFoods() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (route) => FoodsScreen(
-          onLog: (picked) async {
-            Navigator.of(route).pop();
-            final logged = await showLogMealSheet(context, initialItems: [picked.food.toItem(picked.servings)]);
-            if (logged == true && mounted) {
-              showToast(context, 'Meal logged');
-              widget.onChanged();
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  Future<void> _checkIn() async {
-    final saved = await showCheckInSheet(context);
-    if (saved == true && mounted) {
-      showToast(context, 'Check-in saved');
-      widget.onChanged();
-    }
-  }
-
-  Future<void> _log(Future<bool?> Function(BuildContext) sheet, String done) async {
-    if (await sheet(context) == true && mounted) {
-      showToast(context, done);
-      widget.onChanged();
-    }
   }
 
   Future<void> _remove(Meal meal) async {
@@ -260,172 +182,277 @@ class _TodayScreenState extends State<TodayScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final now = DateTime.now();
+    final date = _date ?? now;
+    final today = _date == null;
     final first = widget.profile.displayName.trim().split(RegExp(r'\s+')).first;
     return SafeArea(
       bottom: false,
-      child: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: _refresh,
-            child: FutureBuilder(
-              future: _day,
-              builder: (context, snapshot) => ListView(
-                padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s4, ActionBar.clearance + Space.s4),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: Space.s1),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                longDate(now),
-                                style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
-                              ),
-                              const SizedBox(height: 2),
-                              Semantics(
-                                header: true,
-                                child: Text(
-                                  first.isEmpty ? greeting(now.hour) : '${greeting(now.hour)}, $first',
-                                  style: const TextStyle(
-                                    fontSize: TextSize.xxl,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.5,
-                                    height: 1.15,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Settings',
-                          icon: Icon(Icons.settings_outlined, color: c.inkSoft),
-                          onPressed: widget.onOpenSettings,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: Space.s4),
-                  if (snapshot.hasError)
-                    ScreenFailed(
-                      title: "Couldn't load today",
-                      detail: snapshot.error is ApiException && (snapshot.error as ApiException).unauthorized
-                          ? 'Your session has ended. Sign out in Settings and sign in again.'
-                          : 'Your meals and score are safe. Check your connection and try again.',
-                      onRetry: _refresh,
-                    )
-                  else if (!snapshot.hasData)
-                    const ScreenLoading(label: 'Loading today', heights: [232, 120, 64, 150])
-                  else ...[
-                    _FocusCard(
-                      snapshot.data!.focus,
-                      onCheckIn: _checkIn,
-                      onLogSleep: () => _log(showLogSleepSheet, 'Sleep logged'),
-                      onLogScreens: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
-                    ),
-                    const SizedBox(height: Space.s3),
-                    _BrainSpeed(snapshot.data!.brain, onCheck: _brainCheck),
-                    if (snapshot.data!.fasting != null) ...[
-                      const SizedBox(height: Space.s3),
-                      FastingCard(snapshot.data!.fasting!, onBoundary: _refresh),
-                    ],
-                    if (snapshot.data!.weights != null) ...[
-                      const SizedBox(height: Space.s3),
-                      WeightCard(
-                        snapshot.data!.weights!,
-                        unit: snapshot.data!.unit,
-                        onLog: () => _logWeight(snapshot.data!),
-                        onGoal: () => _weightGoal(snapshot.data!),
-                      ),
-                    ],
-                    if (snapshot.data!.stack != null) ...[
-                      const SizedBox(height: Space.s3),
-                      StackCard(snapshot.data!.stack!, onManage: _manageStack),
-                    ],
-                    const SizedBox(height: Space.s3),
-                    _Calories(snapshot.data!.bio),
-                    if (snapshot.data!.bio.wholeKcal + snapshot.data!.bio.processedKcal + snapshot.data!.bio.ultraProcessedKcal > 0) ...[
-                      const SizedBox(height: Space.s3),
-                      _Processing(snapshot.data!.bio),
-                    ],
-                    const SizedBox(height: Space.s3),
-                    _Feeling(snapshot.data!.bio.flags, onCheckIn: _checkIn),
-                    const BlockTitle('What to eat next'),
-                    _Suggestions(snapshot.data!.recipes),
-                    const SizedBox(height: Space.s3),
-                    _BrowseFoods(onTap: _browseFoods),
-                    BlockTitle(
-                      'Meals today',
-                      note: snapshot.data!.meals.isEmpty
-                          ? null
-                          : '${snapshot.data!.meals.length} logged · ${_kcal(snapshot.data!.bio.caloriesEaten)} kcal',
-                    ),
-                    if (snapshot.data!.meals.isEmpty)
-                      EmptyCard(
-                        title: 'No meals yet today',
-                        detail: "Snap your first plate and we'll read it against your sleep and stress.",
-                        action: SoftButton(label: '+ Log a meal', semanticLabel: 'Log a meal', onPressed: _logMeal),
-                      )
-                    else
-                      AppCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            for (final (i, meal) in snapshot.data!.meals.indexed)
-                              _MealRow(meal, divider: i > 0, onRemove: () => _remove(meal)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ActionBar(
+      child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: FutureBuilder(
+          future: _day,
+          builder: (context, snapshot) {
+            final day = snapshot.data;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s4, Space.s6),
               children: [
-                Expanded(
-                  flex: 3,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(Radii.pill),
-                      boxShadow: [
-                        BoxShadow(color: c.synapse.withValues(alpha: 0.28), blurRadius: 24, offset: const Offset(0, 8)),
-                      ],
-                    ),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                      onPressed: _logMeal,
-                      icon: const Icon(Icons.photo_camera_outlined, size: 20),
-                      label: const Text('Log a meal'),
-                    ),
-                  ),
+                _TopBar(
+                  date: today ? longDate(now) : 'Looking back',
+                  title: today ? (first.isEmpty ? greeting(now.hour) : '${greeting(now.hour)}, $first') : longDate(date),
+                  initials: initials(widget.profile.displayName),
+                  fasting: today ? day?.fasting : null,
+                  onOpenMe: widget.onOpenMe,
+                  onOpenFasting: widget.onOpenStack,
                 ),
-                Expanded(
-                  flex: 2,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      foregroundColor: c.synapseInk,
-                      side: BorderSide(color: c.ruleStrong, width: 1.5),
-                      textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: _checkIn,
-                    child: const Text('Check in'),
+                const SizedBox(height: Space.s3),
+                _WeekStrip(selected: date, onPick: _show),
+                const SizedBox(height: Space.s4),
+                if (snapshot.hasError)
+                  ScreenFailed(
+                    title: today ? "Couldn't load today" : "Couldn't load this day",
+                    detail: snapshot.error is ApiException && (snapshot.error as ApiException).unauthorized
+                        ? 'Your session has ended. Sign out in Me and sign in again.'
+                        : 'Your meals and score are safe. Check your connection and try again.',
+                    onRetry: _refresh,
+                  )
+                else if (day == null || snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
+                  const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
+                else ...[
+                  _FocusCard(
+                    day.focus,
+                    onCheckIn: () => widget.onCapture(Capture.checkIn),
+                    onLogSleep: () => widget.onCapture(Capture.sleep),
+                    onLogScreens: () => widget.onCapture(Capture.screenTime),
                   ),
+                  if (day.isToday) ...[
+                    const SizedBox(height: Space.s3),
+                    _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
+                  ],
+                  const SizedBox(height: Space.s3),
+                  _Calories(day.bio),
+                  if (day.bio.wholeKcal + day.bio.processedKcal + day.bio.ultraProcessedKcal > 0) ...[
+                    const SizedBox(height: Space.s3),
+                    _Processing(day.bio),
+                  ],
+                  if (day.isToday) ...[
+                    const SizedBox(height: Space.s3),
+                    _Feeling(day.bio.flags, onCheckIn: () => widget.onCapture(Capture.checkIn)),
+                    if (day.stack != null) ...[
+                      const SizedBox(height: Space.s3),
+                      StackCard(day.stack!, onManage: _manageStack),
+                    ],
+                    const BlockTitle('What to eat next'),
+                    _Suggestions(day.recipes),
+                  ],
+                  BlockTitle(
+                    day.isToday ? 'Meals today' : 'Meals',
+                    note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
+                  ),
+                  if (day.meals.isEmpty)
+                    day.isToday
+                        ? EmptyCard(
+                            title: 'No meals yet today',
+                            detail: "Snap your first plate and we'll read it against your sleep and stress.",
+                            action: SoftButton(label: '+ Log a meal', semanticLabel: 'Log a meal', onPressed: () => widget.onCapture(Capture.meal)),
+                          )
+                        : const EmptyCard(title: 'No meals logged', detail: 'Nothing was logged on this day.')
+                  else
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          for (final (i, meal) in day.meals.indexed) _MealRow(meal, divider: i > 0, onRemove: () => _remove(meal)),
+                        ],
+                      ),
+                    ),
+                  if (!day.isToday)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Space.s3),
+                      child: Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
+                          onPressed: () => _show(now),
+                          child: const Text('Back to today'),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// The date and greeting, the fasting timer when it runs, and your initial, which opens Me.
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.date,
+    required this.title,
+    required this.initials,
+    required this.fasting,
+    required this.onOpenMe,
+    required this.onOpenFasting,
+  });
+
+  final String date;
+  final String title;
+  final String initials;
+  final FastingStatus? fasting;
+  final VoidCallback onOpenMe;
+  final VoidCallback onOpenFasting;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final f = fasting;
+    final now = DateTime.now();
+    final chip = switch (f?.kind) {
+      FastingKind.fasting when f!.since != null => (Icons.timelapse_rounded, 'Fasting ${_hm(now.difference(f.since!))}', c.synapseSoft, c.synapseInk),
+      FastingKind.fasted => (Icons.check_circle_outline_rounded, 'Fast done', c.chlorophyll, c.onAccent),
+      FastingKind.eating when f!.closesAt != null => (Icons.restaurant_rounded, 'Eat until ${_clock(f.closesAt!)}', c.glucoseSoft, c.glucoseInk),
+      _ => null,
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: Space.s2,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: Space.s1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text(date, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft)),
+                Semantics(
+                  header: true,
+                  child: Text(title, style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.15)),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        if (chip case (final icon, final label, final fill, final ink))
+          Semantics(
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            child: Material(
+              color: fill,
+              shape: const StadiumBorder(),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: onOpenFasting,
+                child: Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: Space.s1,
+                    children: [
+                      Icon(icon, size: 16, color: ink),
+                      Text(label, style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Semantics(
+          button: true,
+          label: 'Me',
+          excludeSemantics: true,
+          child: Material(
+            color: c.synapseSoft,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onOpenMe,
+              child: Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                child: Text(initials, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk)),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The last seven days, today on the right. Picking one shows that day.
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({required this.selected, required this.onPick});
+
+  final DateTime selected;
+  final ValueChanged<DateTime> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final now = DateTime.now();
+    final days = [for (var i = 6; i >= 0; i--) DateTime(now.year, now.month, now.day - i)];
+    return Row(
+      spacing: Space.s1,
+      children: [
+        for (final d in days)
+          Expanded(
+            child: Semantics(
+              button: true,
+              selected: _sameDay(d, selected),
+              label: _sameDay(d, now) ? 'Today' : longDate(d),
+              excludeSemantics: true,
+              child: AnimatedContainer(
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.select,
+                curve: Motion.settle,
+                decoration: BoxDecoration(
+                  color: _sameDay(d, selected) ? c.synapse : c.paper,
+                  borderRadius: BorderRadius.circular(Radii.option),
+                  boxShadow: [
+                    if (_sameDay(d, selected)) BoxShadow(color: c.synapse.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(Radii.option),
+                    onTap: () => onPick(d),
+                    child: SizedBox(
+                      height: 56,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 2,
+                        children: [
+                          Text(
+                            weekdayShort[d.weekday - 1][0],
+                            style: TextStyle(
+                              fontSize: TextSize.xxs,
+                              fontWeight: FontWeight.w600,
+                              color: _sameDay(d, selected) ? c.onAccent : c.inkSoft,
+                            ),
+                          ),
+                          Text(
+                            '${d.day}',
+                            style: TextStyle(
+                              fontSize: TextSize.md,
+                              fontWeight: FontWeight.w800,
+                              color: _sameDay(d, selected) ? c.onAccent : c.ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -450,9 +477,23 @@ class _FocusCard extends StatelessWidget {
       ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
       ('Stress', 'Recent check-ins', parts.stress, null),
     ];
-    return AppCard(
-      radius: Radii.hero,
+    // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card.
+    return Container(
       padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Radii.hero),
+        border: Border.all(color: c.rule),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(NeuroCalColors.ringFrom.withValues(alpha: 0.14), c.paper),
+            c.paper,
+            Color.alphaBlend(NeuroCalColors.ringTo.withValues(alpha: 0.12), c.paper),
+          ],
+          stops: const [0, 0.55, 1],
+        ),
+      ),
       child: Column(
         children: [
           Row(
@@ -565,21 +606,36 @@ class _Signal extends StatelessWidget {
     final good = v != null && v >= 0.75;
     final word = v == null ? 'No data' : (good ? 'Good' : (v >= 0.4 ? 'Moderate' : 'Low'));
     final small = TextStyle(fontSize: TextSize.xxs, color: c.inkFaint);
+    // Each signal wears its body system's colour.
+    final (icon, ink, fill) = switch (name) {
+      'Sleep' => (Icons.bedtime_rounded, c.sleep, c.sleepSoft),
+      'Evening timing' => (Icons.nights_stay_rounded, c.ionInk, c.ionSoft),
+      'Glycemic load' => (Icons.water_drop_rounded, c.glucoseInk, c.glucoseSoft),
+      _ => (Icons.spa_rounded, c.synapseInk, c.synapseSoft),
+    };
     return Semantics(
       container: true,
       label: '$name: $word',
       child: Container(
         constraints: const BoxConstraints(minHeight: 74),
         padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: 10),
-        decoration: BoxDecoration(color: c.mist, borderRadius: BorderRadius.circular(Radii.option)),
+        decoration: BoxDecoration(color: fill.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(Radii.option)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s1,
           children: [
             ExcludeSemantics(
-              child: Text(
-                name,
-                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600, color: c.inkSoft),
+              child: Row(
+                spacing: 5,
+                children: [
+                  Icon(icon, size: 14, color: ink),
+                  Flexible(
+                    child: Text(
+                      name,
+                      style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink),
+                    ),
+                  ),
+                ],
               ),
             ),
             if (v != null) ...[
@@ -625,9 +681,9 @@ class _Calories extends StatelessWidget {
     final left = bio.calorieTarget - bio.caloriesEaten.round();
     final over = left < 0;
     final macros = [
-      ('Protein', bio.macrosEaten.proteinG, bio.macroTargets.proteinG),
-      ('Carbs', bio.macrosEaten.carbsG, bio.macroTargets.carbsG),
-      ('Fat', bio.macrosEaten.fatG, bio.macroTargets.fatG),
+      ('Protein', bio.macrosEaten.proteinG, bio.macroTargets.proteinG, c.ion),
+      ('Carbs', bio.macrosEaten.carbsG, bio.macroTargets.carbsG, c.glucose),
+      ('Fat', bio.macrosEaten.fatG, bio.macroTargets.fatG, c.oil),
     ];
     return AppCard(
       child: Column(
@@ -638,13 +694,15 @@ class _Calories extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
-                child: Text(
-                  over ? '${_kcal(-left)} kcal over' : '${_kcal(left)} kcal left',
+                child: CountUp(
+                  value: left.abs().toDouble(),
+                  format: (v) => over ? '${_kcal(v)} kcal over' : '${_kcal(v)} kcal left',
                   style: TextStyle(
                     fontSize: TextSize.xl,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
                     color: over ? c.beet : c.ink,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -670,7 +728,7 @@ class _Calories extends StatelessWidget {
           Row(
             spacing: 14,
             children: [
-              for (final (name, got, goal) in macros)
+              for (final (name, got, goal, color) in macros)
                 Expanded(
                   child: MergeSemantics(
                     child: Column(
@@ -679,6 +737,12 @@ class _Calories extends StatelessWidget {
                       children: [
                         Row(
                           children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                            ),
                             Expanded(
                               child: Text(
                                 name,
@@ -691,7 +755,7 @@ class _Calories extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Meter(value: goal <= 0 ? 0 : got / goal, color: got > goal ? c.glucose : c.ion, height: 5),
+                        Meter(value: goal <= 0 ? 0 : got / goal, color: got > goal ? c.beet : color, height: 6),
                         Text(
                           'of ${goal.round()} g',
                           style: TextStyle(fontSize: TextSize.xxxs, color: c.inkFaint),
@@ -977,67 +1041,6 @@ class _MealRow extends StatelessWidget {
   }
 }
 
-/// A way into the food catalog from Today: a strip of foods for focus and a link.
-class _BrowseFoods extends StatelessWidget {
-  const _BrowseFoods({required this.onTap});
-
-  final VoidCallback onTap;
-
-  static const _preview = [('salmon', 'fish'), ('blueberries', 'fruit'), ('walnuts', 'nuts_seeds'), ('eggs', 'eggs_dairy')];
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Semantics(
-      button: true,
-      label: 'Browse foods for focus, energy and sleep',
-      excludeSemantics: true,
-      child: Material(
-        color: c.paper,
-        borderRadius: BorderRadius.circular(Radii.card),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
-            child: Row(
-              spacing: Space.s3,
-              children: [
-                SizedBox(
-                  width: 104,
-                  height: 40,
-                  child: Stack(
-                    children: [
-                      for (final (i, (id, category)) in _preview.indexed)
-                        Positioned(
-                          left: i * 21.0,
-                          child: Container(
-                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.paper, width: 2)),
-                            child: ClipOval(child: FoodImage(id: id, category: category, size: 36, radius: 18)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Browse foods', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                      Text('For focus, energy, sleep and calm', style: TextStyle(fontSize: TextSize.xs)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: c.inkSoft),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// How processed today's food was: a bar of whole, processed and ultra-processed calories, and the
 /// ultra-processed share in words. Items typed in by hand aren't counted.
 class _Processing extends StatelessWidget {
@@ -1131,10 +1134,17 @@ class _BrainSpeed extends StatelessWidget {
             width: 52,
             height: 52,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [NeuroCalColors.ringFrom, NeuroCalColors.ringTo],
+              ),
+            ),
             child: today == null
-                ? Icon(Icons.bolt_rounded, color: c.synapseInk)
-                : Text('${today.score}', style: TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, color: c.synapseInk)),
+                ? const Icon(Icons.bolt_rounded, color: NeuroCalColors.onSignal)
+                : Text('${today.score}', style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, color: NeuroCalColors.onSignal)),
           ),
           Expanded(
             child: Column(

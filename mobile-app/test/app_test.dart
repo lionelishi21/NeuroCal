@@ -109,11 +109,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Opens the add menu in the tab bar and chooses [label].
+  Future<void> add(WidgetTester tester, String label) async {
+    await tester.tap(find.bySemanticsLabel('Add'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text(label)));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('log a meal by hand', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.text('Log a meal'));
-    await tester.pumpAndSettle();
+    await add(tester, 'Log a meal');
 
     await tester.tap(find.text('Add an item by hand instead'));
     await tester.pumpAndSettle();
@@ -142,8 +149,7 @@ void main() {
   testWidgets('a check-in needs a flag and updates the stress input', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Check in'));
-    await tester.pumpAndSettle();
+    await add(tester, 'Check in');
 
     final save = find.widgetWithText(FilledButton, 'Save check-in');
     expect(tester.widget<FilledButton>(save).onPressed, isNull);
@@ -158,7 +164,7 @@ void main() {
     final (_, auth) = await pumpApp(tester);
     await signIn(tester);
 
-    await tester.tap(find.widgetWithText(InkWell, 'Settings'));
+    await tester.tap(find.widgetWithText(InkWell, 'Me'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.widgetWithText(TextButton, 'Delete account'), 300);
     await tester.tap(find.widgetWithText(TextButton, 'Delete account'));
@@ -180,11 +186,11 @@ void main() {
     expect(await auth.signIn('sam@example.com', 'a-different-password'), SignInStep.done);
   });
 
-  testWidgets('this week and sleep tabs show the week, and screen time can be logged', (tester) async {
+  testWidgets('Progress shows the week and sleep, and screen time can be logged', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
 
-    await tester.tap(find.widgetWithText(InkWell, 'This week'));
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
     await tester.pumpAndSettle();
     expect(find.text('Today so far'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Routines to try'), 300);
@@ -216,5 +222,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Went to bed'), findsOneWidget);
     expect(find.text('Woke up'), findsOneWidget);
+  });
+
+  testWidgets('the tabs: a past day on Today, Body in Progress, and the Stack tab', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+
+    // The week strip shows yesterday without today's extras.
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    await tester.tap(find.text('${yesterday.day}'));
+    await tester.pumpAndSettle();
+    expect(find.text('Looking back'), findsOneWidget);
+    expect(find.text('Brain speed'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Back to today'), 300);
+    await tester.tap(find.text('Back to today'));
+    await tester.pumpAndSettle();
+    expect(find.text('Looking back'), findsNothing);
+
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InkWell, 'Body'));
+    await tester.pumpAndSettle();
+    expect(find.text('Weight and Brain speed'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your stack'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Browse foods'), 300);
+    expect(find.text('Browse foods'), findsOneWidget);
   });
 }

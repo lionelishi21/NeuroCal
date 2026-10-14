@@ -16,7 +16,7 @@ String _initials(String name) =>
 String _whole(double grams) => grams.round().toString();
 String _thousands(int n) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => ',');
 
-/// Profile at a glance, appearance and the account, the same groups as the web app's Settings.
+/// Me: the profile at a glance, appearance, the account and the subscription.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.profile});
 
@@ -47,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
             child: Semantics(
               header: true,
               child: const Text(
-                'Settings',
+                'Me',
                 style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, letterSpacing: -0.4),
               ),
             ),

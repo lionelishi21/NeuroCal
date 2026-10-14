@@ -33,6 +33,9 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     required this.synapseFaint,
     required this.ionInk,
     required this.glucoseSoft,
+    required this.ionSoft,
+    required this.sleepSoft,
+    required this.chlorophyllSoft,
     required this.toast,
     required this.onToast,
   });
@@ -103,6 +106,11 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
   /// "Watch this" panel fill.
   final Color glucoseSoft;
 
+  /// Tinted tiles behind a body system's icon: teal spark, sleep and "good".
+  final Color ionSoft;
+  final Color sleepSoft;
+  final Color chlorophyllSoft;
+
   /// The toast's fill.
   final Color toast;
   final Color onToast;
@@ -142,6 +150,9 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     synapseFaint: Color(0xFFC9C0F5),
     ionInk: Color(0xFF0E7A77),
     glucoseSoft: Color(0xFFFCF1DE),
+    ionSoft: Color(0xFFDDF3F1),
+    sleepSoft: Color(0xFFE3EBFC),
+    chlorophyllSoft: Color(0xFFDFF3EA),
     toast: Color(0xFF121829),
     onToast: Color(0xFFF3F4FA),
   );
@@ -172,6 +183,9 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
     synapseFaint: Color(0xFF463D80),
     ionInk: Color(0xFF5FD6CF),
     glucoseSoft: Color(0xFF3A2E17),
+    ionSoft: Color(0xFF173A3A),
+    sleepSoft: Color(0xFF182A52),
+    chlorophyllSoft: Color(0xFF163A2D),
     toast: Color(0xFFEEF0F7),
     onToast: Color(0xFF121829),
   );
@@ -209,6 +223,9 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
       synapseFaint: mix(synapseFaint, other.synapseFaint),
       ionInk: mix(ionInk, other.ionInk),
       glucoseSoft: mix(glucoseSoft, other.glucoseSoft),
+      ionSoft: mix(ionSoft, other.ionSoft),
+      sleepSoft: mix(sleepSoft, other.sleepSoft),
+      chlorophyllSoft: mix(chlorophyllSoft, other.chlorophyllSoft),
       toast: mix(toast, other.toast),
       onToast: mix(onToast, other.onToast),
     );

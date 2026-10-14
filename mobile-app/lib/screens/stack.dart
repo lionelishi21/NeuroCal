@@ -99,16 +99,22 @@ class _StackCardState extends State<StackCard> {
                   child: Row(
                     spacing: Space.s3,
                     children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: item.takenToday ? c.chlorophyll : null,
-                          border: Border.all(color: item.takenToday ? c.chlorophyll : c.ruleStrong, width: 2),
+                      // A small pop when ticked off.
+                      AnimatedScale(
+                        scale: item.takenToday ? 1 : 0.92,
+                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.select,
+                        curve: Curves.elasticOut,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: item.takenToday ? c.chlorophyll : null,
+                            border: Border.all(color: item.takenToday ? c.chlorophyll : c.ruleStrong, width: 2),
+                          ),
+                          child: item.takenToday ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
                         ),
-                        child: item.takenToday ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
                       ),
                       Expanded(
                         child: Column(
@@ -143,8 +149,13 @@ class _StackCardState extends State<StackCard> {
 }
 
 /// The whole stack: change servings, timing or bottle size, start a new bottle, remove, or add one.
+/// With [changes] it is the Stack tab: no back bar, it reloads when something is logged anywhere, and
+/// [footer] (fasting, foods) follows the supplements.
 class StackScreen extends StatefulWidget {
-  const StackScreen({super.key});
+  const StackScreen({super.key, this.changes, this.footer = const []});
+
+  final Listenable? changes;
+  final List<Widget> footer;
 
   @override
   State<StackScreen> createState() => _StackScreenState();
@@ -154,12 +165,26 @@ class _StackScreenState extends State<StackScreen> {
   Future<SupplementStack>? _stack;
 
   @override
+  void initState() {
+    super.initState();
+    widget.changes?.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    widget.changes?.removeListener(_reload);
+    super.dispose();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _stack ??= AppScope.of(context).api.stack();
   }
 
-  void _reload() => setState(() => _stack = AppScope.of(context).api.stack());
+  void _reload() => setState(() {
+    _stack = AppScope.of(context).api.stack();
+  });
 
   Future<void> _add() async {
     if (await showSupplementSheet(context) == true && mounted) {
@@ -175,58 +200,64 @@ class _StackScreenState extends State<StackScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return Scaffold(
-      appBar: AppBar(title: const Text('My stack'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _stack,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(Space.s4),
-              child: ScreenFailed(title: "Couldn't load your stack", detail: 'Check your connection and try again.', onRetry: _reload),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Padding(padding: EdgeInsets.all(Space.s4), child: ScreenLoading(label: 'Loading your stack', heights: [64, 64, 64]));
-          }
-          final stack = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-            children: [
-              if (stack.items.isEmpty)
-                const EmptyCard(title: 'Nothing here yet', detail: 'Scan a supplement label and add it, to get a daily checklist and checks across everything you take.')
-              else ...[
-                ..._flagNotes(stack.flags).map((w) => Padding(padding: const EdgeInsets.only(bottom: Space.s2), child: w)),
-                AppCard(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      for (final (i, item) in _sorted(stack.items).indexed)
-                        ListTile(
-                          shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
-                          title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                          subtitle: Text(
-                            [_dose(item), if (item.daysLeft != null) '${item.daysLeft} days left in the bottle'].join(' · '),
-                          ),
-                          trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
-                          onTap: () => _edit(item),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: Space.s4),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                onPressed: _add,
-                icon: const Icon(Icons.document_scanner_outlined, size: 20),
-                label: const Text('Scan a supplement to add'),
-              ),
-            ],
-          );
-        },
+    final tab = widget.changes != null;
+    final body = FutureBuilder(
+      future: _stack,
+      builder: (context, snapshot) => ListView(
+        padding: EdgeInsets.fromLTRB(Space.s4, tab ? Space.s4 : 0, Space.s4, Space.s6),
+        children: [
+          if (tab) ...[const ScreenTitle('Your stack', detail: 'Supplements, fasting and foods'), const BlockTitle('Supplements')],
+          ..._supplements(context, snapshot),
+          ...widget.footer,
+        ],
       ),
     );
+    return tab
+        ? SafeArea(bottom: false, child: body)
+        : Scaffold(
+            appBar: AppBar(title: const Text('My stack'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
+            body: body,
+          );
+  }
+
+  List<Widget> _supplements(BuildContext context, AsyncSnapshot<SupplementStack> snapshot) {
+    final c = context.colors;
+    if (snapshot.hasError) {
+      return [ScreenFailed(title: "Couldn't load your stack", detail: 'Check your connection and try again.', onRetry: _reload)];
+    }
+    if (!snapshot.hasData) return [const ScreenLoading(label: 'Loading your stack', heights: [64, 64, 64])];
+    final stack = snapshot.data!;
+    return [
+      if (stack.items.isEmpty)
+        const EmptyCard(title: 'Nothing here yet', detail: 'Scan a supplement label and add it, to get a daily checklist and checks across everything you take.')
+      else ...[
+        ..._flagNotes(stack.flags).map((w) => Padding(padding: const EdgeInsets.only(bottom: Space.s2), child: w)),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (final (i, item) in _sorted(stack.items).indexed)
+                ListTile(
+                  shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(
+                    [_dose(item), if (item.daysLeft != null) '${item.daysLeft} days left in the bottle'].join(' · '),
+                  ),
+                  trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+                  onTap: () => _edit(item),
+                ),
+            ],
+          ),
+        ),
+      ],
+      const SizedBox(height: Space.s4),
+      FilledButton.icon(
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        onPressed: _add,
+        icon: const Icon(Icons.document_scanner_outlined, size: 20),
+        label: const Text('Scan a supplement to add'),
+      ),
+    ];
   }
 }
 

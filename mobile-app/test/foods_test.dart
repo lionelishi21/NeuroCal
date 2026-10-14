@@ -81,7 +81,9 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Log a meal'));
+    await tester.tap(find.bySemanticsLabel('Add'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text('Log a meal')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Search foods'));
     await tester.pumpAndSettle();
