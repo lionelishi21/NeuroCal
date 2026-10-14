@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:neurocal/api/mock_api.dart';
+import 'package:neurocal/api/models.dart';
 import 'package:neurocal/app_scope.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/billing/billing.dart';
@@ -73,14 +74,19 @@ const back = 'Other ingredients rice flour vegetable cellulose capsule Distribut
 const side = 'Directions take two capsules daily with food Warning keep out of reach of children consult physician pregnant';
 
 Future<void> pumpSheet(WidgetTester tester, String photoName, {LabelCamera? camera}) async {
+  await pumpSheetWithApi(tester, photoName, camera: camera);
+}
+
+Future<MockNeuroCalApi> pumpSheetWithApi(WidgetTester tester, String photoName, {LabelCamera? camera}) async {
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
   final theme = ThemeController(await SharedPreferences.getInstance());
+  final api = MockNeuroCalApi()..latency = Duration.zero;
   await tester.pumpWidget(
     AppScope(
-      api: MockNeuroCalApi()..latency = Duration.zero,
+      api: api,
       auth: MockAuthClient(),
       theme: theme,
       timeZone: () async => 'Europe/London',
@@ -101,6 +107,7 @@ Future<void> pumpSheet(WidgetTester tester, String photoName, {LabelCamera? came
   );
   await tester.tap(find.text('Open'));
   await tester.pumpAndSettle();
+  return api;
 }
 
 void main() {
@@ -172,5 +179,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('The label is too dark to read.'), findsOneWidget);
     expect(find.text('Scan again'), findsOneWidget);
+  });
+
+  testWidgets('a scanned label goes into the stack with servings, timing and the bottle size from the label', (tester) async {
+    final api = await pumpSheetWithApi(tester, 'label.jpg');
+    await tester.tap(find.text('Choose a photo'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Add to my stack'), 200);
+    await tester.tap(find.text('Add to my stack'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Servings a day (one is 2 capsules)'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Servings in the bottle (optional)'), findsOneWidget);
+    expect(find.text('60'), findsOneWidget); // from the label
+    await tester.tap(find.text('2'));
+    await tester.tap(find.text('Evening'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Add to my stack'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Add to my stack'));
+    await tester.pumpAndSettle();
+
+    final stack = (await tester.runAsync(api.stack))!;
+    expect(stack.items.single.name, 'Calm Labs Magnesium Glycinate');
+    expect(stack.items.single.servingsPerDay, 2);
+    expect(stack.items.single.timing, StackTiming.evening);
+    expect(stack.items.single.daysLeft, 30);
   });
 }

@@ -13,12 +13,13 @@ import 'check_in_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'sleep_sheets.dart';
+import 'stack.dart';
 import 'supplement_sheet.dart';
 import 'weight_cards.dart';
 import 'weight_sheets.dart';
 
 class _Day {
-  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.unit = WeightUnit.kg});
+  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.stack, this.unit = WeightUnit.kg});
 
   final FocusScore focus;
   final BioState bio;
@@ -33,6 +34,9 @@ class _Day {
   /// Null for people not losing weight, or when it didn't load.
   final WeightHistory? weights;
   final WeightUnit unit;
+
+  /// Null when the stack is empty or didn't load.
+  final SupplementStack? stack;
 }
 
 const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -126,8 +130,9 @@ class _TodayScreenState extends State<TodayScreen> {
         ? api.weights(days: 30).then<WeightHistory?>((w) => w).catchError((Object _) => null)
         : Future<WeightHistory?>.value(null);
     final unit = WeightUnit.load(Localizations.localeOf(context));
+    final stack = api.stack().then<SupplementStack?>((s) => s.items.isEmpty ? null : s).catchError((Object _) => null);
     final (focus, bio, meals) = await (api.focusScore(now), api.bioState(now), api.meals(now)).wait;
-    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, unit: await unit);
+    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, stack: await stack, unit: await unit);
   }
 
   Future<void> _refresh() async {
@@ -143,7 +148,7 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   Future<void> _logMeal() async {
-    final logged = await showLogMealSheet(context, onScanSupplement: () => showSupplementSheet(context));
+    final logged = await showLogMealSheet(context, onScanSupplement: _scanSupplement);
     if (logged == true && mounted) {
       showToast(context, 'Meal logged');
       widget.onChanged();
@@ -173,6 +178,18 @@ class _TodayScreenState extends State<TodayScreen> {
       showToast(context, 'Weight goal saved');
       _refresh();
     }
+  }
+
+  Future<void> _scanSupplement() async {
+    if (await showSupplementSheet(context) == true && mounted) {
+      showToast(context, 'Added to your stack');
+      _refresh();
+    }
+  }
+
+  Future<void> _manageStack() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StackScreen()));
+    if (mounted) _refresh();
   }
 
   /// The food catalog; choosing "Log it" on a food opens Log a meal with it filled in.
@@ -301,6 +318,10 @@ class _TodayScreenState extends State<TodayScreen> {
                         onLog: () => _logWeight(snapshot.data!),
                         onGoal: () => _weightGoal(snapshot.data!),
                       ),
+                    ],
+                    if (snapshot.data!.stack != null) ...[
+                      const SizedBox(height: Space.s3),
+                      StackCard(snapshot.data!.stack!, onManage: _manageStack),
                     ],
                     const SizedBox(height: Space.s3),
                     _Calories(snapshot.data!.bio),

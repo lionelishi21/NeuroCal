@@ -253,6 +253,87 @@ class MockNeuroCalApi implements NeuroCalApi {
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
+  final _stack = <StackItem>[];
+  var _stackId = 1;
+
+  /// The checks are the API's (backend/src/domain/stack.ts); the mock only notes shared ingredients.
+  @override
+  Future<SupplementStack> stack() async {
+    await _wait();
+    final flags = <StackFlag>[];
+    final byName = <String, List<StackItem>>{};
+    for (final item in _stack) {
+      for (final i in item.ingredients) {
+        (byName[i.name.toLowerCase()] ??= []).add(item);
+      }
+    }
+    for (final MapEntry(key: name, value: items) in byName.entries) {
+      if (items.length > 1) {
+        flags.add((kind: 'duplicate', message: '${items.map((i) => i.name).join(' and ')} both contain $name.', itemIds: [for (final i in items) i.id]));
+      }
+    }
+    return SupplementStack(items: List.of(_stack), flags: flags);
+  }
+
+  @override
+  Future<StackItem> addToStack({
+    required String name,
+    String? servingSize,
+    required List<SupplementIngredient> ingredients,
+    required int servingsPerDay,
+    required StackTiming timing,
+    int? servingsPerContainer,
+  }) async {
+    await _wait();
+    final item = StackItem(
+      id: 'st${_stackId++}',
+      name: name,
+      servingSize: servingSize,
+      ingredients: ingredients,
+      servingsPerDay: servingsPerDay,
+      timing: timing,
+      servingsPerContainer: servingsPerContainer,
+      startedOn: isoDate(DateTime.now()),
+      daysLeft: servingsPerContainer == null ? null : servingsPerContainer ~/ servingsPerDay,
+    );
+    _stack.add(item);
+    return item;
+  }
+
+  @override
+  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false}) async {
+    await _wait();
+    final i = _stack.indexWhere((s) => s.id == id);
+    final old = _stack[i];
+    final perDay = servingsPerDay ?? old.servingsPerDay;
+    final container = servingsPerContainer == 0 ? null : servingsPerContainer ?? old.servingsPerContainer;
+    return _stack[i] = StackItem(
+      id: id,
+      name: old.name,
+      servingSize: old.servingSize,
+      ingredients: old.ingredients,
+      servingsPerDay: perDay,
+      timing: timing ?? old.timing,
+      servingsPerContainer: container,
+      startedOn: newBottle ? isoDate(DateTime.now()) : old.startedOn,
+      daysLeft: container == null ? null : container ~/ perDay,
+      takenToday: old.takenToday,
+    );
+  }
+
+  @override
+  Future<void> removeFromStack(String id) async {
+    await _wait();
+    _stack.removeWhere((s) => s.id == id);
+  }
+
+  @override
+  Future<void> setTaken(String id, bool taken) async {
+    await _wait();
+    final i = _stack.indexWhere((s) => s.id == id);
+    if (i >= 0) _stack[i] = _stack[i].copyWith(takenToday: taken);
+  }
+
   @override
   Future<List<CatalogFood>> foods() async {
     await _wait();
@@ -273,6 +354,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       brand: 'Calm Labs',
       productName: 'Magnesium Glycinate',
       servingSize: '2 capsules',
+      servingsPerContainer: 60,
       ingredients: [
         (name: 'Magnesium (as magnesium glycinate)', amount: 200, unit: 'mg', inBlend: false),
         (name: 'Zinc', amount: 50, unit: 'mg', inBlend: false),

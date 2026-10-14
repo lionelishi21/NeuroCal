@@ -15,8 +15,9 @@ import 'log_meal_sheet.dart' show maxPhotoBytes;
 
 /// Scan a supplement label: live scan while turning the bottle (or choose a photo), wait while it is
 /// read, then see what the label says and anything worth knowing. Nothing is saved.
-Future<void> showSupplementSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
-    showAppSheet<void>(
+/// Returns true when the supplement was added to the stack.
+Future<bool?> showSupplementSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
+    showAppSheet<bool>(
       context,
       title: 'Scan a supplement',
       builder: (_) => _ScanSupplement(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new),
@@ -50,6 +51,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   SupplementLabel? _label;
   String? _failure;
   var _reading = false;
+  var _adding = false;
 
   Future<void> _liveScan() async {
     final photos = await showLiveScan(context, widget.camera());
@@ -87,6 +89,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   }
 
   void _again() => setState(() {
+    _adding = false;
     _photos = const [];
     _label = null;
     _failure = null;
@@ -95,6 +98,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   @override
   Widget build(BuildContext context) {
     if (_reading) return _readingStep(context);
+    if (_adding && _label != null) return _AddToStack(label: _label!, onBack: () => setState(() => _adding = false));
     final label = _label;
     if (label != null && label.problem == null) return _resultStep(context, label);
     return _pickStep(context, problem: label?.summary ?? _failure);
@@ -255,7 +259,98 @@ class _ScanSupplementState extends State<_ScanSupplement> {
             style: TextStyle(fontSize: TextSize.xxs, height: 1.5, color: c.inkSoft),
           ),
         ],
-        SheetAction(label: 'Scan another label', onPressed: _again),
+        SheetAction(label: 'Add to my stack', onPressed: () => setState(() => _adding = true)),
+        TextButton(onPressed: _again, child: const Text('Scan another label')),
+      ],
+    );
+  }
+}
+
+/// Saves the scanned supplement to the stack: how many servings a day, when, and the bottle size
+/// (from the label when it was printed), for the running-low count.
+class _AddToStack extends StatefulWidget {
+  const _AddToStack({required this.label, required this.onBack});
+
+  final SupplementLabel label;
+  final VoidCallback onBack;
+
+  @override
+  State<_AddToStack> createState() => _AddToStackState();
+}
+
+class _AddToStackState extends State<_AddToStack> {
+  var _perDay = 1;
+  var _timing = StackTiming.morning;
+  late final _bottle = TextEditingController(text: widget.label.servingsPerContainer?.toString() ?? '');
+  var _busy = false;
+  var _failed = false;
+
+  @override
+  void dispose() {
+    _bottle.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _failed = false;
+    });
+    final l = widget.label;
+    final name = [l.brand, l.productName].whereType<String>().join(' ');
+    try {
+      await AppScope.of(context).api.addToStack(
+        name: name.isEmpty ? 'Supplement' : name,
+        servingSize: l.servingSize,
+        ingredients: l.ingredients,
+        servingsPerDay: _perDay,
+        timing: _timing,
+        servingsPerContainer: int.tryParse(_bottle.text.trim()),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final serving = widget.label.servingSize;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [
+        Text(
+          'We’ll add it to your checklist on Today and check it against everything else you take.',
+          style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+        ),
+        Text(serving == null ? 'Servings a day' : 'Servings a day (one is $serving)', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        Row(
+          spacing: Space.s2,
+          children: [for (final n in [1, 2, 3]) ChoicePill(label: '$n', selected: _perDay == n, onTap: () => setState(() => _perDay = n))],
+        ),
+        const Text('When do you take it?', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        Wrap(
+          spacing: Space.s2,
+          runSpacing: Space.s2,
+          children: [
+            for (final t in StackTiming.values) ChoicePill(label: t.label, selected: _timing == t, onTap: () => setState(() => _timing = t)),
+          ],
+        ),
+        TextField(
+          controller: _bottle,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Servings in the bottle (optional)', helperText: 'So we can tell you when it’s running low.'),
+        ),
+        if (_failed) const SheetNote(lead: "Couldn't add it.", detail: 'Check your connection and try again.'),
+        SheetAction(label: _busy ? 'Adding…' : 'Add to my stack', onPressed: _busy ? null : _save),
+        TextButton(onPressed: _busy ? null : widget.onBack, child: const Text('Back to the label')),
       ],
     );
   }

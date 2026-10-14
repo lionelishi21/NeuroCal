@@ -381,6 +381,106 @@ SuggestedProduct productFromJson(Map<String, dynamic> p) => (
   supplement: p['supplement'] as bool,
 );
 
+/// When a supplement is taken (`StackTiming` in the contracts).
+enum StackTiming {
+  morning('morning', 'Morning'),
+  withFood('with_food', 'With food'),
+  evening('evening', 'Evening'),
+  any('any', 'Any time');
+
+  const StackTiming(this.wire, this.label);
+
+  final String wire;
+  final String label;
+
+  static StackTiming fromWire(Object? wire) => values.firstWhere((t) => t.wire == wire, orElse: () => StackTiming.any);
+}
+
+Map<String, dynamic> ingredientJson(SupplementIngredient i) => {
+  'name': i.name,
+  'amount': ?i.amount,
+  'unit': ?i.unit,
+  'inBlend': i.inBlend,
+};
+
+SupplementIngredient ingredientFromJson(Map<String, dynamic> i) =>
+    (name: i['name'] as String, amount: (i['amount'] as num?)?.toDouble(), unit: i['unit'] as String?, inBlend: i['inBlend'] as bool);
+
+/// A supplement someone takes (`StackItem` in the contracts).
+class StackItem {
+  const StackItem({
+    required this.id,
+    required this.name,
+    this.servingSize,
+    this.ingredients = const [],
+    required this.servingsPerDay,
+    required this.timing,
+    this.servingsPerContainer,
+    required this.startedOn,
+    this.daysLeft,
+    this.takenToday = false,
+  });
+
+  final String id;
+  final String name;
+  final String? servingSize;
+  final List<SupplementIngredient> ingredients;
+  final int servingsPerDay;
+  final StackTiming timing;
+  final int? servingsPerContainer;
+  final String startedOn;
+
+  /// Days of this bottle left, when its size is known.
+  final int? daysLeft;
+  final bool takenToday;
+
+  bool get runningLow => daysLeft != null && daysLeft! <= 7;
+
+  StackItem copyWith({bool? takenToday}) => StackItem(
+    id: id,
+    name: name,
+    servingSize: servingSize,
+    ingredients: ingredients,
+    servingsPerDay: servingsPerDay,
+    timing: timing,
+    servingsPerContainer: servingsPerContainer,
+    startedOn: startedOn,
+    daysLeft: daysLeft,
+    takenToday: takenToday ?? this.takenToday,
+  );
+
+  factory StackItem.fromJson(Map<String, dynamic> j) => StackItem(
+    id: j['id'] as String,
+    name: j['name'] as String,
+    servingSize: j['servingSize'] as String?,
+    ingredients: [for (final i in j['ingredients'] as List) ingredientFromJson(i as Map<String, dynamic>)],
+    servingsPerDay: (j['servingsPerDay'] as num).toInt(),
+    timing: StackTiming.fromWire(j['timing']),
+    servingsPerContainer: (j['servingsPerContainer'] as num?)?.toInt(),
+    startedOn: j['startedOn'] as String,
+    daysLeft: (j['daysLeft'] as num?)?.toInt(),
+    takenToday: j['takenToday'] as bool? ?? false,
+  );
+}
+
+/// A check across the whole stack; [message] is written by the API.
+typedef StackFlag = ({String kind, String message, List<String> itemIds});
+
+class SupplementStack {
+  const SupplementStack({this.items = const [], this.flags = const []});
+
+  final List<StackItem> items;
+  final List<StackFlag> flags;
+
+  factory SupplementStack.fromJson(Map<String, dynamic> j) => SupplementStack(
+    items: [for (final i in j['items'] as List) StackItem.fromJson(i as Map<String, dynamic>)],
+    flags: [
+      for (final f in j['flags'] as List)
+        (kind: f['kind'] as String, message: f['message'] as String, itemIds: [for (final id in f['itemIds'] as List) id as String]),
+    ],
+  );
+}
+
 /// A food in the catalog, per serving (`CatalogFood` in the contracts). Its photo is found by [id].
 class CatalogFood {
   const CatalogFood({
@@ -485,6 +585,7 @@ class SupplementLabel {
     this.brand,
     this.productName,
     this.servingSize,
+    this.servingsPerContainer,
     this.ingredients = const [],
     this.testing = const [],
     this.lotNumber,
@@ -498,6 +599,7 @@ class SupplementLabel {
   final String? brand;
   final String? productName;
   final String? servingSize;
+  final int? servingsPerContainer;
   final List<SupplementIngredient> ingredients;
   final List<String> testing;
   final String? lotNumber;
@@ -517,6 +619,7 @@ class SupplementLabel {
     brand: j['brand'] as String?,
     productName: j['productName'] as String?,
     servingSize: j['servingSize'] as String?,
+    servingsPerContainer: (j['servingsPerContainer'] as num?)?.toInt(),
     ingredients: [
       for (final i in j['ingredients'] as List)
         (

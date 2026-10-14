@@ -26,6 +26,22 @@ abstract interface class NeuroCalApi {
   Future<void> deleteWeight(String date);
   Future<FastingStatus> fasting();
 
+  /// The supplements someone takes, today's ticks and the checks across them.
+  Future<SupplementStack> stack();
+  Future<StackItem> addToStack({
+    required String name,
+    String? servingSize,
+    required List<SupplementIngredient> ingredients,
+    required int servingsPerDay,
+    required StackTiming timing,
+    int? servingsPerContainer,
+  });
+
+  /// [servingsPerContainer] 0 clears it; [newBottle] restarts the running-low count today.
+  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false});
+  Future<void> removeFromStack(String id);
+  Future<void> setTaken(String id, bool taken);
+
   /// The food catalog, sorted by name. Fetched once and kept for the session.
   Future<List<CatalogFood>> foods();
 
@@ -143,6 +159,58 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
+
+  @override
+  Future<SupplementStack> stack() async => SupplementStack.fromJson(await _get('/stack') as Map<String, dynamic>);
+
+  @override
+  Future<StackItem> addToStack({
+    required String name,
+    String? servingSize,
+    required List<SupplementIngredient> ingredients,
+    required int servingsPerDay,
+    required StackTiming timing,
+    int? servingsPerContainer,
+  }) async {
+    final res = await _client.post(
+      _uri('/stack'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'name': name,
+        'servingSize': ?servingSize,
+        'ingredients': [for (final i in ingredients) ingredientJson(i)],
+        'servingsPerDay': servingsPerDay,
+        'timing': timing.wire,
+        'servingsPerContainer': ?servingsPerContainer,
+      }),
+    );
+    return StackItem.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false}) async {
+    final res = await _client.put(
+      _uri('/stack/$id'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'servingsPerDay': ?servingsPerDay,
+        'timing': ?timing?.wire,
+        if (servingsPerContainer != null) 'servingsPerContainer': servingsPerContainer == 0 ? null : servingsPerContainer,
+        if (newBottle) 'newBottle': true,
+      }),
+    );
+    return StackItem.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> removeFromStack(String id) async {
+    _decode(await _client.delete(_uri('/stack/$id'), headers: await _headers()));
+  }
+
+  @override
+  Future<void> setTaken(String id, bool taken) async {
+    _decode(await _client.put(_uri('/stack/$id/taken'), headers: await _headers(json: true), body: jsonEncode({'taken': taken})));
+  }
 
   Future<List<CatalogFood>>? _foods;
 
