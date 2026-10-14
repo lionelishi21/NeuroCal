@@ -8,6 +8,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
@@ -279,12 +280,36 @@ describe("DrizzleSubscriptionRepository", () => {
   });
 });
 
+describe("DrizzleStackRepository", () => {
+  it("adds, updates, ticks and removes a user's own supplements only", async () => {
+    const repo = new DrizzleStackRepository(db);
+    const ingredients = [{ name: "Magnesium", amount: 200, unit: "mg", inBlend: false }];
+    const item = await repo.add(alice, { name: "Magnesium", ingredients, servingsPerDay: 1, timing: "evening", servingsPerContainer: 60, startedOn: "2026-10-01" });
+    expect(await repo.list(alice)).toEqual([item]);
+    expect(await repo.list(bob)).toEqual([]);
+
+    expect(await repo.update(alice, item.id, { servingsPerDay: 2, servingsPerContainer: null })).toEqual({ ...item, servingsPerDay: 2, servingsPerContainer: undefined });
+    expect(await repo.update(bob, item.id, { servingsPerDay: 3 })).toBeNull();
+
+    expect(await repo.setTaken(alice, item.id, "2026-10-02", true)).toBe(true);
+    expect(await repo.setTaken(alice, item.id, "2026-10-02", true)).toBe(true); // twice is fine
+    expect(await repo.setTaken(bob, item.id, "2026-10-02", true)).toBe(false);
+    expect([...(await repo.takenOn(alice, "2026-10-02"))]).toEqual([item.id]);
+    expect(await repo.setTaken(alice, item.id, "2026-10-02", false)).toBe(true);
+    expect(await repo.takenOn(alice, "2026-10-02")).toEqual(new Set());
+
+    // Kept for the account-deletion test below.
+    await repo.setTaken(alice, item.id, "2026-10-03", true);
+    expect(await repo.delete(bob, item.id)).toBe(false);
+  });
+});
+
 // Last on purpose: by now the earlier tests have given alice rows in every user table.
 describe("DrizzleUserRepository.delete", () => {
   it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
     // Her sign-in email is new@example.com since the first test.
     await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
-    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions];
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions, schema.stackItems, schema.stackDoses];
     const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
     const before = await rowsOf(alice);
     const bobBefore = await rowsOf(bob);

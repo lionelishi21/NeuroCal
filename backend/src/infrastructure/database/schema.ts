@@ -3,6 +3,7 @@
  * Migration 0002 enables the `vector` extension before the catalog tables use it.
  */
 import { sql } from "drizzle-orm";
+import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
 import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
 
@@ -202,6 +203,41 @@ export const screenTimeSamples = pgTable(
     unique("screen_time_user_source_window_unique").on(t.userId, t.source, t.windowStart),
     check("screen_time_minutes_fit_window", sql`${t.minutes} >= 0 and ${t.windowEnd} > ${t.windowStart}`),
   ],
+);
+
+/** Supplements someone takes. Ingredients are kept as read from the label. */
+export const stackItems = pgTable(
+  "stack_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    servingSize: text("serving_size"),
+    ingredients: jsonb("ingredients").$type<SupplementIngredient[]>().notNull(),
+    servingsPerDay: smallint("servings_per_day").notNull(),
+    timing: text("timing").notNull(),
+    servingsPerContainer: smallint("servings_per_container"),
+    startedOn: date("started_on", { mode: "string" }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("stack_items_user_idx").on(t.userId), check("stack_items_servings_positive", sql`${t.servingsPerDay} between 1 and 6`)],
+);
+
+/** A supplement ticked as taken on a local day. */
+export const stackDoses = pgTable(
+  "stack_doses",
+  {
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => stackItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: date("date", { mode: "string" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.itemId, t.date] }), index("stack_doses_user_date_idx").on(t.userId, t.date)],
 );
 
 /** One row per user: the subscription as last reported by RevenueCat. */

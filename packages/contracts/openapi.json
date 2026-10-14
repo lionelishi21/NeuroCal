@@ -339,6 +339,165 @@
         }
       }
     },
+    "/stack": {
+      "get": {
+        "operationId": "getStack",
+        "summary": "Your supplement stack",
+        "description": "Each supplement with today's tick and days of the bottle left, plus checks no single label can show: daily totals across products against adult upper limits, the same nutrient in several products, and caffeine taken in the evening.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "addStackItem",
+        "summary": "Add a supplement to your stack",
+        "description": "Usually straight from a label scan. At most 30 supplements.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStackItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackItem"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/stack/{id}": {
+      "put": {
+        "operationId": "updateStackItem",
+        "summary": "Change servings, timing or the bottle size",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The stack item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStackItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackItem"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteStackItem",
+        "summary": "Remove a supplement from your stack",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The stack item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/stack/{id}/taken": {
+      "put": {
+        "operationId": "setStackTaken",
+        "summary": "Tick a supplement as taken today",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The stack item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTakenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetTakenRequest"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/me/subscription": {
       "get": {
         "operationId": "getSubscription",
@@ -905,6 +1064,46 @@
       }
     },
     "schemas": {
+      "AddStackItemRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "servingSize": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "ingredients": {
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplementIngredient"
+            }
+          },
+          "servingsPerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "timing": {
+            "$ref": "#/components/schemas/StackTiming"
+          },
+          "servingsPerContainer": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 2000
+          }
+        },
+        "required": [
+          "name",
+          "ingredients",
+          "servingsPerDay",
+          "timing"
+        ]
+      },
       "AdminProduct": {
         "type": "object",
         "properties": {
@@ -2521,6 +2720,17 @@
           "source"
         ]
       },
+      "SetTakenRequest": {
+        "type": "object",
+        "properties": {
+          "taken": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "taken"
+        ]
+      },
       "SleepSession": {
         "type": "object",
         "properties": {
@@ -2544,6 +2754,124 @@
           "start",
           "end",
           "source"
+        ]
+      },
+      "StackFlag": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "above_upper_limit",
+              "duplicate",
+              "late_caffeine"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "itemIds"
+        ]
+      },
+      "StackItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "servingSize": {
+            "type": "string"
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplementIngredient"
+            }
+          },
+          "servingsPerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "timing": {
+            "$ref": "#/components/schemas/StackTiming"
+          },
+          "servingsPerContainer": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "startedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "daysLeft": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "takenToday": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "ingredients",
+          "servingsPerDay",
+          "timing",
+          "startedOn",
+          "takenToday"
+        ]
+      },
+      "StackResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StackItem"
+            }
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StackFlag"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "items",
+          "flags"
+        ]
+      },
+      "StackTiming": {
+        "type": "string",
+        "enum": [
+          "morning",
+          "with_food",
+          "evening",
+          "any"
         ]
       },
       "SubscriptionStatus": {
@@ -2646,6 +2974,10 @@
           },
           "servingSize": {
             "type": "string"
+          },
+          "servingsPerContainer": {
+            "type": "integer",
+            "exclusiveMinimum": 0
           },
           "ingredients": {
             "type": "array",
@@ -2769,6 +3101,34 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "UpdateStackItemRequest": {
+        "type": "object",
+        "properties": {
+          "servingsPerDay": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "timing": {
+            "$ref": "#/components/schemas/StackTiming"
+          },
+          "servingsPerContainer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "newBottle": {
+            "type": "boolean"
           }
         }
       },

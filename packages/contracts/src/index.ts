@@ -480,6 +480,7 @@ export const SupplementLabelResponse = z.object({
   brand: z.string().optional(),
   productName: z.string().optional(),
   servingSize: z.string().optional(),
+  servingsPerContainer: z.number().int().positive().optional(),
   ingredients: z.array(SupplementIngredient),
   testing: z.array(SupplementTestingMark),
   lotNumber: z.string().optional(),
@@ -492,6 +493,68 @@ export const SupplementLabelResponse = z.object({
   alternative: ProductRecommendation.optional(),
 });
 export type SupplementLabelResponse = z.infer<typeof SupplementLabelResponse>;
+
+export const StackTiming = z.enum(["morning", "with_food", "evening", "any"]);
+export type StackTiming = z.infer<typeof StackTiming>;
+
+/** A supplement in someone's stack. */
+export const StackItem = z.object({
+  id: Id,
+  name: z.string().min(1),
+  servingSize: z.string().optional(),
+  ingredients: z.array(SupplementIngredient),
+  servingsPerDay: z.number().int().min(1).max(6),
+  timing: StackTiming,
+  servingsPerContainer: z.number().int().positive().optional(),
+  /** When this bottle was started (YYYY-MM-DD). */
+  startedOn: IsoDate,
+  /** Days of this bottle left, when servingsPerContainer is known. */
+  daysLeft: z.number().int().nonnegative().optional(),
+  /** Ticked as taken today (the profile's local day). */
+  takenToday: z.boolean(),
+});
+export type StackItem = z.infer<typeof StackItem>;
+
+/** Something about the stack as a whole. Worded by the server; clients show `message` as is. */
+export const StackFlag = z.object({
+  kind: z.enum(["above_upper_limit", "duplicate", "late_caffeine"]),
+  message: z.string().min(1),
+  itemIds: z.array(Id),
+});
+export type StackFlag = z.infer<typeof StackFlag>;
+
+export const StackResponse = z.object({
+  /** Today in the profile's time zone. */
+  date: IsoDate,
+  items: z.array(StackItem),
+  flags: z.array(StackFlag),
+});
+export type StackResponse = z.infer<typeof StackResponse>;
+
+/** The most supplements a stack holds. */
+export const MAX_STACK_ITEMS = 30;
+
+export const AddStackItemRequest = z.object({
+  name: z.string().trim().min(1).max(120),
+  servingSize: z.string().max(80).optional(),
+  ingredients: z.array(SupplementIngredient).max(60),
+  servingsPerDay: z.number().int().min(1).max(6),
+  timing: StackTiming,
+  servingsPerContainer: z.number().int().positive().max(2000).optional(),
+});
+export type AddStackItemRequest = z.infer<typeof AddStackItemRequest>;
+
+export const UpdateStackItemRequest = z.object({
+  servingsPerDay: z.number().int().min(1).max(6).optional(),
+  timing: StackTiming.optional(),
+  servingsPerContainer: z.number().int().positive().max(2000).nullable().optional(),
+  /** Started a new bottle today: resets the running-low count. */
+  newBottle: z.boolean().optional(),
+});
+export type UpdateStackItemRequest = z.infer<typeof UpdateStackItemRequest>;
+
+export const SetTakenRequest = z.object({ taken: z.boolean() });
+export type SetTakenRequest = z.infer<typeof SetTakenRequest>;
 
 /** A product as the admin screen manages it. */
 export const AdminProduct = z.object({
@@ -619,6 +682,13 @@ export const endpoints = {
   getWeights: { method: "GET", path: "/weights", response: WeightHistory },
   deleteWeight: { method: "DELETE", path: "/weights/:date" },
   getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
+  /** The supplements someone takes, today's ticks, and checks across the whole stack. */
+  getStack: { method: "GET", path: "/stack", response: StackResponse },
+  addStackItem: { method: "POST", path: "/stack", body: AddStackItemRequest, response: StackItem },
+  updateStackItem: { method: "PUT", path: "/stack/:id", body: UpdateStackItemRequest, response: StackItem },
+  deleteStackItem: { method: "DELETE", path: "/stack/:id" },
+  /** Ticks (or unticks) a supplement as taken today. */
+  setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },

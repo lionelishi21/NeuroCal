@@ -6,6 +6,11 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  AddStackItemRequest,
+  SetTakenRequest,
+  StackItem,
+  StackResponse,
+  UpdateStackItemRequest,
   SubscriptionStatus,
   FastingStatus,
   LogWeightRequest,
@@ -52,6 +57,7 @@ import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTele
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
 import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
+import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -96,6 +102,7 @@ export interface UseCases {
   deleteWeight: DeleteWeightUseCase;
   getFasting: GetFastingUseCase;
   getSubscription: GetSubscriptionUseCase;
+  stack: StackUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -289,6 +296,33 @@ export function createApi(uc: UseCases) {
           ...(s.expiresAt ? { expiresAt: s.expiresAt.toISOString() } : {}),
           willRenew: s.willRenew,
         });
+      },
+    ],
+    [
+      "GET",
+      /^\/stack$/,
+      async (req) => {
+        const s = await uc.stack.get(req.userId);
+        return ok(StackResponse, { date: s.date, items: s.items, flags: s.flags });
+      },
+    ],
+    ["POST", /^\/stack$/, async (req) => ok(StackItem, await uc.stack.add(req.userId, json(req, AddStackItemRequest)), 201)],
+    ["PUT", /^\/stack\/([^/]+)$/, async (req, [id]) => ok(StackItem, await uc.stack.update(req.userId, id!, json(req, UpdateStackItemRequest)))],
+    [
+      "DELETE",
+      /^\/stack\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.stack.remove(req.userId, id!);
+        return { status: 204 };
+      },
+    ],
+    [
+      "PUT",
+      /^\/stack\/([^/]+)\/taken$/,
+      async (req, [id]) => {
+        const { taken } = json(req, SetTakenRequest);
+        await uc.stack.setTaken(req.userId, id!, taken);
+        return ok(SetTakenRequest, { taken });
       },
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],

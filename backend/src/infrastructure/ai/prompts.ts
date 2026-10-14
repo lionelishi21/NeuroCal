@@ -48,7 +48,8 @@ photos as one label: combine what they show, list each ingredient once, and igno
 repeats across photos.
 Copy what is printed; never add or guess anything that is not visible.
 brand and productName: as printed on the label, or null if not visible.
-servingSize: as printed, for example "2 capsules".
+servingSize: as printed, for example "2 capsules". servingsPerContainer: the number printed as
+servings per container, or null.
 ingredients: every row of the facts panel and every ingredient listed inside a blend,
 with the amount per serving and its unit exactly as printed (mg, mcg, g, IU). Give amount
 and unit as null when none is printed for that ingredient. Set inBlend true for ingredients

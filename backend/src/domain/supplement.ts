@@ -29,6 +29,7 @@ export interface SupplementLabelReading {
   brand?: string;
   productName?: string;
   servingSize?: string;
+  servingsPerContainer?: number;
   ingredients: SupplementIngredient[];
   /** The label mentions a proprietary blend, matrix or complex with only a total weight. */
   proprietaryBlend: boolean;
@@ -99,6 +100,17 @@ function toUnit(amount: number, printed: string | undefined, want: "mg" | "mcg",
 }
 
 const round = (n: number) => (n >= 100 ? Math.round(n) : Math.round(n * 10) / 10);
+
+/** An ingredient with an adult upper limit, in that limit's unit; null when it has none or the unit can't be compared. */
+export function limitedNutrient(ingredient: SupplementIngredient): { label: string; amount: number; unit: "mg" | "mcg"; limit: number } | null {
+  if (ingredient.amount === undefined) return null;
+  const limit = UPPER_LIMITS.find((l) => l.match.test(ingredient.name.toLowerCase()));
+  if (!limit) return null;
+  const amount = toUnit(ingredient.amount, ingredient.unit, limit.unit, limit.iuPerUnit);
+  return amount === null ? null : { label: limit.label, amount, unit: limit.unit, limit: limit.amount };
+}
+
+export const roundAmount = round;
 
 /** The last day the product is good for: the end of the month when only a month is printed. */
 function lastGoodDay(expiresOn: string): Date {

@@ -35,7 +35,9 @@ import type {
   WaitlistPlatform,
 } from "../../domain/types";
 import type { Subscription, SubscriptionStatus } from "../../domain/subscription";
+import type { StackItem, StackTiming } from "../../domain/stack";
 import type { WeightEntry } from "../../domain/weight";
+import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
 import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
@@ -47,6 +49,8 @@ import {
   recipeRecommendations,
   screenTimeSamples,
   sleepSessions,
+  stackDoses,
+  stackItems,
   subscriptions,
   users,
   waitlist,
@@ -84,6 +88,8 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(focusScores).where(eq(focusScores.userId, userId));
       await tx.delete(weightEntries).where(eq(weightEntries.userId, userId));
       await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
+      // Doses go with their items (on delete cascade).
+      await tx.delete(stackItems).where(eq(stackItems.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -593,5 +599,86 @@ export class DrizzleSubscriptionRepository implements ISubscriptionRepository {
 
   async markTrialReminded(userId: string, endsAt: Date): Promise<void> {
     await this.db.update(subscriptions).set({ trialRemindedFor: endsAt }).where(eq(subscriptions.userId, userId));
+  }
+}
+
+export class DrizzleStackRepository implements IStackRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toItem(row: typeof stackItems.$inferSelect): StackItem {
+    return {
+      id: row.id,
+      name: row.name,
+      ...(row.servingSize ? { servingSize: row.servingSize } : {}),
+      ingredients: row.ingredients,
+      servingsPerDay: row.servingsPerDay,
+      timing: row.timing as StackTiming,
+      ...(row.servingsPerContainer ? { servingsPerContainer: row.servingsPerContainer } : {}),
+      startedOn: row.startedOn,
+    };
+  }
+
+  async list(userId: string): Promise<StackItem[]> {
+    const rows = await this.db.select().from(stackItems).where(eq(stackItems.userId, userId)).orderBy(asc(stackItems.createdAt));
+    return rows.map(DrizzleStackRepository.toItem);
+  }
+
+  async add(userId: string, item: NewStackItem): Promise<StackItem> {
+    const [row] = await this.db
+      .insert(stackItems)
+      .values({
+        userId,
+        name: item.name,
+        servingSize: item.servingSize ?? null,
+        ingredients: item.ingredients,
+        servingsPerDay: item.servingsPerDay,
+        timing: item.timing,
+        servingsPerContainer: item.servingsPerContainer ?? null,
+        startedOn: item.startedOn,
+      })
+      .returning();
+    if (!row) throw new Error("Stack insert returned no row");
+    return DrizzleStackRepository.toItem(row);
+  }
+
+  async update(userId: string, id: string, patch: StackItemPatch): Promise<StackItem | null> {
+    const set = {
+      ...(patch.servingsPerDay !== undefined ? { servingsPerDay: patch.servingsPerDay } : {}),
+      ...(patch.timing !== undefined ? { timing: patch.timing } : {}),
+      ...(patch.servingsPerContainer !== undefined ? { servingsPerContainer: patch.servingsPerContainer } : {}),
+      ...(patch.startedOn !== undefined ? { startedOn: patch.startedOn } : {}),
+    };
+    const where = and(eq(stackItems.id, id), eq(stackItems.userId, userId));
+    const [row] = Object.keys(set).length
+      ? await this.db.update(stackItems).set(set).where(where).returning()
+      : await this.db.select().from(stackItems).where(where);
+    return row ? DrizzleStackRepository.toItem(row) : null;
+  }
+
+  async delete(userId: string, id: string): Promise<boolean> {
+    const rows = await this.db
+      .delete(stackItems)
+      .where(and(eq(stackItems.id, id), eq(stackItems.userId, userId)))
+      .returning({ id: stackItems.id });
+    return rows.length > 0;
+  }
+
+  async takenOn(userId: string, date: string): Promise<Set<string>> {
+    const rows = await this.db
+      .select({ itemId: stackDoses.itemId })
+      .from(stackDoses)
+      .where(and(eq(stackDoses.userId, userId), eq(stackDoses.date, date)));
+    return new Set(rows.map((r) => r.itemId));
+  }
+
+  async setTaken(userId: string, id: string, date: string, taken: boolean): Promise<boolean> {
+    const [item] = await this.db
+      .select({ id: stackItems.id })
+      .from(stackItems)
+      .where(and(eq(stackItems.id, id), eq(stackItems.userId, userId)));
+    if (!item) return false;
+    if (taken) await this.db.insert(stackDoses).values({ itemId: id, userId, date }).onConflictDoNothing();
+    else await this.db.delete(stackDoses).where(and(eq(stackDoses.itemId, id), eq(stackDoses.date, date)));
+    return true;
   }
 }

@@ -1,7 +1,9 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
+import type { StackItem } from "../../domain/stack";
 import type { Subscription } from "../../domain/subscription";
+import type { IStackRepository, NewStackItem, StackItemPatch } from "../interfaces/IStackRepository";
 import type { WeightEntry } from "../../domain/weight";
 import type { ISubscriptionRepository } from "../interfaces/ISubscriptions";
 import type { IIdentityProvider } from "../interfaces/IIdentityProvider";
@@ -412,6 +414,45 @@ export class InMemorySubscriptions implements ISubscriptionRepository {
   }
   async markTrialReminded(userId: string, endsAt: Date) {
     this.reminded.set(userId, endsAt);
+  }
+}
+
+export class InMemoryStack implements IStackRepository {
+  readonly rows: (StackItem & { userId: string })[] = [];
+  readonly doses = new Set<string>();
+  private next = 1;
+  async list(userId: string) {
+    return this.rows.filter((r) => r.userId === userId).map(({ userId: _, ...item }) => item);
+  }
+  async add(userId: string, item: NewStackItem) {
+    const saved = { ...item, id: `s${this.next++}` };
+    this.rows.push({ ...saved, userId });
+    return saved;
+  }
+  async update(userId: string, id: string, patch: StackItemPatch) {
+    const row = this.rows.find((r) => r.userId === userId && r.id === id);
+    if (!row) return null;
+    const { servingsPerContainer, ...rest } = patch;
+    Object.assign(row, rest);
+    if (servingsPerContainer === null) delete row.servingsPerContainer;
+    else if (servingsPerContainer !== undefined) row.servingsPerContainer = servingsPerContainer;
+    const { userId: _, ...item } = row;
+    return item;
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
+  }
+  async takenOn(userId: string, date: string) {
+    return new Set(this.rows.filter((r) => r.userId === userId && this.doses.has(`${r.id}:${date}`)).map((r) => r.id));
+  }
+  async setTaken(userId: string, id: string, date: string, taken: boolean) {
+    if (!this.rows.some((r) => r.userId === userId && r.id === id)) return false;
+    if (taken) this.doses.add(`${id}:${date}`);
+    else this.doses.delete(`${id}:${date}`);
+    return true;
   }
 }
 

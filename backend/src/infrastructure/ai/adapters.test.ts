@@ -133,6 +133,7 @@ describe("OpenAiSupplementLabelReader", () => {
     brand: "Calm Labs",
     productName: "Magnesium Glycinate",
     servingSize: "2 capsules",
+    servingsPerContainer: 60,
     ingredients: [
       { name: "Magnesium", amount: 200, unit: "mg", inBlend: false },
       { name: "Chamomile", amount: null, unit: null, inBlend: true },
@@ -149,6 +150,7 @@ describe("OpenAiSupplementLabelReader", () => {
       brand: "Calm Labs",
       productName: "Magnesium Glycinate",
       servingSize: "2 capsules",
+      servingsPerContainer: 60,
       ingredients: [
         { name: "Magnesium", amount: 200, unit: "mg", inBlend: false },
         { name: "Chamomile", inBlend: true },

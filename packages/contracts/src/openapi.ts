@@ -57,6 +57,14 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Your subscription",
     description: "As last reported by RevenueCat. Without access it asks RevenueCat directly once, so a purchase made seconds ago already counts. When the paywall is on, photo and label reading and recipe suggestions answer 402 `subscription_required` without access.",
   },
+  getStack: {
+    summary: "Your supplement stack",
+    description: "Each supplement with today's tick and days of the bottle left, plus checks no single label can show: daily totals across products against adult upper limits, the same nutrient in several products, and caffeine taken in the evening.",
+  },
+  addStackItem: { summary: "Add a supplement to your stack", description: "Usually straight from a label scan. At most 30 supplements." },
+  updateStackItem: { summary: "Change servings, timing or the bottle size", params: { id: "The stack item's id." } },
+  deleteStackItem: { summary: "Remove a supplement from your stack", status: 204, params: { id: "The stack item's id." } },
+  setStackTaken: { summary: "Tick a supplement as taken today", params: { id: "The stack item's id." } },
   getFasting: {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",

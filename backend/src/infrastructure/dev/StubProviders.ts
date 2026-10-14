@@ -27,6 +27,7 @@ export const stubLabels: ISupplementLabelReader = {
       brand: "Calm Labs",
       productName: "Magnesium Glycinate",
       servingSize: "2 capsules",
+      servingsPerContainer: 60,
       ingredients: [
         { name: "Magnesium (as magnesium glycinate)", amount: 200, unit: "mg", inBlend: false },
         { name: "Calm blend (L-theanine, chamomile)", amount: 150, unit: "mg", inBlend: true },

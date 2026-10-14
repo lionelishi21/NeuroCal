@@ -14,6 +14,7 @@ export const SupplementLabelSchema = z.object({
   brand: z.string().nullable(),
   productName: z.string().nullable(),
   servingSize: z.string().nullable(),
+  servingsPerContainer: z.number().int().positive().nullable(),
   ingredients: z.array(
     z.object({
       name: z.string().min(1),
@@ -85,6 +86,7 @@ export class OpenAiSupplementLabelReader implements ISupplementLabelReader {
       ...present("brand", r.brand),
       ...present("productName", r.productName),
       ...present("servingSize", r.servingSize),
+      ...present("servingsPerContainer", r.servingsPerContainer),
       ingredients: r.ingredients.map((i) => ({ name: i.name, ...present("amount", i.amount), ...present("unit", i.unit), inBlend: i.inBlend })),
       proprietaryBlend: r.proprietaryBlend,
       testing: [...new Set(r.testing)],

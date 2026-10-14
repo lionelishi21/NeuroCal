@@ -21,6 +21,7 @@ import type {
   IWeightRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
+import type { IStackRepository } from "../application/interfaces/IStackRepository";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
@@ -38,6 +39,7 @@ import { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
 import { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
+import { StackUseCases } from "../application/use-cases/StackUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -70,6 +72,7 @@ export interface Ports {
   waitlist: IWaitlistRepository;
   weights: IWeightRepository;
   subscriptions: ISubscriptionRepository;
+  stack: IStackRepository;
   /** RevenueCat's REST API, when its key is set. */
   subscriptionLookup: ISubscriptionLookup | null;
   /** The Authorization header RevenueCat's webhook sends. */
@@ -99,6 +102,7 @@ export function buildUseCases(p: Ports): UseCases {
     deleteWeight: new DeleteWeightUseCase(p.weights),
     getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock),
     getSubscription,
+    stack: new StackUseCases(p.profiles, p.stack, p.clock),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),

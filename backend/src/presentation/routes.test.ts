@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { FoodCatalog, SupplementLabelResponse } from "@neurocal/contracts";
+import { FoodCatalog, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -20,6 +20,7 @@ import {
   InMemoryUsers,
   InMemoryWeights,
   InMemorySubscriptions,
+  InMemoryStack,
   FakeLabelReader,
   FakeIdentity,
   InMemoryRecommendations,
@@ -101,6 +102,7 @@ beforeEach(async () => {
     email,
     webUrl: "https://neurocal.ai",
     subscriptions,
+    stack: new InMemoryStack(),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -265,6 +267,32 @@ describe("API routes", () => {
 
     await subscriptions.save("u1", { status: "active", expiresAt: new Date("2027-01-01T00:00:00Z"), willRenew: true, eventAt: new Date("2026-09-01T00:00:00Z") });
     expect((await call("GET", "/recommendations/next")).status).toBe(200);
+  });
+
+  it("builds a supplement stack, ticks today's doses, and checks the stack as a whole", async () => {
+    const zinc = (mg: number) => ({ name: "Zinc", amount: mg, unit: "mg", inBlend: false });
+    const multi = await call("POST", "/stack", { name: "Daily Multi", ingredients: [zinc(15)], servingsPerDay: 1, timing: "with_food", servingsPerContainer: 30 });
+    expect(multi).toMatchObject({ status: 201, body: { name: "Daily Multi", startedOn: "2026-09-29", daysLeft: 30, takenToday: false } });
+    const id = (multi.body as { id: string }).id;
+    await call("POST", "/stack", { name: "Zinc 25", ingredients: [zinc(25)], servingsPerDay: 2, timing: "evening" });
+
+    expect((await call("PUT", `/stack/${id}/taken`, { taken: true })).body).toEqual({ taken: true });
+    const stack = await call("GET", "/stack");
+    expect(StackResponse.parse(stack.body)).toMatchObject({
+      date: "2026-09-29",
+      items: [{ name: "Daily Multi", takenToday: true }, { name: "Zinc 25", takenToday: false }],
+      flags: [{ kind: "above_upper_limit", message: expect.stringContaining("65 mg of zinc a day") }],
+    });
+
+    expect((await call("PUT", `/stack/${id}`, { servingsPerDay: 2, newBottle: true })).body).toMatchObject({ servingsPerDay: 2, daysLeft: 15 });
+    expect((await call("PUT", "/stack/nope/taken", { taken: true })).status).toBe(404);
+    expect((await call("POST", "/stack", { name: "", ingredients: [], servingsPerDay: 1, timing: "any" })).status).toBe(400);
+    expect((await call("DELETE", `/stack/${id}`)).status).toBe(204);
+    // Two 25 mg servings a day is still over the limit on its own.
+    expect((await call("GET", "/stack")).body).toMatchObject({
+      items: [{ name: "Zinc 25" }],
+      flags: [{ message: "You take 50 mg of zinc a day, above the 40 mg upper limit for adults. Check with your doctor." }],
+    });
   });
 
   it("GET /me returns the contract profile", async () => {
