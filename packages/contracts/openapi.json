@@ -845,6 +845,40 @@
         }
       }
     },
+    "/today": {
+      "get": {
+        "operationId": "getToday",
+        "summary": "Get everything the Today screen shows in one call",
+        "description": "Without `date`: today, with suggestions, fasting, the supplement stack and Brain speed. With a past `date`: that day's score, calories and meals only. An extra that fails is left out rather than failing the call.",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Calendar day in the user's time zone, e.g. 2026-09-29. Defaults to today.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/history": {
       "get": {
         "operationId": "getHistory",
@@ -3404,6 +3438,37 @@
           "apple_health",
           "health_connect",
           "wearable"
+        ]
+      },
+      "TodayResponse": {
+        "type": "object",
+        "properties": {
+          "focus": {
+            "$ref": "#/components/schemas/FocusScore"
+          },
+          "bio": {
+            "$ref": "#/components/schemas/BioState"
+          },
+          "meals": {
+            "$ref": "#/components/schemas/MealList"
+          },
+          "recipes": {
+            "$ref": "#/components/schemas/NextRecommendationsResponse"
+          },
+          "fasting": {
+            "$ref": "#/components/schemas/FastingStatus"
+          },
+          "stack": {
+            "$ref": "#/components/schemas/StackResponse"
+          },
+          "brain": {
+            "$ref": "#/components/schemas/BrainCheckHistory"
+          }
+        },
+        "required": [
+          "focus",
+          "bio",
+          "meals"
         ]
       },
       "UpdateAdminProductRequest": {

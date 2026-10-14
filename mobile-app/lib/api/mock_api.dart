@@ -212,6 +212,15 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
+  Future<TodayData> today([DateTime? day]) async {
+    final date = day ?? DateTime.now();
+    final (focus, bio, dayMeals) = await (focusScore(date), bioState(date), meals(date)).wait;
+    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals);
+    final (recipes, fast, supplements, brain) = await (recommendations(), fasting(), stack(), brainChecks()).wait;
+    return TodayData(focus: focus, bio: bio, meals: dayMeals, recipes: recipes, fasting: fast, stack: supplements, brain: brain);
+  }
+
+  @override
   Future<List<Recipe>> recommendations() async {
     await _wait();
     return const [

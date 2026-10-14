@@ -66,7 +66,7 @@ The API only accepts calls from the origins in `webOrigins`, so deploy with the 
 | Item | Dev | Prod |
 |---|---|---|
 | NAT gateway (needed for OpenAI, Anthropic, Google) | ~$33/month + data | same |
-| Aurora Serverless v2 | storage only while paused; wakes on the first query (~15 s) | ≥ 0.5 ACU always on, ~$45/month + storage |
+| Aurora Serverless v2 | ≥ 0.5 ACU always on, ~$45/month + storage (`warmDatabase` in `cdk.json`); with `-c warmDatabase=false`, storage only while paused and ~15 s to wake | ≥ 0.5 ACU always on, ~$45/month + storage |
 | Secrets Manager | 2 × $0.40/month | same |
 | Lambda, API Gateway, S3, Cognito | pennies at POC traffic | usage-based |
 

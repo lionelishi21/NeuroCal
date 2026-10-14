@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -483,7 +483,24 @@ describe("API routes", () => {
     });
   });
 
-  it("POST /telemetry/screen-time validates the window", async () => {
+  it("GET /today returns the whole screen in one call, and only the day itself for a past date", async () => {
+    const today = await call("GET", "/today");
+    expect(today.status).toBe(200);
+    const body = TodayResponse.parse(today.body);
+    expect(body.focus.date).toBe("2026-09-29");
+    expect(body.bio.date).toBe("2026-09-29");
+    expect(body.meals.length).toBeGreaterThan(0);
+    expect(body.fasting).toBeDefined();
+    expect(body.stack).toBeDefined();
+    expect(body.brain).toBeDefined();
+
+    const past = TodayResponse.parse((await call("GET", "/today?date=2026-09-28")).body);
+    expect(past.focus.date).toBe("2026-09-28");
+    expect(past).not.toHaveProperty("recipes");
+    expect(past).not.toHaveProperty("stack");
+  });
+
+    it("POST /telemetry/screen-time validates the window", async () => {
     const res = await call("POST", "/telemetry/screen-time", {
       samples: [{ windowStart: "2026-09-28T22:00:00-05:00", windowEnd: "2026-09-28T23:00:00-05:00", minutes: 90, source: "wearable" }],
     });

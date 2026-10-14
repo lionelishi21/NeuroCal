@@ -90,4 +90,37 @@ void main() {
     await expectLater(api.deleteMeal('m1'), throwsA(isA<ApiException>()));
     expect(writes, 1);
   });
+
+  test('today is one call, with the date only for a past day; missing extras stay null', () async {
+    final urls = <String>[];
+    final api = HttpNeuroCalApi(
+      baseUrl: 'https://api.example.com',
+      token: () async => 'token',
+      client: MockClient((req) async {
+        urls.add(req.url.toString());
+        const macros = {'proteinG': 0, 'carbsG': 0, 'fatG': 0};
+        return http.Response(
+          jsonEncode({
+            'focus': {
+              'date': '2026-10-14',
+              'score': 82,
+              'components': {'sleep': 0.8, 'timing': null, 'glycemic': null, 'stress': null},
+              'explanation': 'Good sleep.',
+            },
+            'bio': {'calorieTarget': 2200, 'caloriesEaten': 0, 'macrosEaten': macros, 'macroTargets': macros},
+            'meals': <Object>[],
+            'brain': {'checks': <Object>[], 'baselineScore': 70},
+          }),
+          200,
+        );
+      }),
+    );
+    final today = await api.today();
+    expect(today.focus.score, 82);
+    expect(today.brain?.baselineScore, 70);
+    expect(today.recipes, isNull);
+    expect(today.stack, isNull);
+    await api.today(DateTime(2026, 10, 12));
+    expect(urls, ['https://api.example.com/today', 'https://api.example.com/today?date=2026-10-12']);
+  });
 }

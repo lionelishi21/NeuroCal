@@ -29,6 +29,15 @@ describe("NeuroCalStack", () => {
     prod.hasResource("AWS::RDS::DBCluster", { DeletionPolicy: "Snapshot" });
   });
 
+  it("keeps a dev database awake when asked", () => {
+    const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
+    const warm = new NeuroCalStack(app, "NeuroCal-warm", { stage: "dev", webOrigins: ["https://app.example.com"], warmDatabase: true });
+    Template.fromStack(warm).hasResourceProperties("AWS::RDS::DBCluster", {
+      DeletionProtection: false,
+      ServerlessV2ScalingConfiguration: { MinCapacity: 0.5, MaxCapacity: 2 },
+    });
+  });
+
   it("gives Lambdas secret ARNs, never secret values", () => {
     const functions = dev.findResources("AWS::Lambda::Function", {
       Properties: { Environment: { Variables: { APP_SECRET_ARN: Match.anyValue() } } },

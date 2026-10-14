@@ -983,3 +983,30 @@ String isoWithOffset(DateTime d) {
   final base = local.toIso8601String().split('.').first;
   return '$base$sign$h:$m';
 }
+
+/// Everything the Today screen shows, from one call (`TodayResponse` in the contracts). The extras are
+/// only there for today, and are null when one failed.
+class TodayData {
+  const TodayData({required this.focus, required this.bio, required this.meals, this.recipes, this.fasting, this.stack, this.brain});
+
+  final FocusScore focus;
+  final BioState bio;
+  final List<Meal> meals;
+  final List<Recipe>? recipes;
+  final FastingStatus? fasting;
+  final SupplementStack? stack;
+  final BrainCheckHistory? brain;
+
+  factory TodayData.fromJson(Map<String, dynamic> j) {
+    T? maybe<T>(String key, T Function(Map<String, dynamic>) parse) => j[key] == null ? null : parse(j[key] as Map<String, dynamic>);
+    return TodayData(
+      focus: FocusScore.fromJson(j['focus'] as Map<String, dynamic>),
+      bio: BioState.fromJson(j['bio'] as Map<String, dynamic>),
+      meals: [for (final m in j['meals'] as List) Meal.fromJson(m as Map<String, dynamic>)],
+      recipes: maybe('recipes', (r) => [for (final x in r['recipes'] as List) Recipe.fromJson(x as Map<String, dynamic>)]),
+      fasting: maybe('fasting', FastingStatus.fromJson),
+      stack: maybe('stack', SupplementStack.fromJson),
+      brain: maybe('brain', BrainCheckHistory.fromJson),
+    );
+  }
+}

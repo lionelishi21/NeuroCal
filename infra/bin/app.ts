@@ -14,6 +14,8 @@ new NeuroCalStack(app, `NeuroCal-${stage}`, {
   webOrigins: origins.split(",").map((o) => o.trim()).filter(Boolean),
   // -c adminEmails=you@example.com,other@example.com (or "adminEmails" in cdk.json's context, so every deploy keeps it)
   adminEmails: ((app.node.tryGetContext("adminEmails") as string | undefined) ?? "").split(",").map((e) => e.trim()).filter(Boolean),
+  // On in cdk.json's context so every deploy keeps it; -c warmDatabase=false lets dev pause again.
+  warmDatabase: String(app.node.tryGetContext("warmDatabase")) === "true",
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
   tags: { project: "neurocal", stage },
 });

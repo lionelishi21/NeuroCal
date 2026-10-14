@@ -110,6 +110,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   deleteMeal: { summary: "Remove a meal", status: 204, params: { id: "The meal's id." } },
   nextRecommendations: { summary: "Suggest recipes for the current bio-state" },
   getFocusScore: { summary: "Get a day's Focus Score with its inputs and explanation", query: dateQuery },
+  getToday: {
+    summary: "Get everything the Today screen shows in one call",
+    description: "Without `date`: today, with suggestions, fasting, the supplement stack and Brain speed. With a past `date`: that day's score, calories and meals only. An extra that fails is left out rather than failing the call.",
+    query: dateQuery,
+  },
   getHistory: {
     summary: "Get the last N days, oldest first",
     query: { days: { description: "How many days, ending today. Defaults to 7.", schema: { type: "integer", minimum: 1, maximum: 31 } } },

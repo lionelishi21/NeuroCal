@@ -129,21 +129,20 @@ class _TodayScreenState extends State<TodayScreen> {
     _day ??= _load();
   }
 
+  /// One call for the whole screen; the server leaves out an extra that failed, so the day still shows.
   Future<_Day> _load() async {
-    final api = _api;
     final date = _date ?? DateTime.now();
-    if (_date != null) {
-      // A past day: what happened, without today's suggestions and timers.
-      final (focus, bio, meals) = await (api.focusScore(date), api.bioState(date), api.meals(date)).wait;
-      return _Day(date, focus, bio, meals);
-    }
-    final recipes = api.recommendations().then<List<Recipe>?>((r) => r).catchError((Object _) => null);
-    // The extras: if they fail, the rest of Today still shows.
-    final fasting = api.fasting().then<FastingStatus?>((f) => f.kind == FastingKind.off ? null : f).catchError((Object _) => null);
-    final stack = api.stack().then<SupplementStack?>((s) => s.items.isEmpty ? null : s).catchError((Object _) => null);
-    final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
-    final (focus, bio, meals) = await (api.focusScore(date), api.bioState(date), api.meals(date)).wait;
-    return _Day(date, focus, bio, meals, recipes: await recipes, fasting: await fasting, stack: await stack, brain: await brain);
+    final d = await _api.today(_date);
+    return _Day(
+      date,
+      d.focus,
+      d.bio,
+      d.meals,
+      recipes: d.recipes,
+      fasting: d.fasting?.kind == FastingKind.off ? null : d.fasting,
+      stack: d.stack == null || d.stack!.items.isEmpty ? null : d.stack,
+      brain: d.brain,
+    );
   }
 
   Future<void> _refresh() async {

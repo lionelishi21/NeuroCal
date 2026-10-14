@@ -24,6 +24,11 @@ export interface NeuroCalStackProps extends StackProps {
   webOrigins: string[];
   /** Sign-in emails allowed to use the admin routes. */
   adminEmails?: string[];
+  /**
+   * Keep a non-prod database awake (min 0.5 ACU, ~$45/month) instead of pausing it when idle, so testers
+   * never wait ~15 s for it to wake. Prod is always warm.
+   */
+  warmDatabase?: boolean;
 }
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -55,13 +60,13 @@ export class NeuroCalStack extends Stack {
       ],
     });
 
-    // Database: Aurora Serverless v2. Dev pauses when idle (min 0 ACU); prod stays warm.
+    // Database: Aurora Serverless v2. Dev pauses when idle (min 0 ACU) unless warmDatabase; prod stays warm.
     const database = new rds.DatabaseCluster(this, "Database", {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_17_9 }),
       credentials: rds.Credentials.fromGeneratedSecret("neurocal"),
       defaultDatabaseName: "neurocal",
       writer: rds.ClusterInstance.serverlessV2("writer"),
-      serverlessV2MinCapacity: prod ? 0.5 : 0,
+      serverlessV2MinCapacity: prod || props.warmDatabase ? 0.5 : 0,
       serverlessV2MaxCapacity: prod ? 8 : 2,
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },

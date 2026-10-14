@@ -14,6 +14,7 @@ import {
   SetTakenRequest,
   StackItem,
   StackResponse,
+  TodayResponse,
   UpdateStackItemRequest,
   SubscriptionStatus,
   FastingStatus,
@@ -444,6 +445,50 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["GET", /^\/focus-score$/, async (req) => ok(FocusScore, toFocusScore(await uc.getFocusScore.execute({ userId: req.userId, date: date(req) })))],
+    [
+      "GET",
+      /^\/today$/,
+      async (req) => {
+        const day = { userId: req.userId, date: date(req) };
+        // The extras only for today, and each on its own: one failing leaves the rest of the day showing.
+        const extra = async <T>(name: string, load: () => Promise<T>): Promise<T | undefined> => {
+          if (day.date !== undefined) return undefined;
+          try {
+            return await load();
+          } catch (e) {
+            console.error(JSON.stringify({ event: "today_extra_failed", extra: name, error: String(e) }));
+            return undefined;
+          }
+        };
+        const [focus, bio, meals, recipes, fasting, stack, brain] = await Promise.all([
+          uc.getFocusScore.execute(day),
+          uc.getBioState.execute(day),
+          uc.listMeals.execute(day),
+          extra("recipes", async () => {
+            await uc.gate.require(req);
+            return toRecommendations(await uc.recommendRecipe.execute(req));
+          }),
+          extra("fasting", async () => toFasting(await uc.getFasting.execute(req))),
+          extra("stack", async () => {
+            const s = await uc.stack.get(req.userId);
+            return { date: s.date, items: s.items, flags: s.flags };
+          }),
+          extra("brain", async () => {
+            const h = await uc.brainChecks.history(req.userId, 30);
+            return { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) };
+          }),
+        ]);
+        return ok(TodayResponse, {
+          focus: toFocusScore(focus),
+          bio: toBioState(bio),
+          meals: meals.map(toMeal),
+          ...(recipes ? { recipes } : {}),
+          ...(fasting ? { fasting } : {}),
+          ...(stack ? { stack } : {}),
+          ...(brain ? { brain } : {}),
+        });
+      },
+    ],
     ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
     [
       "GET",

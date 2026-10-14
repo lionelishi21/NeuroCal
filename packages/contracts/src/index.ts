@@ -724,6 +724,22 @@ export const SubscriptionStatus = z.object({
 });
 export type SubscriptionStatus = z.infer<typeof SubscriptionStatus>;
 
+/**
+ * Everything the Today screen shows, in one call. Without `date` it is today in the profile's time zone and
+ * carries the extras (suggestions, fasting, stack, Brain speed); with a past `date` only the day itself.
+ * An extra that fails is left out, so the day still shows.
+ */
+export const TodayResponse = z.object({
+  focus: FocusScore,
+  bio: BioState,
+  meals: MealList,
+  recipes: NextRecommendationsResponse.optional(),
+  fasting: FastingStatus.optional(),
+  stack: StackResponse.optional(),
+  brain: BrainCheckHistory.optional(),
+});
+export type TodayResponse = z.infer<typeof TodayResponse>;
+
 export const ApiError = z.object({
   code: z.string(),
   message: z.string(),
@@ -773,6 +789,8 @@ export const endpoints = {
   deleteMeal: { method: "DELETE", path: "/meals/:id" },
   nextRecommendations: { method: "GET", path: "/recommendations/next", response: NextRecommendationsResponse },
   getFocusScore: { method: "GET", path: "/focus-score", response: FocusScore },
+  /** The whole Today screen in one call (see TodayResponse). */
+  getToday: { method: "GET", path: "/today", response: TodayResponse },
   /** ?days=7 (1–31), oldest first, ending today in the user's time zone. */
   getHistory: { method: "GET", path: "/history", response: HistoryResponse },
   /** Protocols and products matched (pgvector) to the past week's weakest Focus Score inputs. */
