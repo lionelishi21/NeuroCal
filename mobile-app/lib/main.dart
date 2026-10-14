@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,6 +26,9 @@ import 'widgets/toast.dart';
 /// Composition root: picks the real or mock API and sign-in from the build settings (config.dart).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Portrait only, like the native settings (AndroidManifest.xml, Info.plist): scanning and the
+  // Brain speed check are built for an upright phone.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final theme = ThemeController(await SharedPreferences.getInstance());
   final AuthClient auth = AppConfig.usesMockAuth
       ? MockAuthClient()
