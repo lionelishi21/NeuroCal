@@ -518,6 +518,42 @@ export const BrainCheck = z.object({
 });
 export type BrainCheck = z.infer<typeof BrainCheck>;
 
+export const ExerciseKind = z.enum(["walk", "run", "cycle", "strength", "hiit", "yoga", "swim", "sport", "other"]);
+export type ExerciseKind = z.infer<typeof ExerciseKind>;
+export const ExerciseIntensity = z.enum(["light", "moderate", "hard"]);
+export type ExerciseIntensity = z.infer<typeof ExerciseIntensity>;
+
+export const LogExerciseRequest = z.object({
+  kind: ExerciseKind,
+  intensity: ExerciseIntensity,
+  minutes: z.number().int().min(1).max(600),
+  /** When it started; defaults to `minutes` ago. */
+  startedAt: IsoDateTime.optional(),
+});
+export type LogExerciseRequest = z.infer<typeof LogExerciseRequest>;
+
+export const Exercise = z.object({
+  id: z.string(),
+  kind: ExerciseKind,
+  intensity: ExerciseIntensity,
+  minutes: z.number().int(),
+  startedAt: IsoDateTime,
+  /** Burned by the exercise itself (above resting), from the latest weigh-in when it was logged. */
+  kcal: z.number().int().nonnegative(),
+});
+export type Exercise = z.infer<typeof Exercise>;
+
+export const ExerciseDay = z.object({
+  date: IsoDate,
+  /** Earliest first. */
+  exercises: z.array(Exercise),
+  totalMinutes: z.number().int().nonnegative(),
+  totalKcal: z.number().int().nonnegative(),
+  /** "default" when there's no weigh-in yet and calories assume 70 kg. */
+  weightSource: z.enum(["weigh_in", "default"]),
+});
+export type ExerciseDay = z.infer<typeof ExerciseDay>;
+
 export const BrainCheckHistory = z.object({
   /** Newest first. */
   checks: z.array(BrainCheck),
@@ -737,6 +773,8 @@ export const TodayResponse = z.object({
   fasting: FastingStatus.optional(),
   stack: StackResponse.optional(),
   brain: BrainCheckHistory.optional(),
+  /** The day's exercise; left out only if it failed to load. */
+  exercise: ExerciseDay.optional(),
 });
 export type TodayResponse = z.infer<typeof TodayResponse>;
 
@@ -768,6 +806,11 @@ export const endpoints = {
   addBrainCheck: { method: "POST", path: "/brain-checks", body: BrainCheckRequest, response: BrainCheck },
   /** Checks from the last `days` days (default 30) with your usual score. */
   getBrainChecks: { method: "GET", path: "/brain-checks", response: BrainCheckHistory },
+  /** Logs exercise; the API works out the calories. */
+  logExercise: { method: "POST", path: "/exercises", body: LogExerciseRequest, response: Exercise },
+  /** A day's exercise (?date=, default today) with its totals. */
+  getExercises: { method: "GET", path: "/exercises", response: ExerciseDay },
+  deleteExercise: { method: "DELETE", path: "/exercises/:id" },
   /** The supplements someone takes, today's ticks, and checks across the whole stack. */
   getStack: { method: "GET", path: "/stack", response: StackResponse },
   addStackItem: { method: "POST", path: "/stack", body: AddStackItemRequest, response: StackItem },

@@ -120,6 +120,14 @@ ThemeData buildTheme(Brightness brightness) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.control)),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: c.synapse),
+    sliderTheme: SliderThemeData(
+      activeTrackColor: c.synapse,
+      inactiveTrackColor: c.track,
+      thumbColor: c.synapse,
+      overlayColor: c.synapse.withValues(alpha: 0.12),
+      valueIndicatorColor: c.synapse,
+      valueIndicatorTextStyle: TextStyle(color: c.onAccent, fontWeight: FontWeight.w700),
+    ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.onAccent : c.inkSoft),
       trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.synapse : c.track),

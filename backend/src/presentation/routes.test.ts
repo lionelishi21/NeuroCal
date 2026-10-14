@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -22,6 +22,7 @@ import {
   InMemorySubscriptions,
   InMemoryStack,
   InMemoryBrainChecks,
+  InMemoryExercises,
   FakeLabelReader,
   FakeFoodLabelReader,
   FakeProductDatabase,
@@ -125,6 +126,7 @@ beforeEach(async () => {
     subscriptions,
     stack: new InMemoryStack(),
     brainChecks: new InMemoryBrainChecks(),
+    exercises: new InMemoryExercises(),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -481,6 +483,21 @@ describe("API routes", () => {
       components: { sleep: 0.75 },
       explanation: "Short sleep is holding you back.",
     });
+  });
+
+  it("POST /exercises logs exercise with calories from the latest weigh-in, and GET /exercises totals the day", async () => {
+    const logged = await call("POST", "/exercises", { kind: "walk", intensity: "moderate", minutes: 30 });
+    expect(logged.status).toBe(201);
+    const exercise = logged.body as { id: string; kcal: number };
+    expect(exercise.kcal).toBeGreaterThan(0);
+    const day = ExerciseDay.parse((await call("GET", "/exercises")).body);
+    expect(day).toMatchObject({ date: "2026-09-29", totalMinutes: 30, totalKcal: exercise.kcal });
+    expect(TodayResponse.parse((await call("GET", "/today")).body).exercise?.totalMinutes).toBe(30);
+
+    expect((await call("POST", "/exercises", { kind: "walk", intensity: "moderate", minutes: 0 })).status).toBe(400);
+    expect((await call("DELETE", `/exercises/${exercise.id}`)).status).toBe(204);
+    expect((await call("DELETE", `/exercises/${exercise.id}`)).status).toBe(404);
+    expect(ExerciseDay.parse((await call("GET", "/exercises")).body).totalMinutes).toBe(0);
   });
 
   it("GET /today returns the whole screen in one call, and only the day itself for a past date", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import { CognitiveFlag, CognitiveGoal, DietaryPreference, MacroFocus, MealKind } from "@neurocal/contracts";
+import { CognitiveFlag, CognitiveGoal, DietaryPreference, ExerciseIntensity, ExerciseKind, MacroFocus, MealKind } from "@neurocal/contracts";
+import { EXERCISE_KINDS, INTENSITIES } from "../domain/exercise";
 import { COGNITIVE_FLAGS, COGNITIVE_GOALS, DIETARY_PREFERENCES, MACRO_FOCUSES, MEAL_KINDS } from "../domain/types";
 
 /** The domain keeps its own enums (no contracts import); this keeps them in step with the wire format. */
@@ -10,6 +11,8 @@ describe("domain enums match packages/contracts", () => {
     ["CognitiveGoal", COGNITIVE_GOALS, CognitiveGoal.options],
     ["MacroFocus", MACRO_FOCUSES, MacroFocus.options],
     ["MealKind", MEAL_KINDS, MealKind.options],
+    ["ExerciseKind", EXERCISE_KINDS, ExerciseKind.options],
+    ["ExerciseIntensity", INTENSITIES, ExerciseIntensity.options],
   ])("%s", (_, domain, contract) => {
     expect([...domain].sort()).toEqual([...contract].sort());
   });

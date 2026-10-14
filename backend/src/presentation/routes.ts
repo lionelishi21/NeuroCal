@@ -14,6 +14,9 @@ import {
   SetTakenRequest,
   StackItem,
   StackResponse,
+  Exercise,
+  ExerciseDay,
+  LogExerciseRequest,
   TodayResponse,
   UpdateStackItemRequest,
   SubscriptionStatus,
@@ -63,6 +66,8 @@ import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase
 import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
 import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import type { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
+import type { ExerciseDay as ExerciseDayResult, ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
+import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
@@ -113,6 +118,7 @@ export interface UseCases {
   getSubscription: GetSubscriptionUseCase;
   stack: StackUseCases;
   brainChecks: BrainCheckUseCases;
+  exercise: ExerciseUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -201,6 +207,8 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
 });
 
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
+const toExercise = ({ startedAt, ...e }: SavedExercise) => ({ ...e, startedAt: startedAt.toISOString() });
+const toExerciseDay = (d: ExerciseDayResult) => ({ ...d, exercises: d.exercises.map(toExercise) });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
@@ -333,6 +341,16 @@ export function createApi(uc: UseCases) {
         return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
       },
     ],
+    ["POST", /^\/exercises$/, async (req) => ok(Exercise, toExercise(await uc.exercise.log(req.userId, json(req, LogExerciseRequest))), 201)],
+    ["GET", /^\/exercises$/, async (req) => ok(ExerciseDay, toExerciseDay(await uc.exercise.day(req.userId, date(req))))],
+    [
+      "DELETE",
+      /^\/exercises\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.exercise.remove(req.userId, id!);
+        return { status: 204 };
+      },
+    ],
     [
       "GET",
       /^\/stack$/,
@@ -460,10 +478,15 @@ export function createApi(uc: UseCases) {
             return undefined;
           }
         };
-        const [focus, bio, meals, recipes, fasting, stack, brain] = await Promise.all([
+        const [focus, bio, meals, exercise, recipes, fasting, stack, brain] = await Promise.all([
           uc.getFocusScore.execute(day),
           uc.getBioState.execute(day),
           uc.listMeals.execute(day),
+          // Part of any day, past or present; still left out rather than failing the whole screen.
+          uc.exercise.day(req.userId, day.date).then(toExerciseDay, (e: unknown) => {
+            console.error(JSON.stringify({ event: "today_extra_failed", extra: "exercise", error: String(e) }));
+            return undefined;
+          }),
           extra("recipes", async () => {
             await uc.gate.require(req);
             return toRecommendations(await uc.recommendRecipe.execute(req));
@@ -482,6 +505,7 @@ export function createApi(uc: UseCases) {
           focus: toFocusScore(focus),
           bio: toBioState(bio),
           meals: meals.map(toMeal),
+          ...(exercise ? { exercise } : {}),
           ...(recipes ? { recipes } : {}),
           ...(fasting ? { fasting } : {}),
           ...(stack ? { stack } : {}),

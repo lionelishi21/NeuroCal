@@ -18,6 +18,10 @@ abstract interface class NeuroCalApi {
   /// The whole Today screen in one call: today with its extras, or a past [day] on its own.
   Future<TodayData> today([DateTime? day]);
 
+  /// Logs exercise that just ended; the API works out the calories.
+  Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes);
+  Future<void> deleteExercise(String id);
+
   /// Recipes for the next meal, best first. Empty when nothing fits.
   Future<List<Recipe>> recommendations();
   Future<List<Meal>> meals(DateTime day);
@@ -160,6 +164,21 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<TodayData> today([DateTime? day]) async =>
       TodayData.fromJson(await _get('/today', day == null ? null : {'date': isoDate(day)}) as Map<String, dynamic>);
+
+  @override
+  Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes) async {
+    final res = await _client.post(
+      _uri('/exercises'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'kind': kind.name, 'intensity': intensity.name, 'minutes': minutes}),
+    );
+    return Exercise.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteExercise(String id) async {
+    _decode(await _client.delete(_uri('/exercises/$id'), headers: await _headers()));
+  }
 
   @override
   Future<List<Recipe>> recommendations() async => [

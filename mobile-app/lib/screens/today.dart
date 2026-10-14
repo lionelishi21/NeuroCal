@@ -8,10 +8,11 @@ import '../widgets/focus_ring.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'capture.dart';
+import 'exercise_sheet.dart';
 import 'stack.dart';
 
 class _Day {
-  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain});
+  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise});
 
   final DateTime date;
   final FocusScore focus;
@@ -29,6 +30,9 @@ class _Day {
 
   /// Null when it didn't load; the card then still offers the check.
   final BrainCheckHistory? brain;
+
+  /// Null when it didn't load.
+  final ExerciseDay? exercise;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -142,6 +146,7 @@ class _TodayScreenState extends State<TodayScreen> {
       fasting: d.fasting?.kind == FastingKind.off ? null : d.fasting,
       stack: d.stack == null || d.stack!.items.isEmpty ? null : d.stack,
       brain: d.brain,
+      exercise: d.exercise,
     );
   }
 
@@ -165,6 +170,16 @@ class _TodayScreenState extends State<TodayScreen> {
   Future<void> _manageStack() async {
     await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StackScreen()));
     if (mounted) _refresh();
+  }
+
+  Future<void> _removeExercise(Exercise e) async {
+    try {
+      await _api.deleteExercise(e.id);
+      if (mounted) showToast(context, 'Exercise removed', ToastTone.info);
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't remove the exercise. Try again.", ToastTone.problem);
+    }
+    widget.onChanged();
   }
 
   Future<void> _remove(Meal meal) async {
@@ -232,6 +247,10 @@ class _TodayScreenState extends State<TodayScreen> {
                   if (day.bio.wholeKcal + day.bio.processedKcal + day.bio.ultraProcessedKcal > 0) ...[
                     const SizedBox(height: Space.s3),
                     _Processing(day.bio),
+                  ],
+                  if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday) ...[
+                    const SizedBox(height: Space.s3),
+                    _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
                   ],
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
@@ -1170,3 +1189,93 @@ class _BrainSpeed extends StatelessWidget {
     );
   }
 }
+
+/// The day's exercise: minutes and calories burned, each session, and the way to log one.
+class _ExerciseCard extends StatelessWidget {
+  const _ExerciseCard(this.day, {required this.onLog, required this.onRemove});
+
+  final ExerciseDay day;
+  final VoidCallback onLog;
+  final void Function(Exercise) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final empty = day.exercises.isEmpty;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, Space.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            spacing: Space.s3,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: c.chlorophyllSoft, shape: BoxShape.circle),
+                child: Icon(Icons.directions_run_rounded, size: 22, color: c.chlorophyll),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Exercise', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                    Text(
+                      empty ? 'Even a 20-minute walk lifts focus for the next couple of hours.' : '${day.totalMinutes} min · ${_kcal(day.totalKcal)} kcal burned',
+                      style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: empty ? c.inkSoft : c.chlorophyll, fontWeight: empty ? null : FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              SoftButton(label: '+ Log', semanticLabel: 'Log exercise', onPressed: onLog),
+            ],
+          ),
+          for (final e in day.exercises)
+            Container(
+              margin: const EdgeInsets.only(top: Space.s2),
+              padding: const EdgeInsets.only(top: Space.s2),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: c.rule))),
+              child: Row(
+                spacing: 10,
+                children: [
+                  Icon(exerciseIcon(e.kind), size: 20, color: c.inkSoft),
+                  Expanded(
+                    child: Text(
+                      '${e.kind.label} · ${e.minutes} min · ${e.intensity.label.toLowerCase()}',
+                      style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Text('${e.kcal} kcal', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                  Semantics(
+                    button: true,
+                    label: 'Remove ${e.kind.label.toLowerCase()}',
+                    excludeSemantics: true,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                      onTap: () => onRemove(e),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                        child: Text('Remove', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (day.estimatedWeight && !empty)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.s2),
+              child: Text(
+                'Calories assume 70 kg until you log your weight.',
+                style: TextStyle(fontSize: TextSize.xxs, color: c.inkFaint),
+              ),
+            ),
+          const SizedBox(height: Space.s1),
+        ],
+      ),
+    );
+  }
+}
+

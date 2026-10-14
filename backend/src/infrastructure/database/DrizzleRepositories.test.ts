@@ -9,6 +9,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
   DrizzleBrainCheckRepository,
+  DrizzleExerciseRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -302,6 +303,22 @@ describe("DrizzleStackRepository", () => {
     // Kept for the account-deletion test below.
     await repo.setTaken(alice, item.id, "2026-10-03", true);
     expect(await repo.delete(bob, item.id)).toBe(false);
+  });
+});
+
+describe("DrizzleExerciseRepository", () => {
+  it("lists a user's own exercise in a window, earliest first, and deletes only their own", async () => {
+    const repo = new DrizzleExerciseRepository(db);
+    const walk = await repo.add(alice, { kind: "walk", intensity: "moderate", minutes: 30, startedAt: new Date("2026-10-01T18:00:00Z"), kcal: 100 });
+    const run = await repo.add(alice, { kind: "run", intensity: "hard", minutes: 20, startedAt: new Date("2026-10-01T07:00:00Z"), kcal: 240 });
+    const from = new Date("2026-10-01T00:00:00Z");
+    const to = new Date("2026-10-02T00:00:00Z");
+    expect(await repo.listBetween(alice, from, to)).toEqual([run, walk]);
+    expect(await repo.listBetween(bob, from, to)).toEqual([]);
+    expect(await repo.delete(bob, walk.id)).toBe(false);
+    expect(await repo.delete(alice, "not-a-uuid")).toBe(false);
+    expect(await repo.delete(alice, walk.id)).toBe(true);
+    expect(await repo.listBetween(alice, from, to)).toEqual([run]);
   });
 });
 

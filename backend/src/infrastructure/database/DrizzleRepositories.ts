@@ -38,12 +38,14 @@ import type { Subscription, SubscriptionStatus } from "../../domain/subscription
 import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { StackItem, StackTiming } from "../../domain/stack";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../../application/interfaces/IBrainCheckRepository";
+import type { Exercise, IExerciseRepository, NewExercise } from "../../application/interfaces/IExerciseRepository";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
 import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
   brainChecks,
+  exercises,
   checkIns,
   focusScores,
   mealItems,
@@ -94,6 +96,7 @@ export class DrizzleUserRepository implements IUserRepository {
       // Doses go with their items (on delete cascade).
       await tx.delete(stackItems).where(eq(stackItems.userId, userId));
       await tx.delete(brainChecks).where(eq(brainChecks.userId, userId));
+      await tx.delete(exercises).where(eq(exercises.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -716,5 +719,35 @@ export class DrizzleBrainCheckRepository implements IBrainCheckRepository {
       .where(and(eq(brainChecks.userId, userId), gte(brainChecks.takenAt, since)))
       .orderBy(desc(brainChecks.takenAt));
     return rows.map(DrizzleBrainCheckRepository.toCheck);
+  }
+}
+
+export class DrizzleExerciseRepository implements IExerciseRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toExercise(r: typeof exercises.$inferSelect): Exercise {
+    return { id: r.id, kind: r.kind, intensity: r.intensity, minutes: r.minutes, startedAt: r.startedAt, kcal: r.kcal };
+  }
+
+  async add(userId: string, e: NewExercise): Promise<Exercise> {
+    const [row] = await this.db.insert(exercises).values({ userId, ...e }).returning();
+    if (!row) throw new Error("Exercise insert returned no row");
+    return DrizzleExerciseRepository.toExercise(row);
+  }
+
+  async listBetween(userId: string, from: Date, to: Date): Promise<Exercise[]> {
+    const rows = await this.db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.userId, userId), gte(exercises.startedAt, from), lt(exercises.startedAt, to)))
+      .orderBy(asc(exercises.startedAt));
+    return rows.map(DrizzleExerciseRepository.toExercise);
+  }
+
+  async delete(userId: string, id: string): Promise<boolean> {
+    // Not a UUID can't be one of theirs; Postgres would refuse it as input.
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
+    const gone = await this.db.delete(exercises).where(and(eq(exercises.userId, userId), eq(exercises.id, id))).returning({ id: exercises.id });
+    return gone.length > 0;
   }
 }

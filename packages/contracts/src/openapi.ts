@@ -61,6 +61,13 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Save a Brain speed check",
     description: "A 2-minute reaction-time test after the Psychomotor Vigilance Task: send each reaction in milliseconds and the number of taps before the light. The API scores it (0–100) from the median, lapses (500 ms or more) and false starts. A self-check for comparing your own days, not a medical test.",
   },
+  logExercise: {
+    summary: "Log exercise",
+    status: 201,
+    description: "Calories are burned above resting (MET − 1) × kg × hours, from the latest weigh-in, or 70 kg without one.",
+  },
+  getExercises: { summary: "Get a day's exercise with its totals", query: dateQuery },
+  deleteExercise: { summary: "Remove logged exercise", status: 204, params: { id: "The exercise's id." } },
   getBrainChecks: {
     summary: "Your Brain speed checks",
     description: "Newest first, with your usual score: the median of the checks before the latest, once there are three.",

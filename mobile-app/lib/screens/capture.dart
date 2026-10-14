@@ -7,6 +7,7 @@ import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import 'brain_check.dart';
 import 'check_in_sheet.dart';
+import 'exercise_sheet.dart';
 import 'food_scan_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
@@ -22,6 +23,7 @@ enum Capture {
   checkIn('Check in', 'How you feel now', Icons.mood_rounded),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined),
   screenTime('Log screen time', 'Late screens', Icons.phone_iphone_rounded),
+  exercise('Log exercise', 'A walk, run or workout', Icons.directions_run_rounded),
   weight('Log weight', 'A weigh-in', Icons.monitor_weight_outlined),
   brain('Brain speed check', '2 minutes', Icons.bolt_rounded);
 
@@ -34,7 +36,7 @@ enum Capture {
   /// The body system's colour: (icon, tile behind it).
   (Color, Color) tint(NeuroCalColors c) => switch (this) {
     meal || foodPackage => (c.glucoseInk, c.glucoseSoft),
-    supplement => (c.chlorophyll, c.chlorophyllSoft),
+    supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
     checkIn || brain => (c.synapseInk, c.synapseSoft),
     sleep => (c.sleep, c.sleepSoft),
     screenTime => (c.ionInk, c.ionSoft),
@@ -153,6 +155,12 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       await done(await showLogSleepSheet(context), 'Sleep logged');
     case Capture.screenTime:
       await done(await showLogScreenTimeSheet(context), 'Screen time logged');
+    case Capture.exercise:
+      final logged = await showExerciseSheet(context);
+      if (logged != null && context.mounted) {
+        showToast(context, 'Exercise logged · ${logged.kcal} kcal burned');
+        onChanged();
+      }
     case Capture.weight:
       final api = AppScope.of(context).api;
       final unit = WeightUnit.load(Localizations.localeOf(context));

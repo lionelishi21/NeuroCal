@@ -24,6 +24,7 @@ import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngi
 import type { IFoodLabelReader, IProductDatabase } from "../application/interfaces/IFoodLabels";
 import type { IStackRepository } from "../application/interfaces/IStackRepository";
 import type { IBrainCheckRepository } from "../application/interfaces/IBrainCheckRepository";
+import type { IExerciseRepository } from "../application/interfaces/IExerciseRepository";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
@@ -44,6 +45,7 @@ import { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } fro
 import { StackUseCases } from "../application/use-cases/StackUseCases";
 import { ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
+import { ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -80,6 +82,7 @@ export interface Ports {
   subscriptions: ISubscriptionRepository;
   stack: IStackRepository;
   brainChecks: IBrainCheckRepository;
+  exercises: IExerciseRepository;
   /** RevenueCat's REST API, when its key is set. */
   subscriptionLookup: ISubscriptionLookup | null;
   /** The Authorization header RevenueCat's webhook sends. */
@@ -112,6 +115,7 @@ export function buildUseCases(p: Ports): UseCases {
     getSubscription,
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
+    exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),

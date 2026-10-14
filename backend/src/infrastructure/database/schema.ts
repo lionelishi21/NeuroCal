@@ -3,6 +3,7 @@
  * Migration 0002 enables the `vector` extension before the catalog tables use it.
  */
 import { sql } from "drizzle-orm";
+import { EXERCISE_KINDS, INTENSITIES } from "../../domain/exercise";
 import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
 import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
@@ -224,6 +225,24 @@ export const brainChecks = pgTable(
     reactionTimesMs: integer("reaction_times_ms").array().notNull(),
   },
   (t) => [index("brain_checks_user_taken_idx").on(t.userId, t.takenAt.desc()), check("brain_checks_score_range", sql`${t.score} between 0 and 100`)],
+);
+
+/** Logged exercise; kcal is worked out when logged, from the weigh-in at the time. */
+export const exercises = pgTable(
+  "exercises",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind", { enum: EXERCISE_KINDS }).notNull(),
+    intensity: text("intensity", { enum: INTENSITIES }).notNull(),
+    minutes: smallint("minutes").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    kcal: smallint("kcal").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("exercises_user_started_idx").on(t.userId, t.startedAt), check("exercises_minutes_range", sql`${t.minutes} between 1 and 600`)],
 );
 
 /** Supplements someone takes. Ingredients are kept as read from the label. */

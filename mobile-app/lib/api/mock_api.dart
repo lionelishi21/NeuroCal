@@ -215,9 +215,61 @@ class MockNeuroCalApi implements NeuroCalApi {
   Future<TodayData> today([DateTime? day]) async {
     final date = day ?? DateTime.now();
     final (focus, bio, dayMeals) = await (focusScore(date), bioState(date), meals(date)).wait;
-    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals);
+    final done = [for (final e in _exercises) if (_sameDay(e.startedAt, date)) e];
+    final exercise = ExerciseDay(
+      exercises: done,
+      totalMinutes: done.fold(0, (s, e) => s + e.minutes),
+      totalKcal: done.fold(0, (s, e) => s + e.kcal),
+    );
+    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals, exercise: exercise);
     final (recipes, fast, supplements, brain) = await (recommendations(), fasting(), stack(), brainChecks()).wait;
-    return TodayData(focus: focus, bio: bio, meals: dayMeals, recipes: recipes, fasting: fast, stack: supplements, brain: brain);
+    return TodayData(
+      focus: focus,
+      bio: bio,
+      meals: dayMeals,
+      recipes: recipes,
+      fasting: fast,
+      stack: supplements,
+      brain: brain,
+      exercise: exercise,
+    );
+  }
+
+  final _exercises = <Exercise>[];
+
+  /// The API's sum (backend domain/exercise.ts), at 75 kg.
+  static const _mets = {
+    ExerciseKind.walk: [2.8, 3.5, 5.0],
+    ExerciseKind.run: [7.0, 9.8, 11.5],
+    ExerciseKind.cycle: [4.0, 6.8, 10.0],
+    ExerciseKind.strength: [3.5, 5.0, 6.0],
+    ExerciseKind.hiit: [6.0, 8.0, 10.0],
+    ExerciseKind.yoga: [2.5, 3.0, 4.0],
+    ExerciseKind.swim: [5.8, 7.0, 9.8],
+    ExerciseKind.sport: [4.5, 6.5, 8.0],
+    ExerciseKind.other: [3.0, 4.5, 6.5],
+  };
+
+  @override
+  Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes) async {
+    await _wait();
+    final now = DateTime.now();
+    final e = Exercise(
+      id: 'x${_exercises.length + 1}',
+      kind: kind,
+      intensity: intensity,
+      minutes: minutes,
+      startedAt: now.subtract(Duration(minutes: minutes)),
+      kcal: ((_mets[kind]![intensity.index] - 1) * 75 * minutes / 60).round(),
+    );
+    _exercises.add(e);
+    return e;
+  }
+
+  @override
+  Future<void> deleteExercise(String id) async {
+    await _wait();
+    _exercises.removeWhere((e) => e.id == id);
   }
 
   @override

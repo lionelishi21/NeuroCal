@@ -987,7 +987,16 @@ String isoWithOffset(DateTime d) {
 /// Everything the Today screen shows, from one call (`TodayResponse` in the contracts). The extras are
 /// only there for today, and are null when one failed.
 class TodayData {
-  const TodayData({required this.focus, required this.bio, required this.meals, this.recipes, this.fasting, this.stack, this.brain});
+  const TodayData({
+    required this.focus,
+    required this.bio,
+    required this.meals,
+    this.recipes,
+    this.fasting,
+    this.stack,
+    this.brain,
+    this.exercise,
+  });
 
   final FocusScore focus;
   final BioState bio;
@@ -996,6 +1005,9 @@ class TodayData {
   final FastingStatus? fasting;
   final SupplementStack? stack;
   final BrainCheckHistory? brain;
+
+  /// The day's exercise; null only if it failed to load.
+  final ExerciseDay? exercise;
 
   factory TodayData.fromJson(Map<String, dynamic> j) {
     T? maybe<T>(String key, T Function(Map<String, dynamic>) parse) => j[key] == null ? null : parse(j[key] as Map<String, dynamic>);
@@ -1007,6 +1019,80 @@ class TodayData {
       fasting: maybe('fasting', FastingStatus.fromJson),
       stack: maybe('stack', SupplementStack.fromJson),
       brain: maybe('brain', BrainCheckHistory.fromJson),
+      exercise: maybe('exercise', ExerciseDay.fromJson),
     );
   }
+}
+
+/// Kinds of exercise (`ExerciseKind` in the contracts).
+enum ExerciseKind {
+  walk('Walk'),
+  run('Run'),
+  cycle('Cycle'),
+  strength('Strength'),
+  hiit('HIIT'),
+  yoga('Yoga'),
+  swim('Swim'),
+  sport('Sport'),
+  other('Other');
+
+  const ExerciseKind(this.label);
+
+  final String label;
+
+  static ExerciseKind fromWire(String wire) => values.firstWhere((k) => k.name == wire, orElse: () => other);
+}
+
+enum ExerciseIntensity {
+  light('Light'),
+  moderate('Moderate'),
+  hard('Hard');
+
+  const ExerciseIntensity(this.label);
+
+  final String label;
+
+  static ExerciseIntensity fromWire(String wire) => values.firstWhere((i) => i.name == wire, orElse: () => moderate);
+}
+
+class Exercise {
+  const Exercise({required this.id, required this.kind, required this.intensity, required this.minutes, required this.startedAt, required this.kcal});
+
+  final String id;
+  final ExerciseKind kind;
+  final ExerciseIntensity intensity;
+  final int minutes;
+  final DateTime startedAt;
+
+  /// Burned by the exercise itself, above resting.
+  final int kcal;
+
+  factory Exercise.fromJson(Map<String, dynamic> j) => Exercise(
+    id: j['id'] as String,
+    kind: ExerciseKind.fromWire(j['kind'] as String),
+    intensity: ExerciseIntensity.fromWire(j['intensity'] as String),
+    minutes: (j['minutes'] as num).toInt(),
+    startedAt: DateTime.parse(j['startedAt'] as String),
+    kcal: (j['kcal'] as num).toInt(),
+  );
+}
+
+/// A day's exercise with its totals (`ExerciseDay` in the contracts).
+class ExerciseDay {
+  const ExerciseDay({this.exercises = const [], this.totalMinutes = 0, this.totalKcal = 0, this.estimatedWeight = false});
+
+  /// Earliest first.
+  final List<Exercise> exercises;
+  final int totalMinutes;
+  final int totalKcal;
+
+  /// No weigh-in yet: calories assume 70 kg.
+  final bool estimatedWeight;
+
+  factory ExerciseDay.fromJson(Map<String, dynamic> j) => ExerciseDay(
+    exercises: [for (final e in j['exercises'] as List) Exercise.fromJson(e as Map<String, dynamic>)],
+    totalMinutes: (j['totalMinutes'] as num).toInt(),
+    totalKcal: (j['totalKcal'] as num).toInt(),
+    estimatedWeight: j['weightSource'] == 'default',
+  );
 }

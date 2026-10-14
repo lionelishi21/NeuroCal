@@ -251,4 +251,35 @@ void main() {
     await tester.scrollUntilVisible(find.text('Browse foods'), 300);
     expect(find.text('Browse foods'), findsOneWidget);
   });
+
+  testWidgets('log exercise from the add menu: it shows on Today with its calories, and can be removed', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await add(tester, 'Log exercise');
+
+    final log = find.widgetWithText(FilledButton, 'Log exercise');
+    expect(tester.widget<FilledButton>(log).onPressed, isNull);
+    await tester.tap(find.text('Walk'));
+    await tester.ensureVisible(find.text('45 min'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('45 min'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(log);
+    await tester.tap(log);
+    await tester.pumpAndSettle();
+
+    // (3.5 − 1) × 75 kg × 0.75 h in the mock, as on the API.
+    expect(find.text('Exercise logged · 141 kcal burned'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('45 min · 141 kcal burned'), 200);
+    expect(find.text('Walk · 45 min · moderate'), findsOneWidget);
+
+    // Clear of the tab bar before tapping.
+    await tester.ensureVisible(find.text('Walk · 45 min · moderate'));
+    await Scrollable.ensureVisible(tester.element(find.text('Walk · 45 min · moderate')), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Remove walk'));
+    await tester.pumpAndSettle();
+    expect(find.text('Exercise removed'), findsOneWidget);
+    expect(find.text('Walk · 45 min · moderate'), findsNothing);
+  });
 }

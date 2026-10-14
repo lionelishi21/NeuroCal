@@ -4,6 +4,7 @@ import type { SupplementLabelReading } from "../../domain/supplement";
 import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
+import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { StackItem } from "../../domain/stack";
 import type { IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
 import type { Subscription } from "../../domain/subscription";
@@ -550,5 +551,26 @@ export class FakeEmail implements IEmailSender {
   async send(email: Email) {
     if (this.failure) throw this.failure;
     this.sent.push(email);
+  }
+}
+
+export class InMemoryExercises implements IExerciseRepository {
+  readonly rows: (Exercise & { userId: string })[] = [];
+  async add(userId: string, e: NewExercise) {
+    const saved = { ...e, id: `x${this.rows.length + 1}` };
+    this.rows.push({ ...saved, userId });
+    return saved;
+  }
+  async listBetween(userId: string, from: Date, to: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && r.startedAt >= from && r.startedAt < to)
+      .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
+      .map(({ userId: _, ...e }) => e);
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
   }
 }
