@@ -9,7 +9,7 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --passWithNoTests",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "dev": "tsx watch src/presentation/devServer.ts",
+    "dev": "tsx watch --include ./drizzle src/presentation/devServer.ts",
     "catalog:sync": "tsx src/presentation/syncCatalog.ts",
     "foods:images": "tsx src/presentation/generateFoodImages.ts"
   },
