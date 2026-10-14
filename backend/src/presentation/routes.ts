@@ -6,6 +6,9 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  BrainCheck,
+  BrainCheckHistory,
+  BrainCheckRequest,
   FoodScanResponse,
   AddStackItemRequest,
   SetTakenRequest,
@@ -58,6 +61,8 @@ import type { IngestTelemetryUseCase } from "../application/use-cases/IngestTele
 import type { ListMealsUseCase } from "../application/use-cases/ListMealsUseCase";
 import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } from "../application/use-cases/WeightUseCases";
 import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
+import type { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
+import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { FoodScan, ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
@@ -106,6 +111,7 @@ export interface UseCases {
   getFasting: GetFastingUseCase;
   getSubscription: GetSubscriptionUseCase;
   stack: StackUseCases;
+  brainChecks: BrainCheckUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -192,6 +198,8 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
   flags,
   ...(item ? { item: toFoodItem(item) } : {}),
 });
+
+const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
@@ -307,6 +315,21 @@ export function createApi(uc: UseCases) {
           ...(s.expiresAt ? { expiresAt: s.expiresAt.toISOString() } : {}),
           willRenew: s.willRenew,
         });
+      },
+    ],
+    [
+      "POST",
+      /^\/brain-checks$/,
+      async (req) => ok(BrainCheck, toBrainCheck(await uc.brainChecks.add(req.userId, json(req, BrainCheckRequest))), 201),
+    ],
+    [
+      "GET",
+      /^\/brain-checks$/,
+      async (req) => {
+        const days = req.query.get("days");
+        if (days !== null && !/^\d+$/.test(days)) throw new BadRequest("days must be a whole number.");
+        const h = await uc.brainChecks.history(req.userId, days ? Number(days) : undefined);
+        return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
       },
     ],
     [

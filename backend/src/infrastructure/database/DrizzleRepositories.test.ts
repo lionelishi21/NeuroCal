@@ -8,6 +8,7 @@ import {
   DrizzleRecommendationRepository,
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
+  DrizzleBrainCheckRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -304,12 +305,24 @@ describe("DrizzleStackRepository", () => {
   });
 });
 
+describe("DrizzleBrainCheckRepository", () => {
+  it("stores checks with their raw times and lists a user's own, newest first", async () => {
+    const repo = new DrizzleBrainCheckRepository(db);
+    const check = { trials: 12, medianMs: 260, fastestMs: 210, lapses: 1, falseStarts: 0, score: 90 };
+    await repo.add(alice, { ...check, takenAt: new Date("2026-10-01T08:00:00Z"), reactionTimesMs: Array.from({ length: 12 }, () => 260) });
+    const later = await repo.add(alice, { ...check, score: 80, takenAt: new Date("2026-10-02T08:00:00Z"), reactionTimesMs: Array.from({ length: 12 }, () => 280) });
+    expect((await repo.listSince(alice, new Date("2026-09-01T00:00:00Z"))).map((c) => c.score)).toEqual([80, 90]);
+    expect(await repo.listSince(alice, new Date("2026-10-02T00:00:00Z"))).toEqual([later]);
+    expect(await repo.listSince(bob, new Date("2026-09-01T00:00:00Z"))).toEqual([]);
+  });
+});
+
 // Last on purpose: by now the earlier tests have given alice rows in every user table.
 describe("DrizzleUserRepository.delete", () => {
   it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
     // Her sign-in email is new@example.com since the first test.
     await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
-    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions, schema.stackItems, schema.stackDoses];
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions, schema.stackItems, schema.stackDoses, schema.brainChecks];
     const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
     const before = await rowsOf(alice);
     const bobBefore = await rowsOf(bob);

@@ -35,12 +35,15 @@ import type {
   WaitlistPlatform,
 } from "../../domain/types";
 import type { Subscription, SubscriptionStatus } from "../../domain/subscription";
+import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { StackItem, StackTiming } from "../../domain/stack";
+import type { IBrainCheckRepository, SavedBrainCheck } from "../../application/interfaces/IBrainCheckRepository";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
 import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
+  brainChecks,
   checkIns,
   focusScores,
   mealItems,
@@ -90,6 +93,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
       // Doses go with their items (on delete cascade).
       await tx.delete(stackItems).where(eq(stackItems.userId, userId));
+      await tx.delete(brainChecks).where(eq(brainChecks.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -680,5 +684,37 @@ export class DrizzleStackRepository implements IStackRepository {
     if (taken) await this.db.insert(stackDoses).values({ itemId: id, userId, date }).onConflictDoNothing();
     else await this.db.delete(stackDoses).where(and(eq(stackDoses.itemId, id), eq(stackDoses.date, date)));
     return true;
+  }
+}
+
+export class DrizzleBrainCheckRepository implements IBrainCheckRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toCheck(r: typeof brainChecks.$inferSelect): SavedBrainCheck {
+    return {
+      id: r.id,
+      takenAt: r.takenAt,
+      score: r.score,
+      medianMs: r.medianMs,
+      fastestMs: r.fastestMs,
+      lapses: r.lapses,
+      falseStarts: r.falseStarts,
+      trials: r.trials,
+    };
+  }
+
+  async add(userId: string, c: BrainCheckResult & { takenAt: Date; reactionTimesMs: number[] }): Promise<SavedBrainCheck> {
+    const [row] = await this.db.insert(brainChecks).values({ userId, ...c }).returning();
+    if (!row) throw new Error("Brain check insert returned no row");
+    return DrizzleBrainCheckRepository.toCheck(row);
+  }
+
+  async listSince(userId: string, since: Date): Promise<SavedBrainCheck[]> {
+    const rows = await this.db
+      .select()
+      .from(brainChecks)
+      .where(and(eq(brainChecks.userId, userId), gte(brainChecks.takenAt, since)))
+      .orderBy(desc(brainChecks.takenAt));
+    return rows.map(DrizzleBrainCheckRepository.toCheck);
   }
 }

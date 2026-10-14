@@ -494,6 +494,38 @@ export const SupplementLabelResponse = z.object({
 });
 export type SupplementLabelResponse = z.infer<typeof SupplementLabelResponse>;
 
+export const BrainCheckRequest = z.object({
+  /** Each reaction to the light, in milliseconds, in order. */
+  reactionTimesMs: z.array(z.number().min(100).max(5000)).min(10).max(80),
+  /** Taps before the light appeared. */
+  falseStarts: z.number().int().min(0).max(100),
+});
+export type BrainCheckRequest = z.infer<typeof BrainCheckRequest>;
+
+/** One Brain speed check (a short reaction-time test), scored by the API. */
+export const BrainCheck = z.object({
+  id: Id,
+  takenAt: IsoDateTime,
+  /** 0–100, higher is sharper. */
+  score: z.number().int().min(0).max(100),
+  medianMs: z.number().int(),
+  /** Average of the fastest tenth of responses. */
+  fastestMs: z.number().int(),
+  /** Responses of 500 ms or more. */
+  lapses: z.number().int().nonnegative(),
+  falseStarts: z.number().int().nonnegative(),
+  trials: z.number().int().positive(),
+});
+export type BrainCheck = z.infer<typeof BrainCheck>;
+
+export const BrainCheckHistory = z.object({
+  /** Newest first. */
+  checks: z.array(BrainCheck),
+  /** The median score of checks before the latest one, once there are three. */
+  baselineScore: z.number().int().optional(),
+});
+export type BrainCheckHistory = z.infer<typeof BrainCheckHistory>;
+
 /** A packaged food, by barcode or label photos, graded by NeuroCal. */
 export const FoodScanResponse = z.object({
   problem: z.enum(["not_a_label", "blurry", "too_dark", "cut_off"]).optional(),
@@ -716,6 +748,10 @@ export const endpoints = {
   getWeights: { method: "GET", path: "/weights", response: WeightHistory },
   deleteWeight: { method: "DELETE", path: "/weights/:date" },
   getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
+  /** Saves a Brain speed check from its raw reaction times; the API scores it. */
+  addBrainCheck: { method: "POST", path: "/brain-checks", body: BrainCheckRequest, response: BrainCheck },
+  /** Checks from the last `days` days (default 30) with your usual score. */
+  getBrainChecks: { method: "GET", path: "/brain-checks", response: BrainCheckHistory },
   /** The supplements someone takes, today's ticks, and checks across the whole stack. */
   getStack: { method: "GET", path: "/stack", response: StackResponse },
   addStackItem: { method: "POST", path: "/stack", body: AddStackItemRequest, response: StackItem },

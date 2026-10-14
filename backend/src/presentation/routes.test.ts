@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -21,6 +21,7 @@ import {
   InMemoryWeights,
   InMemorySubscriptions,
   InMemoryStack,
+  InMemoryBrainChecks,
   FakeLabelReader,
   FakeFoodLabelReader,
   FakeProductDatabase,
@@ -123,6 +124,7 @@ beforeEach(async () => {
     webUrl: "https://neurocal.ai",
     subscriptions,
     stack: new InMemoryStack(),
+    brainChecks: new InMemoryBrainChecks(),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -339,6 +341,21 @@ describe("API routes", () => {
     // A paid feature, like photo reading.
     api = createApi(buildUseCases({ ...ports, paywall: true }));
     expect((await call("GET", "/foods/barcode/0123456789012")).status).toBe(402);
+  });
+
+  it("scores Brain speed checks from raw reaction times and keeps a usual score", async () => {
+    const rested = Array.from({ length: 20 }, () => 240);
+    expect(await call("POST", "/brain-checks", { reactionTimesMs: rested, falseStarts: 0 })).toMatchObject({
+      status: 201,
+      body: { score: 100, medianMs: 240, lapses: 0, takenAt: "2026-09-29T22:00:00.000Z" },
+    });
+    expect((await call("POST", "/brain-checks", { reactionTimesMs: [240, 250], falseStarts: 0 })).status).toBe(400);
+    expect((await call("POST", "/brain-checks", { reactionTimesMs: [...rested.slice(1), 50], falseStarts: 0 })).status).toBe(400);
+    for (let i = 0; i < 3; i++) await call("POST", "/brain-checks", { reactionTimesMs: rested, falseStarts: 0 });
+
+    const history = await call("GET", "/brain-checks");
+    expect(BrainCheckHistory.parse(history.body)).toMatchObject({ baselineScore: 100 });
+    expect((history.body as { checks: unknown[] }).checks).toHaveLength(4);
   });
 
   it("GET /me returns the contract profile", async () => {

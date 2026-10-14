@@ -205,6 +205,27 @@ export const screenTimeSamples = pgTable(
   ],
 );
 
+/** Brain speed checks, scored by the API from the raw reaction times. */
+export const brainChecks = pgTable(
+  "brain_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
+    score: smallint("score").notNull(),
+    medianMs: smallint("median_ms").notNull(),
+    fastestMs: smallint("fastest_ms").notNull(),
+    lapses: smallint("lapses").notNull(),
+    falseStarts: smallint("false_starts").notNull(),
+    trials: smallint("trials").notNull(),
+    /** The raw reaction times, kept so the scoring can be revised later. */
+    reactionTimesMs: integer("reaction_times_ms").array().notNull(),
+  },
+  (t) => [index("brain_checks_user_taken_idx").on(t.userId, t.takenAt.desc()), check("brain_checks_score_range", sql`${t.score} between 0 and 100`)],
+);
+
 /** Supplements someone takes. Ingredients are kept as read from the label. */
 export const stackItems = pgTable(
   "stack_items",

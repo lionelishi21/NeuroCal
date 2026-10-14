@@ -57,6 +57,15 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Your subscription",
     description: "As last reported by RevenueCat. Without access it asks RevenueCat directly once, so a purchase made seconds ago already counts. When the paywall is on, photo and label reading and recipe suggestions answer 402 `subscription_required` without access.",
   },
+  addBrainCheck: {
+    summary: "Save a Brain speed check",
+    description: "A 2-minute reaction-time test after the Psychomotor Vigilance Task: send each reaction in milliseconds and the number of taps before the light. The API scores it (0–100) from the median, lapses (500 ms or more) and false starts. A self-check for comparing your own days, not a medical test.",
+  },
+  getBrainChecks: {
+    summary: "Your Brain speed checks",
+    description: "Newest first, with your usual score: the median of the checks before the latest, once there are three.",
+    query: { days: { description: "How many days back, 1–365. Defaults to 30.", schema: { type: "integer", minimum: 1, maximum: 365 } } },
+  },
   getStack: {
     summary: "Your supplement stack",
     description: "Each supplement with today's tick and days of the bottle left, plus checks no single label can show: daily totals across products against adult upper limits, the same nutrient in several products, and caffeine taken in the evening.",

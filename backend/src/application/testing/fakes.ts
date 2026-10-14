@@ -1,7 +1,9 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
+import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { FoodLabelReading } from "../../domain/foodLabel";
+import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { StackItem } from "../../domain/stack";
 import type { IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
 import type { Subscription } from "../../domain/subscription";
@@ -477,6 +479,22 @@ export class InMemoryStack implements IStackRepository {
     if (taken) this.doses.add(`${id}:${date}`);
     else this.doses.delete(`${id}:${date}`);
     return true;
+  }
+}
+
+export class InMemoryBrainChecks implements IBrainCheckRepository {
+  readonly rows: (SavedBrainCheck & { userId: string })[] = [];
+  async add(userId: string, c: BrainCheckResult & { takenAt: Date; reactionTimesMs: number[] }) {
+    const { reactionTimesMs: _, ...rest } = c;
+    const saved = { ...rest, id: `b${this.rows.length + 1}` };
+    this.rows.push({ ...saved, userId });
+    return saved;
+  }
+  async listSince(userId: string, since: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && r.takenAt >= since)
+      .sort((a, b) => b.takenAt.getTime() - a.takenAt.getTime())
+      .map(({ userId: _, ...c }) => c);
   }
 }
 

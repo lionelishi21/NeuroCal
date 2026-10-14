@@ -339,6 +339,71 @@
         }
       }
     },
+    "/brain-checks": {
+      "post": {
+        "operationId": "addBrainCheck",
+        "summary": "Save a Brain speed check",
+        "description": "A 2-minute reaction-time test after the Psychomotor Vigilance Task: send each reaction in milliseconds and the number of taps before the light. The API scores it (0–100) from the median, lapses (500 ms or more) and false starts. A self-check for comparing your own days, not a medical test.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrainCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrainCheck"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getBrainChecks",
+        "summary": "Your Brain speed checks",
+        "description": "Newest first, with your usual score: the median of the checks before the latest, once there are three.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "How many days back, 1–365. Defaults to 30.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrainCheckHistory"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/stack": {
       "get": {
         "operationId": "getStack",
@@ -1613,6 +1678,93 @@
           "cognitiveFlags",
           "dietaryPreference",
           "processing"
+        ]
+      },
+      "BrainCheck": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "medianMs": {
+            "type": "integer"
+          },
+          "fastestMs": {
+            "type": "integer"
+          },
+          "lapses": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "falseStarts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trials": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "takenAt",
+          "score",
+          "medianMs",
+          "fastestMs",
+          "lapses",
+          "falseStarts",
+          "trials"
+        ]
+      },
+      "BrainCheckHistory": {
+        "type": "object",
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BrainCheck"
+            }
+          },
+          "baselineScore": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "checks"
+        ]
+      },
+      "BrainCheckRequest": {
+        "type": "object",
+        "properties": {
+          "reactionTimesMs": {
+            "minItems": 10,
+            "maxItems": 80,
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 100,
+              "maximum": 5000
+            }
+          },
+          "falseStarts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "reactionTimesMs",
+          "falseStarts"
         ]
       },
       "CatalogFood": {
