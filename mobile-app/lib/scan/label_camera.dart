@@ -2,10 +2,11 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/widgets.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
-/// A photo taken during live scan, with the text found in it.
-typedef ScanFrame = ({Uint8List bytes, String text});
+/// A photo taken during live scan, with the text and product barcodes found in it.
+typedef ScanFrame = ({Uint8List bytes, String text, List<String> barcodes});
 
 /// The camera and on-device text recognition behind live scan. Behind an interface so widget tests
 /// can run without a camera.
@@ -32,6 +33,7 @@ class LabelCameraDenied implements Exception {
 class DeviceLabelCamera implements LabelCamera {
   CameraController? _controller;
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  final _barcodes = BarcodeScanner(formats: [BarcodeFormat.ean13, BarcodeFormat.ean8, BarcodeFormat.upca, BarcodeFormat.upce]);
 
   @override
   Future<void> start() async {
@@ -56,8 +58,13 @@ class DeviceLabelCamera implements LabelCamera {
   @override
   Future<ScanFrame> capture() async {
     final file = await _controller!.takePicture();
-    final recognized = await _recognizer.processImage(InputImage.fromFilePath(file.path));
-    return (bytes: await file.readAsBytes(), text: recognized.text);
+    final image = InputImage.fromFilePath(file.path);
+    final (recognized, codes) = await (_recognizer.processImage(image), _barcodes.processImage(image)).wait;
+    return (
+      bytes: await file.readAsBytes(),
+      text: recognized.text,
+      barcodes: [for (final b in codes) ?b.rawValue],
+    );
   }
 
   @override
@@ -68,5 +75,6 @@ class DeviceLabelCamera implements LabelCamera {
     await _controller?.dispose();
     _controller = null;
     await _recognizer.close();
+    await _barcodes.close();
   }
 }

@@ -26,6 +26,12 @@ abstract interface class NeuroCalApi {
   Future<void> deleteWeight(String date);
   Future<FastingStatus> fasting();
 
+  /// A packaged food by barcode. Throws [ApiException] 404 when the barcode isn't known.
+  Future<FoodScan> scanBarcode(String code);
+
+  /// Reads 1–4 photos of a food package.
+  Future<FoodScan> scanFoodLabel(List<Uint8List> photos);
+
   /// The supplements someone takes, today's ticks and the checks across them.
   Future<SupplementStack> stack();
   Future<StackItem> addToStack({
@@ -159,6 +165,20 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
+
+  @override
+  Future<FoodScan> scanBarcode(String code) async => FoodScan.fromJson(await _get('/foods/barcode/$code') as Map<String, dynamic>);
+
+  @override
+  Future<FoodScan> scanFoodLabel(List<Uint8List> photos) async {
+    final req = http.MultipartRequest('POST', _uri('/foods/scan'))
+      ..headers.addAll(await _headers())
+      ..files.addAll([
+        for (final (i, photo) in photos.indexed) http.MultipartFile.fromBytes('photo', photo, filename: 'side-${i + 1}.jpg'),
+      ]);
+    final res = await http.Response.fromStream(await _client.send(req));
+    return FoodScan.fromJson(_decode(res) as Map<String, dynamic>);
+  }
 
   @override
   Future<SupplementStack> stack() async => SupplementStack.fromJson(await _get('/stack') as Map<String, dynamic>);

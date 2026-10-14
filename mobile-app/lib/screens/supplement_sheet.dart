@@ -54,9 +54,9 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   var _adding = false;
 
   Future<void> _liveScan() async {
-    final photos = await showLiveScan(context, widget.camera());
-    if (photos == null || photos.isEmpty || !mounted) return;
-    await _read(photos, const []);
+    final result = await showLiveScan(context, widget.camera());
+    if (result == null || result.photos.isEmpty || !mounted) return;
+    await _read(result.photos, const []);
   }
 
   Future<void> _choose() async {

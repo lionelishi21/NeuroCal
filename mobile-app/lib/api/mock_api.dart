@@ -253,6 +253,69 @@ class MockNeuroCalApi implements NeuroCalApi {
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
+  /// Two sample products: peanuts (processed) by barcode 0123456789012, anything else unknown;
+  /// any label photo reads as a supermarket granola (ultra-processed).
+  @override
+  Future<FoodScan> scanBarcode(String code) async {
+    await Future.delayed(latency * 2);
+    if (code != '0123456789012') throw ApiException(404, "We don't know that barcode yet. Photograph the label instead.");
+    return const FoodScan(
+      brand: 'Member’s Selection',
+      productName: 'Roasted Peanuts',
+      servingSize: '28 g',
+      calories: 166,
+      proteinG: 7,
+      carbsG: 6,
+      fatG: 14,
+      sodiumMg: 90,
+      ingredients: ['Peanuts', 'peanut oil', 'salt'],
+      fromDatabase: true,
+      processing: FoodProcessing.processed,
+      item: FoodItem(
+        name: 'Member’s Selection Roasted Peanuts',
+        portion: '28 g',
+        calories: 166,
+        macros: Macros(proteinG: 7, carbsG: 6, fatG: 14),
+        glycemicLoad: GlycemicLoad.low,
+        processing: FoodProcessing.processed,
+      ),
+    );
+  }
+
+  @override
+  Future<FoodScan> scanFoodLabel(List<Uint8List> photos) async {
+    await Future.delayed(latency * 4);
+    return const FoodScan(
+      brand: 'Crunchy Co',
+      productName: 'Honey Almond Granola',
+      servingSize: '2/3 cup (55 g)',
+      calories: 260,
+      proteinG: 5,
+      carbsG: 38,
+      fatG: 10,
+      sugarsG: 14,
+      addedSugarsG: 12,
+      sodiumMg: 140,
+      ingredients: ['Whole grain rolled oats', 'sugar', 'canola oil', 'almonds', 'honey', 'soy lecithin', 'natural flavor'],
+      bestBefore: '2027-02',
+      fromDatabase: false,
+      processing: FoodProcessing.ultraProcessed,
+      markers: ['emulsifier', 'flavouring'],
+      flags: [
+        (kind: 'ultra_processed', message: 'Ultra-processed: it contains emulsifier, flavouring. Foods like this are easy to overeat.'),
+        (kind: 'high_added_sugar', message: "12 g of added sugar per serving: 24% of a day's limit."),
+      ],
+      item: FoodItem(
+        name: 'Crunchy Co Honey Almond Granola',
+        portion: '2/3 cup (55 g)',
+        calories: 260,
+        macros: Macros(proteinG: 5, carbsG: 38, fatG: 10),
+        glycemicLoad: GlycemicLoad.high,
+        processing: FoodProcessing.ultraProcessed,
+      ),
+    );
+  }
+
   final _stack = <StackItem>[];
   var _stackId = 1;
 

@@ -18,11 +18,12 @@ Future<bool?> showLogMealSheet(
   BuildContext context, {
   ImagePicker? picker,
   VoidCallback? onScanSupplement,
+  VoidCallback? onScanFood,
   List<FoodItem> initialItems = const [],
 }) => showAppSheet<bool>(
   context,
   title: 'Log a meal',
-  builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement, initialItems: initialItems),
+  builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement, onScanFood: onScanFood, initialItems: initialItems),
 );
 
 MealKind kindFor(DateTime t) => switch (t.hour) {
@@ -81,10 +82,13 @@ class _Draft {
 }
 
 class _LogMeal extends StatefulWidget {
-  const _LogMeal({required this.picker, this.onScanSupplement, this.initialItems = const []});
+  const _LogMeal({required this.picker, this.onScanSupplement, this.onScanFood, this.initialItems = const []});
 
   final ImagePicker picker;
   final VoidCallback? onScanSupplement;
+
+  /// Offers a food package scan (barcode or label) instead; the sheet closes first.
+  final VoidCallback? onScanFood;
   final List<FoodItem> initialItems;
 
   @override
@@ -270,6 +274,19 @@ class _LogMealState extends State<_LogMeal> {
           }),
           child: const Text('Add an item by hand instead'),
         ),
+        if (widget.onScanFood != null)
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              widget.onScanFood!();
+            },
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+            label: const Text('Scan a food package'),
+          ),
         if (widget.onScanSupplement != null)
           TextButton.icon(
             style: TextButton.styleFrom(

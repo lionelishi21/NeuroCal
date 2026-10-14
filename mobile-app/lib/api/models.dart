@@ -381,6 +381,90 @@ SuggestedProduct productFromJson(Map<String, dynamic> p) => (
   supplement: p['supplement'] as bool,
 );
 
+typedef FoodFlag = ({String kind, String message});
+
+/// A packaged food by barcode or label photos, graded by the API (`FoodScanResponse` in the contracts).
+class FoodScan {
+  const FoodScan({
+    this.problem,
+    this.brand,
+    this.productName,
+    this.servingSize,
+    this.calories,
+    this.proteinG,
+    this.carbsG,
+    this.fatG,
+    this.sugarsG,
+    this.addedSugarsG,
+    this.sodiumMg,
+    this.ingredients = const [],
+    this.bestBefore,
+    required this.fromDatabase,
+    required this.processing,
+    this.markers = const [],
+    this.flags = const [],
+    this.item,
+  });
+
+  /// not_a_label, blurry, too_dark or cut_off.
+  final String? problem;
+  final String? brand;
+  final String? productName;
+  final String? servingSize;
+  final double? calories;
+  final double? proteinG;
+  final double? carbsG;
+  final double? fatG;
+  final double? sugarsG;
+  final double? addedSugarsG;
+  final double? sodiumMg;
+  final List<String> ingredients;
+  final String? bestBefore;
+
+  /// From Open Food Facts, which must be credited where its data shows.
+  final bool fromDatabase;
+  final FoodProcessing processing;
+
+  /// The industrial ingredients that made it ultra-processed.
+  final List<String> markers;
+  final List<FoodFlag> flags;
+
+  /// One serving, ready to log.
+  final FoodItem? item;
+
+  String get name {
+    if (brand != null && productName != null && productName!.toLowerCase().contains(brand!.toLowerCase())) return productName!;
+    final joined = [brand, productName].whereType<String>().join(' ');
+    return joined.isEmpty ? 'Packaged food' : joined;
+  }
+
+  factory FoodScan.fromJson(Map<String, dynamic> j) {
+    final n = j['nutrition'] as Map<String, dynamic>?;
+    double? d(String key) => (n?[key] as num?)?.toDouble();
+    final p = j['processing'] as Map<String, dynamic>;
+    return FoodScan(
+      problem: j['problem'] as String?,
+      brand: j['brand'] as String?,
+      productName: j['productName'] as String?,
+      servingSize: j['servingSize'] as String?,
+      calories: d('calories'),
+      proteinG: d('proteinG'),
+      carbsG: d('carbsG'),
+      fatG: d('fatG'),
+      sugarsG: d('sugarsG'),
+      addedSugarsG: d('addedSugarsG'),
+      sodiumMg: d('sodiumMg'),
+      ingredients: [for (final i in j['ingredients'] as List) i as String],
+      bestBefore: j['bestBefore'] as String?,
+      fromDatabase: j['source'] == 'open_food_facts',
+      processing: FoodProcessing.fromWire(p['level']) ?? FoodProcessing.whole,
+      markers: [for (final m in p['markers'] as List) m as String],
+      flags: [for (final f in j['flags'] as List) (kind: f['kind'] as String, message: f['message'] as String)],
+      item: j['item'] == null ? null : FoodItem.fromJson(j['item'] as Map<String, dynamic>),
+    );
+  }
+}
+
 /// When a supplement is taken (`StackTiming` in the contracts).
 enum StackTiming {
   morning('morning', 'Morning'),

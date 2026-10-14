@@ -33,10 +33,13 @@ class FakePicker extends ImagePicker {
 
 /// A camera that "sees" each text in turn, one per frame, then repeats the last.
 class FakeLabelCamera implements LabelCamera {
-  FakeLabelCamera(this.texts, {this.denied = false});
+  FakeLabelCamera(this.texts, {this.denied = false, this.barcodes = const []});
 
   final List<String> texts;
   final bool denied;
+
+  /// Barcodes "seen" in every frame.
+  final List<String> barcodes;
   var frames = 0;
   var disposed = false;
 
@@ -52,7 +55,7 @@ class FakeLabelCamera implements LabelCamera {
   Future<ScanFrame> capture() async {
     final text = texts[frames < texts.length ? frames : texts.length - 1];
     frames++;
-    return (bytes: onePixelPng, text: text);
+    return (bytes: onePixelPng, text: text, barcodes: barcodes);
   }
 
   @override

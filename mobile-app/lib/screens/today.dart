@@ -10,6 +10,7 @@ import '../widgets/food_image.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'check_in_sheet.dart';
+import 'food_scan_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'sleep_sheets.dart';
@@ -148,7 +149,7 @@ class _TodayScreenState extends State<TodayScreen> {
   }
 
   Future<void> _logMeal() async {
-    final logged = await showLogMealSheet(context, onScanSupplement: _scanSupplement);
+    final logged = await showLogMealSheet(context, onScanSupplement: _scanSupplement, onScanFood: _scanFood);
     if (logged == true && mounted) {
       showToast(context, 'Meal logged');
       widget.onChanged();
@@ -177,6 +178,17 @@ class _TodayScreenState extends State<TodayScreen> {
     if (saved == true && mounted) {
       showToast(context, 'Weight goal saved');
       _refresh();
+    }
+  }
+
+  /// A packaged food: "Log it" opens Log a meal with its serving filled in.
+  Future<void> _scanFood() async {
+    final item = await showFoodScanSheet(context);
+    if (item == null || !mounted) return;
+    final logged = await showLogMealSheet(context, initialItems: [item]);
+    if (logged == true && mounted) {
+      showToast(context, 'Meal logged');
+      widget.onChanged();
     }
   }
 

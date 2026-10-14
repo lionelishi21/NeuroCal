@@ -10,15 +10,24 @@ import '../theme/tokens.dart';
 /// Keeps the scan's photos under what the API takes in one request.
 const _maxScanBytes = 4 * 1024 * 1024;
 
+/// What a live scan found: a product barcode (when asked to look for one), or label photos.
+typedef LiveScanResult = ({String? barcode, List<Uint8List> photos});
+
 /// Opens the camera full screen and keeps a sharp photo each time a new part of the label comes into
-/// view, while the person turns the bottle. Returns the kept photos, or null if they closed it.
-Future<List<Uint8List>?> showLiveScan(BuildContext context, LabelCamera camera) =>
-    Navigator.of(context).push<List<Uint8List>>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => LiveScanPage(camera: camera)));
+/// view, while the person turns the package. With [findBarcode], a product barcode in view ends the
+/// scan at once. Null if they closed it.
+Future<LiveScanResult?> showLiveScan(BuildContext context, LabelCamera camera, {bool findBarcode = false}) =>
+    Navigator.of(context).push<LiveScanResult>(
+      MaterialPageRoute(fullscreenDialog: true, builder: (_) => LiveScanPage(camera: camera, findBarcode: findBarcode)),
+    );
 
 class LiveScanPage extends StatefulWidget {
-  const LiveScanPage({super.key, required this.camera, this.interval = const Duration(milliseconds: 700)});
+  const LiveScanPage({super.key, required this.camera, this.findBarcode = false, this.interval = const Duration(milliseconds: 700)});
 
   final LabelCamera camera;
+
+  /// Food packages: a readable barcode finishes the scan, before any label photos are needed.
+  final bool findBarcode;
 
   /// The pause between frames, so the preview stays smooth.
   final Duration interval;
@@ -33,7 +42,9 @@ class _LiveScanPageState extends State<LiveScanPage> {
   final _session = ScanSession();
   final _photos = <Uint8List>[];
   var _stage = _Stage.starting;
-  var _status = 'Point the camera at the Supplement Facts panel.';
+  late var _status = widget.findBarcode
+      ? 'Point the camera at the barcode, or at the nutrition label.'
+      : 'Point the camera at the Supplement Facts panel.';
   var _torch = false;
   var _capturing = false;
   var _closed = false;
@@ -80,6 +91,12 @@ class _LiveScanPageState extends State<LiveScanPage> {
     try {
       final frame = await widget.camera.capture();
       if (_closed) return;
+      if (widget.findBarcode && frame.barcodes.isNotEmpty) {
+        unawaited(HapticFeedback.mediumImpact());
+        _closed = true;
+        if (mounted) Navigator.of(context).pop<LiveScanResult>((barcode: frame.barcodes.first, photos: const []));
+        return;
+      }
       final words = labelWords(frame.text);
       final verdict = manual ? FrameVerdict.keep : _session.consider(words);
       if (manual) _session.keepAnyway(words);
@@ -109,7 +126,7 @@ class _LiveScanPageState extends State<LiveScanPage> {
   void _finish() {
     if (_closed || _photos.isEmpty) return;
     _closed = true;
-    Navigator.of(context).pop(List<Uint8List>.of(_photos));
+    Navigator.of(context).pop<LiveScanResult>((barcode: null, photos: List<Uint8List>.of(_photos)));
   }
 
   Future<void> _toggleTorch() async {
