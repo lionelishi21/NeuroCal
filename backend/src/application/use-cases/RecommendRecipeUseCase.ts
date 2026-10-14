@@ -117,6 +117,8 @@ export class RecommendRecipeUseCase {
       return await call();
     } catch (error) {
       if (error instanceof DomainError) throw error;
+      // Which provider failed and why (no prompt or meal content), so a lasting failure can be traced.
+      console.error(JSON.stringify({ event: "recipe_upstream_failed", error: String(error).slice(0, 300) }));
       throw new UpstreamError("Suggestions aren't available right now. Try again in a moment.");
     }
   }
