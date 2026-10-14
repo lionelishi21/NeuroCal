@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'api/api.dart';
 import 'auth/auth.dart';
 import 'billing/billing.dart';
+import 'reminders/reminders.dart';
 import 'theme/theme_controller.dart';
 
 /// The app's services, wired once in main.dart (the composition root) and read by screens.
@@ -15,6 +16,7 @@ class AppScope extends InheritedWidget {
     required this.timeZone,
     required this.openLink,
     required this.billing,
+    this.reminders,
     required super.child,
   });
 
@@ -29,6 +31,9 @@ class AppScope extends InheritedWidget {
   final Future<bool> Function(Uri link) openLink;
   final Billing billing;
 
+  /// Check-in reminders; null where notifications aren't set up (tests, previews).
+  final ReminderSettings? reminders;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
@@ -38,5 +43,6 @@ class AppScope extends InheritedWidget {
       theme != oldWidget.theme ||
       timeZone != oldWidget.timeZone ||
       openLink != oldWidget.openLink ||
-      billing != oldWidget.billing;
+      billing != oldWidget.billing ||
+      reminders != oldWidget.reminders;
 }

@@ -12,6 +12,8 @@ dependencies:
   amplify_auth_cognito: ^2.15.1
   amplify_flutter: ^2.15.0
   camera: ^0.12.0+2
+  # Check-in reminders: notifications scheduled on the phone, no server needed.
+  flutter_local_notifications: ^22.3.2
   flutter_timezone: ^5.1.1
   # On-device text recognition, so live scan only keeps frames where the label is readable.
   google_mlkit_text_recognition: ^0.16.0
@@ -22,6 +24,7 @@ dependencies:
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
   purchases_flutter: ^10.15.2
   shared_preferences: ^2.5.5
+  timezone: ^0.11.2
   url_launcher: ^6.3.3
 
 dev_dependencies:

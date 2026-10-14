@@ -12,6 +12,7 @@ import 'auth/auth.dart';
 import 'auth/cognito_auth.dart';
 import 'billing/billing.dart';
 import 'config.dart';
+import 'reminders/reminders.dart';
 import 'device_time_zone.dart';
 import 'api/models.dart';
 import 'screens/account.dart';
@@ -29,7 +30,8 @@ Future<void> main() async {
   // Portrait only, like the native settings (AndroidManifest.xml, Info.plist): scanning and the
   // Brain speed check are built for an upright phone.
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  final theme = ThemeController(await SharedPreferences.getInstance());
+  final prefs = await SharedPreferences.getInstance();
+  final theme = ThemeController(prefs);
   final AuthClient auth = AppConfig.usesMockAuth
       ? MockAuthClient()
       : CognitoAuthClient(userPoolId: AppConfig.userPoolId, clientId: AppConfig.clientId);
@@ -40,7 +42,13 @@ Future<void> main() async {
   final revenueCatKey = Platform.isIOS ? AppConfig.revenueCatIosKey : AppConfig.revenueCatAndroidKey;
   // Test mode starts locked, so the paywall shows; its "purchase" is free and instant.
   final Billing billing = revenueCatKey.isEmpty ? MockBilling() : RevenueCatBilling(revenueCatKey);
-  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing));
+  final device = DeviceReminders();
+  final reminders = ReminderSettings(prefs, device);
+  // Ready before the first frame, so a tapped reminder that started the app opens the check-in.
+  await device.start().catchError((Object _) {});
+  // Again at every launch: the phone may have changed time zone, or the app was updated.
+  reminders.restore().catchError((Object _) {});
+  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders));
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.
@@ -58,6 +66,7 @@ class NeuroCalApp extends StatelessWidget {
     this.timeZone = deviceTimeZone,
     this.openLink = _openOutside,
     this.billing,
+    this.reminders,
   });
 
   final NeuroCalApi api;
@@ -69,6 +78,9 @@ class NeuroCalApp extends StatelessWidget {
   /// Subscriptions; unlocked test billing when left out.
   final Billing? billing;
 
+  /// Check-in reminders; none when left out.
+  final ReminderSettings? reminders;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -78,6 +90,7 @@ class NeuroCalApp extends StatelessWidget {
       timeZone: timeZone,
       openLink: openLink,
       billing: billing ?? _unlocked,
+      reminders: reminders,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(
@@ -109,6 +122,7 @@ class _SignedIn extends StatefulWidget {
 class _SignedInState extends State<_SignedIn> {
   Future<Profile?>? _profile;
   Billing? _billing;
+  ReminderSettings? _reminders;
 
   /// Whether the subscription or trial gives access, per profile loaded.
   final _access = <Profile, Future<bool>>{};
@@ -118,12 +132,15 @@ class _SignedInState extends State<_SignedIn> {
     super.didChangeDependencies();
     _profile ??= AppScope.of(context).api.me();
     _billing = AppScope.of(context).billing;
+    _reminders = AppScope.of(context).reminders;
   }
 
   @override
   void dispose() {
     // Signed out: purchases on this device stop following that account.
     _billing?.signOut().catchError((Object _) {});
+    // And no reminders for an account that isn't here.
+    _reminders?.clear().catchError((Object _) {});
     super.dispose();
   }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../api/models.dart';
+import '../app_scope.dart';
+import '../reminders/reminders.dart';
 import '../theme/tokens.dart';
 import 'capture.dart';
 import 'plan.dart';
@@ -29,8 +31,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _reminders?.opened.removeListener(_reminderTapped);
     _changes.dispose();
     super.dispose();
+  }
+
+  ReminderSettings? _reminders;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reminders = AppScope.of(context).reminders;
+    if (reminders != _reminders) {
+      _reminders?.opened.removeListener(_reminderTapped);
+      _reminders = reminders?..opened.addListener(_reminderTapped);
+      // Started by tapping a reminder: open the check-in once the tabs are showing.
+      if (reminders != null && reminders.opened.value > reminders.handled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _reminderTapped());
+      }
+    }
+  }
+
+  /// A reminder was tapped: straight to the check-in on Today.
+  void _reminderTapped() {
+    final reminders = _reminders;
+    if (!mounted || reminders == null || reminders.opened.value <= reminders.handled) return;
+    reminders.handled = reminders.opened.value;
+    setState(() => _tab = _today);
+    _capture(Capture.checkIn);
   }
 
   void _changed() => _changes.value++;

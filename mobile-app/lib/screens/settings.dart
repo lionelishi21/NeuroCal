@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../config.dart';
+import '../reminders/reminders.dart';
 import '../theme/theme_controller.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
@@ -173,6 +174,10 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+          if (scope.reminders case final reminders?) ...[
+            const GroupLabel('Check-in reminders'),
+            _Reminders(reminders),
+          ],
           const GroupLabel('Account'),
           AppCard(
             padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
@@ -352,6 +357,62 @@ class _SubscriptionState extends State<_Subscription> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A switch per daily reminder. The first one switched on asks to show notifications.
+class _Reminders extends StatelessWidget {
+  const _Reminders(this.settings);
+
+  final ReminderSettings settings;
+
+  Future<void> _set(BuildContext context, ReminderSlot slot, bool on) async {
+    final done = await settings.set(slot, on);
+    if (!context.mounted) return;
+    if (!done) {
+      showToast(context, 'Notifications are off for NeuroCal. Turn them on in your phone’s settings.', ToastTone.problem);
+    } else if (on) {
+      showToast(context, 'Reminder set for ${slot.time} every day');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: ListenableBuilder(
+        listenable: settings,
+        builder: (context, _) {
+          final on = settings.slots;
+          return Column(
+            children: [
+              for (final (i, slot) in ReminderSlot.values.indexed)
+                MergeSemantics(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s3, Space.s2),
+                    decoration: BoxDecoration(border: i == 0 ? null : Border(top: BorderSide(color: c.rule))),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${slot.label} · ${slot.time}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                              Text(slot.title, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                            ],
+                          ),
+                        ),
+                        Switch(value: on.contains(slot), onChanged: (v) => _set(context, slot, v)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
