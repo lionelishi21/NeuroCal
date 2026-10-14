@@ -253,6 +253,41 @@ class MockNeuroCalApi implements NeuroCalApi {
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
+  final _brainChecks = <BrainCheck>[];
+
+  /// Scored like the API (backend/src/domain/brainCheck.ts).
+  @override
+  Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts) async {
+    await _wait();
+    final sorted = [...reactionTimesMs]..sort();
+    final mid = sorted.length ~/ 2;
+    final median = sorted.length.isOdd ? sorted[mid].toDouble() : (sorted[mid - 1] + sorted[mid]) / 2;
+    final fastest = sorted.take((sorted.length / 10).round().clamp(1, sorted.length)).toList();
+    final lapses = reactionTimesMs.where((x) => x >= 500).length;
+    final raw = 100 - (median - 250).clamp(0, double.infinity) / 3 - lapses / reactionTimesMs.length * 100 - falseStarts * 3;
+    final check = BrainCheck(
+      takenAt: DateTime.now(),
+      score: raw.round().clamp(0, 100),
+      medianMs: median.round(),
+      fastestMs: (fastest.reduce((a, b) => a + b) / fastest.length).round(),
+      lapses: lapses,
+      falseStarts: falseStarts,
+      trials: reactionTimesMs.length,
+    );
+    _brainChecks.insert(0, check);
+    return check;
+  }
+
+  @override
+  Future<BrainCheckHistory> brainChecks({int days = 30}) async {
+    await _wait();
+    final earlier = [for (final c in _brainChecks.skip(1)) c.score]..sort();
+    return BrainCheckHistory(
+      checks: List.of(_brainChecks),
+      baselineScore: earlier.length >= 3 ? earlier[earlier.length ~/ 2] : null,
+    );
+  }
+
   /// Two sample products: peanuts (processed) by barcode 0123456789012, anything else unknown;
   /// any label photo reads as a supermarket granola (ultra-processed).
   @override

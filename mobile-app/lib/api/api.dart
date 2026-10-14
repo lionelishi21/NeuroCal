@@ -26,6 +26,10 @@ abstract interface class NeuroCalApi {
   Future<void> deleteWeight(String date);
   Future<FastingStatus> fasting();
 
+  /// Saves a Brain speed check from its raw reaction times; the API scores it.
+  Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts);
+  Future<BrainCheckHistory> brainChecks({int days = 30});
+
   /// A packaged food by barcode. Throws [ApiException] 404 when the barcode isn't known.
   Future<FoodScan> scanBarcode(String code);
 
@@ -165,6 +169,20 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
+
+  @override
+  Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts) async {
+    final res = await _client.post(
+      _uri('/brain-checks'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'reactionTimesMs': reactionTimesMs, 'falseStarts': falseStarts}),
+    );
+    return BrainCheck.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<BrainCheckHistory> brainChecks({int days = 30}) async =>
+      BrainCheckHistory.fromJson(await _get('/brain-checks', {'days': '$days'}) as Map<String, dynamic>);
 
   @override
   Future<FoodScan> scanBarcode(String code) async => FoodScan.fromJson(await _get('/foods/barcode/$code') as Map<String, dynamic>);

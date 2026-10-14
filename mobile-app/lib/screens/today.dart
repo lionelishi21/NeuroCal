@@ -9,6 +9,7 @@ import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'brain_check.dart';
 import 'check_in_sheet.dart';
 import 'food_scan_sheet.dart';
 import 'foods.dart';
@@ -20,7 +21,7 @@ import 'weight_cards.dart';
 import 'weight_sheets.dart';
 
 class _Day {
-  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.stack, this.unit = WeightUnit.kg});
+  const _Day(this.focus, this.bio, this.meals, this.recipes, {this.fasting, this.weights, this.stack, this.brain, this.unit = WeightUnit.kg});
 
   final FocusScore focus;
   final BioState bio;
@@ -38,6 +39,9 @@ class _Day {
 
   /// Null when the stack is empty or didn't load.
   final SupplementStack? stack;
+
+  /// Null when it didn't load; the card then still offers the check.
+  final BrainCheckHistory? brain;
 }
 
 const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -132,8 +136,9 @@ class _TodayScreenState extends State<TodayScreen> {
         : Future<WeightHistory?>.value(null);
     final unit = WeightUnit.load(Localizations.localeOf(context));
     final stack = api.stack().then<SupplementStack?>((s) => s.items.isEmpty ? null : s).catchError((Object _) => null);
+    final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
     final (focus, bio, meals) = await (api.focusScore(now), api.bioState(now), api.meals(now)).wait;
-    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, stack: await stack, unit: await unit);
+    return _Day(focus, bio, meals, await recipes, fasting: await fasting, weights: await weights, stack: await stack, brain: await brain, unit: await unit);
   }
 
   Future<void> _refresh() async {
@@ -190,6 +195,10 @@ class _TodayScreenState extends State<TodayScreen> {
       showToast(context, 'Meal logged');
       widget.onChanged();
     }
+  }
+
+  Future<void> _brainCheck() async {
+    if (await showBrainCheck(context) != null && mounted) _refresh();
   }
 
   Future<void> _scanSupplement() async {
@@ -318,6 +327,8 @@ class _TodayScreenState extends State<TodayScreen> {
                       onLogSleep: () => _log(showLogSleepSheet, 'Sleep logged'),
                       onLogScreens: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
                     ),
+                    const SizedBox(height: Space.s3),
+                    _BrainSpeed(snapshot.data!.brain, onCheck: _brainCheck),
                     if (snapshot.data!.fasting != null) ...[
                       const SizedBox(height: Space.s3),
                       FastingCard(snapshot.data!.fasting!, onBoundary: _refresh),
@@ -1090,6 +1101,61 @@ class _Processing extends StatelessWidget {
                 : 'Mostly whole food today. That keeps you full for fewer calories.',
             style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Today's Brain speed against your usual, or the way into today's check.
+class _BrainSpeed extends StatelessWidget {
+  const _BrainSpeed(this.history, {required this.onCheck});
+
+  final BrainCheckHistory? history;
+  final VoidCallback onCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final latest = history?.checks.firstOrNull;
+    final now = DateTime.now();
+    final today = latest != null && latest.takenAt.year == now.year && latest.takenAt.month == now.month && latest.takenAt.day == now.day ? latest : null;
+    final usual = history?.baselineScore;
+    final diff = today != null && usual != null ? today.score - usual : null;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+      child: Row(
+        spacing: Space.s3,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+            child: today == null
+                ? Icon(Icons.bolt_rounded, color: c.synapseInk)
+                : Text('${today.score}', style: TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, color: c.synapseInk)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                const Text('Brain speed', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                Text(
+                  today == null
+                      ? 'A 2-minute reaction check. Do it daily to see what sharpens you.'
+                      : diff == null
+                      ? '${today.medianMs} ms typical reaction. A few more days and you\'ll have your usual.'
+                      : diff >= 0
+                      ? '$diff above your usual (${usual!}).'
+                      : '${-diff} below your usual (${usual!}). Sleep and daylight help most.',
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                ),
+              ],
+            ),
+          ),
+          if (today == null) SoftButton(label: 'Start', onPressed: onCheck),
         ],
       ),
     );

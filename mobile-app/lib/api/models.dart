@@ -381,6 +381,56 @@ SuggestedProduct productFromJson(Map<String, dynamic> p) => (
   supplement: p['supplement'] as bool,
 );
 
+/// One Brain speed check, scored by the API (`BrainCheck` in the contracts).
+class BrainCheck {
+  const BrainCheck({
+    required this.takenAt,
+    required this.score,
+    required this.medianMs,
+    required this.fastestMs,
+    required this.lapses,
+    required this.falseStarts,
+    required this.trials,
+  });
+
+  final DateTime takenAt;
+
+  /// 0–100, higher is sharper.
+  final int score;
+  final int medianMs;
+  final int fastestMs;
+
+  /// Responses of 500 ms or more.
+  final int lapses;
+  final int falseStarts;
+  final int trials;
+
+  factory BrainCheck.fromJson(Map<String, dynamic> j) => BrainCheck(
+    takenAt: DateTime.parse(j['takenAt'] as String).toLocal(),
+    score: (j['score'] as num).toInt(),
+    medianMs: (j['medianMs'] as num).toInt(),
+    fastestMs: (j['fastestMs'] as num).toInt(),
+    lapses: (j['lapses'] as num).toInt(),
+    falseStarts: (j['falseStarts'] as num).toInt(),
+    trials: (j['trials'] as num).toInt(),
+  );
+}
+
+class BrainCheckHistory {
+  const BrainCheckHistory({this.checks = const [], this.baselineScore});
+
+  /// Newest first.
+  final List<BrainCheck> checks;
+
+  /// Your usual: the median of earlier checks, once there are three.
+  final int? baselineScore;
+
+  factory BrainCheckHistory.fromJson(Map<String, dynamic> j) => BrainCheckHistory(
+    checks: [for (final c in j['checks'] as List) BrainCheck.fromJson(c as Map<String, dynamic>)],
+    baselineScore: (j['baselineScore'] as num?)?.toInt(),
+  );
+}
+
 typedef FoodFlag = ({String kind, String message});
 
 /// A packaged food by barcode or label photos, graded by the API (`FoodScanResponse` in the contracts).
