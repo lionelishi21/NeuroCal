@@ -89,12 +89,32 @@ class ApiException implements Exception {
 
 /// Talks to the deployed backend. Every call carries the Cognito ID token, like the web app.
 class HttpNeuroCalApi implements NeuroCalApi {
-  HttpNeuroCalApi({required this.baseUrl, required this.token, http.Client? client})
-    : _client = client ?? http.Client();
+  HttpNeuroCalApi({
+    required this.baseUrl,
+    required this.token,
+    http.Client? client,
+    this.retryDelays = const [Duration(milliseconds: 600), Duration(milliseconds: 1800)],
+  }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final Future<String?> Function() token;
   final http.Client _client;
+
+  /// The pauses before each retry of a read the server turned away for a moment: too many requests at
+  /// once (AWS caps how many run together) or a gateway error.
+  final List<Duration> retryDelays;
+
+  static const _busy = {429, 502, 503, 504};
+
+  /// A GET, retried after [retryDelays] while the server is busy. Reads are safe to repeat; writes aren't
+  /// retried, so nothing is saved twice.
+  Future<http.Response> _read(Uri uri) async {
+    for (var attempt = 0; ; attempt++) {
+      final res = await _client.get(uri, headers: await _headers());
+      if (!_busy.contains(res.statusCode) || attempt >= retryDelays.length) return res;
+      await Future<void>.delayed(retryDelays[attempt]);
+    }
+  }
 
   Future<Map<String, String>> _headers({bool json = false}) async {
     final t = await token();
@@ -111,12 +131,11 @@ class HttpNeuroCalApi implements NeuroCalApi {
     return res.body.isEmpty ? null : jsonDecode(res.body);
   }
 
-  Future<dynamic> _get(String path, [Map<String, String>? query]) async =>
-      _decode(await _client.get(_uri(path, query), headers: await _headers()));
+  Future<dynamic> _get(String path, [Map<String, String>? query]) async => _decode(await _read(_uri(path, query)));
 
   @override
   Future<Profile?> me() async {
-    final res = await _client.get(_uri('/me'), headers: await _headers());
+    final res = await _read(_uri('/me'));
     if (res.statusCode == 404) return null;
     return Profile.fromJson(_decode(res) as Map<String, dynamic>);
   }

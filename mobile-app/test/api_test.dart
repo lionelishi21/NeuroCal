@@ -68,4 +68,26 @@ void main() {
     await api.checkIn([CognitiveFlag.brainFog, CognitiveFlag.calm]);
     expect(body['flags'], ['brain_fog', 'calm']);
   });
+
+  test('a read the server turns away for a moment is tried again; a write is not', () async {
+    var reads = 0;
+    var writes = 0;
+    final api = HttpNeuroCalApi(
+      baseUrl: 'https://api.example.com',
+      token: () async => 'token',
+      retryDelays: const [Duration.zero, Duration.zero],
+      client: MockClient((req) async {
+        if (req.method == 'GET') {
+          reads++;
+          return reads < 3 ? http.Response('Service Unavailable', 503) : http.Response('[]', 200);
+        }
+        writes++;
+        return http.Response('Service Unavailable', 503);
+      }),
+    );
+    expect(await api.meals(DateTime(2026, 10, 14)), isEmpty);
+    expect(reads, 3);
+    await expectLater(api.deleteMeal('m1'), throwsA(isA<ApiException>()));
+    expect(writes, 1);
+  });
 }
