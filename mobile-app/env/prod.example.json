@@ -1,0 +1,7 @@
+{
+  "API_URL": "https://<ApiUrl output of NeuroCal-prod>.execute-api.us-east-1.amazonaws.com",
+  "COGNITO_USER_POOL_ID": "us-east-1_<UserPoolId output of NeuroCal-prod>",
+  "COGNITO_CLIENT_ID": "<UserPoolClientId output of NeuroCal-prod>",
+  "REVENUECAT_IOS_KEY": "appl_<RevenueCat public iOS SDK key>",
+  "REVENUECAT_ANDROID_KEY": "goog_<RevenueCat public Android SDK key>"
+}

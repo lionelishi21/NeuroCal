@@ -40,7 +40,9 @@ export async function resolveAwsSecrets(env: NodeJS.ProcessEnv, getSecret: GetSe
     const user = encodeURIComponent(db.username);
     const password = encodeURIComponent(db.password);
     // verify-full: the Lambda trusts the RDS CA through NODE_EXTRA_CA_CERTS (set by the stack).
-    out.DATABASE_URL = `postgres://${user}:${password}@${db.host}:${db.port}/${encodeURIComponent(db.dbname ?? "neurocal")}?sslmode=verify-full`;
+    // DB_HOST (set by the stack when RDS Proxy is on) sends connections through the proxy, with the same credentials.
+    const host = env.DB_HOST || db.host;
+    out.DATABASE_URL = `postgres://${user}:${password}@${host}:${db.port}/${encodeURIComponent(db.dbname ?? "neurocal")}?sslmode=verify-full`;
   }
 
   return out;

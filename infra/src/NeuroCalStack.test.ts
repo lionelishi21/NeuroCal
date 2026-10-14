@@ -29,6 +29,27 @@ describe("NeuroCalStack", () => {
     prod.hasResource("AWS::RDS::DBCluster", { DeletionPolicy: "Snapshot" });
   });
 
+  it("puts RDS Proxy (TLS only) in front of Aurora for prod, and the API connects through it; dev connects directly", () => {
+    prod.hasResourceProperties("AWS::RDS::DBProxy", { RequireTLS: true, EngineFamily: "POSTGRESQL" });
+    const apiEnv = (t: Template) =>
+      Object.values(t.findResources("AWS::Lambda::Function")).find((f) => JSON.stringify(f).includes("PHOTO_BUCKET"))!.Properties.Environment.Variables;
+    expect(apiEnv(prod).DB_HOST).toBeDefined();
+    const [, migrate] = Object.entries(prod.findResources("AWS::Lambda::Function")).find(([id]) => id.startsWith("MigrateFunction"))!;
+    expect(migrate.Properties.Environment.Variables.DB_SECRET_ARN).toBeDefined();
+    expect(migrate.Properties.Environment.Variables.DB_HOST).toBeUndefined();
+    dev.resourceCountIs("AWS::RDS::DBProxy", 0);
+    expect(apiEnv(dev).DB_HOST).toBeUndefined();
+  });
+
+  it("emails alarms for API errors and throttling when an alarm email is set", () => {
+    const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
+    const watched = new NeuroCalStack(app, "NeuroCal-watched", { stage: "dev", webOrigins: ["https://app.example.com"], alarmEmail: "ops@example.com" });
+    const t = Template.fromStack(watched);
+    t.hasResourceProperties("AWS::SNS::Subscription", { Protocol: "email", Endpoint: "ops@example.com" });
+    t.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+    dev.resourceCountIs("AWS::CloudWatch::Alarm", 0);
+  });
+
   it("keeps a dev database awake when asked", () => {
     const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
     const warm = new NeuroCalStack(app, "NeuroCal-warm", { stage: "dev", webOrigins: ["https://app.example.com"], warmDatabase: true });

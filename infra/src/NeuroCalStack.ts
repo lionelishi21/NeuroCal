@@ -6,12 +6,16 @@ import { CfnStage, CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } fro
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Architecture, Runtime } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction, OutputFormat, type NodejsFunctionProps } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import { Trigger } from "aws-cdk-lib/triggers";
@@ -29,6 +33,13 @@ export interface NeuroCalStackProps extends StackProps {
    * never wait ~15 s for it to wake. Prod is always warm.
    */
   warmDatabase?: boolean;
+  /**
+   * Put RDS Proxy between the Lambdas and Aurora, so hundreds of Lambdas share a small pool of database
+   * connections. On for prod unless set; it bills a minimum of 8 ACU-hours an hour (~$85/month).
+   */
+  dbProxy?: boolean;
+  /** Email for alarms (API errors, throttling, Lambda errors). No alarms when unset. */
+  alarmEmail?: string;
 }
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -98,6 +109,25 @@ export class NeuroCalStack extends Stack {
     // Lambdas share one bundling setup: ESM, arm64, secrets by ARN (never values) in the environment.
     const lambdaSecurityGroup = new ec2.SecurityGroup(this, "LambdaSecurityGroup", { vpc, description: "NeuroCal Lambdas" });
     database.connections.allowDefaultPortFrom(lambdaSecurityGroup, "NeuroCal Lambdas");
+
+    // RDS Proxy: Lambdas connect to it instead of Aurora, and it shares a few real connections between them.
+    // Migrations still go straight to Aurora (DDL shouldn't run through pooled connections).
+    let proxy: rds.DatabaseProxy | undefined;
+    if (props.dbProxy ?? prod) {
+      const proxySecurityGroup = new ec2.SecurityGroup(this, "DatabaseProxySecurityGroup", { vpc, description: "NeuroCal RDS Proxy" });
+      proxySecurityGroup.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432), "NeuroCal Lambdas");
+      database.connections.allowDefaultPortFrom(proxySecurityGroup, "NeuroCal RDS Proxy");
+      proxy = database.addProxy("DatabaseProxy", {
+        secrets: [database.secret!],
+        vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+        securityGroups: [proxySecurityGroup],
+        requireTLS: true,
+        // Connections idle in the pool for more than 10 minutes are closed.
+        idleClientTimeout: Duration.minutes(10),
+        maxConnectionsPercent: 90,
+      });
+    }
     const fn = (name: string, entry: string, extra: Partial<NodejsFunctionProps> = {}) => {
       const f = new NodejsFunction(this, name, {
         entry: path.join(BACKEND, "src/presentation", entry),
@@ -174,6 +204,9 @@ export class NeuroCalStack extends Stack {
       schedule: events.Schedule.rate(Duration.hours(1)),
       targets: [new targets.LambdaFunction(trialReminders, { retryAttempts: 0 })],
     });
+
+    // Everything but migrations connects through the proxy when there is one (backend secrets.ts reads DB_HOST).
+    if (proxy) for (const f of [api, catalogSync, trialReminders]) f.addEnvironment("DB_HOST", proxy.endpoint);
 
     // Auth: Cognito user pool; API Gateway verifies the JWT before the Lambda runs (§10).
     const userPool = new cognito.UserPool(this, "Users", {
@@ -252,5 +285,31 @@ export class NeuroCalStack extends Stack {
     new CfnOutput(this, "AppSecretArn", { value: appSecret.secretArn, description: "Put the API keys here" });
     new CfnOutput(this, "CatalogSyncFunctionName", { value: catalogSync.functionName, description: "Invoke after catalog changes" });
     new CfnOutput(this, "MealPhotoBucketName", { value: photos.bucketName });
+    if (proxy) new CfnOutput(this, "DatabaseProxyEndpoint", { value: proxy.endpoint });
+
+    // Alarms, emailed: the API failing or being throttled, and Lambda errors. Confirm the subscription email AWS sends.
+    if (props.alarmEmail) {
+      const topic = new sns.Topic(this, "Alarms", { displayName: `NeuroCal ${props.stage} alarms` });
+      topic.addSubscription(new subscriptions.EmailSubscription(props.alarmEmail));
+      const notify = new cwActions.SnsAction(topic);
+      const alarm = (id: string, metric: cloudwatch.IMetric, threshold: number, description: string) => {
+        const a = new cloudwatch.Alarm(this, id, {
+          metric,
+          threshold,
+          evaluationPeriods: 1,
+          comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+          treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+          alarmDescription: description,
+        });
+        a.addAlarmAction(notify);
+        a.addOkAction(notify);
+      };
+      const fiveMinutes = { period: Duration.minutes(5), statistic: "Sum" };
+      alarm("ApiServerErrorsAlarm", httpApi.metricServerError(fiveMinutes), 10, "The API returned 10 or more 5xx responses in 5 minutes.");
+      alarm("ApiThrottlesAlarm", api.metricThrottles(fiveMinutes), 1, "AWS throttled the API Lambda: raise the account's concurrency limit.");
+      alarm("ApiLambdaErrorsAlarm", api.metricErrors(fiveMinutes), 5, "The API Lambda crashed or timed out 5 or more times in 5 minutes.");
+      alarm("TrialRemindersErrorsAlarm", trialReminders.metricErrors({ ...fiveMinutes, period: Duration.hours(1) }), 1, "The trial reminder email job failed.");
+      new CfnOutput(this, "AlarmTopicArn", { value: topic.topicArn });
+    }
   }
 }

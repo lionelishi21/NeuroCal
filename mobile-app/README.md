@@ -43,6 +43,10 @@ cp env/dev.example.json env/dev.json   # env/*.json is gitignored
 flutter run --dart-define-from-file=env/dev.json
 ```
 
+For store builds, `env/prod.example.json` has the same keys for the `NeuroCal-prod` stack plus the
+RevenueCat public SDK keys (without them purchases stay in test mode). Copy it to `env/prod.json` and
+build with `--dart-define-from-file=env/prod.json`; see "Production" in `infra/README.md`.
+
 Without `API_URL` the app uses the in-memory mock API (`lib/api/mock_api.dart`); without the two
 Cognito values it uses the local mock sign-in (`lib/auth/auth.dart`), like the web app.
 

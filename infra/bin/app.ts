@@ -16,6 +16,10 @@ new NeuroCalStack(app, `NeuroCal-${stage}`, {
   adminEmails: ((app.node.tryGetContext("adminEmails") as string | undefined) ?? "").split(",").map((e) => e.trim()).filter(Boolean),
   // On in cdk.json's context so every deploy keeps it; -c warmDatabase=false lets dev pause again.
   warmDatabase: String(app.node.tryGetContext("warmDatabase")) === "true",
+  // -c dbProxy=true|false; unset means on for prod only (it costs ~$85/month).
+  ...(app.node.tryGetContext("dbProxy") === undefined ? {} : { dbProxy: String(app.node.tryGetContext("dbProxy")) === "true" }),
+  // -c alarmEmail=you@example.com: email alarms for API errors and throttling.
+  ...(app.node.tryGetContext("alarmEmail") ? { alarmEmail: String(app.node.tryGetContext("alarmEmail")) } : {}),
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
   tags: { project: "neurocal", stage },
 });

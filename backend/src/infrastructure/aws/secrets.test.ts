@@ -21,6 +21,11 @@ describe("resolveAwsSecrets", () => {
     expect(out.DATABASE_URL).toBe("postgres://neurocal:p%40ss%2Fword@db.cluster.local:5432/neurocal?sslmode=verify-full");
   });
 
+  it("connects through RDS Proxy when DB_HOST is set, with the secret's credentials", async () => {
+    const out = await resolveAwsSecrets({ DB_SECRET_ARN: "db", DB_HOST: "proxy.proxy-abc.us-east-1.rds.amazonaws.com" }, get);
+    expect(out.DATABASE_URL).toBe("postgres://neurocal:p%40ss%2Fword@proxy.proxy-abc.us-east-1.rds.amazonaws.com:5432/neurocal?sslmode=verify-full");
+  });
+
   it("lets values already in the environment win", async () => {
     const out = await resolveAwsSecrets(
       { APP_SECRET_ARN: "app", DB_SECRET_ARN: "db", OPENAI_API_KEY: "from-env", DATABASE_URL: "postgres://local" },

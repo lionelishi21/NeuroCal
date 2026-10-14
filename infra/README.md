@@ -17,6 +17,9 @@ Context options:
 - `stage`: `dev` (the default) or `prod`. Any other name behaves like `dev`.
 - `webOrigins`: comma-separated origins allowed by CORS. Defaults to `http://localhost:3000`.
 - `adminEmails`: comma-separated sign-in emails allowed to manage products at `/admin`. Set it in `cdk.json` under `context` so every deploy keeps it.
+- `warmDatabase`: `true` (set in `cdk.json`) keeps a non-prod database awake at 0.5 ACU; `false` lets dev pause when idle. Prod never pauses.
+- `dbProxy`: `true` or `false` to put RDS Proxy in front of Aurora. Unset, it is on for prod only.
+- `alarmEmail`: an address to email alarms to (API 5xx, throttling, Lambda errors). No alarms without it.
 
 ## First deploy
 
@@ -47,6 +50,23 @@ Context options:
    aws lambda invoke --function-name <CatalogSyncFunctionName> /dev/stdout
    ```
 
+## Production
+
+Prod is its own stack (`NeuroCal-prod`): its own database, users, secret and bucket, so testing on dev never touches real people. Ideally put it in a separate AWS account too (AWS Organizations), so a mistake in dev can't reach it; the steps are the same with that account's profile.
+
+1. **Raise the Lambda limit first.** New accounts can run only 10 Lambdas at once, which one person opening the app can use up. Ask for 1,000 (free, usually a day):
+   ```sh
+   aws service-quotas request-service-quota-increase --service-code lambda --quota-code L-B99A9384 --desired-value 1000
+   ```
+2. **Deploy** with the website's origin and an alarm address:
+   ```sh
+   npm run deploy -- -c stage=prod -c webOrigins=https://neurocal.ai -c alarmEmail=you@example.com
+   ```
+   Prod differs from dev: the database never pauses and scales to 8 ACU, deletion protection is on, a deleted stack keeps a snapshot, backups are kept 14 days (the delete-account page promises this), logs 3 months, and the secret, user pool and bucket are retained. RDS Proxy sits between the Lambdas and Aurora, so many Lambdas share a few database connections; migrations still connect directly. Confirm the subscription email AWS sends to the alarm address, or alarms go nowhere.
+3. **Secrets.** Add the API keys to the prod `AppSecretArn` as in "First deploy" step 4, with production keys (a separate OpenAI project and Anthropic workspace make spend easy to watch). Add `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_KEY` and `RESEND_API_KEY`, and `PAYWALL` = `on` once the store products are live.
+4. **Embed the catalog** with the prod `CatalogSyncFunctionName` (step 5 above).
+5. **Point the apps at it.** Copy `mobile-app/env/prod.example.json` to `env/prod.json` with the prod outputs and RevenueCat keys, and build the store releases with `--dart-define-from-file=env/prod.json`. RevenueCat's webhook goes to the prod `ApiUrl`.
+
 ## Calling the API
 
 Every route needs a Cognito ID token in the `Authorization` header. The web app handles this: point it at the stage and sign up in the app (Cognito emails the verification code).
@@ -66,6 +86,8 @@ The API only accepts calls from the origins in `webOrigins`, so deploy with the 
 | Item | Dev | Prod |
 |---|---|---|
 | NAT gateway (needed for OpenAI, Anthropic, Google) | ~$33/month + data | same |
+| RDS Proxy | off (`-c dbProxy=true` to try it) | billed as 8 ACU minimum, ~$85/month |
+| CloudWatch alarms (with `alarmEmail`) | $0.10 per alarm per month | same |
 | Aurora Serverless v2 | ≥ 0.5 ACU always on, ~$45/month + storage (`warmDatabase` in `cdk.json`); with `-c warmDatabase=false`, storage only while paused and ~15 s to wake | ≥ 0.5 ACU always on, ~$45/month + storage |
 | Secrets Manager | 2 × $0.40/month | same |
 | Lambda, API Gateway, S3, Cognito | pennies at POC traffic | usage-based |
@@ -77,5 +99,5 @@ The API only accepts calls from the origins in `webOrigins`, so deploy with the 
 - EventBridge schedules and SQS fan-out (ARCHITECTURE §9)
 - Presigned photo upload (the bucket exists; the route and the Lambda's permission don't)
 - Resend email
-- Alarms and dashboards
+- Dashboards (alarms are in, with `alarmEmail`)
 - A custom API domain
