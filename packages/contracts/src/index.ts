@@ -554,6 +554,38 @@ export const ExerciseDay = z.object({
 });
 export type ExerciseDay = z.infer<typeof ExerciseDay>;
 
+export const PantryItem = z.object({ id: z.string(), name: z.string() });
+export type PantryItem = z.infer<typeof PantryItem>;
+
+export const PantryResponse = z.object({
+  /** Alphabetical. */
+  items: z.array(PantryItem),
+});
+export type PantryResponse = z.infer<typeof PantryResponse>;
+
+export const AddPantryItemsRequest = z.object({
+  /** 1–60 characters each; names already in the pantry (ignoring case and plurals) are skipped. */
+  names: z.array(z.string().min(1).max(60)).min(1).max(50),
+});
+export type AddPantryItemsRequest = z.infer<typeof AddPantryItemsRequest>;
+
+export const PantryRecipe = z.object({
+  title: z.string(),
+  minutes: z.number().int(),
+  servings: z.number().int(),
+  /** Per serving. */
+  calories: z.number().int(),
+  macros: Macros,
+  /** inPantry is worked out by the API from the pantry, not by the model. */
+  ingredients: z.array(z.object({ name: z.string(), quantity: z.string(), inPantry: z.boolean() })),
+  steps: z.array(z.string()),
+  whyItFits: z.string(),
+});
+export type PantryRecipe = z.infer<typeof PantryRecipe>;
+
+export const PantryRecipesResponse = z.object({ recipes: z.array(PantryRecipe) });
+export type PantryRecipesResponse = z.infer<typeof PantryRecipesResponse>;
+
 export const BrainCheckHistory = z.object({
   /** Newest first. */
   checks: z.array(BrainCheck),
@@ -811,6 +843,11 @@ export const endpoints = {
   /** A day's exercise (?date=, default today) with its totals. */
   getExercises: { method: "GET", path: "/exercises", response: ExerciseDay },
   deleteExercise: { method: "DELETE", path: "/exercises/:id" },
+  getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
+  addPantryItems: { method: "POST", path: "/pantry", body: AddPantryItemsRequest, response: PantryResponse },
+  deletePantryItem: { method: "DELETE", path: "/pantry/:id" },
+  /** Up to three recipes from the pantry that fit what's left of today. Paid; nothing is saved. */
+  pantryRecipes: { method: "POST", path: "/pantry/recipes", response: PantryRecipesResponse },
   /** The supplements someone takes, today's ticks, and checks across the whole stack. */
   getStack: { method: "GET", path: "/stack", response: StackResponse },
   addStackItem: { method: "POST", path: "/stack", body: AddStackItemRequest, response: StackItem },

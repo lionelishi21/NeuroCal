@@ -10,6 +10,7 @@ import {
   DrizzleUserRepository,
   DrizzleBrainCheckRepository,
   DrizzleExerciseRepository,
+  DrizzlePantryRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -303,6 +304,19 @@ describe("DrizzleStackRepository", () => {
     // Kept for the account-deletion test below.
     await repo.setTaken(alice, item.id, "2026-10-03", true);
     expect(await repo.delete(bob, item.id)).toBe(false);
+  });
+});
+
+describe("DrizzlePantryRepository", () => {
+  it("keeps one of each item per user, alphabetically, and deletes only their own", async () => {
+    const repo = new DrizzlePantryRepository(db);
+    await repo.add(alice, ["Oats", "eggs"]);
+    const items = await repo.add(alice, ["Egg", "spinach"]);
+    expect(items.map((i) => i.name)).toEqual(["eggs", "Oats", "spinach"]);
+    expect(await repo.list(bob)).toEqual([]);
+    expect(await repo.delete(bob, items[0]!.id)).toBe(false);
+    expect(await repo.delete(alice, items[0]!.id)).toBe(true);
+    expect((await repo.list(alice)).map((i) => i.name)).toEqual(["Oats", "spinach"]);
   });
 });
 

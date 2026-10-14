@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
+import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
-import { FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -232,3 +233,47 @@ describe("OpenAiFoodLabelReader", () => {
     await expect(readerWith({ finish_reason: "stop", message: { parsed: null, refusal: "no" } }).reader.readLabel([photo])).rejects.toThrow();
   });
 });
+
+describe("ClaudePantryRecipeAssistant", () => {
+  const pantryContext = {
+    pantry: ["eggs", "spinach", "oats"],
+    caloriesLeft: 700,
+    macrosLeft: { proteinG: 60, carbsG: 80, fatG: 25 },
+    dietaryPreference: "vegetarian" as const,
+    cognitiveGoals: ["focus"],
+  };
+  const recipe = {
+    title: "Spinach omelette",
+    minutes: 10,
+    servings: 1,
+    calories: 320,
+    macros: { proteinG: 21.4, carbsG: 4, fatG: 22 },
+    ingredients: [{ name: "eggs", quantity: "3" }],
+    steps: ["Whisk the eggs.", "Cook with the spinach."],
+    whyItFits: "Protein for the afternoon.",
+  };
+  const assistantWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 200, output_tokens: 400 }, ...response }));
+    return { parse, assistant: new ClaudePantryRecipeAssistant({ messages: { parse } as unknown as ParseMessage }) };
+  };
+
+  it("sends the pantry and what's left today with a JSON schema, and rounds the macros", async () => {
+    const { parse, assistant } = assistantWith({ stop_reason: "end_turn", parsed_output: { recipes: [recipe] } });
+    const [out] = await assistant.suggest(pantryContext);
+    expect(out!.macros.proteinG).toBe(21);
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(PANTRY_RECIPES_MODEL);
+    expect(params.system).toBe(PANTRY_RECIPES_PROMPT);
+    expect(JSON.parse(params.messages[0].content)).toEqual(pantryContext);
+    expect(params.output_config.format.type).toBe("json_schema");
+  });
+
+  it.each([
+    ["a refusal", { stop_reason: "refusal", parsed_output: null }],
+    ["a truncated answer", { stop_reason: "max_tokens", parsed_output: null }],
+    ["output outside the schema", { stop_reason: "end_turn", parsed_output: { recipes: [{ ...recipe, steps: [] }] } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(assistantWith(response).assistant.suggest(pantryContext)).rejects.toThrow();
+  });
+});
+

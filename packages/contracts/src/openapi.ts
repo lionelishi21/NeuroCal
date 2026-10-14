@@ -68,6 +68,13 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   getExercises: { summary: "Get a day's exercise with its totals", query: dateQuery },
   deleteExercise: { summary: "Remove logged exercise", status: 204, params: { id: "The exercise's id." } },
+  getPantry: { summary: "What's in your kitchen" },
+  addPantryItems: { summary: "Add items to your pantry", description: "Names already there, ignoring case and plurals, are skipped. Returns the whole pantry." },
+  deletePantryItem: { summary: "Remove a pantry item", status: 204, params: { id: "The item's id." } },
+  pantryRecipes: {
+    summary: "Suggest recipes from your pantry",
+    description: "Up to three recipes built mostly from your pantry, sized to the calories and macros left today and your dietary preference. Needs at least three items. Each ingredient says whether it's already in your pantry. Nothing is saved.",
+  },
   getBrainChecks: {
     summary: "Your Brain speed checks",
     description: "Newest first, with your usual score: the median of the checks before the latest, once there are three.",

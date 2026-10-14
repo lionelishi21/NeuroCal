@@ -9,6 +9,7 @@ import '../app_scope.dart';
 import '../scan/label_camera.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
+import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'live_scan.dart';
 import 'log_meal_sheet.dart' show maxPhotoBytes;
@@ -54,6 +55,15 @@ class _FoodScanState extends State<_FoodScan> {
       await _run(() => AppScope.of(context).api.scanBarcode(result.barcode!));
     } else if (result.photos.isNotEmpty) {
       await _run(() => AppScope.of(context).api.scanFoodLabel(result.photos));
+    }
+  }
+
+  Future<void> _addToPantry(String name) async {
+    try {
+      await AppScope.of(context).api.addToPantry([name.length > 60 ? name.substring(0, 60) : name]);
+      if (mounted) showToast(context, 'Added to your pantry');
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't add it to your pantry. Try again.", ToastTone.problem);
     }
   }
 
@@ -209,6 +219,12 @@ class _FoodScanState extends State<_FoodScan> {
           style: TextStyle(fontSize: TextSize.xxs, height: 1.5, color: c.inkSoft),
         ),
         if (scan.item != null) SheetAction(label: 'Log it', onPressed: () => Navigator.of(context).pop(scan.item)),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+          onPressed: () => _addToPantry(scan.name),
+          icon: const Icon(Icons.kitchen_rounded, size: 18),
+          label: const Text('Add to pantry'),
+        ),
         TextButton(
           onPressed: () => setState(() {
             _scan = null;

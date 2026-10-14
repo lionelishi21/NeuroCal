@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -23,6 +23,8 @@ import {
   InMemoryStack,
   InMemoryBrainChecks,
   InMemoryExercises,
+  InMemoryPantry,
+  FakePantryRecipes,
   FakeLabelReader,
   FakeFoodLabelReader,
   FakeProductDatabase,
@@ -42,6 +44,7 @@ let profiles: InMemoryProfiles;
 let storage: InMemoryStorage;
 let users: InMemoryUsers;
 let labels: FakeLabelReader;
+let pantryRecipes: FakePantryRecipes;
 let subscriptions: InMemorySubscriptions;
 let ports: Ports;
 let identity: FakeIdentity;
@@ -127,6 +130,8 @@ beforeEach(async () => {
     stack: new InMemoryStack(),
     brainChecks: new InMemoryBrainChecks(),
     exercises: new InMemoryExercises(),
+    pantry: new InMemoryPantry(),
+    pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -483,6 +488,26 @@ describe("API routes", () => {
       components: { sleep: 0.75 },
       explanation: "Short sleep is holding you back.",
     });
+  });
+
+  it("the pantry: add (skipping repeats), suggest recipes marked by what's in it, and remove", async () => {
+    expect((await call("POST", "/pantry/recipes")).status).toBe(400);
+    const added = PantryResponse.parse((await call("POST", "/pantry", { names: ["Spinach", " eggs ", "oats", "Egg"] })).body);
+    expect(added.items.map((i) => i.name)).toEqual(["eggs", "oats", "Spinach"]);
+    expect((await call("POST", "/pantry", { names: [""] })).status).toBe(400);
+
+    const res = await call("POST", "/pantry/recipes");
+    expect(res.status).toBe(200);
+    const [recipe] = PantryRecipesResponse.parse(res.body).recipes;
+    expect(recipe!.ingredients.map((i) => [i.name, i.inPantry])).toEqual([
+      ["eggs", true],
+      ["feta", false],
+    ]);
+    // Sized to what's left of the day: 2,000 − 440 eaten in the fixtures.
+    expect(pantryRecipes.calls.at(-1)).toMatchObject({ pantry: ["eggs", "oats", "Spinach"], caloriesLeft: expect.any(Number) });
+
+    expect((await call("DELETE", `/pantry/${added.items[0]!.id}`)).status).toBe(204);
+    expect(PantryResponse.parse((await call("GET", "/pantry")).body).items).toHaveLength(2);
   });
 
   it("POST /exercises logs exercise with calories from the latest weigh-in, and GET /exercises totals the day", async () => {

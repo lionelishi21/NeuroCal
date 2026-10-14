@@ -90,6 +90,7 @@ class TodayScreen extends StatefulWidget {
     required this.onCapture,
     required this.onOpenMe,
     required this.onOpenStack,
+    required this.onOpenPantry,
   });
 
   final Profile profile;
@@ -102,6 +103,7 @@ class TodayScreen extends StatefulWidget {
   final void Function(Capture) onCapture;
   final VoidCallback onOpenMe;
   final VoidCallback onOpenStack;
+  final VoidCallback onOpenPantry;
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
@@ -261,6 +263,15 @@ class _TodayScreenState extends State<TodayScreen> {
                     ],
                     const BlockTitle('What to eat next'),
                     _Suggestions(day.recipes),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
+                        onPressed: widget.onOpenPantry,
+                        icon: const Icon(Icons.kitchen_rounded, size: 18),
+                        label: const Text('Cook from your pantry'),
+                      ),
+                    ),
                   ],
                   BlockTitle(
                     day.isToday ? 'Meals today' : 'Meals',

@@ -1096,3 +1096,57 @@ class ExerciseDay {
     estimatedWeight: j['weightSource'] == 'default',
   );
 }
+
+class PantryItem {
+  const PantryItem({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  factory PantryItem.fromJson(Map<String, dynamic> j) => PantryItem(id: j['id'] as String, name: j['name'] as String);
+}
+
+/// A recipe cooked mostly from the pantry (`PantryRecipe` in the contracts).
+class PantryRecipe {
+  const PantryRecipe({
+    required this.title,
+    required this.minutes,
+    required this.servings,
+    required this.calories,
+    required this.macros,
+    required this.ingredients,
+    required this.steps,
+    required this.whyItFits,
+  });
+
+  final String title;
+  final int minutes;
+  final int servings;
+
+  /// Per serving.
+  final int calories;
+  final Macros macros;
+  final List<({String name, String quantity, bool inPantry})> ingredients;
+  final List<String> steps;
+  final String whyItFits;
+
+  List<String> get missing => [for (final i in ingredients) if (!i.inPantry) i.name];
+
+  /// One serving, ready for Log a meal.
+  FoodItem toItem() => FoodItem(name: title, portion: '1 serving', calories: calories.toDouble(), macros: macros);
+
+  factory PantryRecipe.fromJson(Map<String, dynamic> j) => PantryRecipe(
+    title: j['title'] as String,
+    minutes: (j['minutes'] as num).toInt(),
+    servings: (j['servings'] as num).toInt(),
+    calories: (j['calories'] as num).toInt(),
+    macros: Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    ingredients: [
+      for (final i in j['ingredients'] as List)
+        (name: i['name'] as String, quantity: i['quantity'] as String, inPantry: i['inPantry'] as bool),
+    ],
+    steps: [for (final s in j['steps'] as List) s as String],
+    whyItFits: j['whyItFits'] as String,
+  );
+}
+

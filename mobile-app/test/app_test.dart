@@ -282,4 +282,36 @@ void main() {
     expect(find.text('Exercise removed'), findsOneWidget);
     expect(find.text('Walk · 45 min · moderate'), findsNothing);
   });
+
+  testWidgets('the pantry: add items, get recipes marked by what you have, and log one', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.bySemanticsLabel('Your pantry: what can I make?'), 300);
+    await tester.tap(find.bySemanticsLabel('Your pantry: what can I make?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('7 items'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Add items'), 'rice, eggs');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    // Eggs were already there.
+    expect(find.text('8 items'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('What can I make?'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('What can I make?'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Salmon and spinach scramble'), 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('✓ Eggs'), findsOneWidget);
+    expect(find.text('+ Chives'), findsOneWidget);
+    expect(find.text('To buy: Chives'), findsOneWidget);
+
+    await tester.ensureVisible(find.bySemanticsLabel('Log Salmon and spinach scramble'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Log Salmon and spinach scramble'));
+    await tester.pumpAndSettle();
+    expect(find.text('Log a meal'), findsWidgets);
+    expect(find.text('Salmon and spinach scramble'), findsWidgets);
+  });
 }

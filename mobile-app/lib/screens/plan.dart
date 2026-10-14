@@ -10,10 +10,11 @@ import 'weight_cards.dart';
 /// The rest of the Stack tab after the supplements: the fasting timer, when fasting is on, and the
 /// way into the food catalog.
 class PlanExtras extends StatefulWidget {
-  const PlanExtras({super.key, required this.changes, required this.onBrowseFoods});
+  const PlanExtras({super.key, required this.changes, required this.onBrowseFoods, required this.onOpenPantry});
 
   final Listenable changes;
   final VoidCallback onBrowseFoods;
+  final VoidCallback onOpenPantry;
 
   @override
   State<PlanExtras> createState() => _PlanExtrasState();
@@ -58,6 +59,8 @@ class _PlanExtrasState extends State<PlanExtras> {
           FastingCard(fasting, onBoundary: _reload),
         ],
         const BlockTitle('Foods'),
+        _PantryCard(onTap: widget.onOpenPantry),
+        const SizedBox(height: Space.s3),
         BrowseFoodsCard(onTap: widget.onBrowseFoods),
       ],
     ),
@@ -124,3 +127,54 @@ class BrowseFoodsCard extends StatelessWidget {
     );
   }
 }
+
+/// The way into the pantry and its recipe ideas.
+class _PantryCard extends StatelessWidget {
+  const _PantryCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      label: 'Your pantry: what can I make?',
+      excludeSemantics: true,
+      child: Material(
+        color: c.paper,
+        borderRadius: BorderRadius.circular(Radii.card),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+            child: Row(
+              spacing: Space.s3,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: c.glucoseSoft, shape: BoxShape.circle),
+                  child: Icon(Icons.kitchen_rounded, size: 22, color: c.glucoseInk),
+                ),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Your pantry', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                      Text('What can I make from it?', style: TextStyle(fontSize: TextSize.xs)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

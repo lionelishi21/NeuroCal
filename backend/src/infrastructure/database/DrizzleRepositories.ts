@@ -39,6 +39,8 @@ import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { StackItem, StackTiming } from "../../domain/stack";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../../application/interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../../application/interfaces/IExerciseRepository";
+import type { IPantryRepository, PantryItem } from "../../application/interfaces/IPantry";
+import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
 import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
@@ -46,6 +48,7 @@ import type { Database } from "./client";
 import {
   brainChecks,
   exercises,
+  pantryItems,
   checkIns,
   focusScores,
   mealItems,
@@ -97,6 +100,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(stackItems).where(eq(stackItems.userId, userId));
       await tx.delete(brainChecks).where(eq(brainChecks.userId, userId));
       await tx.delete(exercises).where(eq(exercises.userId, userId));
+      await tx.delete(pantryItems).where(eq(pantryItems.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -748,6 +752,34 @@ export class DrizzleExerciseRepository implements IExerciseRepository {
     // Not a UUID can't be one of theirs; Postgres would refuse it as input.
     if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
     const gone = await this.db.delete(exercises).where(and(eq(exercises.userId, userId), eq(exercises.id, id))).returning({ id: exercises.id });
+    return gone.length > 0;
+  }
+}
+
+export class DrizzlePantryRepository implements IPantryRepository {
+  constructor(private readonly db: Database) {}
+
+  async list(userId: string): Promise<PantryItem[]> {
+    return this.db
+      .select({ id: pantryItems.id, name: pantryItems.name })
+      .from(pantryItems)
+      .where(eq(pantryItems.userId, userId))
+      .orderBy(asc(pantryItems.key));
+  }
+
+  async add(userId: string, names: string[]): Promise<PantryItem[]> {
+    if (names.length > 0) {
+      await this.db
+        .insert(pantryItems)
+        .values(names.map((name) => ({ userId, name, key: pantryKey(name) })))
+        .onConflictDoNothing();
+    }
+    return this.list(userId);
+  }
+
+  async delete(userId: string, id: string): Promise<boolean> {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
+    const gone = await this.db.delete(pantryItems).where(and(eq(pantryItems.userId, userId), eq(pantryItems.id, id))).returning({ id: pantryItems.id });
     return gone.length > 0;
   }
 }

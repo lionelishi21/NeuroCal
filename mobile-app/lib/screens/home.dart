@@ -89,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onCapture: _capture,
           onOpenMe: () => setState(() => _tab = _me),
           onOpenStack: () => setState(() => _tab = _stack),
+          onOpenPantry: () => openPantry(context, onChanged: _changed),
         ),
       ),
       (
@@ -103,7 +104,13 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.medication_rounded,
         screen: StackScreen(
           changes: _changes,
-          footer: [PlanExtras(changes: _changes, onBrowseFoods: () => openFoods(context, onChanged: _changed))],
+          footer: [
+            PlanExtras(
+              changes: _changes,
+              onBrowseFoods: () => openFoods(context, onChanged: _changed),
+              onOpenPantry: () => openPantry(context, onChanged: _changed),
+            ),
+          ],
         ),
       ),
       (label: 'Me', icon: Icons.person_outline_rounded, selectedIcon: Icons.person_rounded, screen: SettingsScreen(profile: widget.profile)),

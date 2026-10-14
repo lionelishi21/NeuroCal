@@ -2,6 +2,7 @@
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
  */
+import type { IPantryRecipeAssistant } from "../../application/interfaces/IPantry";
 import type { IAiReasoningProvider } from "../../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionProvider";
 import type { ISearchEngineAdapter } from "../../application/interfaces/ISearchEngineAdapter";
@@ -100,3 +101,27 @@ export const stubExplainer: IFocusExplainer = {
     return `Stub explanation: ${weakest ?? "nothing"} is the input holding your focus back most today.`;
   },
 };
+
+/** Recipes from the pantry without Claude: one dish from the first items. */
+export const stubPantryRecipes: IPantryRecipeAssistant = {
+  async suggest(context) {
+    const [a = "eggs", b = "greens"] = context.pantry;
+    return [
+      {
+        title: `Quick ${a} and ${b} skillet`,
+        minutes: 15,
+        servings: 1,
+        calories: Math.min(520, context.caloriesLeft),
+        macros: { proteinG: 32, carbsG: 30, fatG: 18 },
+        ingredients: [
+          { name: a, quantity: "1 cup" },
+          { name: b, quantity: "1 cup" },
+          { name: "lemon", quantity: "1/2" },
+        ],
+        steps: [`Warm a pan with a little oil.`, `Cook the ${a} for 5 minutes.`, `Add the ${b} and lemon, season and serve.`],
+        whyItFits: "Stub recipe: set ANTHROPIC_API_KEY for real suggestions.",
+      },
+    ];
+  },
+};
+

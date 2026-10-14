@@ -492,6 +492,104 @@
         }
       }
     },
+    "/pantry": {
+      "get": {
+        "operationId": "getPantry",
+        "summary": "What's in your kitchen",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "addPantryItems",
+        "summary": "Add items to your pantry",
+        "description": "Names already there, ignoring case and plurals, are skipped. Returns the whole pantry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPantryItemsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/pantry/{id}": {
+      "delete": {
+        "operationId": "deletePantryItem",
+        "summary": "Remove a pantry item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/pantry/recipes": {
+      "post": {
+        "operationId": "pantryRecipes",
+        "summary": "Suggest recipes from your pantry",
+        "description": "Up to three recipes built mostly from your pantry, sized to the calories and macros left today and your dietary preference. Needs at least three items. Each ingredient says whether it's already in your pantry. Nothing is saved.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PantryRecipesResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/stack": {
       "get": {
         "operationId": "getStack",
@@ -1316,6 +1414,24 @@
       }
     },
     "schemas": {
+      "AddPantryItemsRequest": {
+        "type": "object",
+        "properties": {
+          "names": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          }
+        },
+        "required": [
+          "names"
+        ]
+      },
       "AddStackItemRequest": {
         "type": "object",
         "properties": {
@@ -3059,6 +3175,110 @@
         "required": [
           "searchQuery",
           "recipes"
+        ]
+      },
+      "PantryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PantryRecipe": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer"
+          },
+          "servings": {
+            "type": "integer"
+          },
+          "calories": {
+            "type": "integer"
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                },
+                "inPantry": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "quantity",
+                "inPantry"
+              ]
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "whyItFits": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "minutes",
+          "servings",
+          "calories",
+          "macros",
+          "ingredients",
+          "steps",
+          "whyItFits"
+        ]
+      },
+      "PantryRecipesResponse": {
+        "type": "object",
+        "properties": {
+          "recipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PantryRecipe"
+            }
+          }
+        },
+        "required": [
+          "recipes"
+        ]
+      },
+      "PantryResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PantryItem"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "PhotoUpload": {

@@ -245,6 +245,21 @@ export const exercises = pgTable(
   (t) => [index("exercises_user_started_idx").on(t.userId, t.startedAt), check("exercises_minutes_range", sql`${t.minutes} between 1 and 600`)],
 );
 
+/** What someone has in their kitchen. `key` is the name for matching (lower case, no plural). */
+export const pantryItems = pgTable(
+  "pantry_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: varchar("name", { length: 60 }).notNull(),
+    key: varchar("key", { length: 60 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("pantry_items_user_key").on(t.userId, t.key)],
+);
+
 /** Supplements someone takes. Ingredients are kept as read from the label. */
 export const stackItems = pgTable(
   "stack_items",

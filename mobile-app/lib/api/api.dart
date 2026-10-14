@@ -22,6 +22,16 @@ abstract interface class NeuroCalApi {
   Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes);
   Future<void> deleteExercise(String id);
 
+  /// What's in the kitchen, alphabetical.
+  Future<List<PantryItem>> pantry();
+
+  /// Adds names not already there (ignoring case and plurals); returns the whole pantry.
+  Future<List<PantryItem>> addToPantry(List<String> names);
+  Future<void> removeFromPantry(String id);
+
+  /// Up to three recipes from the pantry that fit what's left of today.
+  Future<List<PantryRecipe>> pantryRecipes();
+
   /// Recipes for the next meal, best first. Empty when nothing fits.
   Future<List<Recipe>> recommendations();
   Future<List<Meal>> meals(DateTime day);
@@ -178,6 +188,29 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<void> deleteExercise(String id) async {
     _decode(await _client.delete(_uri('/exercises/$id'), headers: await _headers()));
+  }
+
+  List<PantryItem> _pantryFrom(dynamic body) => [
+    for (final i in (body as Map<String, dynamic>)['items'] as List) PantryItem.fromJson(i as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<List<PantryItem>> pantry() async => _pantryFrom(await _get('/pantry'));
+
+  @override
+  Future<List<PantryItem>> addToPantry(List<String> names) async => _pantryFrom(
+    _decode(await _client.post(_uri('/pantry'), headers: await _headers(json: true), body: jsonEncode({'names': names}))),
+  );
+
+  @override
+  Future<void> removeFromPantry(String id) async {
+    _decode(await _client.delete(_uri('/pantry/$id'), headers: await _headers()));
+  }
+
+  @override
+  Future<List<PantryRecipe>> pantryRecipes() async {
+    final body = _decode(await _client.post(_uri('/pantry/recipes'), headers: await _headers())) as Map<String, dynamic>;
+    return [for (final r in body['recipes'] as List) PantryRecipe.fromJson(r as Map<String, dynamic>)];
   }
 
   @override

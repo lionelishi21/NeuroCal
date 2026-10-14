@@ -8,6 +8,7 @@ import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
+import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
@@ -25,6 +26,7 @@ import {
   DrizzleUserRepository,
   DrizzleBrainCheckRepository,
   DrizzleExerciseRepository,
+  DrizzlePantryRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -35,7 +37,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubReasoning, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubPantryRecipes, stubReasoning, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -173,6 +175,8 @@ async function main() {
       stack: new DrizzleStackRepository(db),
       brainChecks: new DrizzleBrainCheckRepository(db),
       exercises: new DrizzleExerciseRepository(db),
+      pantry: new DrizzlePantryRepository(db),
+      pantryRecipes: config.anthropicApiKey ? new ClaudePantryRecipeAssistant({ apiKey: config.anthropicApiKey }) : stubPantryRecipes,
       subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
       ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
       paywall: config.paywall,

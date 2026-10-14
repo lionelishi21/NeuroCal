@@ -272,6 +272,66 @@ class MockNeuroCalApi implements NeuroCalApi {
     _exercises.removeWhere((e) => e.id == id);
   }
 
+  final _pantry = <PantryItem>[
+    for (final (i, name) in const ['Eggs', 'Spinach', 'Greek yogurt', 'Oats', 'Frozen berries', 'Canned salmon', 'Lemons'].indexed)
+      PantryItem(id: 'p${i + 1}', name: name),
+  ];
+
+  String _key(String name) => name.toLowerCase().replaceAll(RegExp(r'(?<=[a-z]{3})(es|s)$'), '');
+
+  @override
+  Future<List<PantryItem>> pantry() async {
+    await _wait();
+    return [..._pantry]..sort((a, b) => _key(a.name).compareTo(_key(b.name)));
+  }
+
+  @override
+  Future<List<PantryItem>> addToPantry(List<String> names) async {
+    for (final raw in names) {
+      final name = raw.trim();
+      if (name.isNotEmpty && !_pantry.any((p) => _key(p.name) == _key(name))) {
+        _pantry.add(PantryItem(id: 'p${_pantry.length + 100}', name: name));
+      }
+    }
+    return pantry();
+  }
+
+  @override
+  Future<void> removeFromPantry(String id) async {
+    await _wait();
+    _pantry.removeWhere((p) => p.id == id);
+  }
+
+  @override
+  Future<List<PantryRecipe>> pantryRecipes() async {
+    await _wait();
+    final has = _pantry.map((p) => _key(p.name)).toSet();
+    ({String name, String quantity, bool inPantry}) i(String name, String quantity) =>
+        (name: name, quantity: quantity, inPantry: has.any((k) => _key(name).contains(k) || k.contains(_key(name))));
+    return [
+      PantryRecipe(
+        title: 'Salmon and spinach scramble',
+        minutes: 12,
+        servings: 1,
+        calories: 430,
+        macros: const Macros(proteinG: 38, carbsG: 6, fatG: 27),
+        ingredients: [i('Eggs', '3'), i('Canned salmon', '80 g'), i('Spinach', '2 handfuls'), i('Chives', '1 tbsp')],
+        steps: const ['Whisk the eggs with a pinch of salt.', 'Wilt the spinach in a little oil.', 'Add the eggs and salmon; stir gently until just set.'],
+        whyItFits: 'Protein and omega-3 for a steady afternoon, with room left for dinner.',
+      ),
+      PantryRecipe(
+        title: 'Berry overnight oats',
+        minutes: 5,
+        servings: 1,
+        calories: 380,
+        macros: const Macros(proteinG: 22, carbsG: 52, fatG: 8),
+        ingredients: [i('Oats', '1/2 cup'), i('Greek yogurt', '150 g'), i('Frozen berries', '1/2 cup'), i('Chia seeds', '1 tbsp')],
+        steps: const ['Stir the oats into the yogurt with a splash of water.', 'Top with the berries.', 'Chill overnight, or eat after 10 minutes.'],
+        whyItFits: 'Slow carbs and protein, ready for a busy morning.',
+      ),
+    ];
+  }
+
   @override
   Future<List<Recipe>> recommendations() async {
     await _wait();

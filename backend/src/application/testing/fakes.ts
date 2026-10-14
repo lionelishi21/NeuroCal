@@ -5,6 +5,8 @@ import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
+import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
+import { pantryKey } from "../../domain/pantry";
 import type { StackItem } from "../../domain/stack";
 import type { IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
 import type { Subscription } from "../../domain/subscription";
@@ -574,3 +576,50 @@ export class InMemoryExercises implements IExerciseRepository {
     return true;
   }
 }
+
+export class InMemoryPantry implements IPantryRepository {
+  readonly rows: (PantryItem & { userId: string })[] = [];
+  async list(userId: string) {
+    return this.rows
+      .filter((r) => r.userId === userId)
+      .sort((a, b) => pantryKey(a.name).localeCompare(pantryKey(b.name)))
+      .map(({ userId: _, ...i }) => i);
+  }
+  async add(userId: string, names: string[]) {
+    for (const name of names) {
+      const known = this.rows.some((r) => r.userId === userId && pantryKey(r.name) === pantryKey(name));
+      if (!known) this.rows.push({ id: `p${this.rows.length + 1}`, name, userId });
+    }
+    return this.list(userId);
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
+  }
+}
+
+/** Returns one recipe from the first two pantry items and remembers what it was asked. */
+export class FakePantryRecipes implements IPantryRecipeAssistant {
+  readonly calls: PantryRecipeContext[] = [];
+  async suggest(context: PantryRecipeContext): Promise<SuggestedRecipe[]> {
+    this.calls.push(context);
+    return [
+      {
+        title: `${context.pantry[0]} bowl`,
+        minutes: 15,
+        servings: 1,
+        calories: 450,
+        macros: { proteinG: 30, carbsG: 40, fatG: 15 },
+        ingredients: [
+          { name: context.pantry[0]!, quantity: "1 cup" },
+          { name: "feta", quantity: "30 g" },
+        ],
+        steps: ["Cook it."],
+        whyItFits: "Protein for the afternoon.",
+      },
+    ];
+  }
+}
+

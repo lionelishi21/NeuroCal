@@ -17,6 +17,9 @@ import {
   Exercise,
   ExerciseDay,
   LogExerciseRequest,
+  AddPantryItemsRequest,
+  PantryRecipesResponse,
+  PantryResponse,
   TodayResponse,
   UpdateStackItemRequest,
   SubscriptionStatus,
@@ -67,6 +70,7 @@ import type { DeleteWeightUseCase, GetWeightHistoryUseCase, LogWeightUseCase } f
 import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate } from "../application/use-cases/SubscriptionUseCases";
 import type { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
 import type { ExerciseDay as ExerciseDayResult, ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
+import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
@@ -119,6 +123,7 @@ export interface UseCases {
   stack: StackUseCases;
   brainChecks: BrainCheckUseCases;
   exercise: ExerciseUseCases;
+  pantry: PantryUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -339,6 +344,24 @@ export function createApi(uc: UseCases) {
         if (days !== null && !/^\d+$/.test(days)) throw new BadRequest("days must be a whole number.");
         const h = await uc.brainChecks.history(req.userId, days ? Number(days) : undefined);
         return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
+      },
+    ],
+    ["GET", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.list(req.userId) })],
+    ["POST", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.add(req.userId, json(req, AddPantryItemsRequest).names) })],
+    [
+      "POST",
+      /^\/pantry\/recipes$/,
+      async (req) => {
+        await uc.gate.require(req);
+        return ok(PantryRecipesResponse, { recipes: await uc.pantry.recipes(req.userId) });
+      },
+    ],
+    [
+      "DELETE",
+      /^\/pantry\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.pantry.remove(req.userId, id!);
+        return { status: 204 };
       },
     ],
     ["POST", /^\/exercises$/, async (req) => ok(Exercise, toExercise(await uc.exercise.log(req.userId, json(req, LogExerciseRequest))), 201)],
