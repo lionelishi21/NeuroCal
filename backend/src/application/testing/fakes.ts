@@ -401,6 +401,18 @@ export class InMemorySubscriptions implements ISubscriptionRepository {
     this.rows.set(userId, s);
     return true;
   }
+  readonly emails = new Map<string, string>([["u1", "maya@example.com"]]);
+  readonly reminded = new Map<string, Date>();
+  async trialsEndingBetween(from: Date, to: Date) {
+    return [...this.rows].flatMap(([userId, s]) =>
+      s.status === "trial" && s.willRenew && s.expiresAt && s.expiresAt >= from && s.expiresAt < to && this.reminded.get(userId)?.getTime() !== s.expiresAt.getTime()
+        ? [{ userId, email: this.emails.get(userId) ?? `${userId}@example.com`, endsAt: s.expiresAt, timeZone: "America/Chicago" }]
+        : [],
+    );
+  }
+  async markTrialReminded(userId: string, endsAt: Date) {
+    this.reminded.set(userId, endsAt);
+  }
 }
 
 export class InMemoryWaitlist implements IWaitlistRepository {

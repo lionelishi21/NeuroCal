@@ -295,6 +295,7 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final charge = DateTime.now().add(Duration(days: trialDays));
+    final reminder = charge.subtract(const Duration(days: 2));
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     Widget step(IconData icon, String when, String what) => Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,6 +320,8 @@ class _Timeline extends StatelessWidget {
       spacing: Space.s2,
       children: [
         step(Icons.lock_open_rounded, 'Today', 'Everything unlocked. Nothing to pay.'),
+        // The backend's hourly trial reminder job sends this (SendTrialRemindersUseCase).
+        step(Icons.mail_outline_rounded, '${reminder.day} ${months[reminder.month - 1]}', 'We email you a reminder, with how to cancel.'),
         step(Icons.event_rounded, '${charge.day} ${months[charge.month - 1]}', 'Your trial ends and you’re charged $price, unless you cancel before.'),
       ],
     );

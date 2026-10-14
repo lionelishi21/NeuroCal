@@ -1,4 +1,6 @@
 import path from "node:path";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
 import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, type StackProps } from "aws-cdk-lib";
 import { CfnStage, CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
@@ -160,6 +162,13 @@ export class NeuroCalStack extends Stack {
     new Trigger(this, "MigrateOnDeploy", { handler: migrate, executeAfter: [database], executeOnHandlerChange: true, timeout: Duration.minutes(5) });
 
     const catalogSync = fn("CatalogSyncFunction", "syncCatalogLambda.ts", { timeout: Duration.minutes(5) });
+
+    // Emails people two days before their free trial turns paid. Hourly, so each trial is caught near its own time.
+    const trialReminders = fn("TrialRemindersFunction", "trialRemindersLambda.ts", { timeout: Duration.minutes(2) });
+    new events.Rule(this, "TrialReminders", {
+      schedule: events.Schedule.rate(Duration.hours(1)),
+      targets: [new targets.LambdaFunction(trialReminders, { retryAttempts: 0 })],
+    });
 
     // Auth: Cognito user pool; API Gateway verifies the JWT before the Lambda runs (§10).
     const userPool = new cognito.UserPool(this, "Users", {

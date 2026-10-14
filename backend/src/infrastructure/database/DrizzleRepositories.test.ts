@@ -267,6 +267,16 @@ describe("DrizzleSubscriptionRepository", () => {
     expect(await repo.save("00000000-0000-0000-0000-000000000000", trial)).toBe(false);
     expect(await repo.get(bob)).toBeNull();
   });
+
+  it("finds trials ending in a window until each is reminded", async () => {
+    const repo = new DrizzleSubscriptionRepository(db);
+    const endsAt = new Date("2026-10-27T05:00:00Z");
+    await repo.save(bob, { status: "trial", expiresAt: endsAt, willRenew: true, eventAt: new Date("2026-10-13T00:00:00Z") });
+    const window = [new Date("2026-10-26T15:00:00Z"), new Date("2026-10-27T15:00:00Z")] as const;
+    expect(await repo.trialsEndingBetween(...window)).toEqual([{ userId: bob, email: "bob@example.com", endsAt, timeZone: "UTC" }]);
+    await repo.markTrialReminded(bob, endsAt);
+    expect(await repo.trialsEndingBetween(...window)).toEqual([]);
+  });
 });
 
 // Last on purpose: by now the earlier tests have given alice rows in every user table.

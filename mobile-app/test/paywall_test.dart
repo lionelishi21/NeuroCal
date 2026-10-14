@@ -33,6 +33,7 @@ void main() {
     expect(find.textContaining('2,200 kcal a day'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Start my 14-day free trial'), 200);
     expect(find.textContaining('Your trial ends and you’re charged \$59.99'), findsOneWidget);
+    expect(find.textContaining('We email you a reminder, with how to cancel.'), findsOneWidget);
     // The small print sits under the button; the list builds it once scrolled into view.
     await tester.scrollUntilVisible(find.textContaining('Free for 14 days, then \$59.99 a year.'), 200);
     expect(find.textContaining('including during the trial at no charge'), findsOneWidget);

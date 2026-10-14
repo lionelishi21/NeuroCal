@@ -33,7 +33,7 @@ describe("NeuroCalStack", () => {
     const functions = dev.findResources("AWS::Lambda::Function", {
       Properties: { Environment: { Variables: { APP_SECRET_ARN: Match.anyValue() } } },
     });
-    expect(Object.keys(functions)).toHaveLength(3); // API, migrations, catalog sync
+    expect(Object.keys(functions)).toHaveLength(4); // API, migrations, catalog sync, trial reminders
     for (const f of Object.values(functions)) {
       const vars = (f as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment.Variables;
       expect(Object.keys(vars)).not.toEqual(expect.arrayContaining(["OPENAI_API_KEY"]));
@@ -96,6 +96,11 @@ describe("NeuroCalStack", () => {
   it("lets the API delete sign-ins, and nothing else in the user pool", () => {
     const policies = JSON.stringify(dev.findResources("AWS::IAM::Policy"));
     expect(policies.match(/cognito-idp:[A-Za-z*]+/g)).toEqual(["cognito-idp:AdminDeleteUser"]);
+  });
+
+  it("runs the trial reminder job every hour", () => {
+    dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "rate(1 hour)", State: "ENABLED" });
+    dev.hasResourceProperties("AWS::Lambda::Function", { Handler: "index.handler", Timeout: 120 });
   });
 
   it("applies migrations on deploy and keeps prod data on stack deletion", () => {

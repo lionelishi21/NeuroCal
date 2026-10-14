@@ -36,7 +36,7 @@ import type {
 } from "../../domain/types";
 import type { Subscription, SubscriptionStatus } from "../../domain/subscription";
 import type { WeightEntry } from "../../domain/weight";
-import type { ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
+import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
   checkIns,
@@ -572,5 +572,26 @@ export class DrizzleSubscriptionRepository implements ISubscriptionRepository {
       .values({ userId, ...values })
       .onConflictDoUpdate({ target: subscriptions.userId, set: values });
     return true;
+  }
+  async trialsEndingBetween(from: Date, to: Date): Promise<EndingTrial[]> {
+    const rows = await this.db
+      .select({ userId: subscriptions.userId, email: users.email, endsAt: subscriptions.expiresAt, timeZone: profiles.timeZone })
+      .from(subscriptions)
+      .innerJoin(users, eq(users.id, subscriptions.userId))
+      .leftJoin(profiles, eq(profiles.userId, subscriptions.userId))
+      .where(
+        and(
+          eq(subscriptions.status, "trial"),
+          eq(subscriptions.willRenew, true),
+          gte(subscriptions.expiresAt, from),
+          lt(subscriptions.expiresAt, to),
+          sql`${subscriptions.trialRemindedFor} is distinct from ${subscriptions.expiresAt}`,
+        ),
+      );
+    return rows.flatMap((r) => (r.endsAt ? [{ userId: r.userId, email: r.email, endsAt: r.endsAt, timeZone: r.timeZone ?? "UTC" }] : []));
+  }
+
+  async markTrialReminded(userId: string, endsAt: Date): Promise<void> {
+    await this.db.update(subscriptions).set({ trialRemindedFor: endsAt }).where(eq(subscriptions.userId, userId));
   }
 }

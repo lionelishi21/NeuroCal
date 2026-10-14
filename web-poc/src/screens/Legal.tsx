@@ -222,7 +222,7 @@ export function Terms() {
               <li>Most of NeuroCal needs a subscription. You buy it through the App Store or Google Play, and their terms apply to payment.</li>
               <li>
                 Where a free trial is offered, you are charged when it ends unless you cancel at least 24 hours before. You can cancel during the trial at no
-                charge.
+                charge. We email you two days before a trial ends.
               </li>
               <li>Subscriptions renew automatically at the then-current price until you cancel. Cancel any time in your App Store or Google Play subscriptions; you keep access until the end of the period you paid for.</li>
               <li>Deleting your account doesn&rsquo;t cancel your subscription: cancel it in the store too.</li>

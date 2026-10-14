@@ -1,0 +1,1 @@
+ALTER TABLE "subscriptions" ADD COLUMN "trial_reminded_for" timestamp with time zone;
