@@ -98,6 +98,16 @@ describe("NeuroCalStack", () => {
     expect(policies.match(/cognito-idp:[A-Za-z*]+/g)).toEqual(["cognito-idp:AdminDeleteUser"]);
   });
 
+  it("creates the waitlist routes before the stage that rate-limits them", () => {
+    const stages = Object.values(dev.findResources("AWS::ApiGatewayV2::Stage")) as { DependsOn?: string[] }[];
+    const routes = dev.findResources("AWS::ApiGatewayV2::Route");
+    const waitlist = Object.entries(routes)
+      .filter(([, r]) => /^POST \/waitlist/.test((r as { Properties: { RouteKey: string } }).Properties.RouteKey))
+      .map(([id]) => id);
+    expect(waitlist).toHaveLength(2);
+    expect(stages[0]!.DependsOn).toEqual(expect.arrayContaining(waitlist));
+  });
+
   it("runs the trial reminder job every hour", () => {
     dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "rate(1 hour)", State: "ENABLED" });
     dev.hasResourceProperties("AWS::Lambda::Function", { Handler: "index.handler", Timeout: 120 });

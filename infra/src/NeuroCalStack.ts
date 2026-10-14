@@ -1,7 +1,7 @@
 import path from "node:path";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
-import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, type StackProps } from "aws-cdk-lib";
+import { CfnOutput, type CfnResource, Duration, RemovalPolicy, SecretValue, Stack, type StackProps } from "aws-cdk-lib";
 import { CfnStage, CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
@@ -215,14 +215,14 @@ export class NeuroCalStack extends Stack {
     // serves these two routes without an identity (routes.ts `isPublic`); everything else still
     // goes through the Cognito authorizer on $default.
     const waitlistRoutes = ["/waitlist", "/waitlist/unsubscribe"];
-    for (const path of waitlistRoutes) {
+    const waitlistRouteResources = waitlistRoutes.flatMap((path) =>
       httpApi.addRoutes({
         path,
         methods: [HttpMethod.POST],
         integration: new HttpLambdaIntegration(`Waitlist${path.split("/").length}Integration`, api),
         authorizer: new HttpNoneAuthorizer(),
-      });
-    }
+      }),
+    );
     // RevenueCat reports purchases here. It has no Cognito token; the Lambda checks its shared secret.
     httpApi.addRoutes({
       path: "/webhooks/revenuecat",
@@ -232,10 +232,14 @@ export class NeuroCalStack extends Stack {
     });
 
     // An open form invites floods: a few sign-ups a second is plenty, and the rest get 429.
-    (httpApi.defaultStage!.node.defaultChild as CfnStage).routeSettings = Object.fromEntries(
+    const stage = httpApi.defaultStage!.node.defaultChild as CfnStage;
+    stage.routeSettings = Object.fromEntries(
       // Route settings are passed to CloudFormation as written, so the keys take its capitals.
       waitlistRoutes.map((path) => [`POST ${path}`, { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 }]),
     );
+    // The stage names these routes, so they must exist first. Without this, CloudFormation updated
+    // the stage before creating them and the deploy failed ("Unable to find Route by key").
+    for (const route of waitlistRouteResources) stage.addDependency(route.node.defaultChild as CfnResource);
 
     new CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint, description: "NEXT_PUBLIC_API_URL for the web app" });
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
