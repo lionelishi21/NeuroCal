@@ -6,6 +6,7 @@ import { useOptionalAuth } from "../auth/AuthProvider";
 import { FocusDemo } from "../components/FocusDemo";
 import { FocusRing } from "../components/FocusRing";
 import { LogoMark } from "../components/Logo";
+import { ModelFigure } from "../components/ModelFigure";
 import { WaitlistForm } from "../components/WaitlistForm";
 import { WeekShowcase } from "../components/WeekShowcase";
 import { clearSessionHint } from "../lib/sessionHint";
@@ -28,6 +29,7 @@ const NAV = [
   ["#how", "How it works"],
   ["#score", "Focus Score"],
   ["#science", "Science"],
+  ["#model", "The model"],
   ["#pricing", "Pricing"],
 ] as const;
 
@@ -367,6 +369,17 @@ export function Landing() {
               ))}
             </ol>
           </div>
+        </section>
+
+        <section id="model" className={`${wrap} scroll-mt-16 py-16 sm:py-[6.5rem]`}>
+          <div className="mb-12 flex max-w-[44rem] flex-col gap-[1.125rem]">
+            <p className={eyebrow}>The NeuroCal Biohacking Model</p>
+            <h2 className={heading}>Seven pillars. One score. One next step.</h2>
+            <p className="m-0 text-lg leading-[1.55] text-pretty text-ink-soft">
+              What sharpens your mind also leans your body: steady blood sugar, deep sleep, food and light at the right times, movement and recovery from stress. NeuroCal reads them as one system, checks the score against a 2-minute reaction test, and turns your weakest signal into the next thing to try.
+            </p>
+          </div>
+          <ModelFigure />
         </section>
 
         <section id="pricing" className={`${wrap} scroll-mt-16 py-16 sm:py-[6.5rem]`}>
