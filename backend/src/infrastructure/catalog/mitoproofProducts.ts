@@ -33,7 +33,11 @@ export const MITOPROOF_PRODUCTS: Product[] = [
     supplement: false,
     tags: ["sleep", "energy", "circadian rhythm", "timing", "late eating", "nutrition", "routine"],
   },
-  own("the-circadian-reset-protocol", "The Circadian Reset Protocol", "A MitoProof guide to resetting your body clock: light, meal timing and bedtime, day by day.", ["sleep", "short sleep", "circadian rhythm", "late eating", "late-night screens", "timing", "routine"], false),
+  {
+    ...own("the-circadian-reset-protocol", "The Circadian Reset Protocol", "A MitoProof guide to resetting your body clock: light, meal timing and bedtime, day by day.", ["sleep", "short sleep", "circadian rhythm", "late eating", "late-night screens", "timing", "routine"], false),
+    // The store moved it here (Oct 2026) and gave its old address to "The Natural GLP-1 Reset". Same id, so its history stays.
+    url: `${STORE}the-circadian-reset-protocol-1`,
+  },
   own("the-vitamin-c-absorption-blueprint", "The Vitamin C Absorption Blueprint", "A MitoProof guide on vitamin C: forms, timing and food sources.", ["nutrition", "vitamins", "guide"], false),
 
   // Sleep and calm
@@ -80,6 +84,17 @@ export const MITOPROOF_PRODUCTS: Product[] = [
     ownBrand: true,
     supplement: true,
     tags: ["meals", "high-glycemic meals", "steady energy", "supplements"],
+  },
+  {
+    // Its store address is the one the Circadian Reset Protocol used to have.
+    id: "mitoproof-natural-glp-1-reset",
+    name: "The Natural GLP-1 Reset",
+    description: "A MitoProof 30-day guide (PDF with trackers) on appetite, cravings and metabolism through gut health, without medication.",
+    url: `${STORE}the-circadian-reset-protocol`,
+    affiliate: false,
+    ownBrand: true,
+    supplement: false,
+    tags: ["weight loss", "appetite", "cravings", "metabolism", "gut", "fasting", "guide"],
   },
   own("keto-bhb", "MitoProof Keto BHB", "Beta-hydroxybutyrate ketone salts as capsules, used by people eating low-carb.", ["high-glycemic meals", "low-carb", "keto", "energy", "supplements"]),
   own("greens-superfood", "MitoProof Greens Superfood", "A powdered blend of greens and vegetables to stir into water.", ["nutrition", "greens", "meals", "supplements"]),

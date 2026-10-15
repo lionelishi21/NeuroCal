@@ -1,3 +1,4 @@
+import { MITOPROOF_PRODUCTS } from "./mitoproofProducts";
 import { describe, expect, it } from "@jest/globals";
 import { PRODUCTS, PROTOCOLS } from "./catalog";
 
@@ -29,5 +30,14 @@ describe("catalog", () => {
     }
     expect(byId.get("bodyhealth-perfectamino")?.supplement).toBe(true);
     expect(byId.get("lmnt-electrolytes")?.supplement).toBe(true);
+  });
+});
+
+describe("MitoProof links", () => {
+  it("send the Circadian Reset Protocol to its page, not the GLP-1 Reset that took its old address", () => {
+    const circadian = MITOPROOF_PRODUCTS.find((p) => p.id === "mitoproof-the-circadian-reset-protocol")!;
+    expect(circadian.url).toBe("https://www.mitoproof.com/products/the-circadian-reset-protocol-1");
+    const glp1 = MITOPROOF_PRODUCTS.find((p) => p.id === "mitoproof-natural-glp-1-reset")!;
+    expect(glp1.url).toBe("https://www.mitoproof.com/products/the-circadian-reset-protocol");
   });
 });
