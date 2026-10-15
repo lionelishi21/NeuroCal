@@ -22,6 +22,9 @@ abstract interface class NeuroCalApi {
   Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes);
   Future<void> deleteExercise(String id);
 
+  /// The biohacking level from the last 28 days.
+  Future<Level> level();
+
   /// What's in the kitchen, alphabetical.
   Future<List<PantryItem>> pantry();
 
@@ -193,6 +196,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
   List<PantryItem> _pantryFrom(dynamic body) => [
     for (final i in (body as Map<String, dynamic>)['items'] as List) PantryItem.fromJson(i as Map<String, dynamic>),
   ];
+
+  @override
+  Future<Level> level() async => Level.fromJson(await _get('/level') as Map<String, dynamic>);
 
   @override
   Future<List<PantryItem>> pantry() async => _pantryFrom(await _get('/pantry'));

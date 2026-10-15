@@ -590,6 +590,15 @@ export type PantryRecipe = z.infer<typeof PantryRecipe>;
 export const PantryRecipesResponse = z.object({ recipes: z.array(PantryRecipe) });
 export type PantryRecipesResponse = z.infer<typeof PantryRecipesResponse>;
 
+/** The biohacking level (docs/NCBM.md §8): 0 Getting started, 1 Aware … 5 Upgraded, from the last 28 days. */
+export const LevelResponse = z.object({
+  level: z.number().int().min(0).max(5),
+  name: z.string(),
+  /** Every habit for levels 1–5, in order; a level needs all of its own and every lower level's. */
+  requirements: z.array(z.object({ level: z.number().int().min(1).max(5), title: z.string(), met: z.boolean(), progress: z.string() })),
+});
+export type LevelResponse = z.infer<typeof LevelResponse>;
+
 export const BrainCheckHistory = z.object({
   /** Newest first. */
   checks: z.array(BrainCheck),
@@ -847,6 +856,8 @@ export const endpoints = {
   /** A day's exercise (?date=, default today) with its totals. */
   getExercises: { method: "GET", path: "/exercises", response: ExerciseDay },
   deleteExercise: { method: "DELETE", path: "/exercises/:id" },
+  /** The biohacking level from the last 28 days, with each habit and how close it is. */
+  getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
   addPantryItems: { method: "POST", path: "/pantry", body: AddPantryItemsRequest, response: PantryResponse },
   deletePantryItem: { method: "DELETE", path: "/pantry/:id" },

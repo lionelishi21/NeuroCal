@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -488,6 +488,16 @@ describe("API routes", () => {
       components: { sleep: 0.75 },
       explanation: "Short sleep is holding you back.",
     });
+  });
+
+  it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {
+    const res = await call("GET", "/level");
+    expect(res.status).toBe(200);
+    const body = LevelResponse.parse(res.body);
+    // The fixtures have one day of food: still getting started.
+    expect(body).toMatchObject({ level: 0, name: "Getting started" });
+    expect(body.requirements[0]).toMatchObject({ level: 1, title: "Log food on most days", met: false });
+    expect(body.requirements.map((r) => r.level)).toEqual([...body.requirements.map((r) => r.level)].sort());
   });
 
   it("the pantry: add (skipping repeats), suggest recipes marked by what's in it, and remove", async () => {

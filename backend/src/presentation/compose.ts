@@ -47,6 +47,7 @@ import { StackUseCases } from "../application/use-cases/StackUseCases";
 import { ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
 import { ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
+import { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
@@ -120,6 +121,7 @@ export function buildUseCases(p: Ports): UseCases {
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
+    getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock),
     pantry: new PantryUseCases(p.pantry, p.profiles, getBioState, p.pantryRecipes),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),

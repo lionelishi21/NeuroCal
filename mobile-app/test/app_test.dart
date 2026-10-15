@@ -245,6 +245,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Weight and Brain speed'), findsOneWidget);
 
+    await tester.tap(find.widgetWithText(InkWell, 'Level'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fuelled'), findsWidgets);
+    expect(find.text('To reach In rhythm'), findsOneWidget);
+    expect(find.text('Eat and switch off screens on time, 5 nights a week'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(InkWell, 'Stack'));
     await tester.pumpAndSettle();
     expect(find.text('Your stack'), findsOneWidget);

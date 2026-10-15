@@ -492,6 +492,28 @@
         }
       }
     },
+    "/level": {
+      "get": {
+        "operationId": "getLevel",
+        "summary": "Your biohacking level",
+        "description": "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/pantry": {
       "get": {
         "operationId": "getPantry",
@@ -3052,6 +3074,52 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "LevelResponse": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "name": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "title": {
+                  "type": "string"
+                },
+                "met": {
+                  "type": "boolean"
+                },
+                "progress": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "level",
+                "title",
+                "met",
+                "progress"
+              ]
+            }
+          }
+        },
+        "required": [
+          "level",
+          "name",
+          "requirements"
         ]
       },
       "LogExerciseRequest": {

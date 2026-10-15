@@ -279,6 +279,26 @@ class MockNeuroCalApi implements NeuroCalApi {
       PantryItem(id: 'p${i + 1}', name: name),
   ];
 
+  @override
+  Future<Level> level() async {
+    await _wait();
+    return const Level(
+      level: 2,
+      name: 'Fuelled',
+      requirements: [
+        (level: 1, title: 'Log food on most days', met: true, progress: '24 of the last 28 days (needs 14)'),
+        (level: 1, title: 'Log sleep on most nights', met: true, progress: '21 of the last 28 nights (needs 14)'),
+        (level: 2, title: 'Keep ultra-processed food under 20%', met: true, progress: '12% of graded calories were ultra-processed'),
+        (level: 2, title: 'Get near your protein target', met: true, progress: '86% of your protein target on average (needs 80%)'),
+        (level: 3, title: 'Eat and switch off screens on time, 5 nights a week', met: false, progress: 'On time 13 of 21 evenings (needs 5 in 7)'),
+        (level: 4, title: 'Sleep well most nights', met: false, progress: 'Sleep averages 71 (needs 75)'),
+        (level: 4, title: 'Keep stress low', met: true, progress: 'Stress averages 82 (needs 75)'),
+        (level: 4, title: 'Brain speed at or above your usual', met: false, progress: 'Do the Brain speed check a few more times to set your usual'),
+        (level: 5, title: 'Move most days', met: false, progress: 'Movement: 4 of 10 days with data so far'),
+      ],
+    );
+  }
+
   String _key(String name) => name.toLowerCase().replaceAll(RegExp(r'(?<=[a-z]{3})(es|s)$'), '');
 
   @override

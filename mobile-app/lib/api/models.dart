@@ -1158,3 +1158,25 @@ class PantryRecipe {
   );
 }
 
+/// The biohacking level (`LevelResponse` in the contracts): 0 Getting started … 5 Upgraded.
+class Level {
+  const Level({required this.level, required this.name, required this.requirements});
+
+  final int level;
+  final String name;
+
+  /// Every habit for levels 1–5, in order.
+  final List<({int level, String title, bool met, String progress})> requirements;
+
+  static const names = ['Getting started', 'Aware', 'Fuelled', 'In rhythm', 'Recovered', 'Upgraded'];
+
+  factory Level.fromJson(Map<String, dynamic> j) => Level(
+    level: (j['level'] as num).toInt(),
+    name: j['name'] as String,
+    requirements: [
+      for (final r in j['requirements'] as List)
+        (level: (r['level'] as num).toInt(), title: r['title'] as String, met: r['met'] as bool, progress: r['progress'] as String),
+    ],
+  );
+}
+

@@ -18,6 +18,7 @@ import {
   ExerciseDay,
   LogExerciseRequest,
   AddPantryItemsRequest,
+  LevelResponse,
   PantryRecipesResponse,
   PantryResponse,
   TodayResponse,
@@ -71,6 +72,7 @@ import type { GetSubscriptionUseCase, HandleStoreEventUseCase, SubscriptionGate 
 import type { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases";
 import type { ExerciseDay as ExerciseDayResult, ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
 import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
+import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
@@ -124,6 +126,7 @@ export interface UseCases {
   brainChecks: BrainCheckUseCases;
   exercise: ExerciseUseCases;
   pantry: PantryUseCases;
+  getLevel: GetLevelUseCase;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -346,6 +349,7 @@ export function createApi(uc: UseCases) {
         return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
       },
     ],
+    ["GET", /^\/level$/, async (req) => ok(LevelResponse, await uc.getLevel.execute(req))],
     ["GET", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.list(req.userId) })],
     ["POST", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.add(req.userId, json(req, AddPantryItemsRequest).names) })],
     [

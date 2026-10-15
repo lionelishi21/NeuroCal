@@ -147,7 +147,7 @@ flowchart LR
 | Environment: air, water, light, noise, EMF | Not started. Air quality from a public API by location first; water by postcode; light and noise from the phone's sensors |
 | Shopper: upload a shopping list, get a cleaner list and gadget picks | Not started. Device catalog and affiliate links exist |
 | Knowledge pipeline (below) | Not started |
-| Levels (below) | Not started |
+| Levels (below) | Built |
 
 ## 7. The knowledge pipeline
 
@@ -165,17 +165,19 @@ flowchart LR
 
 Nothing reaches users without a person approving it. Every protocol keeps a link to its source video and timestamp, so people can hear it in the expert's own words.
 
-## 8. Levels (proposed)
+## 8. Levels (built)
 
-A simple ladder so people can see progress beyond one day's score. You move up by keeping habits over time, not by buying things.
+A simple ladder so people can see progress beyond one day's score. You move up by keeping habits over time, not by buying things. Each level needs every level below it, and holds only while its habits do. The app shows the level in Progress → Level, with every habit and how close it is.
 
-| Level | Name | Reached when, over the last 4 weeks |
+| Level | Name | Reached when, over the last 28 days |
 |---|---|---|
-| 1 | Aware | Logging food and sleep on most days |
-| 2 | Fuelled | Under 20% of calories ultra-processed; protein near target |
-| 3 | In rhythm | Last meal and screens on time 5 nights a week; fasting window kept |
-| 4 | Recovered | Sleep and stress signals mostly good; Brain speed at or above your usual |
-| 5 | Upgraded | Levels 1 to 4 held, plus movement and an environment check |
+| 1 | Aware | Food logged on 14+ days and sleep on 14+ nights |
+| 2 | Fuelled | Under 20% of graded calories ultra-processed; protein at 80%+ of target on average |
+| 3 | In rhythm | Last meal and screens on time (timing ≥ 0.75) on 5 of 7 evenings; for people who fast, the window kept 5 of 7 days |
+| 4 | Recovered | Sleep and stress signals averaging 0.75+; Brain speed this week at or above your usual |
+| 5 | Upgraded | Movement averaging 0.75+. An environment check joins once environment is measured |
+
+An average needs at least 10 days with data before it counts.
 
 ## 9. Limits
 

@@ -7,6 +7,7 @@ import '../weight_units.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'capture.dart';
+import 'level.dart';
 import 'sleep.dart';
 import 'weight_cards.dart';
 import 'weight_sheets.dart';
@@ -27,7 +28,7 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  static const _views = ['This week', 'Sleep', 'Body'];
+  static const _views = ['This week', 'Sleep', 'Body', 'Level'];
   var _view = 0;
 
   @override
@@ -85,6 +86,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 WeekScreen(changes: widget.changes),
                 SleepScreen(changes: widget.changes, onChanged: widget.onChanged),
                 _Body(changes: widget.changes, onCapture: widget.onCapture),
+                LevelView(changes: widget.changes),
               ],
             ),
           ),
