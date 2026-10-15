@@ -152,7 +152,11 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
     case Capture.supplement:
       await done(await showSupplementSheet(context), 'Added to your stack');
     case Capture.checkIn:
-      await done(await showCheckInSheet(context), 'Check-in saved');
+      final reminders = AppScope.of(context).reminders;
+      final saved = await showCheckInSheet(context);
+      // This window is done for today: its remaining nudges are cancelled.
+      if (saved == true) await reminders?.checkedIn(DateTime.now()).catchError((Object _) {});
+      if (context.mounted) await done(saved, 'Check-in saved');
     case Capture.sleep:
       await done(await showLogSleepSheet(context), 'Sleep logged');
     case Capture.screenTime:

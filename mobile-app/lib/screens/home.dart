@@ -45,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (reminders != _reminders) {
       _reminders?.opened.removeListener(_reminderTapped);
       _reminders = reminders?..opened.addListener(_reminderTapped);
+      // The windows follow the wake time from onboarding.
+      reminders?.useWake(widget.profile.bioProfile?['wake']).catchError((Object _) {});
       // Started by tapping a reminder: open the check-in once the tabs are showing.
       if (reminders != null && reminders.opened.value > reminders.handled) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _reminderTapped());

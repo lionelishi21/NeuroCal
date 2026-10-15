@@ -139,7 +139,7 @@ flowchart LR
 | Fuel: meal photos, food catalog, package scanner (barcode, label, NOVA, sugar, salt, best-before), pantry recipes | Built |
 | Rhythm: evening timing, late screens, fasting timer and streak | Built. Morning light and wake-time consistency are next |
 | Recovery: sleep logging, nights on one clock | Built. Wearable import next (Apple Health, Health Connect) |
-| Mind: check-ins, daily reminders | Built. Check-in windows with repeat nudges next |
+| Mind: check-ins in three daily windows set from your wake time, nudging until you check in | Built |
 | Movement: exercise with calories burned | Built, and in the score (v1). Calf and circulation routines next |
 | Supplements: label scanning, stack, daily checklist, whole-stack limits and duplicates | Built |
 | Outcome: Brain speed check with personal baseline | Built, and it tunes each person's weights (v1) |

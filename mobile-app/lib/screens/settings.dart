@@ -175,8 +175,15 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           if (scope.reminders case final reminders?) ...[
-            const GroupLabel('Check-in reminders'),
+            const GroupLabel('Check-in windows'),
             _Reminders(reminders),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Space.s1, Space.s2, Space.s1, 0),
+              child: Text(
+                'Set from when you wake up. While a window is open, we nudge up to three times; checking in stops it for the day.',
+                style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+              ),
+            ),
           ],
           const GroupLabel('Account'),
           AppCard(
@@ -374,7 +381,7 @@ class _Reminders extends StatelessWidget {
     if (!done) {
       showToast(context, 'Notifications are off for NeuroCal. Turn them on in your phone’s settings.', ToastTone.problem);
     } else if (on) {
-      showToast(context, 'Reminder set for ${slot.time} every day');
+      showToast(context, '${slot.label} window set: ${slot.range(settings.wakeHour)} every day');
     }
   }
 
@@ -400,8 +407,8 @@ class _Reminders extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${slot.label} · ${slot.time}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                              Text(slot.title, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                              Text('${slot.label} · ${slot.range(settings.wakeHour)}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                              Text('Nudges until you check in', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
                             ],
                           ),
                         ),

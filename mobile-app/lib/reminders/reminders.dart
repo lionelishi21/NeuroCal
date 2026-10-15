@@ -6,44 +6,100 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../device_time_zone.dart';
 
-/// The daily check-in reminders someone can switch on in Me. Each repeats at its time every day.
+/// The day's check-in windows, set from when the person wakes up (onboarding's chronotype question).
+/// While a window is open and they haven't checked in, the phone nudges: at the start, an hour later,
+/// and a last call half an hour before it closes. Checking in silences the rest of that window.
 enum ReminderSlot {
-  morning(8, 30, 'Morning', 'How did you sleep?', 'Log last night and check in: it sets today’s Focus Score.'),
-  afternoon(14, 0, 'Afternoon', 'How’s your focus?', 'A 10-second check-in shows what lunch did to your afternoon.'),
-  evening(20, 30, 'Evening', 'Wind-down check-in', 'How was today? Dim the screens soon for a better night.');
+  morning('Morning', 0.5, 3.0, 'Morning check-in', 'How did you sleep, and how do you feel? It sets today’s Focus Score.'),
+  afternoon('Afternoon', 6.5, 9.0, 'Afternoon check-in', 'How’s your focus? Ten seconds shows what lunch did to your afternoon.'),
+  evening('Evening', 12.5, 15.0, 'Evening check-in', 'How was today? Then dim the screens for a better night.');
 
-  const ReminderSlot(this.hour, this.minute, this.label, this.title, this.body);
+  const ReminderSlot(this.label, this.startAfterWake, this.endAfterWake, this.title, this.body);
 
-  final int hour;
-  final int minute;
   final String label;
+
+  /// Hours after waking that the window opens and closes.
+  final double startAfterWake;
+  final double endAfterWake;
   final String title;
   final String body;
 
-  /// "08:30".
-  String get time => '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  /// The window on [day] for someone who wakes at [wakeHour] (7.5 is 07:30).
+  ({DateTime start, DateTime end}) on(DateTime day, double wakeHour) {
+    DateTime at(double hours) => DateTime(day.year, day.month, day.day).add(Duration(minutes: (hours * 60).round()));
+    return (start: at(wakeHour + startAfterWake), end: at(wakeHour + endAfterWake));
+  }
+
+  /// "07:30–10:00".
+  String range(double wakeHour) {
+    final w = on(DateTime(2026), wakeHour);
+    return '${clock(w.start)}–${clock(w.end)}';
+  }
 }
 
-/// Schedules the reminders on the phone. Tapping one opens the check-in ([opened]).
+/// "07:30".
+String clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+/// Onboarding's "When do you naturally wake up?" answers, as clock hours.
+const wakeHours = {'before_6': 5.5, '6_to_8': 7.0, 'after_8': 8.5};
+const defaultWakeHour = 7.0;
+
+/// One notification to show. [id] encodes the day, window and nudge, so it can be replaced.
+typedef Nudge = ({int id, DateTime at, String title, String body, ReminderSlot slot});
+
+/// Every nudge from [now] for the next [days] days, for the windows switched on. Windows already
+/// checked in today ([doneToday]) get no more nudges today; times already past are left out.
+List<Nudge> nudgesFor({
+  required Set<ReminderSlot> slots,
+  required double wakeHour,
+  required DateTime now,
+  Set<ReminderSlot> doneToday = const {},
+  // iOS keeps at most 64 pending notifications: 3 windows × 3 nudges × 4 days stays well under.
+  int days = 4,
+}) {
+  final out = <Nudge>[];
+  for (var d = 0; d < days; d++) {
+    final day = DateTime(now.year, now.month, now.day + d);
+    for (final slot in ReminderSlot.values) {
+      if (!slots.contains(slot) || (d == 0 && doneToday.contains(slot))) continue;
+      final w = slot.on(day, wakeHour);
+      final times = [
+        (w.start, slot.title, slot.body),
+        (w.start.add(const Duration(hours: 1)), 'Still time to check in', 'Your ${slot.label.toLowerCase()} window is open until ${clock(w.end)}.'),
+        (w.end.subtract(const Duration(minutes: 30)), 'Last call', '${slot.label} check-in closes at ${clock(w.end)}.'),
+      ];
+      for (final (i, (at, title, body)) in times.indexed) {
+        if (!at.isAfter(now)) continue;
+        out.add((id: d * 100 + slot.index * 10 + i, at: at, title: title, body: body, slot: slot));
+      }
+    }
+  }
+  return out;
+}
+
+/// Shows the nudges on the phone. Tapping one opens the check-in ([opened]).
 abstract interface class Reminders {
   /// Asks to show notifications; false when the person said no.
   Future<bool> requestPermission();
 
-  /// Replaces whatever was scheduled with [slots].
-  Future<void> schedule(Set<ReminderSlot> slots);
+  /// Replaces whatever was scheduled with [nudges].
+  Future<void> schedule(List<Nudge> nudges);
 
   /// Bumped when a reminder is tapped, so the app opens the check-in.
   ValueListenable<int> get opened;
 }
 
-/// Which reminders are on, kept on the phone.
+/// Which windows nudge, when the person wakes, and which windows they've checked in today; kept on the phone.
 class ReminderSettings extends ChangeNotifier {
-  ReminderSettings(this._prefs, this._reminders);
+  ReminderSettings(this._prefs, this._reminders, {DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   static const _key = 'neurocal.reminders';
+  static const _wakeKey = 'neurocal.wakeHour';
+  static const _doneKey = 'neurocal.checkins.done';
 
   final SharedPreferences _prefs;
   final Reminders _reminders;
+  final DateTime Function() _now;
 
   Set<ReminderSlot> get slots => {
     for (final name in _prefs.getStringList(_key) ?? const <String>[])
@@ -51,15 +107,55 @@ class ReminderSettings extends ChangeNotifier {
         if (slot.name == name) slot,
   };
 
-  /// Switches one reminder on or off. Turning the first one on asks for permission; false when refused.
+  double get wakeHour => _prefs.getDouble(_wakeKey) ?? defaultWakeHour;
+
+  static String _day(DateTime t) => '${t.year}-${t.month}-${t.day}';
+
+  /// The windows checked in on [now]'s day.
+  Set<ReminderSlot> doneOn(DateTime now) {
+    final parts = (_prefs.getString(_doneKey) ?? '').split('|');
+    if (parts.length != 2 || parts[0] != _day(now)) return {};
+    final names = parts[1].split(',');
+    return {for (final slot in ReminderSlot.values) if (names.contains(slot.name)) slot};
+  }
+
+  /// The window open at [now], whether or not it nudges; null between windows.
+  ReminderSlot? openAt(DateTime now) {
+    for (final slot in ReminderSlot.values) {
+      final w = slot.on(now, wakeHour);
+      if (!now.isBefore(w.start) && now.isBefore(w.end)) return slot;
+    }
+    return null;
+  }
+
+  /// Switches one window's nudges on or off. Turning the first one on asks for permission; false when refused.
   Future<bool> set(ReminderSlot slot, bool on) async {
     if (on && !await _reminders.requestPermission()) return false;
     final next = {...slots};
     on ? next.add(slot) : next.remove(slot);
     await _prefs.setStringList(_key, [for (final s in next) s.name]);
-    await _reminders.schedule(next);
+    await restore();
     notifyListeners();
     return true;
+  }
+
+  /// The windows follow the profile's wake time ("before_6", "6_to_8", "after_8").
+  Future<void> useWake(Object? answer) async {
+    final hour = wakeHours[answer] ?? defaultWakeHour;
+    if (hour == wakeHour) return;
+    await _prefs.setDouble(_wakeKey, hour);
+    await restore();
+    notifyListeners();
+  }
+
+  /// A check-in at [at] completes the window it falls in: no more nudges for it today.
+  Future<void> checkedIn(DateTime at) async {
+    final slot = openAt(at);
+    if (slot == null) return;
+    final done = {...doneOn(at), slot};
+    await _prefs.setString(_doneKey, '${_day(at)}|${[for (final s in done) s.name].join(',')}');
+    await restore();
+    notifyListeners();
   }
 
   /// Bumped when a reminder is tapped.
@@ -68,13 +164,17 @@ class ReminderSettings extends ChangeNotifier {
   /// Taps already acted on, so a later sign-in doesn't open the check-in again.
   int handled = 0;
 
-  /// Schedules again what was chosen: after an update, or a change of time zone.
-  Future<void> restore() => _reminders.schedule(slots);
+  /// Schedules the next few days again: at launch, after a check-in, or a change of time zone.
+  Future<void> restore() {
+    final now = _now();
+    return _reminders.schedule(nudgesFor(slots: slots, wakeHour: wakeHour, now: now, doneToday: doneOn(now)));
+  }
 
   /// Signed out: no reminders for an account that isn't here.
   Future<void> clear() async {
     await _prefs.remove(_key);
-    await _reminders.schedule(const {});
+    await _prefs.remove(_doneKey);
+    await _reminders.schedule(const []);
     notifyListeners();
   }
 }
@@ -90,7 +190,7 @@ class DeviceReminders implements Reminders {
     android: AndroidNotificationDetails(
       'check_in_reminders',
       'Check-in reminders',
-      channelDescription: 'Daily reminders to check in and log your sleep.',
+      channelDescription: 'Nudges while a check-in window is open, until you check in.',
       importance: Importance.defaultImportance,
     ),
     iOS: DarwinNotificationDetails(),
@@ -106,7 +206,7 @@ class DeviceReminders implements Reminders {
     await _plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        // Asked for when the first reminder is switched on, not at launch.
+        // Asked for when the first window is switched on, not at launch.
         iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
       ),
       onDidReceiveNotificationResponse: (r) {
@@ -132,23 +232,19 @@ class DeviceReminders implements Reminders {
   }
 
   @override
-  Future<void> schedule(Set<ReminderSlot> slots) async {
+  Future<void> schedule(List<Nudge> nudges) async {
     await _init();
     await _plugin.cancelAll();
-    final now = tz.TZDateTime.now(tz.local);
-    for (final slot in slots) {
-      var at = tz.TZDateTime(tz.local, now.year, now.month, now.day, slot.hour, slot.minute);
-      if (!at.isAfter(now)) at = at.add(const Duration(days: 1));
+    for (final n in nudges) {
       await _plugin.zonedSchedule(
-        id: slot.index,
-        scheduledDate: at,
+        id: n.id,
+        scheduledDate: tz.TZDateTime.from(n.at, tz.local),
         notificationDetails: _details,
         // Within a few minutes is fine for a nudge, and needs no exact-alarm permission.
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        title: slot.title,
-        body: slot.body,
+        title: n.title,
+        body: n.body,
         payload: _payload,
-        matchDateTimeComponents: DateTimeComponents.time,
       );
     }
   }
@@ -159,8 +255,11 @@ class FakeReminders implements Reminders {
   FakeReminders({this.allowed = true});
 
   bool allowed;
-  Set<ReminderSlot> scheduled = {};
+  List<Nudge> scheduled = [];
   final _opened = ValueNotifier(0);
+
+  /// The windows with at least one nudge scheduled.
+  Set<ReminderSlot> get windows => {for (final n in scheduled) n.slot};
 
   @override
   ValueListenable<int> get opened => _opened;
@@ -172,5 +271,5 @@ class FakeReminders implements Reminders {
   Future<bool> requestPermission() async => allowed;
 
   @override
-  Future<void> schedule(Set<ReminderSlot> slots) async => scheduled = {...slots};
+  Future<void> schedule(List<Nudge> nudges) async => scheduled = [...nudges];
 }

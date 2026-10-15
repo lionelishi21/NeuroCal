@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import '../reminders/reminders.dart';
 import 'capture.dart';
 import 'exercise_sheet.dart';
 import 'stack.dart';
@@ -257,7 +258,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   ],
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
-                    _Feeling(day.bio.flags, onCheckIn: () => widget.onCapture(Capture.checkIn)),
+                    _Feeling(day.bio.flags, reminders: AppScope.of(context).reminders, onCheckIn: () => widget.onCapture(Capture.checkIn)),
                     if (day.stack != null) ...[
                       const SizedBox(height: Space.s3),
                       StackCard(day.stack!, onManage: _manageStack),
@@ -823,15 +824,27 @@ class _Calories extends StatelessWidget {
 }
 
 class _Feeling extends StatelessWidget {
-  const _Feeling(this.flags, {required this.onCheckIn});
+  const _Feeling(this.flags, {required this.reminders, required this.onCheckIn});
 
   final List<CognitiveFlag> flags;
+
+  /// For the check-in window open now; null where notifications aren't set up.
+  final ReminderSettings? reminders;
   final VoidCallback onCheckIn;
 
   @override
   Widget build(BuildContext context) {
+    final r = reminders;
+    if (r == null) return _card(context, null);
+    return ListenableBuilder(listenable: r, builder: (context, _) => _card(context, r));
+  }
+
+  Widget _card(BuildContext context, ReminderSettings? r) {
     final c = context.colors;
     final words = [for (final (i, flag) in flags.indexed) i == 0 ? flag.label : flag.label.toLowerCase()].join(', ');
+    final now = DateTime.now();
+    final window = r?.openAt(now);
+    final done = window != null && r!.doneOn(now).contains(window);
     return AppCard(
       padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s3, Space.s3),
       child: Row(
@@ -853,6 +866,24 @@ class _Feeling extends StatelessWidget {
                     color: flags.isEmpty ? c.inkFaint : c.ink,
                   ),
                 ),
+                if (window != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.s1),
+                    child: Row(
+                      spacing: 4,
+                      children: [
+                        Icon(done ? Icons.check_circle_rounded : Icons.schedule_rounded, size: 14, color: done ? c.chlorophyll : c.synapseInk),
+                        Flexible(
+                          child: Text(
+                            done
+                                ? '${window.label} check-in done'
+                                : '${window.label} window open until ${clock(window.on(now, r!.wakeHour).end)}',
+                            style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: done ? c.chlorophyll : c.synapseInk),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
