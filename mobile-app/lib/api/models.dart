@@ -344,7 +344,8 @@ class HistoryDay {
 typedef WeakPoint = ({String label, double average});
 
 /// A NeuroCal-authored habit with ordered steps.
-typedef Routine = ({String title, String summary, List<String> steps});
+/// [source] is set for routines from the knowledge pipeline: the talk, linked to where it was said.
+typedef Routine = ({String title, String summary, List<String> steps, ({String title, String url})? source});
 
 /// A product matched to the week. Affiliate and own-brand ones must be labelled wherever they show.
 typedef SuggestedProduct = ({
@@ -374,6 +375,7 @@ class Help {
           title: p['title'] as String,
           summary: p['summary'] as String,
           steps: [for (final step in p['steps'] as List) step as String],
+          source: p['source'] == null ? null : (title: p['source']['title'] as String, url: p['source']['url'] as String),
         ),
     ],
     products: [for (final p in j['products'] as List) productFromJson(p as Map<String, dynamic>)],

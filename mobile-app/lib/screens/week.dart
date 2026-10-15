@@ -615,6 +615,21 @@ class _WhatHelps extends StatelessWidget {
                                 routine.summary,
                                 style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
                               ),
+                              if (routine.source case final source?)
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 36),
+                                      foregroundColor: c.synapseInk,
+                                      textStyle: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+                                    ),
+                                    onPressed: () => AppScope.of(context).openLink(Uri.parse(source.url)),
+                                    icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
+                                    label: Text('Watch where it’s said: ${source.title}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  ),
+                                ),
                               const SizedBox(height: Space.s1),
                               for (final (n, step) in routine.steps.indexed)
                                 Padding(

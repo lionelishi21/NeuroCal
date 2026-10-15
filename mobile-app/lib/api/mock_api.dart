@@ -795,6 +795,7 @@ class MockNeuroCalApi implements NeuroCalApi {
             'Breathe out for four.',
             'Hold for four, and repeat for two minutes.',
           ],
+          source: null,
         ),
         (
           title: 'The kitchen closes three hours before bed',
@@ -804,6 +805,13 @@ class MockNeuroCalApi implements NeuroCalApi {
             'Plan dinner to finish by then.',
             'After closing, stick to water or herbal tea.',
           ],
+          source: null,
+        ),
+        (
+          title: 'Do ten calf raises after meals',
+          summary: 'The calf works as a second heart: a few raises after eating move blood back up from the legs.',
+          steps: ['Stand up after the meal.', 'Rise onto your toes and lower slowly, ten times.'],
+          source: (title: 'Sample episode: your second heart', url: 'https://www.youtube.com/watch?v=sample00001&t=1290s'),
         ),
       ],
       products: [
