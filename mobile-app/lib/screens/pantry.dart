@@ -227,9 +227,14 @@ class _Recipes extends StatelessWidget {
             padding: const EdgeInsets.only(top: Space.s4),
             child: ScreenFailed(
               title: "Couldn't suggest recipes",
-              detail: e is ApiException && e.status == 402
-                  ? 'Recipe ideas are part of your subscription.'
-                  : 'Check your connection and try again.',
+              detail: switch (e) {
+                ApiException(status: 402) => 'Recipe ideas are part of your subscription.',
+                ApiException(status: 400, :final message) when message.contains('at least') =>
+                  'Add at least 3 items to your pantry first.',
+                // The server answered but the recipe service didn't: not the phone's connection.
+                ApiException(status: >= 500) => 'Recipe ideas aren’t available right now. Try again in a few minutes.',
+                _ => 'Check your connection and try again.',
+              },
               onRetry: onRetry,
             ),
           );
