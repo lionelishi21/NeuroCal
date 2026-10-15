@@ -73,6 +73,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",
   },
   getPantry: { summary: "What's in your kitchen" },
+  reviewShoppingList: {
+    summary: "Review a shopping list",
+    description: "Send the list as JSON `text`, or a photo of a written list, receipt or shopping app as multipart `photo`. Each item is graded (whole, processed, ultra-processed) and marked keep, swap (with a cleaner choice) or limit. Kitchen devices are suggested only when the list shows a swap they make easy, from enabled catalog products. Nothing is saved.",
+    multipart: { photo: "A photo of the list (JPEG, PNG or WebP)." },
+  },
   addPantryItems: { summary: "Add items to your pantry", description: "Names already there, ignoring case and plurals, are skipped. Returns the whole pantry." },
   deletePantryItem: { summary: "Remove a pantry item", status: 204, params: { id: "The item's id." } },
   pantryRecipes: {

@@ -3,6 +3,7 @@ import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
+import { ClaudeShoppingListReviewer } from "./ClaudeShoppingListReviewer";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
@@ -274,6 +275,41 @@ describe("ClaudePantryRecipeAssistant", () => {
     ["output outside the schema", { stop_reason: "end_turn", parsed_output: { recipes: [{ ...recipe, steps: [] }] } }],
   ])("rejects %s", async (_, response) => {
     await expect(assistantWith(response).assistant.suggest(pantryContext)).rejects.toThrow();
+  });
+});
+
+describe("ClaudeShoppingListReviewer", () => {
+  const base = { items: [] as string[], dietaryPreference: "omnivore" as const, cognitiveGoals: ["focus"], losingWeight: true };
+  const item = { name: "Flavoured yogurt", processing: "ultra_processed", verdict: "swap", reason: "Sweeteners and thickeners.", swapFor: "Plain Greek yogurt with berries" };
+  const reviewerWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 300, output_tokens: 200 }, ...response }));
+    return { parse, reviewer: new ClaudeShoppingListReviewer({ messages: { parse } as unknown as ParseMessage }) };
+  };
+
+  it("sends a photo as an image beside the context, and drops swapFor unless the verdict is swap", async () => {
+    const { parse, reviewer } = reviewerWith({
+      stop_reason: "end_turn",
+      parsed_output: { problem: null, items: [item, { ...item, name: "Eggs", processing: "whole", verdict: "keep", swapFor: "nothing" }] },
+    });
+    const out = await reviewer.review({ ...base, photo: { bytes: new Uint8Array([1, 2, 3]), mediaType: "image/jpeg" } });
+    expect(out.items[0]).toMatchObject({ verdict: "swap", swapFor: "Plain Greek yogurt with berries" });
+    expect(out.items[1]).not.toHaveProperty("swapFor");
+    const content = (parse.mock.calls[0]![0] as Record<string, any>).messages[0].content;
+    expect(content[0]).toMatchObject({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: "AQID" } });
+    expect(JSON.parse(content[1].text)).toEqual(base);
+  });
+
+  it("calls a photo it can't send unreadable, without asking the model", async () => {
+    const { parse, reviewer } = reviewerWith({});
+    expect(await reviewer.review({ ...base, photo: { bytes: new Uint8Array([1]), mediaType: "image/heic" } })).toEqual({ problem: "unreadable", items: [] });
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a refusal", { stop_reason: "refusal", parsed_output: null }],
+    ["output outside the schema", { stop_reason: "end_turn", parsed_output: { problem: null, items: [{ ...item, verdict: "maybe" }] } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(reviewerWith(response).reviewer.review({ ...base, items: ["Yogurt"] })).rejects.toThrow();
   });
 });
 

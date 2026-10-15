@@ -280,6 +280,47 @@ class MockNeuroCalApi implements NeuroCalApi {
   ];
 
   @override
+  Future<ShoppingReview> reviewShoppingList({String? text, Uint8List? photo}) async {
+    await _wait();
+    final names = photo != null
+        ? const ['Frozen fries', 'Flavoured yogurt', 'Eggs', 'Spinach', 'Bottled water']
+        : [for (final l in (text ?? '').split(RegExp(r'[\n,;]+'))) if (l.trim().isNotEmpty) l.trim()];
+    final items = [
+      for (final n in names)
+        if (RegExp(r'fries|nuggets|soda|yogurt', caseSensitive: false).hasMatch(n))
+          (
+            name: n,
+            processing: FoodProcessing.ultraProcessed,
+            verdict: ShoppingVerdict.swap,
+            reason: 'Made with additives and easy to overeat.',
+            swapFor: RegExp(r'yogurt', caseSensitive: false).hasMatch(n) ? 'Plain Greek yogurt with berries' : 'Potatoes cut and air-fried at home',
+          )
+        else if (RegExp(r'chips|cookies|cereal', caseSensitive: false).hasMatch(n))
+          (name: n, processing: FoodProcessing.ultraProcessed, verdict: ShoppingVerdict.limit, reason: 'Fine now and then.', swapFor: null)
+        else
+          (name: n, processing: FoodProcessing.whole, verdict: ShoppingVerdict.keep, reason: 'A whole food.', swapFor: null),
+    ];
+    final fries = [for (final n in names) if (RegExp(r'fries|nuggets', caseSensitive: false).hasMatch(n)) n];
+    return ShoppingReview(
+      items: items,
+      devices: [
+        if (fries.isNotEmpty)
+          (
+            product: (
+              name: 'Ninja air fryer',
+              description: 'A countertop air fryer that crisps fresh potatoes, vegetables and chicken with a spoon of oil.',
+              url: 'https://www.ninjakitchen.com/',
+              affiliate: true,
+              ownBrand: false,
+              supplement: false,
+            ),
+            because: fries,
+          ),
+      ],
+    );
+  }
+
+  @override
   Future<Level> level() async {
     await _wait();
     return const Level(

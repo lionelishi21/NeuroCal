@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -25,6 +25,7 @@ import {
   InMemoryExercises,
   InMemoryPantry,
   FakePantryRecipes,
+  FakeShoppingReviewer,
   FakeLabelReader,
   FakeFoodLabelReader,
   FakeProductDatabase,
@@ -132,6 +133,7 @@ beforeEach(async () => {
     exercises: new InMemoryExercises(),
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
+    shoppingReviewer: new FakeShoppingReviewer(),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -488,6 +490,20 @@ describe("API routes", () => {
       components: { sleep: 0.75 },
       explanation: "Short sleep is holding you back.",
     });
+  });
+
+  it("POST /shopping/review grades each item and suggests a device only when the list calls for it", async () => {
+    const res = await call("POST", "/shopping/review", { text: "- Spinach\n- Chicken nuggets\n- Eggs" });
+    expect(res.status).toBe(200);
+    const body = ShoppingReviewResponse.parse(res.body);
+    expect(body.items.map((i) => [i.name, i.verdict])).toEqual([
+      ["Spinach", "keep"],
+      ["Chicken nuggets", "swap"],
+      ["Eggs", "keep"],
+    ]);
+    // The catalog fixtures have no air fryer enabled, so no device; the rule still found the reason.
+    expect(body.devices.every((d) => d.because.includes("Chicken nuggets"))).toBe(true);
+    expect((await call("POST", "/shopping/review", { text: "   " })).status).toBe(400);
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {

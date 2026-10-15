@@ -19,6 +19,8 @@ import {
   LogExerciseRequest,
   AddPantryItemsRequest,
   LevelResponse,
+  ShoppingReviewRequest,
+  ShoppingReviewResponse,
   PantryRecipesResponse,
   PantryResponse,
   TodayResponse,
@@ -73,6 +75,7 @@ import type { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseC
 import type { ExerciseDay as ExerciseDayResult, ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
 import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
+import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
@@ -87,7 +90,7 @@ import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } 
 import { DomainError } from "../domain/errors";
 import { storeEventFrom } from "../infrastructure/billing/RevenueCat";
 import { imageTypeOf } from "../domain/photo";
-import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toFoodItem, toMeal, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
+import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toFoodItem, toMeal, toProductRecommendation, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
 /** Transport-neutral request: the Lambda adapter and the dev server both build one of these. */
 export interface ApiRequest {
@@ -127,6 +130,7 @@ export interface UseCases {
   exercise: ExerciseUseCases;
   pantry: PantryUseCases;
   getLevel: GetLevelUseCase;
+  reviewShoppingList: ReviewShoppingListUseCase;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -347,6 +351,22 @@ export function createApi(uc: UseCases) {
         if (days !== null && !/^\d+$/.test(days)) throw new BadRequest("days must be a whole number.");
         const h = await uc.brainChecks.history(req.userId, days ? Number(days) : undefined);
         return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
+      },
+    ],
+    [
+      "POST",
+      /^\/shopping\/review$/,
+      async (req) => {
+        await uc.gate.require(req);
+        const isJson = (req.headers["content-type"] ?? "").startsWith("application/json");
+        const review = isJson
+          ? await uc.reviewShoppingList.execute({ userId: req.userId, text: json(req, ShoppingReviewRequest).text })
+          : await uc.reviewShoppingList.execute({ userId: req.userId, photo: (await photosFrom(req, 1))[0]! });
+        return ok(ShoppingReviewResponse, {
+          ...(review.problem ? { problem: review.problem } : {}),
+          items: review.items,
+          devices: review.devices.map(({ product, because }) => ({ product: toProductRecommendation({ item: product, similarity: 1 }), because })),
+        });
       },
     ],
     ["GET", /^\/level$/, async (req) => ok(LevelResponse, await uc.getLevel.execute(req))],

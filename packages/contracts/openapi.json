@@ -565,6 +565,53 @@
         }
       }
     },
+    "/shopping/review": {
+      "post": {
+        "operationId": "reviewShoppingList",
+        "summary": "Review a shopping list",
+        "description": "Send the list as JSON `text`, or a photo of a written list, receipt or shopping app as multipart `photo`. Each item is graded (whole, processed, ultra-processed) and marked keep, swap (with a cleaner choice) or limit. Kitchen devices are suggested only when the list shows a swap they make easy, from enabled catalog products. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingReviewRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "photo"
+                ],
+                "properties": {
+                  "photo": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "A photo of the list (JPEG, PNG or WebP)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingReviewResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/pantry/{id}": {
       "delete": {
         "operationId": "deletePantryItem",
@@ -3638,6 +3685,95 @@
         },
         "required": [
           "taken"
+        ]
+      },
+      "ShoppingReviewRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ShoppingReviewResponse": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string",
+            "enum": [
+              "not_a_list",
+              "unreadable"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "processing": {
+                  "type": "string",
+                  "enum": [
+                    "whole",
+                    "processed",
+                    "ultra_processed"
+                  ]
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "keep",
+                    "swap",
+                    "limit"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "swapFor": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "processing",
+                "verdict",
+                "reason"
+              ]
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "$ref": "#/components/schemas/ProductRecommendation"
+                },
+                "because": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "product",
+                "because"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items",
+          "devices"
         ]
       },
       "SleepSession": {

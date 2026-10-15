@@ -48,6 +48,12 @@ const AFFILIATES: Product[] = [
 
 /** Trackers, devices and supplements with no agreement recorded yet. */
 const OTHER_BRANDS: Product[] = [
+  // Kitchen: suggested by the shopping list review when a list shows a swap they make easy (domain/shopping.ts).
+  partner("ninja-air-fryer", "Ninja air fryer", "A countertop air fryer that crisps fresh potatoes, vegetables and chicken with a spoon of oil, in place of frozen fries and nuggets.", "https://www.ninjakitchen.com/", ["kitchen", "kitchen:air-fryer", "meals", "ultra-processed food", "weight loss"]),
+  partner("aquatru-water-filter", "AquaTru water filter", "A countertop reverse-osmosis filter that fills a jug from the tap, in place of bottled water.", "https://aquatru.com/", ["kitchen", "kitchen:water-filter", "water", "environment"]),
+  partner("ninja-creami", "Ninja CREAMi", "A machine that turns frozen fruit, yogurt or milk into ice cream at home, so you choose what goes in.", "https://www.ninjakitchen.com/", ["kitchen", "kitchen:ice-cream-maker", "desserts", "ultra-processed food", "added sugar"]),
+  partner("vitamix-blender", "Vitamix blender", "A high-speed blender for smoothies, soups and nut butters from whole ingredients, in place of bottled juices and shakes.", "https://www.vitamix.com/", ["kitchen", "kitchen:blender", "meals", "breakfast", "smoothies"]),
+
   // Sleep
   partner("oura-ring", "Oura Ring", "A ring that records sleep length, sleep stages and bedtime consistency overnight, so sleep doesn't have to be logged by hand.", "https://ouraring.com/", ["sleep", "short sleep", "light sleep", "sleep tracking", "circadian rhythm"]),
   partner("apollo-wearable", "Apollo wearable", "A wrist or ankle band that gives gentle vibration patterns meant to help you settle when stressed and wind down before sleep.", "https://apolloneuro.com/", ["stress", "wired", "calm", "sleep", "evening routine"]),

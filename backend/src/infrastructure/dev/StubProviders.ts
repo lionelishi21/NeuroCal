@@ -2,6 +2,7 @@
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
  */
+import type { IShoppingListReviewer } from "../../application/interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant } from "../../application/interfaces/IPantry";
 import type { IAiReasoningProvider } from "../../application/interfaces/IAiReasoningProvider";
 import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionProvider";
@@ -122,6 +123,14 @@ export const stubPantryRecipes: IPantryRecipeAssistant = {
         whyItFits: "Stub recipe: set ANTHROPIC_API_KEY for real suggestions.",
       },
     ];
+  },
+};
+
+/** Shopping list review without Claude: everything kept, as whole food. */
+export const stubShoppingReviewer: IShoppingListReviewer = {
+  async review(context) {
+    const items = context.items.length ? context.items : ["Eggs", "Frozen fries"];
+    return { items: items.map((name) => ({ name, processing: "whole" as const, verdict: "keep" as const, reason: "Stub review: set ANTHROPIC_API_KEY for a real one." })) };
   },
 };
 

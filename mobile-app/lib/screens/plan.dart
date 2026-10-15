@@ -10,11 +10,12 @@ import 'weight_cards.dart';
 /// The rest of the Stack tab after the supplements: the fasting timer, when fasting is on, and the
 /// way into the food catalog.
 class PlanExtras extends StatefulWidget {
-  const PlanExtras({super.key, required this.changes, required this.onBrowseFoods, required this.onOpenPantry});
+  const PlanExtras({super.key, required this.changes, required this.onBrowseFoods, required this.onOpenPantry, required this.onOpenShopping});
 
   final Listenable changes;
   final VoidCallback onBrowseFoods;
   final VoidCallback onOpenPantry;
+  final VoidCallback onOpenShopping;
 
   @override
   State<PlanExtras> createState() => _PlanExtrasState();
@@ -59,7 +60,21 @@ class _PlanExtrasState extends State<PlanExtras> {
           FastingCard(fasting, onBoundary: _reload),
         ],
         const BlockTitle('Foods'),
-        _PantryCard(onTap: widget.onOpenPantry),
+        _LinkCard(
+          icon: Icons.kitchen_rounded,
+          title: 'Your pantry',
+          detail: 'What can I make from it?',
+          tone: _Tone.amber,
+          onTap: widget.onOpenPantry,
+        ),
+        const SizedBox(height: Space.s3),
+        _LinkCard(
+          icon: Icons.shopping_basket_outlined,
+          title: 'Review my shopping list',
+          detail: 'Cleaner swaps, and gadgets that help',
+          tone: _Tone.green,
+          onTap: widget.onOpenShopping,
+        ),
         const SizedBox(height: Space.s3),
         BrowseFoodsCard(onTap: widget.onBrowseFoods),
       ],
@@ -128,18 +143,28 @@ class BrowseFoodsCard extends StatelessWidget {
   }
 }
 
-/// The way into the pantry and its recipe ideas.
-class _PantryCard extends StatelessWidget {
-  const _PantryCard({required this.onTap});
+enum _Tone { amber, green }
 
+/// A way into a tool from the Stack tab: an icon in its colour, a title and what it does.
+class _LinkCard extends StatelessWidget {
+  const _LinkCard({required this.icon, required this.title, required this.detail, required this.tone, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String detail;
+  final _Tone tone;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final (fill, ink) = switch (tone) {
+      _Tone.amber => (c.glucoseSoft, c.glucoseInk),
+      _Tone.green => (c.chlorophyllSoft, c.chlorophyll),
+    };
     return Semantics(
       button: true,
-      label: 'Your pantry: what can I make?',
+      label: '$title: $detail',
       excludeSemantics: true,
       child: Material(
         color: c.paper,
@@ -156,15 +181,15 @@ class _PantryCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: c.glucoseSoft, shape: BoxShape.circle),
-                  child: Icon(Icons.kitchen_rounded, size: 22, color: c.glucoseInk),
+                  decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+                  child: Icon(icon, size: 22, color: ink),
                 ),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Your pantry', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                      Text('What can I make from it?', style: TextStyle(fontSize: TextSize.xs)),
+                      Text(title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                      Text(detail, style: const TextStyle(fontSize: TextSize.xs)),
                     ],
                   ),
                 ),

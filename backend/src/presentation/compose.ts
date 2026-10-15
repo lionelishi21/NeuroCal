@@ -26,6 +26,7 @@ import type { IStackRepository } from "../application/interfaces/IStackRepositor
 import type { IBrainCheckRepository } from "../application/interfaces/IBrainCheckRepository";
 import type { IExerciseRepository } from "../application/interfaces/IExerciseRepository";
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
+import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
@@ -49,6 +50,7 @@ import { BrainCheckUseCases } from "../application/use-cases/BrainCheckUseCases"
 import { ExerciseUseCases } from "../application/use-cases/ExerciseUseCases";
 import { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import { PantryUseCases } from "../application/use-cases/PantryUseCases";
+import { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -88,6 +90,7 @@ export interface Ports {
   exercises: IExerciseRepository;
   pantry: IPantryRepository;
   pantryRecipes: IPantryRecipeAssistant;
+  shoppingReviewer: IShoppingListReviewer;
   /** RevenueCat's REST API, when its key is set. */
   subscriptionLookup: ISubscriptionLookup | null;
   /** The Authorization header RevenueCat's webhook sends. */
@@ -123,6 +126,7 @@ export function buildUseCases(p: Ports): UseCases {
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
     getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock),
     pantry: new PantryUseCases(p.pantry, p.profiles, getBioState, p.pantryRecipes),
+    reviewShoppingList: new ReviewShoppingListUseCase(p.profiles, p.shoppingReviewer, p.catalog),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),
     analyzeSupplementLabel: new AnalyzeSupplementLabelUseCase(p.labels, p.storage, p.catalog, p.embedder, p.clock),

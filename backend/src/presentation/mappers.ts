@@ -86,7 +86,7 @@ export const toProtocols = (m: ProtocolMatches): C.ProtocolsResponse => ({
   products: m.products.map(toProductRecommendation),
 });
 
-const toProductRecommendation = ({ item, similarity }: { item: Product; similarity: number }): C.ProductRecommendation => ({
+export const toProductRecommendation = ({ item, similarity }: { item: Product; similarity: number }): C.ProductRecommendation => ({
   id: item.id,
   name: item.name,
   description: item.description,

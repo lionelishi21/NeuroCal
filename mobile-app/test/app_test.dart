@@ -294,8 +294,8 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Stack'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.bySemanticsLabel('Your pantry: what can I make?'), 300);
-    await tester.tap(find.bySemanticsLabel('Your pantry: what can I make?'));
+    await tester.scrollUntilVisible(find.bySemanticsLabel('Your pantry: What can I make from it?'), 300);
+    await tester.tap(find.bySemanticsLabel('Your pantry: What can I make from it?'));
     await tester.pumpAndSettle();
 
     expect(find.text('7 items'), findsOneWidget);
@@ -319,5 +319,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Log a meal'), findsWidgets);
     expect(find.text('Salmon and spinach scramble'), findsWidgets);
+  });
+
+  testWidgets('review a shopping list: swaps with cleaner choices, and the gadget the list calls for', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.pumpAndSettle();
+    final card = find.bySemanticsLabel('Review my shopping list: Cleaner swaps, and gadgets that help');
+    await tester.scrollUntilVisible(card, 300);
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Your list'), 'Frozen fries\nSpinach\nFlavoured yogurt');
+    await tester.tap(find.text('Review my list'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Plain Greek yogurt with berries'), 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('3 items · 2 to swap'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Ninja air fryer'), 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('For Frozen fries'), findsOneWidget);
   });
 }

@@ -3,6 +3,7 @@ import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer"
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
+import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
@@ -71,6 +72,7 @@ const api = createApi(
     exercises: new DrizzleExerciseRepository(db),
     pantry: new DrizzlePantryRepository(db),
     pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
     ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
     paywall: config.paywall,

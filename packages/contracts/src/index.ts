@@ -590,6 +590,28 @@ export type PantryRecipe = z.infer<typeof PantryRecipe>;
 export const PantryRecipesResponse = z.object({ recipes: z.array(PantryRecipe) });
 export type PantryRecipesResponse = z.infer<typeof PantryRecipesResponse>;
 
+/** A typed or pasted list; send a photo of the list as multipart `photo` instead. */
+export const ShoppingReviewRequest = z.object({ text: z.string().min(1).max(4000) });
+export type ShoppingReviewRequest = z.infer<typeof ShoppingReviewRequest>;
+
+export const ShoppingReviewResponse = z.object({
+  /** The photo wasn't a list or receipt, or couldn't be read; items are then empty. */
+  problem: z.enum(["not_a_list", "unreadable"]).optional(),
+  items: z.array(
+    z.object({
+      name: z.string(),
+      processing: z.enum(["whole", "processed", "ultra_processed"]),
+      verdict: z.enum(["keep", "swap", "limit"]),
+      reason: z.string(),
+      /** A cleaner choice, when the verdict is swap. */
+      swapFor: z.string().optional(),
+    }),
+  ),
+  /** Kitchen devices the list calls for, each with the items that called for it. */
+  devices: z.array(z.object({ product: ProductRecommendation, because: z.array(z.string()) })),
+});
+export type ShoppingReviewResponse = z.infer<typeof ShoppingReviewResponse>;
+
 /** The biohacking level (docs/NCBM.md §8): 0 Getting started, 1 Aware … 5 Upgraded, from the last 28 days. */
 export const LevelResponse = z.object({
   level: z.number().int().min(0).max(5),
@@ -859,6 +881,8 @@ export const endpoints = {
   /** The biohacking level from the last 28 days, with each habit and how close it is. */
   getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
+  /** Grades a shopping list item by item, with kitchen devices that would help. Paid; nothing is saved. */
+  reviewShoppingList: { method: "POST", path: "/shopping/review", body: ShoppingReviewRequest, response: ShoppingReviewResponse },
   addPantryItems: { method: "POST", path: "/pantry", body: AddPantryItemsRequest, response: PantryResponse },
   deletePantryItem: { method: "DELETE", path: "/pantry/:id" },
   /** Up to three recipes from the pantry that fit what's left of today. Paid; nothing is saved. */

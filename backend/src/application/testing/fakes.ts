@@ -5,6 +5,7 @@ import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
+import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
 import { pantryKey } from "../../domain/pantry";
 import type { StackItem } from "../../domain/stack";
@@ -623,6 +624,22 @@ export class FakePantryRecipes implements IPantryRecipeAssistant {
         whyItFits: "Protein for the afternoon.",
       },
     ];
+  }
+}
+
+/** Grades by name: anything containing "nuggets" or "soda" is ultra-processed and swapped. */
+export class FakeShoppingReviewer implements IShoppingListReviewer {
+  readonly calls: ShoppingReviewContext[] = [];
+  async review(context: ShoppingReviewContext) {
+    this.calls.push(context);
+    if (context.photo && context.items.length === 0) return { items: [{ name: "Chicken nuggets", processing: "ultra_processed" as const, verdict: "swap" as const, reason: "Breaded and fried.", swapFor: "Chicken breast" }] };
+    return {
+      items: context.items.map((name) =>
+        /nuggets|soda/i.test(name)
+          ? { name, processing: "ultra_processed" as const, verdict: "swap" as const, reason: "Industrial additives.", swapFor: "A whole-food version" }
+          : { name, processing: "whole" as const, verdict: "keep" as const, reason: "A whole food." },
+      ),
+    };
   }
 }
 

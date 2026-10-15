@@ -145,7 +145,7 @@ flowchart LR
 | Outcome: Brain speed check with personal baseline | Built, and it tunes each person's weights (v1) |
 | Weight: goal, smoothed trend, pace, projected date | Built |
 | Environment: air, water, light, noise, EMF | Not started. Air quality from a public API by location first; water by postcode; light and noise from the phone's sensors |
-| Shopper: upload a shopping list, get a cleaner list and gadget picks | Not started. Device catalog and affiliate links exist |
+| Shopper: review a typed or photographed shopping list, with swaps and gadget picks | Built. Gadgets come from the catalog by rule (air fryer, water filter, ice cream maker, blender), with your affiliate links; a device scraper isn't planned |
 | Knowledge pipeline (below) | Not started |
 | Levels (below) | Built |
 

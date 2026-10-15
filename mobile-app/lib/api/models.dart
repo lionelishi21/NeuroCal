@@ -1180,3 +1180,35 @@ class Level {
   );
 }
 
+enum ShoppingVerdict { keep, swap, limit }
+
+/// A shopping list graded item by item (`ShoppingReviewResponse` in the contracts).
+class ShoppingReview {
+  const ShoppingReview({this.problem, this.items = const [], this.devices = const []});
+
+  /// not_a_list or unreadable, for a photo that couldn't be used.
+  final String? problem;
+  final List<({String name, FoodProcessing processing, ShoppingVerdict verdict, String reason, String? swapFor})> items;
+
+  /// Kitchen devices the list calls for, each with the items that called for it.
+  final List<({SuggestedProduct product, List<String> because})> devices;
+
+  factory ShoppingReview.fromJson(Map<String, dynamic> j) => ShoppingReview(
+    problem: j['problem'] as String?,
+    items: [
+      for (final i in j['items'] as List)
+        (
+          name: i['name'] as String,
+          processing: FoodProcessing.fromWire(i['processing']) ?? FoodProcessing.processed,
+          verdict: ShoppingVerdict.values.firstWhere((v) => v.name == i['verdict'], orElse: () => ShoppingVerdict.keep),
+          reason: i['reason'] as String,
+          swapFor: i['swapFor'] as String?,
+        ),
+    ],
+    devices: [
+      for (final d in j['devices'] as List)
+        (product: productFromJson(d['product'] as Map<String, dynamic>), because: [for (final b in d['because'] as List) b as String]),
+    ],
+  );
+}
+

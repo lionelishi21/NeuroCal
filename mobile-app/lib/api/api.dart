@@ -22,6 +22,9 @@ abstract interface class NeuroCalApi {
   Future<Exercise> logExercise(ExerciseKind kind, ExerciseIntensity intensity, int minutes);
   Future<void> deleteExercise(String id);
 
+  /// Grades a typed shopping list, or a photo of one, with kitchen devices that would help.
+  Future<ShoppingReview> reviewShoppingList({String? text, Uint8List? photo});
+
   /// The biohacking level from the last 28 days.
   Future<Level> level();
 
@@ -196,6 +199,20 @@ class HttpNeuroCalApi implements NeuroCalApi {
   List<PantryItem> _pantryFrom(dynamic body) => [
     for (final i in (body as Map<String, dynamic>)['items'] as List) PantryItem.fromJson(i as Map<String, dynamic>),
   ];
+
+  @override
+  Future<ShoppingReview> reviewShoppingList({String? text, Uint8List? photo}) async {
+    final http.Response res;
+    if (photo != null) {
+      final req = http.MultipartRequest('POST', _uri('/shopping/review'))
+        ..headers.addAll(await _headers())
+        ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: 'list.jpg'));
+      res = await http.Response.fromStream(await _client.send(req));
+    } else {
+      res = await _client.post(_uri('/shopping/review'), headers: await _headers(json: true), body: jsonEncode({'text': text}));
+    }
+    return ShoppingReview.fromJson(_decode(res) as Map<String, dynamic>);
+  }
 
   @override
   Future<Level> level() async => Level.fromJson(await _get('/level') as Map<String, dynamic>);

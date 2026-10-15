@@ -12,6 +12,7 @@ import 'food_scan_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'pantry.dart';
+import 'shopping.dart';
 import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
 import 'weight_sheets.dart';
@@ -173,6 +174,10 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       if (await showBrainCheck(context) != null && context.mounted) onChanged();
   }
 }
+
+/// Review a shopping list.
+Future<void> openShopping(BuildContext context) =>
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ShoppingScreen()));
 
 /// The pantry; "Log it" on a recipe opens Log a meal with one serving filled in.
 Future<void> openPantry(BuildContext context, {required VoidCallback onChanged}) => Navigator.of(context).push(
