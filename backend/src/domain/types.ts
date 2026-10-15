@@ -180,6 +180,8 @@ export interface Protocol {
   summary: string;
   steps: string[];
   tags: string[];
+  /** Where it came from (knowledge pipeline): the video and the moment in it. */
+  source?: { title: string; url: string };
 }
 
 export interface Product {

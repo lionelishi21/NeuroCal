@@ -1,5 +1,10 @@
 import { HttpResponse, delay, http } from "msw";
 import {
+  AddKnowledgeSourceRequest,
+  AddTranscriptRequest,
+  type KnowledgeSource,
+  type KnowledgeTechnique,
+  ReviewTechniqueRequest,
   type AdminProduct,
   type AdminWaitlistEntry,
   AnalyzeMealRequest,
@@ -33,6 +38,41 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   for (const p of adminProducts) catalogUrls.set(p.id, p.url);
   let adminCount = 0;
   // A few sign-ups so the admin dashboard has something to show. Newest first.
+  // Sample data for the admin Knowledge screen; links point at no real video.
+  let knowledgeCount = 0;
+  let techniqueCount = 0;
+  const sampleTechniques = (link: string): KnowledgeTechnique[] => [
+    {
+      id: `tech-${++techniqueCount}`,
+      title: "Get daylight within an hour of waking",
+      pillar: "rhythm",
+      summary: "The speaker says ten minutes of outdoor light in the morning sets the body clock, so sleep comes easier at night.",
+      steps: ["Go outside within an hour of waking.", "Stay out for 10 minutes, longer when it's cloudy.", "Skip the sunglasses for this."],
+      evidence: "Cites research on morning light and melatonin timing.",
+      cautions: "",
+      quote: "get outside before you look at your phone",
+      link: `${link}#t=754`,
+      status: "pending",
+    },
+    {
+      id: `tech-${++techniqueCount}`,
+      title: "Do ten calf raises after meals",
+      pillar: "movement",
+      summary: "The speaker calls the calf a second heart: working it after eating moves blood back up from the legs.",
+      steps: ["Stand up after the meal.", "Rise onto your toes and lower slowly.", "Repeat ten times."],
+      evidence: "None given",
+      cautions: "Anyone with a leg injury or circulation problems should ask their doctor first.",
+      quote: "your calf is your second heart",
+      link: `${link}#t=1290`,
+      status: "pending",
+    },
+  ];
+  const knowledge: KnowledgeSource[] = [
+    { id: `src-${++knowledgeCount}`, url: "https://www.youtube.com/watch?v=sample00001", title: "Sample episode: morning light and your brain", status: "extracted", techniques: [] },
+    { id: `src-${++knowledgeCount}`, url: "https://www.youtube.com/watch?v=sample00002", title: "Sample episode: new upload waiting for a transcript", channel: "Dave Asprey", status: "queued", techniques: [] },
+  ];
+  knowledge[0]!.techniques.push(...sampleTechniques(knowledge[0]!.url));
+
   const joined = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
   const waitlist: AdminWaitlistEntry[] = [
     { email: "priya@example.com", platform: "iphone", joinedAt: joined(0.2), confirmed: true, unsubscribed: false },
@@ -124,6 +164,54 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       if (!body.success) return invalid("Pick at least one way you feel.");
       await delay(latency);
       return HttpResponse.json(db.addCheckIn(body.data), { status: 201 });
+    }),
+    http.get(url("/admin/knowledge"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ sources: knowledge, watching: ["UC1KoulyXR8gBGyxv7r6pWQg"] });
+    }),
+    http.post(url("/admin/knowledge/sources"), async ({ request }) => {
+      const body = AddKnowledgeSourceRequest.safeParse(await request.json());
+      if (!body.success) return invalid("Add the video's link and a title. A transcript needs at least 500 characters.");
+      await delay(latency);
+      const source: KnowledgeSource = {
+        id: `src-${++knowledgeCount}`,
+        url: body.data.url,
+        title: body.data.title,
+        status: body.data.transcript ? "extracted" : "queued",
+        techniques: body.data.transcript ? sampleTechniques(body.data.url) : [],
+      };
+      knowledge.unshift(source);
+      return HttpResponse.json(source, { status: 201 });
+    }),
+    http.post(url("/admin/knowledge/sources/:id/transcript"), async ({ params, request }) => {
+      if (!AddTranscriptRequest.safeParse(await request.json()).success) return invalid("Paste the whole transcript.");
+      const source = knowledge.find((s) => s.id === params.id);
+      if (!source) return HttpResponse.json({ code: "not_found", message: "That video is no longer in the list." }, { status: 404 });
+      await delay(latency * 3);
+      source.status = "extracted";
+      source.techniques.push(...sampleTechniques(source.url));
+      return HttpResponse.json(source);
+    }),
+    http.put(url("/admin/knowledge/techniques/:id"), async ({ params, request }) => {
+      const body = ReviewTechniqueRequest.safeParse(await request.json());
+      if (!body.success) return invalid("Approve or reject it.");
+      const technique = knowledge.flatMap((s) => s.techniques).find((t) => t.id === params.id);
+      if (!technique) return HttpResponse.json({ code: "not_found", message: "That technique is no longer in the list." }, { status: 404 });
+      await delay(latency);
+      if (body.data.decision === "reject") technique.status = "rejected";
+      else {
+        Object.assign(technique, {
+          status: "approved",
+          protocolId: `knowledge-${technique.id}`,
+          ...(body.data.title?.trim() ? { title: body.data.title.trim() } : {}),
+          ...(body.data.summary?.trim() ? { summary: body.data.summary.trim() } : {}),
+        });
+      }
+      return HttpResponse.json(technique);
+    }),
+    http.post(url("/admin/knowledge/sync"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ added: 0 });
     }),
     http.get(url("/admin/products"), async () => {
       await delay(latency);

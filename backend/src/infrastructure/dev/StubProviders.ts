@@ -2,6 +2,7 @@
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
  */
+import type { ITechniqueExtractor } from "../../application/interfaces/IKnowledge";
 import type { IShoppingListReviewer } from "../../application/interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant } from "../../application/interfaces/IPantry";
 import type { IAiReasoningProvider } from "../../application/interfaces/IAiReasoningProvider";
@@ -131,6 +132,23 @@ export const stubShoppingReviewer: IShoppingListReviewer = {
   async review(context) {
     const items = context.items.length ? context.items : ["Eggs", "Frozen fries"];
     return { items: items.map((name) => ({ name, processing: "whole" as const, verdict: "keep" as const, reason: "Stub review: set ANTHROPIC_API_KEY for a real one." })) };
+  },
+};
+
+/** Techniques without Claude: one sample, so the admin Knowledge screen can be tried locally. */
+export const stubTechniqueExtractor: ITechniqueExtractor = {
+  async extract() {
+    return [
+      {
+        title: "Get morning light within an hour of waking",
+        pillar: "rhythm" as const,
+        summary: "Stub technique: set ANTHROPIC_API_KEY to read real transcripts.",
+        steps: ["Go outside for 10 minutes after waking.", "Skip the sunglasses."],
+        evidence: "None given",
+        cautions: "",
+        quote: "stub",
+      },
+    ];
   },
 };
 

@@ -20,6 +20,13 @@ import {
   AddPantryItemsRequest,
   LevelResponse,
   ShoppingReviewRequest,
+  AddKnowledgeSourceRequest,
+  AddTranscriptRequest,
+  AdminKnowledge,
+  KnowledgeSource,
+  KnowledgeSyncResponse,
+  KnowledgeTechnique,
+  ReviewTechniqueRequest,
   ShoppingReviewResponse,
   PantryRecipesResponse,
   PantryResponse,
@@ -76,6 +83,8 @@ import type { ExerciseDay as ExerciseDayResult, ExerciseUseCases } from "../appl
 import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
+import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
+import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
@@ -131,6 +140,7 @@ export interface UseCases {
   pantry: PantryUseCases;
   getLevel: GetLevelUseCase;
   reviewShoppingList: ReviewShoppingListUseCase;
+  knowledge: KnowledgeUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -220,6 +230,16 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
 
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
 const toExercise = ({ startedAt, ...e }: SavedExercise) => ({ ...e, startedAt: startedAt.toISOString() });
+const toTechnique = (url: string) => ({ sourceId: _, timestampSeconds, ...t }: Technique) => ({ ...t, link: linkAt(url, timestampSeconds) });
+const toKnowledgeSource = ({ source, techniques }: { source: SourceRecord; techniques: Technique[] }) => ({
+  id: source.id,
+  url: source.url,
+  title: source.title,
+  ...(source.channel ? { channel: source.channel } : {}),
+  ...(source.publishedAt ? { publishedAt: source.publishedAt.toISOString() } : {}),
+  status: source.status,
+  techniques: techniques.map(toTechnique(source.url)),
+});
 const toExerciseDay = (d: ExerciseDayResult) => ({ ...d, exercises: d.exercises.map(toExercise) });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
@@ -560,6 +580,28 @@ export function createApi(uc: UseCases) {
         });
       },
     ],
+    [
+      "GET",
+      /^\/admin\/knowledge$/,
+      async (req) =>
+        ok(AdminKnowledge, { sources: (await uc.knowledge.list(admin(req))).map(toKnowledgeSource), watching: uc.knowledge.watching() }),
+    ],
+    ["POST", /^\/admin\/knowledge\/sources$/, async (req) => ok(KnowledgeSource, toKnowledgeSource(await uc.knowledge.addSource(admin(req), json(req, AddKnowledgeSourceRequest))), 201)],
+    [
+      "POST",
+      /^\/admin\/knowledge\/sources\/([^/]+)\/transcript$/,
+      async (req, [id]) => ok(KnowledgeSource, toKnowledgeSource(await uc.knowledge.addTranscript(admin(req), id!, json(req, AddTranscriptRequest).transcript))),
+    ],
+    [
+      "PUT",
+      /^\/admin\/knowledge\/techniques\/([^/]+)$/,
+      async (req, [id]) => {
+        const technique = await uc.knowledge.review(admin(req), id!, json(req, ReviewTechniqueRequest));
+        const source = (await uc.knowledge.list(admin(req))).find((s) => s.source.id === technique.sourceId)!.source;
+        return ok(KnowledgeTechnique, toTechnique(source.url)(technique));
+      },
+    ],
+    ["POST", /^\/admin\/knowledge\/sync$/, async (req) => ok(KnowledgeSyncResponse, await uc.knowledge.syncAsAdmin(admin(req)))],
     ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
     [
       "GET",

@@ -80,9 +80,25 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
       });
   }
 
+  async addProtocol({ item, embedding, contentHash }: Embedded<Protocol>) {
+    await this.db.insert(protocols).values({
+      id: item.id,
+      title: item.title,
+      summary: item.summary,
+      steps: item.steps,
+      tags: item.tags,
+      embedding,
+      contentHash,
+      managedBy: "knowledge",
+      sourceTitle: item.source?.title ?? null,
+      sourceUrl: item.source?.url ?? null,
+    });
+  }
+
   async retain(ids: { protocols: string[]; products: string[] }) {
-    if (ids.protocols.length) await this.db.delete(protocols).where(notInArray(protocols.id, ids.protocols));
-    else await this.db.delete(protocols);
+    // Routines approved in the knowledge pipeline aren't in the repo's list: keep them.
+    const repoProtocol = eq(protocols.managedBy, "catalog");
+    await this.db.delete(protocols).where(ids.protocols.length ? and(repoProtocol, notInArray(protocols.id, ids.protocols)) : repoProtocol);
     const fromCatalog = eq(products.managedBy, "catalog");
     await this.db.delete(products).where(ids.products.length ? and(fromCatalog, notInArray(products.id, ids.products)) : fromCatalog);
   }
@@ -96,12 +112,17 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
         summary: protocols.summary,
         steps: protocols.steps,
         tags: protocols.tags,
+        sourceTitle: protocols.sourceTitle,
+        sourceUrl: protocols.sourceUrl,
         distance,
       })
       .from(protocols)
       .orderBy(distance)
       .limit(limit);
-    return rows.map(({ distance: d, ...item }) => ({ item, similarity: toSimilarity(d) }));
+    return rows.map(({ distance: d, sourceTitle, sourceUrl, ...item }) => ({
+      item: { ...item, ...(sourceTitle && sourceUrl ? { source: { title: sourceTitle, url: sourceUrl } } : {}) },
+      similarity: toSimilarity(d),
+    }));
   }
 
   async nearestProducts(embedding: number[], limit: number, only?: "ownSupplements") {

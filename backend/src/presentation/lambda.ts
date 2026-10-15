@@ -4,6 +4,8 @@ import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingPro
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
+import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
+import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
@@ -23,6 +25,7 @@ import {
   DrizzleBrainCheckRepository,
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
+  DrizzleKnowledgeRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -73,6 +76,10 @@ const api = createApi(
     pantry: new DrizzlePantryRepository(db),
     pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    knowledge: new DrizzleKnowledgeRepository(db),
+    techniqueExtractor: new ClaudeTechniqueExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
+    knowledgeChannels: config.knowledgeChannels,
     subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
     ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
     paywall: config.paywall,

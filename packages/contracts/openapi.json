@@ -1372,6 +1372,168 @@
         }
       }
     },
+    "/admin/knowledge": {
+      "get": {
+        "operationId": "getAdminKnowledge",
+        "summary": "Videos and techniques for review",
+        "description": "Admins only. Newest first, each video with the techniques taken from its transcript and their review status.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminKnowledge"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/knowledge/sources": {
+      "post": {
+        "operationId": "addKnowledgeSource",
+        "summary": "Add a video or episode",
+        "description": "Admins only. With a transcript, techniques are taken from it at once (Claude, schema-checked); without one, it waits in the list. Transcripts aren't stored.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddKnowledgeSourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/knowledge/sources/{id}/transcript": {
+      "post": {
+        "operationId": "addKnowledgeTranscript",
+        "summary": "Add a transcript to a video in the list",
+        "description": "Admins only. Takes techniques from it for review.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The video's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTranscriptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/knowledge/techniques/{id}": {
+      "put": {
+        "operationId": "reviewTechnique",
+        "summary": "Approve or reject a technique",
+        "description": "Admins only. Approving adds it to the catalog as a routine (optionally edited), tagged by pillar and linked to the moment in the video; it is then matched to people's weak points.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The technique's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewTechniqueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeTechnique"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/knowledge/sync": {
+      "post": {
+        "operationId": "syncKnowledge",
+        "summary": "Check watched channels for new videos now",
+        "description": "Admins only. Needs YOUTUBE_API_KEY; titles and links only.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSyncResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/admin/waitlist": {
       "get": {
         "operationId": "getAdminWaitlist",
@@ -1483,6 +1645,29 @@
       }
     },
     "schemas": {
+      "AddKnowledgeSourceRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "transcript": {
+            "type": "string",
+            "minLength": 500,
+            "maxLength": 150000
+          }
+        },
+        "required": [
+          "url",
+          "title"
+        ]
+      },
       "AddPantryItemsRequest": {
         "type": "object",
         "properties": {
@@ -1539,6 +1724,40 @@
           "ingredients",
           "servingsPerDay",
           "timing"
+        ]
+      },
+      "AddTranscriptRequest": {
+        "type": "object",
+        "properties": {
+          "transcript": {
+            "type": "string",
+            "minLength": 500,
+            "maxLength": 150000
+          }
+        },
+        "required": [
+          "transcript"
+        ]
+      },
+      "AdminKnowledge": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeSource"
+            }
+          },
+          "watching": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sources",
+          "watching"
         ]
       },
       "AdminProduct": {
@@ -3098,6 +3317,118 @@
           "status"
         ]
       },
+      "KnowledgeSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "extracted",
+              "failed"
+            ]
+          },
+          "techniques": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeTechnique"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "status",
+          "techniques"
+        ]
+      },
+      "KnowledgeSyncResponse": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "added"
+        ]
+      },
+      "KnowledgeTechnique": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "pillar": {
+            "$ref": "#/components/schemas/Pillar"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "cautions": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "protocolId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "pillar",
+          "summary",
+          "steps",
+          "evidence",
+          "cautions",
+          "quote",
+          "link",
+          "status"
+        ]
+      },
       "LeaveWaitlistRequest": {
         "type": "object",
         "properties": {
@@ -3444,6 +3775,18 @@
           "expiresAt"
         ]
       },
+      "Pillar": {
+        "type": "string",
+        "enum": [
+          "fuel",
+          "rhythm",
+          "recovery",
+          "mind",
+          "movement",
+          "environment",
+          "supplements"
+        ]
+      },
       "ProductRecommendation": {
         "type": "object",
         "properties": {
@@ -3562,6 +3905,22 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "title",
+              "url"
+            ]
           }
         },
         "required": [
@@ -3648,6 +4007,50 @@
           "calories",
           "macros",
           "reasoning"
+        ]
+      },
+      "ReviewTechniqueRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "decision": {
+                "type": "string",
+                "const": "approve"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "steps": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "decision": {
+                "type": "string",
+                "const": "reject"
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          }
         ]
       },
       "ScreenTimeSample": {

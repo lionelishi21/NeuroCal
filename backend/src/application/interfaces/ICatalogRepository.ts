@@ -12,7 +12,9 @@ export interface ICatalogRepository {
   hashes(): Promise<{ protocols: Map<string, string>; products: Map<string, string> }>;
   upsertProtocols(items: Embedded<Protocol>[]): Promise<void>;
   upsertProducts(items: Embedded<Product>[]): Promise<void>;
-  /** Removes catalog entries no longer in the source list. Products added by an admin are kept. */
+  /** A routine approved in the knowledge pipeline; kept by `retain`, unlike routines from the repo. */
+  addProtocol(protocol: Embedded<Protocol>): Promise<void>;
+  /** Removes catalog entries no longer in the source list. Products added by an admin and approved routines are kept. */
   retain(ids: { protocols: string[]; products: string[] }): Promise<void>;
   nearestProtocols(embedding: number[], limit: number): Promise<{ item: Protocol; similarity: number }[]>;
   /**

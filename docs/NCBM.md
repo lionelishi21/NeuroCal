@@ -146,7 +146,7 @@ flowchart LR
 | Weight: goal, smoothed trend, pace, projected date | Built |
 | Environment: air, water, light, noise, EMF | Not started. Air quality from a public API by location first; water by postcode; light and noise from the phone's sensors |
 | Shopper: review a typed or photographed shopping list, with swaps and gadget picks | Built. Gadgets come from the catalog by rule (air fryer, water filter, ice cream maker, blender), with your affiliate links; a device scraper isn't planned |
-| Knowledge pipeline (below) | Not started |
+| Knowledge pipeline (below) | Built |
 | Levels (below) | Built |
 
 ## 7. The knowledge pipeline
@@ -164,6 +164,8 @@ flowchart LR
 ```
 
 Nothing reaches users without a person approving it. Every protocol keeps a link to its source video and timestamp, so people can hear it in the expert's own words.
+
+**As built.** YouTube only gives captions to a channel's own owner, so the monthly job (the 1st of each month, with `YOUTUBE_API_KEY`) lists new uploads on the watched channels (Dave Asprey's by default, `KNOWLEDGE_CHANNELS` to change) and the admin pastes the transcript on the admin Knowledge page (YouTube's "Show transcript"). Claude Haiku takes out up to 12 techniques, each with its pillar, steps, the evidence the speaker names, cautions and a quote with its timestamp. Transcripts are read once and not stored. An approved technique, optionally edited, becomes a routine tagged by its pillar, kept through catalog syncs, and shown with a link to its moment in the video.
 
 ## 8. Levels (built)
 

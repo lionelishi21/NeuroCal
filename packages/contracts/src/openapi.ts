@@ -73,6 +73,19 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",
   },
   getPantry: { summary: "What's in your kitchen" },
+  getAdminKnowledge: { summary: "Videos and techniques for review", description: "Admins only. Newest first, each video with the techniques taken from its transcript and their review status." },
+  addKnowledgeSource: {
+    summary: "Add a video or episode",
+    description: "Admins only. With a transcript, techniques are taken from it at once (Claude, schema-checked); without one, it waits in the list. Transcripts aren't stored.",
+    status: 201,
+  },
+  addKnowledgeTranscript: { summary: "Add a transcript to a video in the list", description: "Admins only. Takes techniques from it for review.", params: { id: "The video's id." } },
+  reviewTechnique: {
+    summary: "Approve or reject a technique",
+    description: "Admins only. Approving adds it to the catalog as a routine (optionally edited), tagged by pillar and linked to the moment in the video; it is then matched to people's weak points.",
+    params: { id: "The technique's id." },
+  },
+  syncKnowledge: { summary: "Check watched channels for new videos now", description: "Admins only. Needs YOUTUBE_API_KEY; titles and links only." },
   reviewShoppingList: {
     summary: "Review a shopping list",
     description: "Send the list as JSON `text`, or a photo of a written list, receipt or shopping app as multipart `photo`. Each item is graded (whole, processed, ultra-processed) and marked keep, swap (with a cleaner choice) or limit. Kitchen devices are suggested only when the list shows a swap they make easy, from enabled catalog products. Nothing is saved.",

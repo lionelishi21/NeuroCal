@@ -40,6 +40,8 @@ import type { StackItem, StackTiming } from "../../domain/stack";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../../application/interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../../application/interfaces/IExerciseRepository";
 import type { IPantryRepository, PantryItem } from "../../application/interfaces/IPantry";
+import type { IKnowledgeRepository, NewTechnique } from "../../application/interfaces/IKnowledge";
+import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
@@ -48,6 +50,8 @@ import type { Database } from "./client";
 import {
   brainChecks,
   exercises,
+  knowledgeSources,
+  knowledgeTechniques,
   pantryItems,
   checkIns,
   focusScores,
@@ -802,3 +806,89 @@ export class DrizzlePantryRepository implements IPantryRepository {
     return gone.length > 0;
   }
 }
+
+export class DrizzleKnowledgeRepository implements IKnowledgeRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toSource(r: typeof knowledgeSources.$inferSelect): KnowledgeSource {
+    return {
+      id: r.id,
+      url: r.url,
+      title: r.title,
+      ...(r.channel ? { channel: r.channel } : {}),
+      ...(r.publishedAt ? { publishedAt: r.publishedAt } : {}),
+      status: r.status,
+      addedAt: r.addedAt,
+    };
+  }
+
+  private static toTechnique(r: typeof knowledgeTechniques.$inferSelect): Technique {
+    return {
+      id: r.id,
+      sourceId: r.sourceId,
+      title: r.title,
+      pillar: r.pillar,
+      summary: r.summary,
+      steps: r.steps,
+      evidence: r.evidence,
+      cautions: r.cautions,
+      quote: r.quote,
+      ...(r.timestampSeconds === null ? {} : { timestampSeconds: r.timestampSeconds }),
+      status: r.status,
+      ...(r.protocolId ? { protocolId: r.protocolId } : {}),
+    };
+  }
+
+  async list() {
+    const sources = await this.db.select().from(knowledgeSources).orderBy(desc(knowledgeSources.addedAt));
+    const techniques = await this.db.select().from(knowledgeTechniques).orderBy(asc(knowledgeTechniques.createdAt));
+    return sources.map((s) => ({
+      source: DrizzleKnowledgeRepository.toSource(s),
+      techniques: techniques.filter((t) => t.sourceId === s.id).map(DrizzleKnowledgeRepository.toTechnique),
+    }));
+  }
+
+  async getSource(id: string) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+    const [row] = await this.db.select().from(knowledgeSources).where(eq(knowledgeSources.id, id));
+    return row ? DrizzleKnowledgeRepository.toSource(row) : null;
+  }
+
+  async addSource(s: Omit<KnowledgeSource, "id" | "addedAt" | "status"> & { status?: SourceStatus }) {
+    await this.db
+      .insert(knowledgeSources)
+      .values({ url: s.url, title: s.title, channel: s.channel ?? null, publishedAt: s.publishedAt ?? null, ...(s.status ? { status: s.status } : {}) })
+      .onConflictDoNothing({ target: knowledgeSources.url });
+    const [row] = await this.db.select().from(knowledgeSources).where(eq(knowledgeSources.url, s.url));
+    return DrizzleKnowledgeRepository.toSource(row!);
+  }
+
+  async setSourceStatus(id: string, status: SourceStatus) {
+    await this.db.update(knowledgeSources).set({ status }).where(eq(knowledgeSources.id, id));
+  }
+
+  async addTechniques(sourceId: string, items: NewTechnique[]) {
+    if (items.length === 0) return [];
+    const rows = await this.db
+      .insert(knowledgeTechniques)
+      .values(items.map(({ timestampSeconds, ...t }) => ({ ...t, sourceId, timestampSeconds: timestampSeconds ?? null })))
+      .returning();
+    return rows.map(DrizzleKnowledgeRepository.toTechnique);
+  }
+
+  async getTechnique(id: string) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+    const [row] = await this.db.select().from(knowledgeTechniques).where(eq(knowledgeTechniques.id, id));
+    return row ? DrizzleKnowledgeRepository.toTechnique(row) : null;
+  }
+
+  async updateTechnique(id: string, patch: Partial<Pick<Technique, "title" | "summary" | "steps">> & { status: TechniqueStatus; protocolId?: string }) {
+    const [row] = await this.db
+      .update(knowledgeTechniques)
+      .set({ ...patch, reviewedAt: new Date() })
+      .where(eq(knowledgeTechniques.id, id))
+      .returning();
+    return DrizzleKnowledgeRepository.toTechnique(row!);
+  }
+}
+

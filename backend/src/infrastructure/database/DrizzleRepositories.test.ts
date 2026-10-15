@@ -11,6 +11,7 @@ import {
   DrizzleBrainCheckRepository,
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
+  DrizzleKnowledgeRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -304,6 +305,27 @@ describe("DrizzleStackRepository", () => {
     // Kept for the account-deletion test below.
     await repo.setTaken(alice, item.id, "2026-10-03", true);
     expect(await repo.delete(bob, item.id)).toBe(false);
+  });
+});
+
+describe("DrizzleKnowledgeRepository", () => {
+  it("keeps one source per link, its techniques, and their review", async () => {
+    const repo = new DrizzleKnowledgeRepository(db);
+    const source = await repo.addSource({ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Your second heart", channel: "Dave Asprey" });
+    expect(await repo.addSource({ url: source.url, title: "Again" })).toMatchObject({ id: source.id, title: "Your second heart", status: "queued" });
+    const [t] = await repo.addTechniques(source.id, [
+      { title: "Calf raises", pillar: "movement", summary: "s", steps: ["a"], evidence: "e", cautions: "", quote: "q", timestampSeconds: 90 },
+    ]);
+    await repo.setSourceStatus(source.id, "extracted");
+    expect(await repo.updateTechnique(t!.id, { status: "approved", protocolId: "knowledge-x", title: "Ten calf raises" })).toMatchObject({
+      status: "approved",
+      title: "Ten calf raises",
+      timestampSeconds: 90,
+    });
+    const [listed] = await repo.list();
+    expect(listed!.source.status).toBe("extracted");
+    expect(listed!.techniques).toHaveLength(1);
+    expect(await repo.getTechnique("not-an-id")).toBeNull();
   });
 });
 

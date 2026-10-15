@@ -205,8 +205,16 @@ export class NeuroCalStack extends Stack {
       targets: [new targets.LambdaFunction(trialReminders, { retryAttempts: 0 })],
     });
 
+    // Knowledge pipeline (docs/NCBM.md §7): on the 1st of each month, new uploads on the watched YouTube
+    // channels go into the admin Knowledge list. Titles and links only; nothing reaches users until approved.
+    const knowledgeSync = fn("KnowledgeSyncFunction", "knowledgeSyncLambda.ts", { timeout: Duration.minutes(2) });
+    new events.Rule(this, "KnowledgeSync", {
+      schedule: events.Schedule.cron({ minute: "0", hour: "9", day: "1" }),
+      targets: [new targets.LambdaFunction(knowledgeSync, { retryAttempts: 1 })],
+    });
+
     // Everything but migrations connects through the proxy when there is one (backend secrets.ts reads DB_HOST).
-    if (proxy) for (const f of [api, catalogSync, trialReminders]) f.addEnvironment("DB_HOST", proxy.endpoint);
+    if (proxy) for (const f of [api, catalogSync, trialReminders, knowledgeSync]) f.addEnvironment("DB_HOST", proxy.endpoint);
 
     // Auth: Cognito user pool; API Gateway verifies the JWT before the Lambda runs (§10).
     const userPool = new cognito.UserPool(this, "Users", {

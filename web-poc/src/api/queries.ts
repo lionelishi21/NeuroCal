@@ -2,6 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useSyncExternalStore } from "react";
 import { z } from "zod";
 import {
+  AdminKnowledge,
+  type AddKnowledgeSourceRequest,
+  KnowledgeSource,
+  KnowledgeSyncResponse,
+  KnowledgeTechnique,
+  type ReviewTechniqueRequest,
   AdminProduct,
   AdminProductList,
   AdminWaitlist,
@@ -42,6 +48,7 @@ export const keys = {
   protocols: ["recommendations", "protocols"] as const,
   adminProducts: ["admin", "products"] as const,
   adminWaitlist: ["admin", "waitlist"] as const,
+  adminKnowledge: ["admin", "knowledge"] as const,
 };
 
 export function useProfile() {
@@ -311,3 +318,49 @@ export function useLeaveWaitlist() {
     mutationFn: (token: string) => request("/waitlist/unsubscribe", LeaveWaitlistResponse, { method: "POST", body: JSON.stringify({ token }) }),
   });
 }
+
+/** Videos and the techniques taken from them, for admins (the knowledge pipeline, docs/NCBM.md §7). */
+export function useAdminKnowledge() {
+  return useQuery({ queryKey: keys.adminKnowledge, queryFn: () => request("/admin/knowledge", AdminKnowledge), retry: false });
+}
+
+/** Knowledge edits can add routines to "What could help", so both lists refresh. */
+function useInvalidateKnowledge() {
+  const client = useQueryClient();
+  return () => Promise.all([client.invalidateQueries({ queryKey: keys.adminKnowledge }), client.invalidateQueries({ queryKey: keys.protocols })]);
+}
+
+export function useAddKnowledgeSource() {
+  const invalidate = useInvalidateKnowledge();
+  return useMutation({
+    mutationFn: (source: AddKnowledgeSourceRequest) => request("/admin/knowledge/sources", KnowledgeSource, { method: "POST", body: JSON.stringify(source) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAddTranscript() {
+  const invalidate = useInvalidateKnowledge();
+  return useMutation({
+    mutationFn: ({ id, transcript }: { id: string; transcript: string }) =>
+      request(`/admin/knowledge/sources/${encodeURIComponent(id)}/transcript`, KnowledgeSource, { method: "POST", body: JSON.stringify({ transcript }) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReviewTechnique() {
+  const invalidate = useInvalidateKnowledge();
+  return useMutation({
+    mutationFn: ({ id, review }: { id: string; review: ReviewTechniqueRequest }) =>
+      request(`/admin/knowledge/techniques/${encodeURIComponent(id)}`, KnowledgeTechnique, { method: "PUT", body: JSON.stringify(review) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSyncKnowledge() {
+  const invalidate = useInvalidateKnowledge();
+  return useMutation({
+    mutationFn: () => request("/admin/knowledge/sync", KnowledgeSyncResponse, { method: "POST" }),
+    onSuccess: invalidate,
+  });
+}
+

@@ -5,6 +5,8 @@ import type { BrainCheckResult } from "../../domain/brainCheck";
 import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
+import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
+import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
 import { pantryKey } from "../../domain/pantry";
@@ -300,6 +302,7 @@ export class InMemoryCatalog implements ICatalogRepository {
   /** Admin settings per product id; survive `upsertProducts` like the real columns do. */
   readonly settings = new Map<string, ProductSettings>();
   readonly adminIds = new Set<string>();
+  readonly knowledgeIds = new Set<string>();
 
   async hashes() {
     const hashes = <T>(m: Map<string, Embedded<T>>, skip: Set<string>) =>
@@ -312,8 +315,12 @@ export class InMemoryCatalog implements ICatalogRepository {
   async upsertProducts(items: Embedded<Product>[]) {
     for (const e of items) this.products.set(e.item.id, e);
   }
+  async addProtocol(e: Embedded<Protocol>) {
+    this.protocols.set(e.item.id, e);
+    this.knowledgeIds.add(e.item.id);
+  }
   async retain(ids: { protocols: string[]; products: string[] }) {
-    for (const id of this.protocols.keys()) if (!ids.protocols.includes(id)) this.protocols.delete(id);
+    for (const id of this.protocols.keys()) if (!ids.protocols.includes(id) && !this.knowledgeIds.has(id)) this.protocols.delete(id);
     for (const id of this.products.keys()) if (!ids.products.includes(id) && !this.adminIds.has(id)) this.products.delete(id);
   }
   private shown(item: Product): Product {
@@ -640,6 +647,68 @@ export class FakeShoppingReviewer implements IShoppingListReviewer {
           : { name, processing: "whole" as const, verdict: "keep" as const, reason: "A whole food." },
       ),
     };
+  }
+}
+
+export class InMemoryKnowledge implements IKnowledgeRepository {
+  readonly sources: KnowledgeSource[] = [];
+  readonly techniques: Technique[] = [];
+  async list() {
+    return [...this.sources].reverse().map((source) => ({ source, techniques: this.techniques.filter((t) => t.sourceId === source.id) }));
+  }
+  async getSource(id: string) {
+    return this.sources.find((s) => s.id === id) ?? null;
+  }
+  async addSource(s: Omit<KnowledgeSource, "id" | "addedAt" | "status"> & { status?: SourceStatus }) {
+    const known = this.sources.find((x) => x.url === s.url);
+    if (known) return known;
+    const source: KnowledgeSource = { ...s, id: `s${this.sources.length + 1}`, status: s.status ?? "queued", addedAt: new Date() };
+    this.sources.push(source);
+    return source;
+  }
+  async setSourceStatus(id: string, status: SourceStatus) {
+    const s = this.sources.find((x) => x.id === id);
+    if (s) s.status = status;
+  }
+  async addTechniques(sourceId: string, items: NewTechnique[]) {
+    const added = items.map((t, i) => ({ ...t, id: `t${this.techniques.length + i + 1}`, sourceId, status: "pending" as const }));
+    this.techniques.push(...added);
+    return added;
+  }
+  async getTechnique(id: string) {
+    return this.techniques.find((t) => t.id === id) ?? null;
+  }
+  async updateTechnique(id: string, patch: Partial<Pick<Technique, "title" | "summary" | "steps">> & { status: TechniqueStatus; protocolId?: string }) {
+    const t = this.techniques.find((x) => x.id === id)!;
+    Object.assign(t, patch);
+    return t;
+  }
+}
+
+/** One technique per transcript, titled after the source. */
+export class FakeTechniqueExtractor implements ITechniqueExtractor {
+  readonly calls: { title: string; transcript: string }[] = [];
+  async extract(input: { title: string; transcript: string }): Promise<NewTechnique[]> {
+    this.calls.push(input);
+    return [
+      {
+        title: "Calf raises after meals",
+        pillar: "movement",
+        summary: "Ten slow calf raises after eating help push blood back up from the legs.",
+        steps: ["Stand up after the meal.", "Rise onto your toes and lower slowly, ten times."],
+        evidence: "The speaker cites research on calf muscle pumps.",
+        cautions: "",
+        quote: "your calf is your second heart",
+        timestampSeconds: 90,
+      },
+    ];
+  }
+}
+
+export class FakeVideoFeed implements IVideoFeed {
+  constructor(private readonly videos: { url: string; title: string; channel: string; publishedAt: Date }[] = []) {}
+  async latest(_channelId: string) {
+    return this.videos;
   }
 }
 

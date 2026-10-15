@@ -50,6 +50,10 @@ describe("NeuroCalStack", () => {
     dev.resourceCountIs("AWS::CloudWatch::Alarm", 0);
   });
 
+  it("checks watched YouTube channels for new videos on the 1st of each month", () => {
+    dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "cron(0 9 1 * ? *)" });
+  });
+
   it("keeps a dev database awake when asked", () => {
     const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
     const warm = new NeuroCalStack(app, "NeuroCal-warm", { stage: "dev", webOrigins: ["https://app.example.com"], warmDatabase: true });
@@ -63,7 +67,7 @@ describe("NeuroCalStack", () => {
     const functions = dev.findResources("AWS::Lambda::Function", {
       Properties: { Environment: { Variables: { APP_SECRET_ARN: Match.anyValue() } } },
     });
-    expect(Object.keys(functions)).toHaveLength(4); // API, migrations, catalog sync, trial reminders
+    expect(Object.keys(functions)).toHaveLength(5); // API, migrations, catalog sync, trial reminders, knowledge sync
     for (const f of Object.values(functions)) {
       const vars = (f as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment.Variables;
       expect(Object.keys(vars)).not.toEqual(expect.arrayContaining(["OPENAI_API_KEY"]));

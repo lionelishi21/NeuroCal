@@ -84,4 +84,22 @@ describe("DrizzleCatalogRepository (pgvector)", () => {
     expect(await repo.removeAdminProduct("glasses")).toBe(false);
     expect(await repo.removeAdminProduct("admin-adk")).toBe(true);
   });
+
+  it("keeps routines approved in the knowledge pipeline through a sync, with their source", async () => {
+    const repo = new DrizzleCatalogRepository(db);
+    const embedder = new FakeEmbedder();
+    const routine = {
+      id: "knowledge-calf-raises",
+      title: "Do ten calf raises after meals",
+      summary: "Dave says the calf muscle pumps blood back up from the legs.",
+      steps: ["Stand up.", "Rise onto your toes ten times."],
+      tags: ["movement", "circulation"],
+      source: { title: "Your second heart", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90s" },
+    };
+    const [vector] = await embedder.embed([routine.summary]);
+    await repo.addProtocol({ item: routine, embedding: vector!, contentHash: "h" });
+    await new SyncCatalogUseCase(repo, embedder).execute({ protocols: PROTOCOLS.slice(0, 1), products: [] });
+    const found = await repo.nearestProtocols(vector!, 5);
+    expect(found.map((f) => f.item)).toContainEqual(routine);
+  });
 });

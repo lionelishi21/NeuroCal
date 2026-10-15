@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -26,6 +26,8 @@ import {
   InMemoryPantry,
   FakePantryRecipes,
   FakeShoppingReviewer,
+  FakeTechniqueExtractor,
+  InMemoryKnowledge,
   FakeLabelReader,
   FakeFoodLabelReader,
   FakeProductDatabase,
@@ -134,6 +136,10 @@ beforeEach(async () => {
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     shoppingReviewer: new FakeShoppingReviewer(),
+    knowledge: new InMemoryKnowledge(),
+    techniqueExtractor: new FakeTechniqueExtractor(),
+    videoFeed: null,
+    knowledgeChannels: [],
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -504,6 +510,26 @@ describe("API routes", () => {
     // The catalog fixtures have no air fryer enabled, so no device; the rule still found the reason.
     expect(body.devices.every((d) => d.because.includes("Chicken nuggets"))).toBe(true);
     expect((await call("POST", "/shopping/review", { text: "   " })).status).toBe(400);
+  });
+
+  it("admin knowledge: add a video with its transcript, then approve a technique into the catalog", async () => {
+    const asAdmin = (method: string, path: string, body?: unknown) => call(method, path, body, {}, true);
+    expect((await call("GET", "/admin/knowledge")).status).toBe(403);
+
+    const transcript = "0:00 Welcome.\n1:30 Your calf is your second heart. " + "More talk. ".repeat(60);
+    const added = await asAdmin("POST", "/admin/knowledge/sources", { url: "https://youtu.be/dQw4w9WgXcQ", title: "Your second heart", transcript });
+    expect(added.status).toBe(201);
+    const source = KnowledgeSource.parse(added.body);
+    expect(source.status).toBe("extracted");
+    const [technique] = source.techniques;
+    expect(technique).toMatchObject({ status: "pending", link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90s" });
+
+    const approved = await asAdmin("PUT", `/admin/knowledge/techniques/${technique!.id}`, { decision: "approve" });
+    expect(approved.status).toBe(200);
+    expect(approved.body).toMatchObject({ status: "approved", protocolId: `knowledge-${technique!.id}` });
+    expect(AdminKnowledge.parse((await asAdmin("GET", "/admin/knowledge")).body)).toMatchObject({ watching: [] });
+    // Without a YouTube key, checking channels says what's missing.
+    expect((await asAdmin("POST", "/admin/knowledge/sync")).status).toBe(400);
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {

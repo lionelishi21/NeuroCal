@@ -82,6 +82,7 @@ export const toProtocols = (m: ProtocolMatches): C.ProtocolsResponse => ({
     summary: item.summary,
     steps: item.steps,
     match: match(similarity),
+    ...(item.source ? { source: item.source } : {}),
   })),
   products: m.products.map(toProductRecommendation),
 });

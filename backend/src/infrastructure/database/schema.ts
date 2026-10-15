@@ -4,6 +4,7 @@
  */
 import { sql } from "drizzle-orm";
 import { EXERCISE_KINDS, INTENSITIES } from "../../domain/exercise";
+import { PILLARS } from "../../domain/knowledge";
 import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
 import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
@@ -260,6 +261,41 @@ export const pantryItems = pgTable(
   (t) => [unique("pantry_items_user_key").on(t.userId, t.key)],
 );
 
+/** Videos and episodes for the knowledge pipeline (docs/NCBM.md §7). Transcripts aren't stored. */
+export const knowledgeSources = pgTable("knowledge_sources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: text("url").notNull().unique(),
+  title: text("title").notNull(),
+  channel: text("channel"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  status: text("status", { enum: ["queued", "extracted", "failed"] }).notNull().default("queued"),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Techniques taken from a source, waiting for a person to approve or reject them. */
+export const knowledgeTechniques = pgTable(
+  "knowledge_techniques",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => knowledgeSources.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    pillar: text("pillar", { enum: PILLARS }).notNull(),
+    summary: text("summary").notNull(),
+    steps: text("steps").array().notNull(),
+    evidence: text("evidence").notNull(),
+    cautions: text("cautions").notNull(),
+    quote: text("quote").notNull(),
+    timestampSeconds: integer("timestamp_seconds"),
+    status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+    protocolId: text("protocol_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => [index("knowledge_techniques_source_idx").on(t.sourceId)],
+);
+
 /** Supplements someone takes. Ingredients are kept as read from the label. */
 export const stackItems = pgTable(
   "stack_items",
@@ -364,6 +400,10 @@ export const protocols = pgTable(
     tags: text("tags").array().notNull(),
     embedding: embedding(),
     contentHash: text("content_hash").notNull(),
+    /** "catalog": from the repo, replaced by catalog syncs; "knowledge": approved in the knowledge pipeline, kept. */
+    managedBy: text("managed_by", { enum: ["catalog", "knowledge"] }).notNull().default("catalog"),
+    sourceTitle: text("source_title"),
+    sourceUrl: text("source_url"),
     updatedAt: timestamps.updatedAt,
   },
   (t) => [index("protocols_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],

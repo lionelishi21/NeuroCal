@@ -337,6 +337,8 @@ export const ProtocolRecommendation = z.object({
   steps: z.array(z.string().min(1)).min(1),
   /** 0–1 similarity to the user's weak points. */
   match: z.number().min(0).max(1),
+  /** For routines from the knowledge pipeline: the video, linked to the moment it was said. */
+  source: z.object({ title: z.string(), url: z.url() }).optional(),
 });
 export type ProtocolRecommendation = z.infer<typeof ProtocolRecommendation>;
 
@@ -589,6 +591,74 @@ export type PantryRecipe = z.infer<typeof PantryRecipe>;
 
 export const PantryRecipesResponse = z.object({ recipes: z.array(PantryRecipe) });
 export type PantryRecipesResponse = z.infer<typeof PantryRecipesResponse>;
+
+export const Pillar = z.enum(["fuel", "rhythm", "recovery", "mind", "movement", "environment", "supplements"]);
+
+/** A technique taken from a talk, waiting for review on the admin Knowledge screen (docs/NCBM.md §7). */
+export const KnowledgeTechnique = z.object({
+  id: z.string(),
+  title: z.string(),
+  pillar: Pillar,
+  summary: z.string(),
+  steps: z.array(z.string()),
+  evidence: z.string(),
+  cautions: z.string(),
+  quote: z.string(),
+  /** The video at the moment it was said, when known. */
+  link: z.string(),
+  status: z.enum(["pending", "approved", "rejected"]),
+  /** The routine it became, once approved. */
+  protocolId: z.string().optional(),
+});
+export type KnowledgeTechnique = z.infer<typeof KnowledgeTechnique>;
+
+export const KnowledgeSource = z.object({
+  id: z.string(),
+  url: z.string(),
+  title: z.string(),
+  channel: z.string().optional(),
+  publishedAt: IsoDateTime.optional(),
+  /** queued: waiting for a transcript; extracted: techniques below; failed: try the transcript again. */
+  status: z.enum(["queued", "extracted", "failed"]),
+  techniques: z.array(KnowledgeTechnique),
+});
+export type KnowledgeSource = z.infer<typeof KnowledgeSource>;
+
+export const AdminKnowledge = z.object({
+  /** Newest first. */
+  sources: z.array(KnowledgeSource),
+  /** Channels checked for new videos each month; empty without a YouTube API key. */
+  watching: z.array(z.string()),
+});
+export type AdminKnowledge = z.infer<typeof AdminKnowledge>;
+
+const Transcript = z.string().min(500, "Paste the whole transcript.").max(150_000, "Split the transcript in two.");
+
+export const AddKnowledgeSourceRequest = z.object({
+  url: z.url(),
+  title: z.string().min(1).max(200),
+  /** Optional: add it now, or later from the list. */
+  transcript: Transcript.optional(),
+});
+export type AddKnowledgeSourceRequest = z.infer<typeof AddKnowledgeSourceRequest>;
+
+export const AddTranscriptRequest = z.object({ transcript: Transcript });
+export type AddTranscriptRequest = z.infer<typeof AddTranscriptRequest>;
+
+export const ReviewTechniqueRequest = z.discriminatedUnion("decision", [
+  z.object({
+    decision: z.literal("approve"),
+    /** Edits before it goes into the catalog. */
+    title: z.string().max(120).optional(),
+    summary: z.string().max(500).optional(),
+    steps: z.array(z.string().max(300)).max(6).optional(),
+  }),
+  z.object({ decision: z.literal("reject") }),
+]);
+export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
+
+export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
+export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
 /** A typed or pasted list; send a photo of the list as multipart `photo` instead. */
 export const ShoppingReviewRequest = z.object({ text: z.string().min(1).max(4000) });
@@ -921,6 +991,14 @@ export const endpoints = {
   deleteAdminProduct: { method: "DELETE", path: "/admin/products/:id" },
   ingestSleep: { method: "POST", path: "/telemetry/sleep", body: IngestSleepRequest, response: IngestResponse },
   ingestScreenTime: { method: "POST", path: "/telemetry/screen-time", body: IngestScreenTimeRequest, response: IngestResponse },
+  /** Admin only: videos and the techniques taken from them, for review. */
+  getAdminKnowledge: { method: "GET", path: "/admin/knowledge", response: AdminKnowledge },
+  addKnowledgeSource: { method: "POST", path: "/admin/knowledge/sources", body: AddKnowledgeSourceRequest, response: KnowledgeSource },
+  addKnowledgeTranscript: { method: "POST", path: "/admin/knowledge/sources/:id/transcript", body: AddTranscriptRequest, response: KnowledgeSource },
+  /** Approve (into the catalog as a routine, optionally edited) or reject. */
+  reviewTechnique: { method: "PUT", path: "/admin/knowledge/techniques/:id", body: ReviewTechniqueRequest, response: KnowledgeTechnique },
+  /** Checks the watched channels for new videos now, instead of waiting for the monthly run. */
+  syncKnowledge: { method: "POST", path: "/admin/knowledge/sync", response: KnowledgeSyncResponse },
   /** Admin only (403 otherwise): the waitlist at a glance. */
   getAdminWaitlist: { method: "GET", path: "/admin/waitlist", response: AdminWaitlist },
   /** Public (no sign-in): join the list to be emailed when the app is ready. */
