@@ -1,0 +1,1 @@
+ALTER TABLE "focus_scores" ADD COLUMN "movement_component" real;

@@ -134,6 +134,13 @@
       "when": 1792013076769,
       "tag": "0018_panoramic_sally_floyd",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792086962045,
+      "tag": "0019_workable_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

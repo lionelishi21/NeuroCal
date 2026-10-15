@@ -167,7 +167,7 @@ class AnalyzeMealResult {
 }
 
 class FocusComponents {
-  const FocusComponents({this.sleep, this.timing, this.glycemic, this.stress});
+  const FocusComponents({this.sleep, this.timing, this.glycemic, this.stress, this.movement});
 
   /// 0–1 each; null when there was no data for it today.
   final double? sleep;
@@ -175,16 +175,20 @@ class FocusComponents {
   final double? glycemic;
   final double? stress;
 
+  /// Yesterday's exercise (model v1); null for people who don't log exercise.
+  final double? movement;
+
   factory FocusComponents.fromJson(Map<String, dynamic> j) => FocusComponents(
     sleep: (j['sleep'] as num?)?.toDouble(),
     timing: (j['timing'] as num?)?.toDouble(),
     glycemic: (j['glycemic'] as num?)?.toDouble(),
     stress: (j['stress'] as num?)?.toDouble(),
+    movement: (j['movement'] as num?)?.toDouble(),
   );
 }
 
 class FocusScore {
-  const FocusScore({required this.date, required this.score, required this.components, required this.explanation});
+  const FocusScore({required this.date, required this.score, required this.components, required this.explanation, this.tuned = false});
 
   final String date;
 
@@ -193,11 +197,15 @@ class FocusScore {
   final FocusComponents components;
   final String explanation;
 
+  /// The weights are tuned to this person's Brain speed checks.
+  final bool tuned;
+
   factory FocusScore.fromJson(Map<String, dynamic> j) => FocusScore(
     date: j['date'] as String,
     score: (j['score'] as num?)?.toInt(),
     components: FocusComponents.fromJson(j['components'] as Map<String, dynamic>),
     explanation: j['explanation'] as String,
+    tuned: j['tuned'] == true,
   );
 }
 

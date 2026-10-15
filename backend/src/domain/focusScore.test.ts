@@ -3,7 +3,12 @@ import {
   computeFocusComponents,
   fallbackExplanation,
   focusScoreFrom,
+  FOCUS_WEIGHTS,
+  MIN_TUNING_DAYS,
   glycemicComponent,
+  keptFast,
+  movementComponent,
+  personalWeights,
   sleepComponent,
   stressComponent,
   timingComponent,
@@ -77,13 +82,15 @@ describe("stressComponent", () => {
 });
 
 describe("focusScoreFrom", () => {
-  it("weights sleep at 40% and the rest at 20%", () => {
-    expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1 })).toBe(80);
+  it("weights sleep at 35%, timing 20%, food, stress and movement 15% each", () => {
+    // Movement has no data, so the other four are renormalised over 0.85: 100 × 0.675 / 0.85.
+    expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1, movement: null })).toBe(79);
+    expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1, movement: 1 })).toBe(83);
   });
 
   it("renormalises over the components that have data", () => {
-    expect(focusScoreFrom({ sleep: 0.5, timing: null, glycemic: null, stress: null })).toBe(50);
-    expect(focusScoreFrom({ sleep: null, timing: null, glycemic: null, stress: null })).toBeNull();
+    expect(focusScoreFrom({ sleep: 0.5, timing: null, glycemic: null, stress: null, movement: null })).toBe(50);
+    expect(focusScoreFrom({ sleep: null, timing: null, glycemic: null, stress: null, movement: null })).toBeNull();
   });
 });
 
@@ -94,13 +101,66 @@ describe("computeFocusComponents + fallbackExplanation", () => {
       sleep: [{ start: at("2026-09-29T07:00:00Z"), end: at("2026-09-29T11:00:00Z"), source: "manual" }],
       checkIns: [checkIn(["sharp"])],
     });
-    expect(components).toEqual({ sleep: 0.5, timing: null, glycemic: null, stress: 1 });
+    expect(components).toEqual({ sleep: 0.5, timing: null, glycemic: null, stress: 1, movement: null });
     expect(fallbackExplanation(focusScoreFrom(components), components)).toBe(
       "Last night's sleep is pulling your score down the most today.",
     );
   });
 
   it("asks for data when there is none", () => {
-    expect(fallbackExplanation(null, { sleep: null, timing: null, glycemic: null, stress: null })).toMatch(/Log last night's sleep/);
+    expect(fallbackExplanation(null, { sleep: null, timing: null, glycemic: null, stress: null, movement: null })).toMatch(/Log last night's sleep/);
   });
 });
+
+describe("movementComponent (v1)", () => {
+  it("has no data for people who haven't logged exercise lately, so they aren't marked down", () => {
+    expect(movementComponent({ ...empty, previousDayExercise: [] })).toBeNull();
+  });
+
+  it("scores yesterday's exercise against 30 moderate minutes, hard counting double and light half", () => {
+    expect(movementComponent({ ...empty, logsExercise: true, previousDayExercise: [] })).toBe(0);
+    expect(movementComponent({ ...empty, logsExercise: true, previousDayExercise: [{ minutes: 15, intensity: "moderate" }] })).toBe(0.5);
+    expect(movementComponent({ ...empty, logsExercise: true, previousDayExercise: [{ minutes: 15, intensity: "hard" }] })).toBe(1);
+    expect(movementComponent({ ...empty, logsExercise: true, previousDayExercise: [{ minutes: 30, intensity: "light" }] })).toBe(0.5);
+  });
+});
+
+describe("keptFast (v1)", () => {
+  // Dinner at 19:00 Chicago (00:00Z), first meal the next day at 11:30 (16:30Z): a 16.5-hour fast.
+  const inputs = { ...empty, previousDayMeals: [meal("2026-09-29T00:00:00Z", 600)], todayMeals: [meal("2026-09-29T16:30:00Z", 400)] };
+
+  it("is true when the overnight fast reached the protocol's hours, and lifts evening timing", () => {
+    expect(keptFast({ ...inputs, fastHours: 16 })).toBe(true);
+    expect(keptFast({ ...inputs, fastHours: 23 })).toBe(false);
+    // A late dinner (21:30) costs timing points; keeping the fast to 14:00 the next day wins some back.
+    const late = { ...inputs, previousDayMeals: [meal("2026-09-29T02:30:00Z", 600)], todayMeals: [meal("2026-09-29T19:00:00Z", 400)] };
+    expect(timingComponent({ ...late, fastHours: 16 })).toBeGreaterThan(timingComponent(late)!);
+  });
+
+  it("is false with fasting off or before the first meal of the day", () => {
+    expect(keptFast(inputs)).toBe(false);
+    expect(keptFast({ ...inputs, fastHours: 16, todayMeals: [] })).toBe(false);
+  });
+});
+
+describe("personalWeights (v1)", () => {
+  const components = (sleep: number, stress: number) => ({ sleep, timing: 0.8, glycemic: 0.8, stress, movement: null });
+
+  it("keeps the standard weights until there are enough days with a Brain speed check", () => {
+    const few = Array.from({ length: MIN_TUNING_DAYS - 1 }, (_, i) => ({ components: components(i / 20, 0.5), brainScore: 50 + i }));
+    expect(personalWeights(few)).toEqual({ weights: FOCUS_WEIGHTS, tuned: false });
+  });
+
+  it("gives more weight to the input that tracks this person's reaction time, still adding up to 1", () => {
+    // Sleep rises with Brain speed; stress moves against it.
+    const days = Array.from({ length: 20 }, (_, i) => ({ components: components(i / 20, 1 - i / 20), brainScore: 50 + i }));
+    const { weights, tuned } = personalWeights(days);
+    expect(tuned).toBe(true);
+    expect(weights.sleep).toBeGreaterThan(FOCUS_WEIGHTS.sleep);
+    expect(weights.stress).toBeLessThan(FOCUS_WEIGHTS.stress);
+    // Never below half of its standard weight before renormalising.
+    expect(weights.stress).toBeGreaterThan(0);
+    expect(Object.values(weights).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 2);
+  });
+});
+

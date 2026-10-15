@@ -3,7 +3,7 @@
  * `backend/src/domain/focusScore.ts` (ARCHITECTURE §6.8) for one imagined evening,
  * so what a visitor sees move is what the app would compute.
  */
-export const WEIGHTS = { sleep: 0.4, timing: 0.2, glycemic: 0.2, stress: 0.2 } as const;
+export const WEIGHTS = { sleep: 0.35, timing: 0.2, glycemic: 0.15, stress: 0.15, movement: 0.15 } as const;
 export type Part = keyof typeof WEIGHTS;
 
 /** Feelings that lower the stress input; each one named takes a quarter off it. */
@@ -20,6 +20,8 @@ export interface Evening {
   /** Share of the day's calories from high-glycemic food, 0–1. */
   highGlycemicShare: number;
   flags: readonly string[];
+  /** Minutes of moderate exercise the day before; the app's target is 30. */
+  exercise: number;
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -36,6 +38,7 @@ export function parts(evening: Evening): Record<Part, number> {
     timing: clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(evening.screens / 120)),
     glycemic: clamp01(1 - evening.highGlycemicShare),
     stress: clamp01(1 - 0.25 * negatives.size),
+    movement: clamp01(evening.exercise / 30),
   };
 }
 

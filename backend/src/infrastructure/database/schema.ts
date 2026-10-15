@@ -340,6 +340,7 @@ export const focusScores = pgTable(
     timingComponent: real("timing_component"),
     glycemicComponent: real("glycemic_component"),
     stressComponent: real("stress_component"),
+    movementComponent: real("movement_component"),
     explanation: text("explanation").notNull(),
     modelVersion: text("model_version").notNull(),
     computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),

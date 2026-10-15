@@ -65,6 +65,7 @@ const INPUTS = [
   { title: "Evening timing", body: "How close your last meal was to bedtime. Late dinners tend to cost sleep quality.", icon: "M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z", tile: "bg-glucose-soft text-glucose-ink" },
   { title: "Glycemic load", body: "How sharply yesterday's food was likely to swing your blood sugar.", icon: "M3 17l5-6 4 3 4-7 5 6", tile: "bg-ion-soft text-ion-ink" },
   { title: "Stress", body: "From your check-ins: sharp, foggy, wired, calm and so on.", icon: "M4 12h3l2-5 3 10 2-5h6", tile: "bg-beet-soft text-beet" },
+  { title: "Movement", body: "Yesterday's exercise against 30 easy-going minutes. Counts once you start logging it.", icon: "M13 4a1.5 1.5 0 1 0 0 .01M9 20l3-6 3 3v4M7 12l3-3 4 1 3 3", tile: "bg-chlorophyll-soft text-chlorophyll" },
 ] as const;
 
 /** A sample week for the chart: night, bedtime, wake-up, last meal, minutes of screens after 22:00. */
@@ -99,8 +100,8 @@ const WEAK_POINTS = [
 const ROUTINE = ["Eat your last meal by 20:30.", "If hungry later, keep it to a protein snack under 150 kcal.", "Dim lights and switch screens to night mode after 21:00."] as const;
 
 const SCIENCE = [
-  ["One formula, the same every day", "Sleep counts for 40% of the score and the other three inputs for 20% each. Nothing is hidden or adjusted behind the scenes: try it in the demo above."],
-  ["Four inputs, shown openly", "Sleep, evening timing, glycemic load and stress each feed the score. You'll always see which one lifted or lowered it."],
+  ["One formula, shown openly", "Sleep counts for 35% of the score, evening timing for 20%, and glycemic load, stress and movement for 15% each. Try it in the demo above."],
+  ["Tuned to you, in the open", "After about two weeks of Brain speed checks, the weights shift toward what actually moves your reaction time. The app tells you when they have."],
   ["Estimates, labelled as estimates", "Photo readings and glycemic load are estimates. When we're not sure, we say \"best guess\" and let you correct it."],
   ["Patterns over single days", "One late dinner is noise. Three in a week is a pattern, and that's when we suggest a routine."],
 ] as const;
@@ -237,7 +238,7 @@ export function Landing() {
         <section id="score" className={`${wrap} flex scroll-mt-16 flex-wrap items-center gap-14 py-16 sm:py-[6.5rem]`}>
           <div className="flex flex-[1_1_23.75rem] flex-col gap-[1.125rem]">
             <p className={eyebrow}>The Focus Score</p>
-            <h2 className={heading}>0 to 100. Four inputs. No mystery.</h2>
+            <h2 className={heading}>0 to 100. Five inputs. No mystery.</h2>
             <p className="m-0 max-w-[31.25rem] text-lg leading-[1.55] text-pretty text-ink-soft">
               Every morning you get a score and a sentence on what's helping and what's dragging. You'll always see which input moved it, so you know what to change.
             </p>

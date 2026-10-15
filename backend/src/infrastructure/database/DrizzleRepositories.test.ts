@@ -224,7 +224,7 @@ describe("DrizzleFocusScoreRepository", () => {
       userId: alice,
       date: "2026-09-29",
       score: 65,
-      components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null },
+      components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null , movement: null},
       explanation: "Sleep matters most today.",
       modelVersion: "v0",
     };

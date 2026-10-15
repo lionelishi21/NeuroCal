@@ -239,6 +239,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     onCheckIn: () => widget.onCapture(Capture.checkIn),
                     onLogSleep: () => widget.onCapture(Capture.sleep),
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
+                    onLogExercise: () => widget.onCapture(Capture.exercise),
                   ),
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
@@ -488,12 +489,13 @@ class _WeekStrip extends StatelessWidget {
 
 /// The hero: the ring, a word for the score, the explanation, and the four signals behind it.
 class _FocusCard extends StatelessWidget {
-  const _FocusCard(this.focus, {required this.onCheckIn, required this.onLogSleep, required this.onLogScreens});
+  const _FocusCard(this.focus, {required this.onCheckIn, required this.onLogSleep, required this.onLogScreens, required this.onLogExercise});
 
   final FocusScore focus;
   final VoidCallback onCheckIn;
   final VoidCallback onLogSleep;
   final VoidCallback onLogScreens;
+  final VoidCallback onLogExercise;
 
   @override
   Widget build(BuildContext context) {
@@ -505,6 +507,7 @@ class _FocusCard extends StatelessWidget {
       ('Evening timing', 'Late food and screens', parts.timing, null),
       ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
       ('Stress', 'Recent check-ins', parts.stress, null),
+      ('Movement', "Yesterday's exercise", parts.movement, null),
     ];
     // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card.
     return Container(
@@ -573,13 +576,29 @@ class _FocusCard extends StatelessWidget {
                       focus.explanation,
                       style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
                     ),
+                    if (focus.tuned)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          spacing: 4,
+                          children: [
+                            Icon(Icons.tune_rounded, size: 14, color: c.synapseInk),
+                            Flexible(
+                              child: Text(
+                                'Weights tuned to your Brain speed',
+                                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: Space.s4),
-          for (var row = 0; row < 2; row++) ...[
+          for (var row = 0; row < (signals.length + 1) ~/ 2; row++) ...[
             if (row > 0) const SizedBox(height: Space.s2),
             IntrinsicHeight(
               child: Row(
@@ -602,6 +621,7 @@ class _FocusCard extends StatelessWidget {
                             run: onLogScreens,
                           ),
                           'Stress' => (label: 'Check in', name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
+                          'Movement' => (label: 'Log', name: 'Log exercise', empty: 'Counts once you log exercise', run: onLogExercise),
                           _ => null,
                         },
                       ),
@@ -640,6 +660,7 @@ class _Signal extends StatelessWidget {
       'Sleep' => (Icons.bedtime_rounded, c.sleep, c.sleepSoft),
       'Evening timing' => (Icons.nights_stay_rounded, c.ionInk, c.ionSoft),
       'Glycemic load' => (Icons.water_drop_rounded, c.glucoseInk, c.glucoseSoft),
+      'Movement' => (Icons.directions_run_rounded, c.chlorophyll, c.chlorophyllSoft),
       _ => (Icons.spa_rounded, c.synapseInk, c.synapseSoft),
     };
     return Semantics(

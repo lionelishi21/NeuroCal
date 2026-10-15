@@ -3,7 +3,9 @@ import { InvalidError } from "../../domain/errors";
 import {
   FakeExplainer,
   FixedClock,
+  InMemoryBrainChecks,
   InMemoryCheckIns,
+  InMemoryExercises,
   InMemoryFocusScores,
   InMemoryMeals,
   InMemoryProfiles,
@@ -68,6 +70,28 @@ describe("GetFocusScoreUseCase", () => {
   const build = (explainer = new FakeExplainer()) =>
     new GetFocusScoreUseCase(profiles, meals, checkIns, telemetry, scores, explainer, clock);
 
+  it("counts yesterday's exercise as movement (v1), and says when the weights are tuned to the person", async () => {
+    const exercises = new InMemoryExercises();
+    const brainChecks = new InMemoryBrainChecks();
+    await telemetry.upsertSleep("u1", [sleepNight]);
+    // 30 moderate minutes at 18:00 on the 28th in Chicago.
+    await exercises.add("u1", { kind: "walk", intensity: "moderate", minutes: 30, startedAt: new Date("2026-09-28T23:00:00Z"), kcal: 100 });
+    const useCase = new GetFocusScoreUseCase(profiles, meals, checkIns, telemetry, scores, new FakeExplainer(), clock, exercises, brainChecks);
+
+    const result = await useCase.execute({ userId: "u1" });
+    expect(result.components.movement).toBe(1);
+    expect(result.tuned).toBeUndefined();
+
+    // Three weeks of past scores with a Brain speed check each day: now the weights are tuned.
+    for (let i = 1; i <= 21; i++) {
+      const date = new Date(Date.UTC(2026, 8, 29 - i, 15)).toISOString().slice(0, 10);
+      const sleep = (i % 10) / 10;
+      await scores.put({ userId: "u1", date, score: 70, components: { sleep, timing: 0.8, glycemic: 0.8, stress: 0.8, movement: null }, explanation: "", modelVersion: "v1" });
+      await brainChecks.add("u1", { score: Math.round(50 + 40 * sleep), medianMs: 300, fastestMs: 250, lapses: 0, falseStarts: 0, trials: 12, takenAt: new Date(`${date}T15:00:00Z`), reactionTimesMs: [] });
+    }
+    expect((await useCase.execute({ userId: "u1" })).tuned).toBe(true);
+  });
+
   it("scores today from last night's sleep, yesterday's meals and check-ins", async () => {
     await telemetry.upsertSleep("u1", [sleepNight]);
     await meals.create("u1", { kind: "dinner", eatenAt: new Date("2026-09-29T02:00:00Z"), items: [{ ...item("Pasta", 800, 25, 110, 20), glycemicLoad: "high" }] }); // 21:00 on the 28th
@@ -76,8 +100,9 @@ describe("GetFocusScoreUseCase", () => {
     const result = await build().execute({ userId: "u1" });
 
     expect(result.date).toBe("2026-09-29");
-    expect(result.components).toEqual({ sleep: 0.75, timing: 1, glycemic: 0, stress: 0.75 });
-    expect(result.score).toBe(65); // 100 × (0.4·0.75 + 0.2·1 + 0.2·0 + 0.2·0.75)
+    // No exercise logged lately, so movement has no data and doesn't count against the score.
+    expect(result.components).toEqual({ sleep: 0.75, timing: 1, glycemic: 0, stress: 0.75, movement: null });
+    expect(result.score).toBe(68); // 100 × (0.35·0.75 + 0.2·1 + 0.15·0 + 0.15·0.75) / 0.85
     expect(result.explanation).toBe("Sleep is the main thing holding you back today.");
     expect(await scores.get("u1", "2026-09-29")).toEqual(result);
   });

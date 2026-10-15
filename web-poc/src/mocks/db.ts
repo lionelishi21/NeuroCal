@@ -375,6 +375,7 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       timing: "late eating and late-night screens",
       glycemic: "high-glycemic meals",
       stress: "stress and low focus",
+      movement: "too little movement",
     };
     const week = history(7).map((d) => focusScore(d.date).components);
     const weakPoints = (Object.keys(labels) as WeakPoint["component"][])
@@ -415,6 +416,13 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
         summary: "A short, structured breathing break helps you reset when you feel stressed, wired or scattered.",
         steps: ["Breathe in for four counts.", "Hold for four.", "Breathe out for four.", "Hold for four, and repeat for two minutes."],
         match: 0.74,
+      },
+      movement: {
+        id: "walk-after-meals",
+        title: "A 10-minute walk after meals",
+        summary: "A short walk after eating steadies blood sugar and gets blood moving to the brain.",
+        steps: ["Walk for 10 minutes after your largest meal.", "Add calf raises while you wait for the kettle.", "Build up to 30 minutes of movement a day."],
+        match: 0.72,
       },
     };
     const picked = (weakPoints.length ? weakPoints.map((w) => w.component) : (["sleep", "glycemic"] as const)).map((c) => library[c]);

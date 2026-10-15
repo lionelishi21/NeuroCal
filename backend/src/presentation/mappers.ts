@@ -69,6 +69,7 @@ export const toFocusScore = (f: FocusScore): C.FocusScore => ({
   score: f.score,
   components: f.components,
   explanation: f.explanation,
+  ...(f.tuned ? { tuned: true } : {}),
 });
 
 const match = (similarity: number) => Math.round(similarity * 100) / 100;

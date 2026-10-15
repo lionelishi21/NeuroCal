@@ -278,9 +278,13 @@ export const FocusScore = z.object({
     timing: Component,
     glycemic: Component,
     stress: Component,
+    /** Yesterday's exercise (model v1); null for people who don't log exercise. */
+    movement: Component.optional(),
   }),
   /** Plain-language summary of what drives the score. */
   explanation: z.string(),
+  /** The weights have been tuned to this person's Brain speed checks (model v1). */
+  tuned: z.boolean().optional(),
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 
@@ -312,7 +316,7 @@ export type HistoryDay = z.infer<typeof HistoryDay>;
 export const HistoryResponse = z.object({ days: z.array(HistoryDay) });
 export type HistoryResponse = z.infer<typeof HistoryResponse>;
 
-export const FocusComponentName = z.enum(["sleep", "timing", "glycemic", "stress"]);
+export const FocusComponentName = z.enum(["sleep", "timing", "glycemic", "stress", "movement"]);
 export type FocusComponentName = z.infer<typeof FocusComponentName>;
 
 /** A Focus Score input that averaged below par over the past week. */

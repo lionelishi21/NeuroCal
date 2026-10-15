@@ -476,7 +476,7 @@ describe("API routes", () => {
     expect((await call("GET", "/focus-score")).body).toEqual({
       date: "2026-09-29",
       score: null,
-      components: { sleep: null, timing: null, glycemic: null, stress: null },
+      components: { sleep: null, timing: null, glycemic: null, stress: null, movement: null },
       explanation: expect.stringMatching(/Log last night's sleep/),
     });
     const ingest = await call("POST", "/telemetry/sleep", {

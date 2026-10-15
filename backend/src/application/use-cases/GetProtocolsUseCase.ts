@@ -1,3 +1,4 @@
+import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
 import { frictionNeed } from "../../domain/bioProfile";
 import { NotFoundError } from "../../domain/errors";
 import { computeFocusComponents } from "../../domain/focusScore";
@@ -39,6 +40,7 @@ export class GetProtocolsUseCase {
     private readonly embedder: IEmbeddingProvider,
     private readonly clock: IClock,
     private readonly limits = { protocols: 2, products: 2 },
+    private readonly exercises?: IExerciseRepository,
   ) {}
 
   async execute(input: { userId: string }): Promise<ProtocolMatches> {
@@ -47,7 +49,7 @@ export class GetProtocolsUseCase {
 
     const dates = [localDateOf(this.clock.now(), profile.timeZone)];
     while (dates.length < LOOKBACK_DAYS) dates.unshift(previousDate(dates[0]!));
-    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry };
+    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises };
     const week = await Promise.all(dates.map(async (date) => computeFocusComponents(await loadFocusInputs(repos, profile, date))));
 
     const points = weakPoints(week);

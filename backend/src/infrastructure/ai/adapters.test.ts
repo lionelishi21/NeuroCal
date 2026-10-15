@@ -86,7 +86,7 @@ describe("OpenAiVisionProvider", () => {
 });
 
 describe("ClaudeFocusExplainer", () => {
-  const input = { score: 65, components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null } };
+  const input = { score: 65, components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null , movement: null} };
 
   it("sends only the score and components and returns the explanation", async () => {
     const parse = jest.fn(async (_params: unknown) => ({

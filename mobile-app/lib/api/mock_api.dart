@@ -181,11 +181,13 @@ class MockNeuroCalApi implements NeuroCalApi {
     const glycemic = 0.85;
     const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.wired};
     final stress = (1 - 0.25 * _flags.where(negative.contains).length).clamp(0.0, 1.0);
-    final score = (100 * (0.4 * sleep + 0.2 * timing + 0.2 * glycemic + 0.2 * stress)).round();
+    const movement = 0.5; // a 15-minute walk yesterday
+    // The API's v1 weights (backend domain/focusScore.ts).
+    final score = (100 * (0.35 * sleep + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.15 * movement)).round();
     return FocusScore(
       date: isoDate(day),
       score: score,
-      components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress),
+      components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress, movement: movement),
       explanation:
           'About 6.5 hours of sleep is holding your focus back most. A short walk in daylight before lunch can help.',
     );

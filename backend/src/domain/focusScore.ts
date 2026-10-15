@@ -8,18 +8,26 @@ import type { CheckIn, CognitiveFlag, FocusComponents, Meal, ScreenTimeSample, S
  *
  * The score for day D is a morning baseline:
  *   sleep    ← sessions that ended on D
- *   timing   ← last meal of D−1 after 21:00, screen time on the evening of D−1 (22:00–04:00)
+ *   timing   ← last meal of D−1 after 21:00, screen time on the evening of D−1 (22:00–04:00),
+ *              plus a bonus for keeping the fasting window overnight (v1)
  *   glycemic ← share of D−1 calories from high-glycemic-load items
  *   stress   ← negative flags in check-ins on D−1 and D
+ *   movement ← exercise on D−1, for people who log exercise (v1)
+ *
+ * v1 (docs/NCBM.md §3.2) adds movement and fasting, and tunes the weights to each person once
+ * their Brain speed checks show which inputs actually move their reaction time.
  */
-export const FOCUS_MODEL_VERSION = "v0";
+export const FOCUS_MODEL_VERSION = "v1";
 
 export const FOCUS_WEIGHTS: Record<keyof FocusComponents, number> = {
-  sleep: 0.4,
+  sleep: 0.35,
   timing: 0.2,
-  glycemic: 0.2,
-  stress: 0.2,
+  glycemic: 0.15,
+  stress: 0.15,
+  movement: 0.15,
 };
+
+export type FocusWeights = Record<keyof FocusComponents, number>;
 
 const TARGET_SLEEP_MIN = 480;
 const TARGET_DEEP_MIN = 90;
@@ -39,7 +47,22 @@ export interface FocusInputs {
   screenTime: ScreenTimeSample[];
   /** Check-ins on the previous day and on `date`. */
   checkIns: CheckIn[];
+  /** Exercise on the previous day. */
+  previousDayExercise?: { minutes: number; intensity: "light" | "moderate" | "hard" }[];
+  /** Any exercise logged in the week before `date`: without it, movement has no data. */
+  logsExercise?: boolean;
+  /** Hours of the fasting protocol in force; absent when fasting is off. */
+  fastHours?: number;
+  /** Meals on `date`, for the overnight fast (the first one ends it). */
+  todayMeals?: Meal[];
 }
+
+/** Exercise minutes count by effort: a hard 15 minutes is worth a moderate 30. */
+const EFFORT = { light: 0.5, moderate: 1, hard: 2 } as const;
+/** About the daily share of the 150 moderate minutes a week adults are advised to get. */
+const TARGET_MOVE_MIN = 30;
+/** Added to evening timing when the overnight fast reached the protocol's hours. */
+const FAST_KEPT_BONUS = 0.15;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -92,7 +115,22 @@ export function timingComponent(inputs: FocusInputs): number | null {
     const { hour, minute } = localTimeOf(meal.eatenAt, inputs.timeZone);
     lateEating = Math.max(lateEating, (hour - LATE_EATING_FROM_HOUR) * 60 + minute);
   }
-  return clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(lateScreen / 120));
+  return clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(lateScreen / 120) + (keptFast(inputs) ? FAST_KEPT_BONUS : 0));
+}
+
+/** The overnight fast from the last meal of D−1 to the first meal of D reached the protocol's hours. */
+export function keptFast(inputs: FocusInputs): boolean {
+  if (!inputs.fastHours || inputs.previousDayMeals.length === 0 || !inputs.todayMeals?.length) return false;
+  const last = Math.max(...inputs.previousDayMeals.map((m) => m.eatenAt.getTime()));
+  const first = Math.min(...inputs.todayMeals.map((m) => m.eatenAt.getTime()));
+  return first - last >= inputs.fastHours * 3_600_000;
+}
+
+/** Yesterday's exercise against 30 moderate minutes; null for people who haven't logged any lately. */
+export function movementComponent(inputs: FocusInputs): number | null {
+  if (!inputs.logsExercise) return null;
+  const minutes = (inputs.previousDayExercise ?? []).reduce((sum, e) => sum + e.minutes * EFFORT[e.intensity], 0);
+  return clamp01(minutes / TARGET_MOVE_MIN);
 }
 
 export function glycemicComponent(meals: Meal[]): number | null {
@@ -118,20 +156,68 @@ export function computeFocusComponents(inputs: FocusInputs): FocusComponents {
     timing: round(timingComponent(inputs)),
     glycemic: round(glycemicComponent(inputs.previousDayMeals)),
     stress: round(stressComponent(inputs.checkIns)),
+    movement: round(movementComponent(inputs)),
   };
 }
 
 /** Weighted average of the components that have data, renormalised; null when none do. */
-export function focusScoreFrom(components: FocusComponents): number | null {
+export function focusScoreFrom(components: FocusComponents, weightsFor: FocusWeights = FOCUS_WEIGHTS): number | null {
   let weighted = 0;
   let weights = 0;
-  for (const key of Object.keys(FOCUS_WEIGHTS) as (keyof FocusComponents)[]) {
+  for (const key of Object.keys(weightsFor) as (keyof FocusComponents)[]) {
     const value = components[key];
-    if (value === null) continue;
-    weighted += FOCUS_WEIGHTS[key] * value;
-    weights += FOCUS_WEIGHTS[key];
+    if (value === null || value === undefined) continue;
+    weighted += weightsFor[key] * value;
+    weights += weightsFor[key];
   }
   return weights === 0 ? null : Math.round((100 * weighted) / weights);
+}
+
+/** Days of a score and a Brain speed check together before the weights are tuned to a person. */
+export const MIN_TUNING_DAYS = 14;
+/** Days a single input needs data on before its own weight can move. */
+const MIN_INPUT_DAYS = 10;
+
+function correlation(xs: number[], ys: number[]): number | null {
+  const n = xs.length;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxy += (xs[i]! - mx) * (ys[i]! - my);
+    sxx += (xs[i]! - mx) ** 2;
+    syy += (ys[i]! - my) ** 2;
+  }
+  return sxx === 0 || syy === 0 ? null : sxy / Math.sqrt(sxx * syy);
+}
+
+/**
+ * The weights tuned to one person (NCBM §3.2): each input's weight moves with how closely it tracked
+ * their Brain speed score on the same days, by at most half either way, and the weights still add up
+ * to 1. Inputs that never vary, or have too little data, keep their standard weight. With fewer than
+ * MIN_TUNING_DAYS paired days, the standard weights.
+ */
+export function personalWeights(days: { components: FocusComponents; brainScore: number }[]): { weights: FocusWeights; tuned: boolean } {
+  if (days.length < MIN_TUNING_DAYS) return { weights: FOCUS_WEIGHTS, tuned: false };
+  const raw = { ...FOCUS_WEIGHTS };
+  let moved = false;
+  for (const key of Object.keys(FOCUS_WEIGHTS) as (keyof FocusComponents)[]) {
+    const pairs = days.filter((d) => d.components[key] !== null && d.components[key] !== undefined);
+    if (pairs.length < MIN_INPUT_DAYS) continue;
+    const r = correlation(
+      pairs.map((d) => d.components[key]!),
+      pairs.map((d) => d.brainScore),
+    );
+    if (r === null) continue;
+    raw[key] = FOCUS_WEIGHTS[key] * (1 + Math.max(-0.5, Math.min(0.5, r)));
+    moved = true;
+  }
+  if (!moved) return { weights: FOCUS_WEIGHTS, tuned: false };
+  const total = Object.values(raw).reduce((a, b) => a + b, 0);
+  const weights = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Math.round((v / total) * 1000) / 1000])) as FocusWeights;
+  return { weights, tuned: true };
 }
 
 const PHRASES: Record<keyof FocusComponents, string> = {
@@ -139,6 +225,7 @@ const PHRASES: Record<keyof FocusComponents, string> = {
   timing: "Late eating or screen time last night",
   glycemic: "Yesterday's high-glycemic food",
   stress: "How you've been feeling",
+  movement: "Too little movement yesterday",
 };
 
 /** Plain explanation used when the AI explanation is unavailable. */

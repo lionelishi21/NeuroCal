@@ -72,6 +72,8 @@ export interface ITelemetryRepository {
 export interface IFocusScoreRepository {
   get(userId: string, date: string): Promise<FocusScore | null>;
   put(score: FocusScore): Promise<void>;
+  /** Stored scores on or after `since` (YYYY-MM-DD), oldest first. */
+  listSince(userId: string, since: string): Promise<FocusScore[]>;
 }
 
 export interface IWaitlistRepository {

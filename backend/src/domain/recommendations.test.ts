@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { contentHash, needText, weakPoints } from "./recommendations";
 
-const day = (sleep: number | null, timing: number | null, glycemic: number | null, stress: number | null) => ({ sleep, timing, glycemic, stress });
+const day = (sleep: number | null, timing: number | null, glycemic: number | null, stress: number | null) => ({ sleep, timing, glycemic, stress, movement: null });
 
 describe("weakPoints", () => {
   it("returns the two weakest components below 0.75, lowest first", () => {

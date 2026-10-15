@@ -35,9 +35,10 @@ Also write contextualReasoning: two sentences, second person, plain words,
 explaining why this kind of meal fits right now. No medical claims.`;
 
 export const FOCUS_EXPLANATION_PROMPT = `You explain a daily Focus Score (0–100) to the person it belongs to.
-You get the score and four components between 0 and 1, where 1 is best and null means no data:
-sleep (last night's sleep), timing (late eating and late screen time last night),
-glycemic (yesterday's high-glycemic food) and stress (negative feelings in recent check-ins).
+You get the score and five components between 0 and 1, where 1 is best and null means no data:
+sleep (last night's sleep), timing (late eating and late screen time last night, better when
+the overnight fast was kept), glycemic (yesterday's high-glycemic food), stress (negative
+feelings in recent check-ins) and movement (yesterday's exercise).
 Write one or two short sentences, second person, plain words: name what helps and
 what holds the score back most, and one small thing to try today.
 Mention only components that have data. No medical claims. At most 300 characters.`;

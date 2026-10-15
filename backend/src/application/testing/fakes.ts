@@ -162,6 +162,9 @@ export class InMemoryFocusScores implements IFocusScoreRepository {
   async put(score: FocusScore) {
     this.rows.set(`${score.userId}|${score.date}`, score);
   }
+  async listSince(userId: string, since: string) {
+    return [...this.rows.values()].filter((s) => s.userId === userId && s.date >= since).sort((a, b) => a.date.localeCompare(b.date));
+  }
 }
 
 export class FakeExplainer implements IFocusExplainer {

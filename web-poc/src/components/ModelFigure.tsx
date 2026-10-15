@@ -12,11 +12,11 @@ type Pillar = {
 };
 
 const PILLARS: Pillar[] = [
-  { name: "Fuel", detail: "Meals, macros, glycemic load, how processed (NOVA)", signal: { name: "Glycemic load", tag: "20%" } },
+  { name: "Fuel", detail: "Meals, macros, glycemic load, how processed (NOVA)", signal: { name: "Glycemic load", tag: "15%" } },
   { name: "Rhythm", detail: "Last meal, late screens, fasting window, morning light", signal: { name: "Evening timing", tag: "20%" } },
-  { name: "Recovery", detail: "Sleep length and depth", signal: { name: "Sleep", tag: "40%" } },
-  { name: "Mind", detail: "Check-ins: stressed, foggy, sharp, calm", signal: { name: "Stress", tag: "20%" } },
-  { name: "Movement", detail: "Exercise, steps, calf and circulation work", signal: { name: "Movement", tag: "Next", planned: true } },
+  { name: "Recovery", detail: "Sleep length and depth", signal: { name: "Sleep", tag: "35%" } },
+  { name: "Mind", detail: "Check-ins: stressed, foggy, sharp, calm", signal: { name: "Stress", tag: "15%" } },
+  { name: "Movement", detail: "Exercise, steps, calf and circulation work", signal: { name: "Movement", tag: "15%" } },
   { name: "Environment", detail: "Air, water, light, noise, EMF", signal: { name: "Environment", tag: "Later", planned: true } },
   { name: "Supplements", detail: "What you take, checked across the whole stack", signal: null },
 ];
@@ -96,7 +96,7 @@ export function ModelFigure() {
             <h3 className="m-0 text-sm font-bold text-ion-ink">Outcomes check the score</h3>
             <div className="rounded-control bg-paper px-4 py-3">
               <p className="m-0 text-md font-extrabold">Brain speed check</p>
-              <p className="m-0 text-xs text-ink-soft">A 2-minute reaction test: does the score match how sharp you are?</p>
+              <p className="m-0 text-xs text-ink-soft">A 2-minute reaction test. After two weeks it tunes the weights to you.</p>
             </div>
             <div className="rounded-control bg-paper px-4 py-3">
               <p className="m-0 text-md font-extrabold">Weight trend</p>

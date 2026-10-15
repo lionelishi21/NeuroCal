@@ -1,6 +1,6 @@
 # NeuroCal Biohacking Model (NCBM)
 
-*White paper, draft 1, October 2026*
+*White paper, draft 2, October 2026*
 
 ## 1. The idea in one paragraph
 
@@ -39,7 +39,7 @@ flowchart LR
     S2[Evening timing]
     S3[Glycemic load]
     S4[Stress]
-    S5[Movement]:::planned
+    S5[Movement]
     S6[Environment]:::planned
   end
 
@@ -51,8 +51,8 @@ flowchart LR
   ENV --> S6
   SUPP -. "safety checks,<br/>not scored" .-> LOOP
 
-  S1 & S2 & S3 & S4 --> FS(("Focus Score<br/>0 to 100"))
-  S5 & S6 -.-> FS
+  S1 & S2 & S3 & S4 & S5 --> FS(("Focus Score<br/>0 to 100"))
+  S6 -.-> FS
   FS --> LOOP
   subgraph Outcomes["Outcomes"]
     direction TB
@@ -72,24 +72,27 @@ flowchart LR
 
 *Dashed: designed but not yet in the score.*
 
-### 3.1 The Focus Score today (v0)
+### 3.1 The Focus Score (v1, built)
 
 A morning score for day D, built from the day before and the night:
 
 | Signal | Weight | From | Good when |
 |---|---|---|---|
-| Sleep | 40% | Sleep that ended on D: 70% length (against 8 h), 30% deep sleep (against 90 min) | Long and deep |
-| Evening timing | 20% | Last meal after 21:00 on D−1, screens from 22:00 to 04:00 | Early dinner, screens off |
-| Glycemic load | 20% | Share of D−1's calories from high-glycemic-load food | Mostly low-GL |
-| Stress | 20% | Negative check-ins (stressed, brain fog, low focus, wired) on D−1 and D | Few or none |
+| Sleep | 35% | Sleep that ended on D: 70% length (against 8 h), 30% deep sleep (against 90 min) | Long and deep |
+| Evening timing | 20% | Last meal after 21:00 on D−1, screens from 22:00 to 04:00; +0.15 when the overnight fast reached the fasting plan's hours | Early dinner, screens off, fast kept |
+| Glycemic load | 15% | Share of D−1's calories from high-glycemic-load food | Mostly low-GL |
+| Stress | 15% | Negative check-ins (stressed, brain fog, low focus, wired) on D−1 and D | Few or none |
+| Movement | 15% | Exercise on D−1 against 30 moderate minutes (hard counts double, light half) | 30 moderate minutes |
 
-A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
+A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. Movement only counts for people who've logged exercise in the past week, so nobody is marked down for a habit they don't track. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
 
-### 3.2 The Focus Score next (v1, proposed)
+### 3.2 Weights tuned to each person (built)
 
-- **Movement joins the score.** Minutes and intensity from exercise logging, with extra credit for short movement after meals and for calf and leg work, which helps circulation back from the legs.
-- **Fasting counts as rhythm.** Keeping the planned window adds to Evening timing.
-- **Brain speed calibrates the weights per person.** After about 14 days with both a score and a Brain speed check, fit each person's weights to which signals actually moved their reaction time. Their score then reflects their body, not our guess. The v0 weights stay the starting point and the fallback.
+After **14 days** with both a stored score and a Brain speed check, each signal's weight moves with how closely it tracked that person's Brain speed score on the same days: up to half more for a signal that rises and falls with their reaction time, up to half less for one that doesn't. A signal needs data on at least 10 of those days to move. The weights still add up to 1, and the standard weights above are the starting point and the fallback. The app says "Weights tuned to your Brain speed" when they've moved, so the score stays explainable.
+
+### 3.3 Next
+
+- **Calf and circulation work** gets extra credit within Movement, along with short walks after meals.
 - **Environment joins later** (section 6), once there is data to score.
 
 ## 4. A day in the loop
@@ -137,9 +140,9 @@ flowchart LR
 | Rhythm: evening timing, late screens, fasting timer and streak | Built. Morning light and wake-time consistency are next |
 | Recovery: sleep logging, nights on one clock | Built. Wearable import next (Apple Health, Health Connect) |
 | Mind: check-ins, daily reminders | Built. Check-in windows with repeat nudges next |
-| Movement: exercise with calories burned | Built. In the score in v1; calf and circulation routines next |
+| Movement: exercise with calories burned | Built, and in the score (v1). Calf and circulation routines next |
 | Supplements: label scanning, stack, daily checklist, whole-stack limits and duplicates | Built |
-| Outcome: Brain speed check with personal baseline | Built. Per-person weights in v1 |
+| Outcome: Brain speed check with personal baseline | Built, and it tunes each person's weights (v1) |
 | Weight: goal, smoothed trend, pace, projected date | Built |
 | Environment: air, water, light, noise, EMF | Not started. Air quality from a public API by location first; water by postcode; light and noise from the phone's sensors |
 | Shopper: upload a shopping list, get a cleaner list and gadget picks | Not started. Device catalog and affiliate links exist |
@@ -176,7 +179,7 @@ A simple ladder so people can see progress beyond one day's score. You move up b
 
 ## 9. Limits
 
-- The v0 weights are a reasoned proposal, not yet fitted to outcomes. Section 3.2 is how they get validated.
+- The standard weights are a reasoned starting point, not fitted to outcomes across people. Section 3.2 fits them to each person once their own Brain speed data is enough; pooled, anonymised fitting across users is a later step.
 - Calories and glycemic load from photos and labels are estimates. The app says so where it shows them.
 - Brain speed is a self-check for comparing your own days, not a medical test.
 - Supplement and device suggestions carry a note to check with a doctor or pharmacist, and are labelled when they're affiliate or own-brand.

@@ -5,11 +5,11 @@ import { type Evening, type Part, WEIGHTS, biggestDrag, clock, parts, score, sle
 import { flagLabel } from "../lib/format";
 
 /** Where the demo starts: a late dinner, some screens, seven hours of sleep. */
-const START: Evening = { dinner: 21.75, bedtime: 23.5, wake: 6.5, screens: 30, highGlycemicShare: 0.25, flags: ["low_focus"] };
+const START: Evening = { dinner: 21.75, bedtime: 23.5, wake: 6.5, screens: 30, highGlycemicShare: 0.25, flags: ["low_focus"], exercise: 15 };
 const FEELINGS = ["sharp", "calm", "low_focus", "brain_fog", "wired", "stressed"] as const;
 
-const PART_NAME: Record<Part, string> = { sleep: "Sleep", timing: "Evening timing", glycemic: "Glycemic load", stress: "Stress" };
-const PART_FILL: Record<Part, string> = { sleep: "bg-synapse", timing: "bg-ion", glycemic: "bg-glucose", stress: "bg-chlorophyll-bar" };
+const PART_NAME: Record<Part, string> = { sleep: "Sleep", timing: "Evening timing", glycemic: "Glycemic load", stress: "Stress", movement: "Movement" };
+const PART_FILL: Record<Part, string> = { sleep: "bg-synapse", timing: "bg-ion", glycemic: "bg-glucose", stress: "bg-chlorophyll-bar", movement: "bg-sleep" };
 
 const hoursAndMinutes = (minutes: number) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
 
@@ -29,12 +29,14 @@ function verdict(evening: Evening, total: number): string {
       return `High-glycemic food is the biggest drag: ${drag.points} points. Swap it for slow carbs and it is ${better}.`;
     case "stress":
       return `How you felt is the biggest drag: ${drag.points} points. A calmer day would make it ${better}.`;
+    case "movement":
+      return `${evening.exercise ? `${evening.exercise} minutes of exercise` : "No exercise"} yesterday is the biggest drag: ${drag.points} points. A 30-minute walk would make it ${better}.`;
   }
 }
 
 /**
  * The landing page's working demo: an evening on a 24-hour dial that the visitor can change,
- * with tomorrow's Focus Score, its four inputs and the biggest drag recomputed by the app's
+ * with tomorrow's Focus Score, its five inputs and the biggest drag recomputed by the app's
  * own formula (lib/focusDemo.ts).
  */
 export function FocusDemo() {
@@ -71,6 +73,7 @@ export function FocusDemo() {
             onChange={(hours) => set({ bedtime: (18 + hours) % 24 })}
           />
           <Dial label="Screens after 22:00" value={evening.screens ? `${evening.screens} min` : "None"} min={0} max={120} step={5} at={evening.screens} onChange={(screens) => set({ screens })} />
+          <Dial label="Exercise yesterday" value={evening.exercise ? `${evening.exercise} min` : "None"} min={0} max={60} step={5} at={evening.exercise} onChange={(exercise) => set({ exercise })} />
           <Dial
             label="High-glycemic food"
             value={`${Math.round(evening.highGlycemicShare * 100)}% of the day's calories`}

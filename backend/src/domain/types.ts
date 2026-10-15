@@ -157,6 +157,8 @@ export interface FocusComponents {
   timing: number | null;
   glycemic: number | null;
   stress: number | null;
+  /** v1: yesterday's exercise. Null for people who don't log exercise, so they aren't marked down. */
+  movement: number | null;
 }
 
 export interface FocusScore {
@@ -167,6 +169,8 @@ export interface FocusScore {
   components: FocusComponents;
   explanation: string;
   modelVersion: string;
+  /** Scored with weights tuned to this person's Brain speed checks (model v1). Not stored. */
+  tuned?: boolean;
 }
 
 /** NeuroCal-authored habit protocol (ARCHITECTURE §3). Content lives in the repo, not generated. */

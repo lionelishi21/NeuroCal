@@ -433,12 +433,30 @@ export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
 
   async get(userId: string, date: string): Promise<FocusScore | null> {
     const [row] = await this.db.select().from(focusScores).where(and(eq(focusScores.userId, userId), eq(focusScores.date, date)));
-    if (!row) return null;
+    return row ? DrizzleFocusScoreRepository.toScore(row) : null;
+  }
+
+  async listSince(userId: string, since: string): Promise<FocusScore[]> {
+    const rows = await this.db
+      .select()
+      .from(focusScores)
+      .where(and(eq(focusScores.userId, userId), gte(focusScores.date, since)))
+      .orderBy(asc(focusScores.date));
+    return rows.map(DrizzleFocusScoreRepository.toScore);
+  }
+
+  private static toScore(row: typeof focusScores.$inferSelect): FocusScore {
     return {
       userId: row.userId,
       date: row.date,
       score: row.score,
-      components: { sleep: row.sleepComponent, timing: row.timingComponent, glycemic: row.glycemicComponent, stress: row.stressComponent },
+      components: {
+        sleep: row.sleepComponent,
+        timing: row.timingComponent,
+        glycemic: row.glycemicComponent,
+        stress: row.stressComponent,
+        movement: row.movementComponent,
+      },
       explanation: row.explanation,
       modelVersion: row.modelVersion,
     };
@@ -451,6 +469,7 @@ export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
       timingComponent: score.components.timing,
       glycemicComponent: score.components.glycemic,
       stressComponent: score.components.stress,
+      movementComponent: score.components.movement,
       explanation: score.explanation,
       modelVersion: score.modelVersion,
       computedAt: new Date(),

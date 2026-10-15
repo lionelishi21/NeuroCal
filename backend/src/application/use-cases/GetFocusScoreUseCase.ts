@@ -1,12 +1,18 @@
 import { InvalidError, NotFoundError } from "../../domain/errors";
+import { FAST_HOURS, fastingProtocolOf } from "../../domain/fasting";
 import {
   FOCUS_MODEL_VERSION,
   computeFocusComponents,
   fallbackExplanation,
   focusScoreFrom,
+  personalWeights,
   type FocusInputs,
+  type FocusWeights,
 } from "../../domain/focusScore";
+import { addDays } from "../../domain/weight";
 import { isIsoDate, localDateOf, previousDate } from "../../domain/localDay";
+import type { IBrainCheckRepository } from "../interfaces/IBrainCheckRepository";
+import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
 import type { FocusComponents, FocusScore, Profile } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
@@ -32,6 +38,8 @@ export class GetFocusScoreUseCase {
     private readonly scores: IFocusScoreRepository,
     private readonly explainer: IFocusExplainer,
     private readonly clock: IClock,
+    private readonly exercises?: IExerciseRepository,
+    private readonly brainChecks?: IBrainCheckRepository,
   ) {}
 
   async execute(input: { userId: string; date?: string }): Promise<FocusScore> {
@@ -41,15 +49,17 @@ export class GetFocusScoreUseCase {
 
     const { userId } = profile;
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
-    const [inputs, stored] = await Promise.all([
-      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry }, profile, date),
+    const [inputs, stored, tuning] = await Promise.all([
+      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises }, profile, date),
       this.scores.get(userId, date),
+      this.weightsFor(profile, date),
     ]);
 
     const components = computeFocusComponents(inputs);
-    const score = focusScoreFrom(components);
+    const score = focusScoreFrom(components, tuning.weights);
+    const tuned = tuning.tuned ? { tuned: true } : {};
 
-    if (stored && stored.score === score && sameComponents(stored.components, components)) return stored;
+    if (stored && stored.score === score && sameComponents(stored.components, components)) return { ...stored, ...tuned };
 
     const result: FocusScore = {
       userId,
@@ -60,7 +70,30 @@ export class GetFocusScoreUseCase {
       modelVersion: FOCUS_MODEL_VERSION,
     };
     await this.scores.put(result);
-    return result;
+    return { ...result, ...tuned };
+  }
+
+  /**
+   * NCBM §3.2: the weights tuned to this person from the last 8 weeks of stored scores and the Brain
+   * speed checks taken on the same days (the day's latest check). Standard weights until there are enough.
+   */
+  private async weightsFor(profile: Profile, date: string): Promise<{ weights: FocusWeights; tuned: boolean }> {
+    if (!this.brainChecks) return personalWeights([]);
+    const since = addDays(date, -56);
+    const [scores, checks] = await Promise.all([
+      this.scores.listSince(profile.userId, since),
+      this.brainChecks.listSince(profile.userId, new Date(`${since}T00:00:00Z`)),
+    ]);
+    const brainByDay = new Map<string, number>();
+    // Newest first: the first check seen for a day is its latest.
+    for (const c of checks) {
+      const day = localDateOf(c.takenAt, profile.timeZone);
+      if (!brainByDay.has(day)) brainByDay.set(day, c.score);
+    }
+    const days = scores
+      .filter((s) => s.date < date && brainByDay.has(s.date))
+      .map((s) => ({ components: s.components, brainScore: brainByDay.get(s.date)! }));
+    return personalWeights(days);
   }
 
   private async explain(score: number | null, components: FocusComponents): Promise<string> {
@@ -74,22 +107,41 @@ export class GetFocusScoreUseCase {
 }
 
 const sameComponents = (a: FocusComponents, b: FocusComponents) =>
-  a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress;
+  a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress && (a.movement ?? null) === (b.movement ?? null);
 
 /** Everything the Focus Score for `date` reads (ARCHITECTURE §6.8). Shared with GetHistoryUseCase. */
 export async function loadFocusInputs(
-  repos: { meals: IMealRepository; checkIns: ICheckInRepository; telemetry: ITelemetryRepository },
+  repos: { meals: IMealRepository; checkIns: ICheckInRepository; telemetry: ITelemetryRepository; exercises?: IExerciseRepository | undefined },
   profile: Profile,
   date: string,
 ): Promise<FocusInputs> {
   const { userId, timeZone } = profile;
   const yesterday = previousDate(date);
-  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday] = await Promise.all([
+  const protocol = fastingProtocolOf(profile);
+  const noon = Date.parse(`${date}T12:00:00Z`);
+  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, todayMeals, exercise] = await Promise.all([
     repos.telemetry.sleepEndingOn(userId, { date, timeZone }),
     repos.meals.listForDay(userId, { date: yesterday, timeZone }),
     repos.telemetry.screenTimeStartingOn(userId, [yesterday, date], timeZone),
     repos.checkIns.listForDay(userId, { date: yesterday, timeZone }),
     repos.checkIns.listForDay(userId, { date, timeZone }),
+    protocol === "none" ? Promise.resolve([]) : repos.meals.listForDay(userId, { date, timeZone }),
+    // The week before D, wide enough for any time zone; split into "yesterday" and "lately" below.
+    repos.exercises?.listBetween(userId, new Date(noon - 8 * 86_400_000), new Date(noon - 86_400_000 / 2)) ?? Promise.resolve([]),
   ]);
-  return { date, timeZone, sleep, previousDayMeals, screenTime, checkIns: [...checkInsYesterday, ...checkInsToday] };
+  const lastWeek = exercise.filter((e) => {
+    const day = localDateOf(e.startedAt, timeZone);
+    return day < date && day >= addDays(date, -7);
+  });
+  return {
+    date,
+    timeZone,
+    sleep,
+    previousDayMeals,
+    screenTime,
+    checkIns: [...checkInsYesterday, ...checkInsToday],
+    previousDayExercise: lastWeek.filter((e) => localDateOf(e.startedAt, timeZone) === yesterday),
+    logsExercise: lastWeek.length > 0,
+    ...(protocol === "none" ? {} : { fastHours: FAST_HOURS[protocol], todayMeals }),
+  };
 }

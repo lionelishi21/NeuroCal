@@ -2,6 +2,7 @@
  * The fasting timer, worked out from logged meals: a fast runs from the last meal, and the eating
  * window runs from the first meal after a full fast. No separate "start fast" button to forget.
  */
+import type { Profile } from "./types";
 
 export type FastingProtocol = "16_8" | "omad" | "12_12" | "none";
 
@@ -10,6 +11,12 @@ export const FAST_HOURS: Record<Exclude<FastingProtocol, "none">, number> = { "1
 
 /** People who answered the safety question only get the gentlest protocol. */
 export const CAUTIOUS_PROTOCOL = "12_12";
+
+/** The fasting protocol in force: the onboarding choice, capped at 12:12 by the weight goal's safety answer. */
+export function fastingProtocolOf(profile: Pick<Profile, "bioProfile" | "weightGoal">): FastingProtocol {
+  const chosen = (profile.bioProfile?.fasting as FastingProtocol | undefined) ?? "none";
+  return chosen !== "none" && profile.weightGoal?.fastingCaution ? CAUTIOUS_PROTOCOL : chosen;
+}
 
 export type FastingState =
   /** Fasting since the last meal; the goal is not reached yet. */

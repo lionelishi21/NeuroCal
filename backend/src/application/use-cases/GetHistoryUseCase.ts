@@ -1,3 +1,4 @@
+import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { computeFocusComponents, focusScoreFrom, lateScreenMinutes, sleepMinutes } from "../../domain/focusScore";
 import { localDateOf, localTimeOf, previousDate } from "../../domain/localDay";
@@ -35,6 +36,7 @@ export class GetHistoryUseCase {
     private readonly checkIns: ICheckInRepository,
     private readonly telemetry: ITelemetryRepository,
     private readonly clock: IClock,
+    private readonly exercises?: IExerciseRepository,
   ) {}
 
   async execute(input: { userId: string; days?: number }): Promise<HistoryDay[]> {
@@ -49,7 +51,7 @@ export class GetHistoryUseCase {
     const dates: string[] = [localDateOf(this.clock.now(), timeZone)];
     while (dates.length < days) dates.unshift(previousDate(dates[0]!));
 
-    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry };
+    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises };
     return Promise.all(
       dates.map(async (date): Promise<HistoryDay> => {
         const [meals, checkIns, focusInputs] = await Promise.all([

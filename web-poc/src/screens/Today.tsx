@@ -162,7 +162,7 @@ export function Today() {
               {components && (
                 <ul className="m-0 mt-4 grid list-none grid-cols-2 gap-2 p-0">
                   {signals.map((signal) => {
-                    const value = components[signal.key];
+                    const value = components[signal.key] ?? null;
                     const read = value === null ? null : reading(value);
                     return (
                       <li key={signal.key} className="flex min-h-[4.625rem] flex-col gap-1 rounded-option bg-mist px-3 py-2.5">
