@@ -2,6 +2,7 @@
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
  */
+import type { IRecipeParser } from "../../application/interfaces/IRecipeParser";
 import type { ITechniqueExtractor } from "../../application/interfaces/IKnowledge";
 import type { IShoppingListReviewer } from "../../application/interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant } from "../../application/interfaces/IPantry";
@@ -149,6 +150,18 @@ export const stubTechniqueExtractor: ITechniqueExtractor = {
         quote: "stub",
       },
     ];
+  },
+};
+
+/** Recipe reading without Claude: every line is one 100 g ingredient at an estimated 100 kcal. */
+export const stubRecipeParser: IRecipeParser = {
+  async parse(input) {
+    const lines = input.text.split("\n").map((l) => l.trim()).filter(Boolean);
+    return {
+      title: "Stub recipe (set ANTHROPIC_API_KEY to read it)",
+      servings: null,
+      ingredients: lines.map((name) => ({ name, quantity: "", grams: 100, catalogId: null, estimate: { calories: 100, proteinG: 5, carbsG: 10, fatG: 4 }, processing: "whole" as const })),
+    };
   },
 };
 

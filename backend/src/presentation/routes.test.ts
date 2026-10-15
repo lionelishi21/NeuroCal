@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -26,6 +26,7 @@ import {
   InMemoryPantry,
   FakePantryRecipes,
   FakeShoppingReviewer,
+  FakeRecipeParser,
   FakeTechniqueExtractor,
   InMemoryKnowledge,
   FakeLabelReader,
@@ -136,6 +137,7 @@ beforeEach(async () => {
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     shoppingReviewer: new FakeShoppingReviewer(),
+    recipeParser: new FakeRecipeParser(),
     knowledge: new InMemoryKnowledge(),
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
@@ -530,6 +532,17 @@ describe("API routes", () => {
     expect(AdminKnowledge.parse((await asAdmin("GET", "/admin/knowledge")).body)).toMatchObject({ watching: [] });
     // Without a YouTube key, checking channels says what's missing.
     expect((await asAdmin("POST", "/admin/knowledge/sync")).status).toBe(400);
+  });
+
+  it("POST /recipes/analyze gives calories per serving, from the catalog where it can", async () => {
+    const res = await call("POST", "/recipes/analyze", { text: "80 g rolled oats\n30 g honey drizzle" });
+    expect(res.status).toBe(200);
+    const body = RecipeAnalysis.parse(res.body);
+    expect(body.servings).toBe(2);
+    expect(body.ingredients.map((i) => i.source)).toEqual(["catalog", "estimate"]);
+    expect(body.calories).toBeGreaterThan(0);
+    expect(RecipeAnalysis.parse((await call("POST", "/recipes/analyze", { text: "just some words here" })).body)).toEqual({ problem: "not_a_recipe", ingredients: [] });
+    expect((await call("POST", "/recipes/analyze", { text: "80 g rolled oats", servings: 0 })).status).toBe(400);
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {

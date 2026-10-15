@@ -565,6 +565,38 @@
         }
       }
     },
+    "/recipes/analyze": {
+      "post": {
+        "operationId": "analyzeRecipe",
+        "summary": "Work out a recipe's nutrition",
+        "description": "Ingredients are read (Claude, schema-checked) and converted to grams. Those that match the food catalog use its USDA FoodData Central values scaled by weight; the rest use estimates, and each ingredient says which. Per serving, with the dish graded by its most processed ingredient. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRecipeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeAnalysis"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/shopping/review": {
       "post": {
         "operationId": "reviewShoppingList",
@@ -1938,6 +1970,24 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "AnalyzeRecipeRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 8000
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          }
+        },
+        "required": [
+          "text"
         ]
       },
       "AnalyzeSupplementRequest": {
@@ -3957,6 +4007,90 @@
           "weakPoints",
           "protocols",
           "products"
+        ]
+      },
+      "RecipeAnalysis": {
+        "type": "object",
+        "properties": {
+          "problem": {
+            "type": "string",
+            "const": "not_a_recipe"
+          },
+          "title": {
+            "type": "string"
+          },
+          "servings": {
+            "type": "integer"
+          },
+          "calories": {
+            "type": "integer"
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "processing": {
+            "type": "string",
+            "enum": [
+              "whole",
+              "processed",
+              "ultra_processed"
+            ]
+          },
+          "catalogShare": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                },
+                "grams": {
+                  "type": "number"
+                },
+                "calories": {
+                  "type": "integer"
+                },
+                "macros": {
+                  "$ref": "#/components/schemas/Macros"
+                },
+                "processing": {
+                  "type": "string",
+                  "enum": [
+                    "whole",
+                    "processed",
+                    "ultra_processed"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "catalog",
+                    "estimate"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "quantity",
+                "grams",
+                "calories",
+                "macros",
+                "processing",
+                "source"
+              ]
+            }
+          }
+        },
+        "required": [
+          "ingredients"
         ]
       },
       "RecipeRecommendation": {

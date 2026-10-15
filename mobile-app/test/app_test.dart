@@ -339,4 +339,32 @@ void main() {
     await tester.scrollUntilVisible(find.text('Ninja air fryer'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('For Frozen fries'), findsOneWidget);
   });
+
+  testWidgets('work out a recipe: calories per serving, which ingredients are estimated, and log a serving', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await add(tester, 'Work out a recipe');
+
+    await tester.enterText(find.widgetWithText(TextField, 'Ingredients'), '1 cup rolled oats\n2 eggs\n1 tbsp olive oil');
+    await tester.tap(find.byTooltip('More servings'));
+    await tester.pump();
+    expect(find.text('2'), findsWidgets);
+    await tester.ensureVisible(find.text('Work it out'));
+    await tester.tap(find.text('Work it out'));
+    await tester.pumpAndSettle();
+
+    // Sample data: 120 + 160 + 200 kcal over two servings.
+    await tester.scrollUntilVisible(find.text('240 kcal'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('2 servings'), findsOneWidget);
+    expect(find.textContaining('estimated'), findsWidgets);
+
+    await tester.scrollUntilVisible(find.text('Log a serving'), 200, scrollable: find.byType(Scrollable).first);
+    await Scrollable.ensureVisible(tester.element(find.text('Log a serving')), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log a serving'));
+    await tester.pumpAndSettle();
+    // Log a meal opens with one serving filled in.
+    expect(find.text('Log a meal'), findsWidgets);
+    expect(find.textContaining('1 of 2 servings'), findsWidgets);
+  });
 }

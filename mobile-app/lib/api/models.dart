@@ -1214,3 +1214,60 @@ class ShoppingReview {
   );
 }
 
+/// A recipe's nutrition per serving (`RecipeAnalysis` in the contracts).
+class RecipeAnalysis {
+  const RecipeAnalysis({
+    this.problem,
+    this.title = '',
+    this.servings = 1,
+    this.calories = 0,
+    this.macros = const Macros(proteinG: 0, carbsG: 0, fatG: 0),
+    this.processing = FoodProcessing.whole,
+    this.catalogShare = 0,
+    this.ingredients = const [],
+  });
+
+  /// not_a_recipe when the text wasn't one.
+  final String? problem;
+  final String title;
+  final int servings;
+
+  /// Per serving.
+  final int calories;
+  final Macros macros;
+  final FoodProcessing processing;
+
+  /// Share of the calories from USDA catalog values rather than estimates.
+  final double catalogShare;
+  final List<({String name, String quantity, double grams, int calories, bool fromCatalog})> ingredients;
+
+  /// One serving, ready for Log a meal.
+  FoodItem toItem() => FoodItem(
+    name: title,
+    portion: servings == 1 ? '1 serving' : '1 of $servings servings',
+    calories: calories.toDouble(),
+    macros: macros,
+    processing: processing,
+  );
+
+  factory RecipeAnalysis.fromJson(Map<String, dynamic> j) => RecipeAnalysis(
+    problem: j['problem'] as String?,
+    title: j['title'] as String? ?? '',
+    servings: (j['servings'] as num?)?.toInt() ?? 1,
+    calories: (j['calories'] as num?)?.toInt() ?? 0,
+    macros: j['macros'] == null ? const Macros(proteinG: 0, carbsG: 0, fatG: 0) : Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    processing: FoodProcessing.fromWire(j['processing']) ?? FoodProcessing.whole,
+    catalogShare: (j['catalogShare'] as num?)?.toDouble() ?? 0,
+    ingredients: [
+      for (final i in j['ingredients'] as List)
+        (
+          name: i['name'] as String,
+          quantity: i['quantity'] as String,
+          grams: (i['grams'] as num).toDouble(),
+          calories: (i['calories'] as num).toInt(),
+          fromCatalog: i['source'] == 'catalog',
+        ),
+    ],
+  );
+}
+

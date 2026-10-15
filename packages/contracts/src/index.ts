@@ -660,6 +660,40 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
+export const AnalyzeRecipeRequest = z.object({
+  /** The ingredients with their amounts; method steps can be included and are ignored. */
+  text: z.string().min(10).max(8000),
+  /** Overrides the servings the recipe states. */
+  servings: z.number().int().min(1).max(24).optional(),
+});
+export type AnalyzeRecipeRequest = z.infer<typeof AnalyzeRecipeRequest>;
+
+export const RecipeAnalysis = z.object({
+  /** The text wasn't a recipe; the rest is then left out. */
+  problem: z.literal("not_a_recipe").optional(),
+  title: z.string().optional(),
+  servings: z.number().int().optional(),
+  /** Per serving. */
+  calories: z.number().int().optional(),
+  macros: Macros.optional(),
+  processing: z.enum(["whole", "processed", "ultra_processed"]).optional(),
+  /** Share of calories from USDA catalog values rather than estimates, 0–1. */
+  catalogShare: z.number().min(0).max(1).optional(),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.string(),
+      grams: z.number(),
+      calories: z.number().int(),
+      macros: Macros,
+      processing: z.enum(["whole", "processed", "ultra_processed"]),
+      /** catalog: USDA values scaled by weight; estimate: the reader's figures. */
+      source: z.enum(["catalog", "estimate"]),
+    }),
+  ),
+});
+export type RecipeAnalysis = z.infer<typeof RecipeAnalysis>;
+
 /** A typed or pasted list; send a photo of the list as multipart `photo` instead. */
 export const ShoppingReviewRequest = z.object({ text: z.string().min(1).max(4000) });
 export type ShoppingReviewRequest = z.infer<typeof ShoppingReviewRequest>;
@@ -951,6 +985,8 @@ export const endpoints = {
   /** The biohacking level from the last 28 days, with each habit and how close it is. */
   getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
+  /** Calories and macros per serving of a typed or pasted recipe. Paid; nothing is saved. */
+  analyzeRecipe: { method: "POST", path: "/recipes/analyze", body: AnalyzeRecipeRequest, response: RecipeAnalysis },
   /** Grades a shopping list item by item, with kitchen devices that would help. Paid; nothing is saved. */
   reviewShoppingList: { method: "POST", path: "/shopping/review", body: ShoppingReviewRequest, response: ShoppingReviewResponse },
   addPantryItems: { method: "POST", path: "/pantry", body: AddPantryItemsRequest, response: PantryResponse },

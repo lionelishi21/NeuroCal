@@ -73,6 +73,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",
   },
   getPantry: { summary: "What's in your kitchen" },
+  analyzeRecipe: {
+    summary: "Work out a recipe's nutrition",
+    description: "Ingredients are read (Claude, schema-checked) and converted to grams. Those that match the food catalog use its USDA FoodData Central values scaled by weight; the rest use estimates, and each ingredient says which. Per serving, with the dish graded by its most processed ingredient. Nothing is saved.",
+  },
   getAdminKnowledge: { summary: "Videos and techniques for review", description: "Admins only. Newest first, each video with the techniques taken from its transcript and their review status." },
   addKnowledgeSource: {
     summary: "Add a video or episode",

@@ -4,6 +4,7 @@ import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddin
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "./ClaudeShoppingListReviewer";
+import { ClaudeRecipeParser } from "./ClaudeRecipeParser";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
@@ -310,6 +311,28 @@ describe("ClaudeShoppingListReviewer", () => {
     ["output outside the schema", { stop_reason: "end_turn", parsed_output: { problem: null, items: [{ ...item, verdict: "maybe" }] } }],
   ])("rejects %s", async (_, response) => {
     await expect(reviewerWith(response).reviewer.review({ ...base, items: ["Yogurt"] })).rejects.toThrow();
+  });
+});
+
+describe("ClaudeRecipeParser", () => {
+  const input = { text: "1 cup rolled oats\n1 tbsp honey", catalog: [{ id: "oats", name: "Oats", serving: "1/2 cup (40 g)" }] };
+  const ingredient = { name: "Rolled oats", quantity: "1 cup", grams: 80, catalogId: "oats", estimate: { calories: 300, proteinG: 10, carbsG: 54, fatG: 6 }, processing: "whole" };
+  const parserWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 400, output_tokens: 200 }, ...response }));
+    return { parse, parser: new ClaudeRecipeParser({ messages: { parse } as unknown as ParseMessage }) };
+  };
+
+  it("sends the recipe with the catalog to match against, and returns the ingredients", async () => {
+    const { parse, parser } = parserWith({ stop_reason: "end_turn", parsed_output: { problem: null, title: "Porridge", servings: 2, ingredients: [ingredient] } });
+    expect(await parser.parse(input)).toEqual({ title: "Porridge", servings: 2, ingredients: [ingredient] });
+    expect(JSON.parse((parse.mock.calls[0]![0] as Record<string, any>).messages[0].content)).toEqual(input);
+  });
+
+  it.each([
+    ["a truncated answer", { stop_reason: "max_tokens", parsed_output: null }],
+    ["negative grams", { stop_reason: "end_turn", parsed_output: { problem: null, title: "x", servings: 1, ingredients: [{ ...ingredient, grams: -5 }] } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(parserWith(response).parser.parse(input)).rejects.toThrow();
   });
 });
 

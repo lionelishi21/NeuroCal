@@ -321,6 +321,28 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
+  Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings}) async {
+    await _wait();
+    final lines = [for (final l in text.split('\n')) if (l.trim().isNotEmpty) l.trim()];
+    if (lines.length < 2) return const RecipeAnalysis(problem: 'not_a_recipe');
+    final n = servings ?? 2;
+    final ingredients = [
+      for (final (i, l) in lines.indexed)
+        (name: l, quantity: '', grams: 100.0, calories: 120 + 40 * i, fromCatalog: i.isEven),
+    ];
+    final total = ingredients.fold(0, (s, i) => s + i.calories);
+    return RecipeAnalysis(
+      title: 'Your recipe',
+      servings: n,
+      calories: (total / n).round(),
+      macros: Macros(proteinG: 24.0 / n * 2, carbsG: 40.0 / n * 2, fatG: 14.0 / n * 2),
+      processing: FoodProcessing.whole,
+      catalogShare: 0.6,
+      ingredients: ingredients,
+    );
+  }
+
+  @override
   Future<Level> level() async {
     await _wait();
     return const Level(

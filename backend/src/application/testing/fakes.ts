@@ -7,6 +7,7 @@ import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrai
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
+import type { IRecipeParser } from "../interfaces/IRecipeParser";
 import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
 import { pantryKey } from "../../domain/pantry";
@@ -709,6 +710,26 @@ export class FakeVideoFeed implements IVideoFeed {
   constructor(private readonly videos: { url: string; title: string; channel: string; publishedAt: Date }[] = []) {}
   async latest(_channelId: string) {
     return this.videos;
+  }
+}
+
+/** Reads "N g <food>" lines; oats match the catalog, anything else is estimated at 1 kcal a gram. */
+export class FakeRecipeParser implements IRecipeParser {
+  async parse(input: { text: string }) {
+    const lines = input.text.split("\n").map((l) => l.match(/^(\d+) g (.+)$/)).filter((m): m is RegExpMatchArray => m !== null);
+    if (lines.length === 0) return { problem: "not_a_recipe" as const, title: "", servings: null, ingredients: [] };
+    return {
+      title: "Test recipe",
+      servings: 2,
+      ingredients: lines.map(([, g, name]) => ({
+        name: name!,
+        quantity: `${g} g`,
+        grams: Number(g),
+        catalogId: /oat/i.test(name!) ? "oats" : null,
+        estimate: { calories: Number(g), proteinG: 0, carbsG: 0, fatG: 0 },
+        processing: "whole" as const,
+      })),
+    };
   }
 }
 

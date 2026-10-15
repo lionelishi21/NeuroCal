@@ -12,6 +12,7 @@ import 'food_scan_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'pantry.dart';
+import 'recipe.dart';
 import 'shopping.dart';
 import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
@@ -21,6 +22,7 @@ import 'weight_sheets.dart';
 enum Capture {
   meal('Log a meal', 'Snap or describe a plate', Icons.photo_camera_outlined),
   foodPackage('Scan a food package', 'Barcode or label', Icons.qr_code_scanner_rounded),
+  recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined),
   checkIn('Check in', 'How you feel now', Icons.mood_rounded),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined),
@@ -37,7 +39,7 @@ enum Capture {
 
   /// The body system's colour: (icon, tile behind it).
   (Color, Color) tint(NeuroCalColors c) => switch (this) {
-    meal || foodPackage => (c.glucoseInk, c.glucoseSoft),
+    meal || foodPackage || recipe => (c.glucoseInk, c.glucoseSoft),
     supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
     checkIn || brain => (c.synapseInk, c.synapseSoft),
     sleep => (c.sleep, c.sleepSoft),
@@ -149,6 +151,20 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       final item = await showFoodScanSheet(context);
       if (item == null || !context.mounted) return;
       await done(await showLogMealSheet(context, initialItems: [item]), 'Meal logged');
+    case Capture.recipe:
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (route) => RecipeScreen(
+            onLog: (recipe) async {
+              final logged = await showLogMealSheet(route, initialItems: [recipe.toItem()]);
+              if (logged == true && route.mounted) {
+                Navigator.of(route).pop();
+                await done(true, 'Meal logged');
+              }
+            },
+          ),
+        ),
+      );
     case Capture.supplement:
       await done(await showSupplementSheet(context), 'Added to your stack');
     case Capture.checkIn:

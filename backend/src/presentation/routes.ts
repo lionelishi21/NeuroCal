@@ -20,6 +20,8 @@ import {
   AddPantryItemsRequest,
   LevelResponse,
   ShoppingReviewRequest,
+  AnalyzeRecipeRequest,
+  RecipeAnalysis,
   AddKnowledgeSourceRequest,
   AddTranscriptRequest,
   AdminKnowledge,
@@ -84,6 +86,7 @@ import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
+import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
@@ -141,6 +144,7 @@ export interface UseCases {
   getLevel: GetLevelUseCase;
   reviewShoppingList: ReviewShoppingListUseCase;
   knowledge: KnowledgeUseCases;
+  analyzeRecipe: AnalyzeRecipeUseCase;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -387,6 +391,15 @@ export function createApi(uc: UseCases) {
           items: review.items,
           devices: review.devices.map(({ product, because }) => ({ product: toProductRecommendation({ item: product, similarity: 1 }), because })),
         });
+      },
+    ],
+    [
+      "POST",
+      /^\/recipes\/analyze$/,
+      async (req) => {
+        await uc.gate.require(req);
+        const result = await uc.analyzeRecipe.execute(json(req, AnalyzeRecipeRequest));
+        return ok(RecipeAnalysis, "problem" in result ? { problem: result.problem, ingredients: [] } : result);
       },
     ],
     ["GET", /^\/level$/, async (req) => ok(LevelResponse, await uc.getLevel.execute(req))],

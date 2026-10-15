@@ -4,6 +4,7 @@ import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingPro
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
+import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
@@ -76,6 +77,7 @@ const api = createApi(
     pantry: new DrizzlePantryRepository(db),
     pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    recipeParser: new ClaudeRecipeParser({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     knowledge: new DrizzleKnowledgeRepository(db),
     techniqueExtractor: new ClaudeTechniqueExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
