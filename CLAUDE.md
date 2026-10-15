@@ -38,6 +38,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 ## Key Reference Docs
 - See `ARCHITECTURE.md` at the root for full database schemas, TypeScript interfaces, system prompts, and use cases.
 - See `docs/EXECUTION_PLAN.md` for the roadmap, phases and design direction.
+- See `docs/NCBM.md` (NeuroCal Biohacking Model) for how every feature ties into the Focus Score; new features should feed a pillar or explain the score.
 
 ## Development Workflows
 - **All packages (repo root):**
