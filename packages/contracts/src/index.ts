@@ -662,6 +662,45 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
+export const CreateMealPlanRequest = z.object({ days: z.number().int().min(1).max(3) });
+export type CreateMealPlanRequest = z.infer<typeof CreateMealPlanRequest>;
+
+const PlanIngredient = z.object({
+  name: z.string(),
+  quantity: z.string(),
+  grams: z.number(),
+  /** Already in the pantry. */
+  inPantry: z.boolean(),
+  /** catalog: USDA values scaled by weight; estimate: the planner's figures. */
+  source: z.enum(["catalog", "estimate"]),
+});
+
+export const MealPlanResponse = z.object({
+  createdAt: IsoDateTime,
+  days: z.array(
+    z.object({
+      day: z.number().int(),
+      meals: z.array(
+        z.object({
+          kind: MealKind,
+          title: z.string(),
+          calories: z.number().int(),
+          macros: Macros,
+          processing: z.enum(["whole", "processed", "ultra_processed"]),
+          ingredients: z.array(PlanIngredient),
+          steps: z.array(z.string()),
+        }),
+      ),
+      calories: z.number().int(),
+      macros: Macros,
+    }),
+  ),
+  targets: z.object({ calories: z.number().int(), macros: Macros }),
+  /** Everything not in the pantry, combined across the plan, most-used first. */
+  shoppingList: z.array(z.object({ name: z.string(), grams: z.number().int(), meals: z.number().int() })),
+});
+export type MealPlanResponse = z.infer<typeof MealPlanResponse>;
+
 export const AnalyzeRecipeRequest = z.object({
   /** The ingredients with their amounts; method steps can be included and are ignored. */
   text: z.string().min(10).max(8000),
@@ -1022,6 +1061,10 @@ export const endpoints = {
   /** The biohacking level from the last 28 days, with each habit and how close it is. */
   getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
+  /** The latest meal plan; 404 when there isn't one yet. */
+  getMealPlan: { method: "GET", path: "/meal-plan", response: MealPlanResponse },
+  /** Makes a new plan (replacing the last) for 1–3 days. Paid. */
+  createMealPlan: { method: "POST", path: "/meal-plan", body: CreateMealPlanRequest, response: MealPlanResponse },
   /** Calories and macros per serving of a typed or pasted recipe. Paid; nothing is saved. */
   analyzeRecipe: { method: "POST", path: "/recipes/analyze", body: AnalyzeRecipeRequest, response: RecipeAnalysis },
   /** Grades a shopping list item by item, with kitchen devices that would help. Paid; nothing is saved. */

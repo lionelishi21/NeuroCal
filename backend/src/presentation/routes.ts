@@ -21,6 +21,8 @@ import {
   LevelResponse,
   ShoppingReviewRequest,
   AnalyzeRecipeRequest,
+  CreateMealPlanRequest,
+  MealPlanResponse,
   EnvironmentCheckRequest,
   EnvironmentDay,
   SetEnvironmentLocationRequest,
@@ -91,6 +93,8 @@ import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewS
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
+import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
+import type { MealPlan } from "../domain/mealPlan";
 import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
@@ -150,6 +154,7 @@ export interface UseCases {
   knowledge: KnowledgeUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
+  mealPlans: MealPlanUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -250,6 +255,7 @@ const toKnowledgeSource = ({ source, techniques }: { source: SourceRecord; techn
   techniques: techniques.map(toTechnique(source.url)),
 });
 const toExerciseDay = (d: ExerciseDayResult) => ({ ...d, exercises: d.exercises.map(toExercise) });
+const toMealPlan = ({ createdAt, ...plan }: MealPlan) => ({ ...plan, createdAt: createdAt.toISOString() });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
@@ -405,6 +411,22 @@ export function createApi(uc: UseCases) {
         await uc.gate.require(req);
         const result = await uc.analyzeRecipe.execute(json(req, AnalyzeRecipeRequest));
         return ok(RecipeAnalysis, "problem" in result ? { problem: result.problem, ingredients: [] } : result);
+      },
+    ],
+    [
+      "GET",
+      /^\/meal-plan$/,
+      async (req) => {
+        const plan = await uc.mealPlans.latest(req.userId);
+        return plan ? ok(MealPlanResponse, toMealPlan(plan)) : { status: 404, body: { code: "not_found", message: "No meal plan yet." } };
+      },
+    ],
+    [
+      "POST",
+      /^\/meal-plan$/,
+      async (req) => {
+        await uc.gate.require(req);
+        return ok(MealPlanResponse, toMealPlan(await uc.mealPlans.create(req.userId, json(req, CreateMealPlanRequest).days)), 201);
       },
     ],
     ["GET", /^\/environment$/, async (req) => ok(EnvironmentDay, await uc.environment.day(req.userId, date(req)))],

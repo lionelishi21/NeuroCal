@@ -112,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onBrowseFoods: () => openFoods(context, onChanged: _changed),
               onOpenPantry: () => openPantry(context, onChanged: _changed),
               onOpenShopping: () => openShopping(context),
+              onOpenMealPlan: () => openMealPlan(context, onChanged: _changed),
             ),
           ],
         ),

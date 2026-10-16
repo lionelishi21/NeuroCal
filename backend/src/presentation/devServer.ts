@@ -11,6 +11,7 @@ import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningPro
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
+import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenMeteoAirQuality, OpenMeteoGeocoder } from "../infrastructure/environment/OpenMeteo";
@@ -34,6 +35,7 @@ import {
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
   DrizzleEnvironmentRepository,
+  DrizzleMealPlanRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -44,7 +46,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubRecipeParser, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -186,6 +188,8 @@ async function main() {
       pantryRecipes: config.anthropicApiKey ? new ClaudePantryRecipeAssistant({ apiKey: config.anthropicApiKey }) : stubPantryRecipes,
       shoppingReviewer: config.anthropicApiKey ? new ClaudeShoppingListReviewer({ apiKey: config.anthropicApiKey }) : stubShoppingReviewer,
       recipeParser: config.anthropicApiKey ? new ClaudeRecipeParser({ apiKey: config.anthropicApiKey }) : stubRecipeParser,
+      mealPlanner: config.anthropicApiKey ? new ClaudeMealPlanner({ apiKey: config.anthropicApiKey }) : stubMealPlanner,
+      mealPlans: new DrizzleMealPlanRepository(db),
       environment: new DrizzleEnvironmentRepository(db),
       airQuality: new OpenMeteoAirQuality(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
       geocoder: new OpenMeteoGeocoder(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),

@@ -28,6 +28,7 @@ import type { IExerciseRepository } from "../application/interfaces/IExerciseRep
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
+import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../application/interfaces/IEnvironment";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed } from "../application/interfaces/IKnowledge";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
@@ -57,6 +58,7 @@ import { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppi
 import { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
+import { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -98,6 +100,8 @@ export interface Ports {
   pantryRecipes: IPantryRecipeAssistant;
   shoppingReviewer: IShoppingListReviewer;
   recipeParser: IRecipeParser;
+  mealPlanner: IMealPlanner;
+  mealPlans: IMealPlanRepository;
   environment: IEnvironmentRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
@@ -145,6 +149,7 @@ export function buildUseCases(p: Ports): UseCases {
     reviewShoppingList: new ReviewShoppingListUseCase(p.profiles, p.shoppingReviewer, p.catalog),
     analyzeRecipe: new AnalyzeRecipeUseCase(p.recipeParser, p.foods),
     environment,
+    mealPlans: new MealPlanUseCases(p.profiles, p.pantry, p.mealPlanner, p.mealPlans, p.foods, p.clock),
     knowledge: new KnowledgeUseCases(p.knowledge, p.techniqueExtractor, p.catalog, p.embedder, p.videoFeed, p.knowledgeChannels),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),

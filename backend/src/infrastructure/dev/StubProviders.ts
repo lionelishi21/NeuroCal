@@ -2,6 +2,7 @@
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
  */
+import type { IMealPlanner } from "../../application/interfaces/IMealPlans";
 import type { IRecipeParser } from "../../application/interfaces/IRecipeParser";
 import type { ITechniqueExtractor } from "../../application/interfaces/IKnowledge";
 import type { IShoppingListReviewer } from "../../application/interfaces/IShoppingListReviewer";
@@ -162,6 +163,20 @@ export const stubRecipeParser: IRecipeParser = {
       servings: null,
       ingredients: lines.map((name) => ({ name, quantity: "", grams: 100, catalogId: null, estimate: { calories: 100, proteinG: 5, carbsG: 10, fatG: 4 }, processing: "whole" as const })),
     };
+  },
+};
+
+/** Meal plans without Claude: one sample meal per slot. */
+export const stubMealPlanner: IMealPlanner = {
+  async plan(context) {
+    return Array.from({ length: context.days }, () =>
+      context.meals.map((kind) => ({
+        kind,
+        title: "Stub meal (set ANTHROPIC_API_KEY for a real plan)",
+        ingredients: [{ name: "Eggs", quantity: "2", grams: 100, catalogId: "eggs", estimate: { calories: 155, proteinG: 13, carbsG: 1, fatG: 11 }, processing: "whole" as const }],
+        steps: ["Cook the eggs."],
+      })),
+    );
   },
 };
 

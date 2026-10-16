@@ -1333,3 +1333,74 @@ class EnvironmentDay {
   }
 }
 
+/// One meal in a plan (`MealPlanResponse` in the contracts).
+class PlanMeal {
+  const PlanMeal({
+    required this.kind,
+    required this.title,
+    required this.calories,
+    required this.macros,
+    required this.processing,
+    required this.ingredients,
+    required this.steps,
+  });
+
+  final MealKind kind;
+  final String title;
+  final int calories;
+  final Macros macros;
+  final FoodProcessing processing;
+  final List<({String name, String quantity, double grams, bool inPantry, bool fromCatalog})> ingredients;
+  final List<String> steps;
+
+  FoodItem toItem() => FoodItem(name: title, portion: '1 serving', calories: calories.toDouble(), macros: macros, processing: processing);
+
+  factory PlanMeal.fromJson(Map<String, dynamic> j) => PlanMeal(
+    kind: MealKind.values.firstWhere((k) => k.name == j['kind'], orElse: () => MealKind.lunch),
+    title: j['title'] as String,
+    calories: (j['calories'] as num).toInt(),
+    macros: Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    processing: FoodProcessing.fromWire(j['processing']) ?? FoodProcessing.whole,
+    ingredients: [
+      for (final i in j['ingredients'] as List)
+        (
+          name: i['name'] as String,
+          quantity: i['quantity'] as String,
+          grams: (i['grams'] as num).toDouble(),
+          inPantry: i['inPantry'] as bool,
+          fromCatalog: i['source'] == 'catalog',
+        ),
+    ],
+    steps: [for (final s in j['steps'] as List) s as String],
+  );
+}
+
+/// A few days of meals with day totals, targets and a shopping list (`MealPlanResponse` in the contracts).
+class MealPlan {
+  const MealPlan({required this.createdAt, required this.days, required this.targetCalories, required this.targetProteinG, required this.shoppingList});
+
+  final DateTime createdAt;
+  final List<({int day, List<PlanMeal> meals, int calories, Macros macros})> days;
+  final int targetCalories;
+  final double targetProteinG;
+  final List<({String name, int grams, int meals})> shoppingList;
+
+  factory MealPlan.fromJson(Map<String, dynamic> j) => MealPlan(
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    days: [
+      for (final d in j['days'] as List)
+        (
+          day: (d['day'] as num).toInt(),
+          meals: [for (final m in d['meals'] as List) PlanMeal.fromJson(m as Map<String, dynamic>)],
+          calories: (d['calories'] as num).toInt(),
+          macros: Macros.fromJson(d['macros'] as Map<String, dynamic>),
+        ),
+    ],
+    targetCalories: (j['targets']['calories'] as num).toInt(),
+    targetProteinG: (j['targets']['macros']['proteinG'] as num).toDouble(),
+    shoppingList: [
+      for (final s in j['shoppingList'] as List) (name: s['name'] as String, grams: (s['grams'] as num).toInt(), meals: (s['meals'] as num).toInt()),
+    ],
+  );
+}
+

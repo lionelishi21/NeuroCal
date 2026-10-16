@@ -136,7 +136,7 @@ flowchart LR
 
 | Area | Status |
 |---|---|
-| Fuel: meal photos, food catalog, package scanner (barcode, label, NOVA, sugar, salt, best-before), pantry recipes, your own recipe's calories per serving (USDA values where ingredients match) | Built |
+| Fuel: meal photos, food catalog, package scanner (barcode, label, NOVA, sugar, salt, best-before), pantry recipes, your own recipe's calories per serving (USDA values where ingredients match), meal plans of up to 3 days with a shopping list | Built |
 | Rhythm: evening timing, late screens, fasting timer and streak | Built. Morning light and wake-time consistency are next |
 | Recovery: sleep logging, nights on one clock | Built. Wearable import next (Apple Health, Health Connect) |
 | Mind: check-ins in three daily windows set from your wake time, nudging until you check in | Built |

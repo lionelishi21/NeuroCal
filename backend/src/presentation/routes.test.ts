@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis, EnvironmentDay } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -27,6 +27,8 @@ import {
   FakePantryRecipes,
   FakeShoppingReviewer,
   FakeRecipeParser,
+  FakeMealPlanner,
+  InMemoryMealPlans,
   FakeAirQuality,
   FakeGeocoder,
   InMemoryEnvironment,
@@ -141,6 +143,8 @@ beforeEach(async () => {
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
+    mealPlanner: new FakeMealPlanner(),
+    mealPlans: new InMemoryMealPlans(),
     environment: new InMemoryEnvironment(),
     airQuality: new FakeAirQuality(),
     geocoder: new FakeGeocoder(),
@@ -560,6 +564,21 @@ describe("API routes", () => {
     expect(TodayResponse.parse((await call("GET", "/today")).body).environment?.location?.place).toBe("Austin, Texas, United States");
     // Yesterday's air and check feed this morning's score.
     expect((await call("GET", "/focus-score")).body).toMatchObject({ components: { environment: 1 } });
+  });
+
+  it("meal plans: none at first, then a plan that fits the targets and pantry, kept for later", async () => {
+    expect((await call("GET", "/meal-plan")).status).toBe(404);
+    await call("POST", "/pantry", { names: ["oats"] });
+    const made = await call("POST", "/meal-plan", { days: 2 });
+    expect(made.status).toBe(201);
+    const plan = MealPlanResponse.parse(made.body);
+    expect(plan.days).toHaveLength(2);
+    expect(plan.days[0]!.meals.map((m) => m.kind)).toEqual(["breakfast", "lunch", "dinner"]);
+    expect(plan.days[0]!.meals[0]!.ingredients[0]).toMatchObject({ name: "Oats", inPantry: true, source: "catalog" });
+    // Berries are in six meals over two days, and not in the pantry.
+    expect(plan.shoppingList).toEqual([{ name: "Berries", grams: 900, meals: 6 }]);
+    expect(MealPlanResponse.parse((await call("GET", "/meal-plan")).body).days).toHaveLength(2);
+    expect((await call("POST", "/meal-plan", { days: 7 })).status).toBe(400);
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {

@@ -323,6 +323,54 @@ class MockNeuroCalApi implements NeuroCalApi {
     );
   }
 
+  MealPlan? _plan;
+
+  @override
+  Future<MealPlan?> mealPlan() async {
+    await _wait();
+    return _plan;
+  }
+
+  @override
+  Future<MealPlan> createMealPlan(int days) async {
+    await _wait();
+    PlanMeal meal(MealKind kind, String title, int kcal, double protein, List<(String, String, bool)> items) => PlanMeal(
+      kind: kind,
+      title: title,
+      calories: kcal,
+      macros: Macros(proteinG: protein, carbsG: kcal * 0.1, fatG: kcal * 0.04),
+      processing: FoodProcessing.whole,
+      ingredients: [for (final (name, qty, have) in items) (name: name, quantity: qty, grams: 100, inPantry: have, fromCatalog: true)],
+      steps: const ['Prepare the ingredients.', 'Cook and serve.'],
+    );
+    final plan = MealPlan(
+      createdAt: DateTime.now(),
+      days: [
+        for (var d = 1; d <= days; d++)
+          (
+            day: d,
+            meals: [
+              meal(MealKind.breakfast, 'Greek yogurt, berries and oats', 420, 28, [('Greek yogurt', '200 g', true), ('Frozen berries', '1 cup', true), ('Oats', '1/2 cup', true)]),
+              meal(MealKind.lunch, 'Salmon and spinach rice bowl', 640, 42, [('Canned salmon', '120 g', true), ('Spinach', '2 handfuls', true), ('Brown rice', '1 cup', false)]),
+              meal(MealKind.dinner, 'Chicken, sweet potato and broccoli', 690, 48, [('Chicken breast', '150 g', false), ('Sweet potato', '1 medium', false), ('Broccoli', '1 cup', false)]),
+            ],
+            calories: 1750,
+            macros: const Macros(proteinG: 118, carbsG: 175, fatG: 58),
+          ),
+      ],
+      targetCalories: 2200,
+      targetProteinG: 140,
+      shoppingList: [
+        (name: 'Brown rice', grams: 160 * days, meals: days),
+        (name: 'Chicken breast', grams: 150 * days, meals: days),
+        (name: 'Sweet potato', grams: 200 * days, meals: days),
+        (name: 'Broccoli', grams: 90 * days, meals: days),
+      ],
+    );
+    _plan = plan;
+    return plan;
+  }
+
   @override
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings}) async {
     await _wait();

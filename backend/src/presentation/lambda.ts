@@ -5,6 +5,7 @@ import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningPro
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
+import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenMeteoAirQuality, OpenMeteoGeocoder } from "../infrastructure/environment/OpenMeteo";
@@ -29,6 +30,7 @@ import {
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
   DrizzleEnvironmentRepository,
+  DrizzleMealPlanRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -80,6 +82,8 @@ const api = createApi(
     pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     recipeParser: new ClaudeRecipeParser({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    mealPlanner: new ClaudeMealPlanner({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    mealPlans: new DrizzleMealPlanRepository(db),
     environment: new DrizzleEnvironmentRepository(db),
     airQuality: new OpenMeteoAirQuality(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
     geocoder: new OpenMeteoGeocoder(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),

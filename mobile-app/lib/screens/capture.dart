@@ -11,6 +11,7 @@ import 'exercise_sheet.dart';
 import 'food_scan_sheet.dart';
 import 'foods.dart';
 import 'log_meal_sheet.dart';
+import 'meal_plan.dart';
 import 'pantry.dart';
 import 'recipe.dart';
 import 'shopping.dart';
@@ -194,6 +195,21 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       if (await showBrainCheck(context) != null && context.mounted) onChanged();
   }
 }
+
+/// The meal plan; "Log it" on a meal opens Log a meal with it filled in.
+Future<void> openMealPlan(BuildContext context, {required VoidCallback onChanged}) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (route) => MealPlanScreen(
+      onLog: (meal) async {
+        final logged = await showLogMealSheet(route, initialItems: [meal.toItem()]);
+        if (logged == true && route.mounted) {
+          showToast(route, 'Meal logged');
+          onChanged();
+        }
+      },
+    ),
+  ),
+);
 
 /// Review a shopping list.
 Future<void> openShopping(BuildContext context) =>

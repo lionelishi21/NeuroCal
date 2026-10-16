@@ -10,12 +10,20 @@ import 'weight_cards.dart';
 /// The rest of the Stack tab after the supplements: the fasting timer, when fasting is on, and the
 /// way into the food catalog.
 class PlanExtras extends StatefulWidget {
-  const PlanExtras({super.key, required this.changes, required this.onBrowseFoods, required this.onOpenPantry, required this.onOpenShopping});
+  const PlanExtras({
+    super.key,
+    required this.changes,
+    required this.onBrowseFoods,
+    required this.onOpenPantry,
+    required this.onOpenShopping,
+    required this.onOpenMealPlan,
+  });
 
   final Listenable changes;
   final VoidCallback onBrowseFoods;
   final VoidCallback onOpenPantry;
   final VoidCallback onOpenShopping;
+  final VoidCallback onOpenMealPlan;
 
   @override
   State<PlanExtras> createState() => _PlanExtrasState();
@@ -60,6 +68,14 @@ class _PlanExtrasState extends State<PlanExtras> {
           FastingCard(fasting, onBoundary: _reload),
         ],
         const BlockTitle('Foods'),
+        _LinkCard(
+          icon: Icons.calendar_month_rounded,
+          title: 'Meal plan',
+          detail: 'Up to 3 days, with a shopping list',
+          tone: _Tone.violet,
+          onTap: widget.onOpenMealPlan,
+        ),
+        const SizedBox(height: Space.s3),
         _LinkCard(
           icon: Icons.kitchen_rounded,
           title: 'Your pantry',
@@ -143,7 +159,7 @@ class BrowseFoodsCard extends StatelessWidget {
   }
 }
 
-enum _Tone { amber, green }
+enum _Tone { amber, green, violet }
 
 /// A way into a tool from the Stack tab: an icon in its colour, a title and what it does.
 class _LinkCard extends StatelessWidget {
@@ -161,6 +177,7 @@ class _LinkCard extends StatelessWidget {
     final (fill, ink) = switch (tone) {
       _Tone.amber => (c.glucoseSoft, c.glucoseInk),
       _Tone.green => (c.chlorophyllSoft, c.chlorophyll),
+      _Tone.violet => (c.synapseSoft, c.synapseInk),
     };
     return Semantics(
       button: true,

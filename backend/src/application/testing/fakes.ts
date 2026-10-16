@@ -9,6 +9,8 @@ import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechniqu
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../interfaces/IEnvironment";
 import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
+import type { IMealPlanRepository, IMealPlanner, MealPlanContext } from "../interfaces/IMealPlans";
+import type { MealPlan, PlannedMeal } from "../../domain/mealPlan";
 import type { IRecipeParser } from "../interfaces/IRecipeParser";
 import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
@@ -776,6 +778,35 @@ export class FakeAirQuality implements IAirQuality {
 export class FakeGeocoder implements IGeocoder {
   async find(place: string) {
     return /nowhere/i.test(place) ? null : { name: `${place}, Texas, United States`, latitude: 30.26715, longitude: -97.74306 };
+  }
+}
+
+/** The same simple meal for every slot, and remembers what it was asked. */
+export class FakeMealPlanner implements IMealPlanner {
+  readonly calls: MealPlanContext[] = [];
+  async plan(context: MealPlanContext): Promise<PlannedMeal[][]> {
+    this.calls.push(context);
+    return Array.from({ length: context.days }, () =>
+      context.meals.map((kind) => ({
+        kind,
+        title: `Oats and berries (${kind})`,
+        ingredients: [
+          { name: "Oats", quantity: "1/2 cup", grams: 40, catalogId: "oats", estimate: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }, processing: "whole" as const },
+          { name: "Berries", quantity: "1 cup", grams: 150, catalogId: null, estimate: { calories: 80, proteinG: 1, carbsG: 18, fatG: 0 }, processing: "whole" as const },
+        ],
+        steps: ["Mix."],
+      })),
+    );
+  }
+}
+
+export class InMemoryMealPlans implements IMealPlanRepository {
+  readonly plans = new Map<string, MealPlan>();
+  async latest(userId: string) {
+    return this.plans.get(userId) ?? null;
+  }
+  async save(userId: string, plan: MealPlan) {
+    this.plans.set(userId, plan);
   }
 }
 

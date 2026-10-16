@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/main.dart';
+import 'package:neurocal/widgets/ui.dart';
 import 'package:neurocal/theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -106,6 +107,15 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'correct-horse');
     await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pumpAndSettle();
+  }
+
+  /// Scrolls [finder] to the middle of the screen, clear of the tab bar, and taps it.
+  Future<void> tapCentered(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(finder, 200);
+    await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
     await tester.pumpAndSettle();
   }
 
@@ -326,10 +336,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Stack'));
     await tester.pumpAndSettle();
-    final card = find.bySemanticsLabel('Review my shopping list: Cleaner swaps, and gadgets that help');
-    await tester.scrollUntilVisible(card, 300);
-    await tester.tap(card);
-    await tester.pumpAndSettle();
+    await tapCentered(tester, find.bySemanticsLabel('Review my shopping list: Cleaner swaps, and gadgets that help'));
 
     await tester.enterText(find.widgetWithText(TextField, 'Your list'), 'Frozen fries\nSpinach\nFlavoured yogurt');
     await tester.tap(find.text('Review my list'));
@@ -368,15 +375,6 @@ void main() {
     expect(find.textContaining('1 of 2 servings'), findsWidgets);
   });
 
-  /// Scrolls [finder] to the middle of the screen, clear of the tab bar, and taps it.
-  Future<void> tapCentered(WidgetTester tester, Finder finder) async {
-    await tester.scrollUntilVisible(finder, 200);
-    await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
-    await tester.pumpAndSettle();
-    await tester.tap(finder);
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('environment: set the town for air quality and tick the day’s check', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
@@ -393,5 +391,32 @@ void main() {
 
     await tapCentered(tester, find.text('Morning daylight'));
     expect(find.text('✓ Morning daylight'), findsOneWidget);
+  });
+
+  testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.pumpAndSettle();
+    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+
+    await tester.tap(find.text('Plan my meals'));
+    await tester.pumpAndSettle();
+    expect(find.text('Day 3'), findsOneWidget);
+    expect(find.text('1750 kcal'), findsOneWidget);
+    expect(find.text('450 under your 2200 kcal target'), findsOneWidget);
+
+    final list = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('Brown rice'), 300, scrollable: list);
+    expect(find.text('About 480 g · 3 meals'), findsOneWidget);
+
+    final title = find.text('Salmon and spinach rice bowl');
+    await tester.scrollUntilVisible(title, -300, scrollable: list);
+    await Scrollable.ensureVisible(tester.element(title), alignment: 0.5);
+    await tester.pumpAndSettle();
+    final card = find.ancestor(of: title, matching: find.byType(AppCard));
+    await tester.tap(find.descendant(of: card, matching: find.text('Log it')));
+    await tester.pumpAndSettle();
+    expect(find.text('Log a meal'), findsWidgets);
   });
 }

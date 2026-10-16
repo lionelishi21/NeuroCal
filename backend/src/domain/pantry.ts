@@ -42,10 +42,7 @@ export interface PantryRecipe {
  * Marks which ingredients are already in the pantry: an ingredient matches an item when either name
  * contains the other ("cherry tomatoes" and "tomatoes"), ignoring case and plurals.
  */
-export function markPantryIngredients(
-  ingredients: Omit<PantryIngredient, "inPantry">[],
-  pantry: string[],
-): PantryIngredient[] {
+export function markPantryIngredients<T extends { name: string }>(ingredients: T[], pantry: string[]): (T & { inPantry: boolean })[] {
   const keys = pantry.map(pantryKey);
   return ingredients.map((i) => {
     const k = pantryKey(i.name);

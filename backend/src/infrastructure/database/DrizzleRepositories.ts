@@ -42,6 +42,8 @@ import type { Exercise, IExerciseRepository, NewExercise } from "../../applicati
 import type { IPantryRepository, PantryItem } from "../../application/interfaces/IPantry";
 import type { IKnowledgeRepository, NewTechnique } from "../../application/interfaces/IKnowledge";
 import type { IEnvironmentRepository } from "../../application/interfaces/IEnvironment";
+import type { IMealPlanRepository } from "../../application/interfaces/IMealPlans";
+import type { MealPlan } from "../../domain/mealPlan";
 import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import { pantryKey } from "../../domain/pantry";
@@ -51,6 +53,7 @@ import type { EndingTrial, ISubscriptionRepository } from "../../application/int
 import type { Database } from "./client";
 import {
   airQualityDays,
+  mealPlans,
   brainChecks,
   environmentChecks,
   environmentLocations,
@@ -112,6 +115,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(pantryItems).where(eq(pantryItems.userId, userId));
       await tx.delete(environmentChecks).where(eq(environmentChecks.userId, userId));
       await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
+      await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -957,6 +961,23 @@ export class DrizzleEnvironmentRepository implements IEnvironmentRepository {
       .insert(airQualityDays)
       .values({ latitude, longitude, date: day, aqi })
       .onConflictDoUpdate({ target: [airQualityDays.latitude, airQualityDays.longitude, airQualityDays.date], set: { aqi, fetchedAt: new Date() } });
+  }
+}
+
+export class DrizzleMealPlanRepository implements IMealPlanRepository {
+  constructor(private readonly db: Database) {}
+
+  async latest(userId: string): Promise<MealPlan | null> {
+    const [row] = await this.db.select().from(mealPlans).where(eq(mealPlans.userId, userId));
+    return row ? { ...(row.plan as Omit<MealPlan, "createdAt">), createdAt: row.createdAt } : null;
+  }
+
+  async save(userId: string, plan: MealPlan) {
+    const { createdAt, ...rest } = plan;
+    await this.db
+      .insert(mealPlans)
+      .values({ userId, plan: rest, createdAt })
+      .onConflictDoUpdate({ target: mealPlans.userId, set: { plan: rest, createdAt } });
   }
 }
 

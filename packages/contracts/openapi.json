@@ -663,6 +663,58 @@
         }
       }
     },
+    "/meal-plan": {
+      "get": {
+        "operationId": "getMealPlan",
+        "summary": "Your latest meal plan",
+        "description": "404 until a plan has been made.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMealPlan",
+        "summary": "Make a meal plan",
+        "description": "1 to 3 days of meals sized to your calorie and macro targets, using your pantry first and fitting your fasting plan (one meal for OMAD, two for 16:8, else three). Meals come from Claude (schema-checked); calories use USDA catalog values where ingredients match. The shopping list combines everything not in your pantry. Replaces the last plan.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMealPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/recipes/analyze": {
       "post": {
         "operationId": "analyzeRecipe",
@@ -2647,6 +2699,19 @@
           "flags"
         ]
       },
+      "CreateMealPlanRequest": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
       "CreateMealRequest": {
         "type": "object",
         "properties": {
@@ -3907,6 +3972,158 @@
         "items": {
           "$ref": "#/components/schemas/Meal"
         }
+      },
+      "MealPlanResponse": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "integer"
+                },
+                "meals": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "$ref": "#/components/schemas/MealKind"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "calories": {
+                        "type": "integer"
+                      },
+                      "macros": {
+                        "$ref": "#/components/schemas/Macros"
+                      },
+                      "processing": {
+                        "type": "string",
+                        "enum": [
+                          "whole",
+                          "processed",
+                          "ultra_processed"
+                        ]
+                      },
+                      "ingredients": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            },
+                            "grams": {
+                              "type": "number"
+                            },
+                            "inPantry": {
+                              "type": "boolean"
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "catalog",
+                                "estimate"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "quantity",
+                            "grams",
+                            "inPantry",
+                            "source"
+                          ]
+                        }
+                      },
+                      "steps": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "title",
+                      "calories",
+                      "macros",
+                      "processing",
+                      "ingredients",
+                      "steps"
+                    ]
+                  }
+                },
+                "calories": {
+                  "type": "integer"
+                },
+                "macros": {
+                  "$ref": "#/components/schemas/Macros"
+                }
+              },
+              "required": [
+                "day",
+                "meals",
+                "calories",
+                "macros"
+              ]
+            }
+          },
+          "targets": {
+            "type": "object",
+            "properties": {
+              "calories": {
+                "type": "integer"
+              },
+              "macros": {
+                "$ref": "#/components/schemas/Macros"
+              }
+            },
+            "required": [
+              "calories",
+              "macros"
+            ]
+          },
+          "shoppingList": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "grams": {
+                  "type": "integer"
+                },
+                "meals": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "grams",
+                "meals"
+              ]
+            }
+          }
+        },
+        "required": [
+          "createdAt",
+          "days",
+          "targets",
+          "shoppingList"
+        ]
       },
       "NextRecommendationsResponse": {
         "type": "object",

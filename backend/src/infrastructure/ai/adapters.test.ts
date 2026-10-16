@@ -5,6 +5,7 @@ import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "./ClaudeShoppingListReviewer";
 import { ClaudeRecipeParser } from "./ClaudeRecipeParser";
+import { ClaudeMealPlanner } from "./ClaudeMealPlanner";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
@@ -333,6 +334,42 @@ describe("ClaudeRecipeParser", () => {
     ["negative grams", { stop_reason: "end_turn", parsed_output: { problem: null, title: "x", servings: 1, ingredients: [{ ...ingredient, grams: -5 }] } }],
   ])("rejects %s", async (_, response) => {
     await expect(parserWith(response).parser.parse(input)).rejects.toThrow();
+  });
+});
+
+describe("ClaudeMealPlanner", () => {
+  const context = {
+    days: 1,
+    meals: ["lunch" as const, "dinner" as const],
+    calorieTarget: 2000,
+    macroTargets: { proteinG: 120, carbsG: 200, fatG: 70 },
+    dietaryPreference: "omnivore" as const,
+    cognitiveGoals: ["focus"],
+    pantry: ["eggs"],
+    catalog: [{ id: "eggs", name: "Eggs", serving: "2 eggs" }],
+  };
+  const meal = {
+    kind: "lunch",
+    title: "Egg and spinach wrap",
+    ingredients: [{ name: "Eggs", quantity: "2", grams: 100, catalogId: "eggs", estimate: { calories: 155, proteinG: 13, carbsG: 1, fatG: 11 }, processing: "whole" }],
+    steps: ["Scramble the eggs."],
+  };
+  const plannerWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 500, output_tokens: 900 }, ...response }));
+    return { parse, planner: new ClaudeMealPlanner({ messages: { parse } as unknown as ParseMessage }) };
+  };
+
+  it("sends the plan context and returns the meals per day", async () => {
+    const { parse, planner } = plannerWith({ stop_reason: "end_turn", parsed_output: { days: [{ meals: [meal, { ...meal, kind: "dinner" }] }] } });
+    expect((await planner.plan(context))[0]!.map((m) => m.kind)).toEqual(["lunch", "dinner"]);
+    expect(JSON.parse((parse.mock.calls[0]![0] as Record<string, any>).messages[0].content)).toEqual(context);
+  });
+
+  it.each([
+    ["a truncated answer", { stop_reason: "max_tokens", parsed_output: null }],
+    ["a meal with no ingredients", { stop_reason: "end_turn", parsed_output: { days: [{ meals: [{ ...meal, ingredients: [] }] }] } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(plannerWith(response).planner.plan(context)).rejects.toThrow();
   });
 });
 

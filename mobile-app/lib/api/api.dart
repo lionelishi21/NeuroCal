@@ -25,6 +25,12 @@ abstract interface class NeuroCalApi {
   /// Grades a typed shopping list, or a photo of one, with kitchen devices that would help.
   Future<ShoppingReview> reviewShoppingList({String? text, Uint8List? photo});
 
+  /// The latest meal plan; null when there isn't one yet.
+  Future<MealPlan?> mealPlan();
+
+  /// Makes a new plan for [days] (1–3), replacing the last.
+  Future<MealPlan> createMealPlan(int days);
+
   /// Calories and macros per serving of a typed or pasted recipe.
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings});
 
@@ -225,6 +231,18 @@ class HttpNeuroCalApi implements NeuroCalApi {
     }
     return ShoppingReview.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  @override
+  Future<MealPlan?> mealPlan() async {
+    final res = await _read(_uri('/meal-plan'));
+    if (res.statusCode == 404) return null;
+    return MealPlan.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<MealPlan> createMealPlan(int days) async => MealPlan.fromJson(
+    _decode(await _client.post(_uri('/meal-plan'), headers: await _headers(json: true), body: jsonEncode({'days': days}))) as Map<String, dynamic>,
+  );
 
   @override
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings}) async {

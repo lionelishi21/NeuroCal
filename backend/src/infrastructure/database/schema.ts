@@ -300,6 +300,15 @@ export const airQualityDays = pgTable(
   (t) => [primaryKey({ columns: [t.latitude, t.longitude, t.date] })],
 );
 
+/** The latest meal plan per person, as worked out (docs: domain/mealPlan.ts). */
+export const mealPlans = pgTable("meal_plans", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  plan: jsonb("plan").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
 /** Videos and episodes for the knowledge pipeline (docs/NCBM.md §7). Transcripts aren't stored. */
 export const knowledgeSources = pgTable("knowledge_sources", {
   id: uuid("id").primaryKey().defaultRandom(),
