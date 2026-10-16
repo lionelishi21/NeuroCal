@@ -13,6 +13,12 @@ import { addDays } from "../../domain/weight";
 import { isIsoDate, localDateOf, previousDate } from "../../domain/localDay";
 import type { IBrainCheckRepository } from "../interfaces/IBrainCheckRepository";
 import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
+import type { EnvironmentCheck } from "../../domain/environment";
+
+/** Reads a day's air and environment check for the score (EnvironmentUseCases). */
+export interface EnvironmentInputs {
+  inputsFor(userId: string, date: string, timeZone: string): Promise<{ aqi: number | null; check: EnvironmentCheck | null }>;
+}
 import type { FocusComponents, FocusScore, Profile } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
@@ -40,6 +46,7 @@ export class GetFocusScoreUseCase {
     private readonly clock: IClock,
     private readonly exercises?: IExerciseRepository,
     private readonly brainChecks?: IBrainCheckRepository,
+    private readonly environment?: EnvironmentInputs,
   ) {}
 
   async execute(input: { userId: string; date?: string }): Promise<FocusScore> {
@@ -50,7 +57,7 @@ export class GetFocusScoreUseCase {
     const { userId } = profile;
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
     const [inputs, stored, tuning] = await Promise.all([
-      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises }, profile, date),
+      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment }, profile, date),
       this.scores.get(userId, date),
       this.weightsFor(profile, date),
     ]);
@@ -107,11 +114,18 @@ export class GetFocusScoreUseCase {
 }
 
 const sameComponents = (a: FocusComponents, b: FocusComponents) =>
-  a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress && (a.movement ?? null) === (b.movement ?? null);
+  a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress && (a.movement ?? null) === (b.movement ?? null) && (a.environment ?? null) === (b.environment ?? null);
 
 /** Everything the Focus Score for `date` reads (ARCHITECTURE §6.8). Shared with GetHistoryUseCase. */
 export async function loadFocusInputs(
-  repos: { meals: IMealRepository; checkIns: ICheckInRepository; telemetry: ITelemetryRepository; exercises?: IExerciseRepository | undefined },
+  repos: {
+    meals: IMealRepository;
+    checkIns: ICheckInRepository;
+    telemetry: ITelemetryRepository;
+    exercises?: IExerciseRepository | undefined;
+    /** Yesterday's air and environment check (EnvironmentUseCases.inputsFor). */
+    environment?: EnvironmentInputs | undefined;
+  },
   profile: Profile,
   date: string,
 ): Promise<FocusInputs> {
@@ -119,7 +133,7 @@ export async function loadFocusInputs(
   const yesterday = previousDate(date);
   const protocol = fastingProtocolOf(profile);
   const noon = Date.parse(`${date}T12:00:00Z`);
-  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, todayMeals, exercise] = await Promise.all([
+  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, todayMeals, exercise, environment] = await Promise.all([
     repos.telemetry.sleepEndingOn(userId, { date, timeZone }),
     repos.meals.listForDay(userId, { date: yesterday, timeZone }),
     repos.telemetry.screenTimeStartingOn(userId, [yesterday, date], timeZone),
@@ -128,6 +142,7 @@ export async function loadFocusInputs(
     protocol === "none" ? Promise.resolve([]) : repos.meals.listForDay(userId, { date, timeZone }),
     // The week before D, wide enough for any time zone; split into "yesterday" and "lately" below.
     repos.exercises?.listBetween(userId, new Date(noon - 8 * 86_400_000), new Date(noon - 86_400_000 / 2)) ?? Promise.resolve([]),
+    repos.environment?.inputsFor(userId, yesterday, timeZone) ?? Promise.resolve(undefined),
   ]);
   const lastWeek = exercise.filter((e) => {
     const day = localDateOf(e.startedAt, timeZone);
@@ -143,5 +158,6 @@ export async function loadFocusInputs(
     previousDayExercise: lastWeek.filter((e) => localDateOf(e.startedAt, timeZone) === yesterday),
     logsExercise: lastWeek.length > 0,
     ...(protocol === "none" ? {} : { fastHours: FAST_HOURS[protocol], todayMeals }),
+    ...(environment ? { environment } : {}),
   };
 }

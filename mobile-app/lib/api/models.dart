@@ -167,7 +167,7 @@ class AnalyzeMealResult {
 }
 
 class FocusComponents {
-  const FocusComponents({this.sleep, this.timing, this.glycemic, this.stress, this.movement});
+  const FocusComponents({this.sleep, this.timing, this.glycemic, this.stress, this.movement, this.environment});
 
   /// 0–1 each; null when there was no data for it today.
   final double? sleep;
@@ -178,12 +178,16 @@ class FocusComponents {
   /// Yesterday's exercise (model v1); null for people who don't log exercise.
   final double? movement;
 
+  /// Yesterday's air and environment check (model v1.1).
+  final double? environment;
+
   factory FocusComponents.fromJson(Map<String, dynamic> j) => FocusComponents(
     sleep: (j['sleep'] as num?)?.toDouble(),
     timing: (j['timing'] as num?)?.toDouble(),
     glycemic: (j['glycemic'] as num?)?.toDouble(),
     stress: (j['stress'] as num?)?.toDouble(),
     movement: (j['movement'] as num?)?.toDouble(),
+    environment: (j['environment'] as num?)?.toDouble(),
   );
 }
 
@@ -1006,6 +1010,7 @@ class TodayData {
     this.stack,
     this.brain,
     this.exercise,
+    this.environment,
   });
 
   final FocusScore focus;
@@ -1019,6 +1024,9 @@ class TodayData {
   /// The day's exercise; null only if it failed to load.
   final ExerciseDay? exercise;
 
+  /// The day's environment; null only if it failed to load.
+  final EnvironmentDay? environment;
+
   factory TodayData.fromJson(Map<String, dynamic> j) {
     T? maybe<T>(String key, T Function(Map<String, dynamic>) parse) => j[key] == null ? null : parse(j[key] as Map<String, dynamic>);
     return TodayData(
@@ -1030,6 +1038,7 @@ class TodayData {
       stack: maybe('stack', SupplementStack.fromJson),
       brain: maybe('brain', BrainCheckHistory.fromJson),
       exercise: maybe('exercise', ExerciseDay.fromJson),
+      environment: maybe('environment', EnvironmentDay.fromJson),
     );
   }
 }
@@ -1269,5 +1278,58 @@ class RecipeAnalysis {
         ),
     ],
   );
+}
+
+/// The daily environment check's items (`EnvironmentItems` in the contracts).
+enum EnvironmentItem {
+  daylight('Morning daylight', 'daylight'),
+  darkBedroom('Dark bedroom', 'darkBedroom'),
+  quietBedroom('Quiet bedroom', 'quietBedroom'),
+  filteredWater('Filtered water', 'filteredWater');
+
+  const EnvironmentItem(this.label, this.wire);
+
+  final String label;
+  final String wire;
+}
+
+/// A day's environment (`EnvironmentDay` in the contracts).
+class EnvironmentDay {
+  const EnvironmentDay({this.place, this.aqi, this.category, this.check = const {}, this.signal});
+
+  /// The town air quality is measured for; null until set.
+  final String? place;
+  final int? aqi;
+
+  /// good, moderate, sensitive, unhealthy, very_unhealthy or hazardous.
+  final String? category;
+
+  /// Answered items; an item not in the map wasn't answered.
+  final Map<EnvironmentItem, bool> check;
+  final double? signal;
+
+  String get categoryLabel => switch (category) {
+    'good' => 'Good',
+    'moderate' => 'Moderate',
+    'sensitive' => 'Unhealthy for sensitive groups',
+    'unhealthy' => 'Unhealthy',
+    'very_unhealthy' => 'Very unhealthy',
+    'hazardous' => 'Hazardous',
+    _ => '',
+  };
+
+  factory EnvironmentDay.fromJson(Map<String, dynamic> j) {
+    final check = j['check'] as Map<String, dynamic>?;
+    return EnvironmentDay(
+      place: (j['location'] as Map<String, dynamic>?)?['place'] as String?,
+      aqi: (j['air'] as Map<String, dynamic>?)?['aqi'] as int?,
+      category: (j['air'] as Map<String, dynamic>?)?['category'] as String?,
+      check: {
+        for (final item in EnvironmentItem.values)
+          if (check?[item.wire] is bool) item: check![item.wire] as bool,
+      },
+      signal: (j['signal'] as num?)?.toDouble(),
+    );
+  }
 }
 

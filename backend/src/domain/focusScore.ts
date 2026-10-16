@@ -1,5 +1,6 @@
 import { isOnLocalDay, localDateOf, localTimeOf, previousDate } from "./localDay";
 import { mealCalories } from "./meal";
+import { type EnvironmentCheck, environmentSignal } from "./environment";
 import type { CheckIn, CognitiveFlag, FocusComponents, Meal, ScreenTimeSample, SleepSession } from "./types";
 
 /**
@@ -13,18 +14,20 @@ import type { CheckIn, CognitiveFlag, FocusComponents, Meal, ScreenTimeSample, S
  *   glycemic ← share of D−1 calories from high-glycemic-load items
  *   stress   ← negative flags in check-ins on D−1 and D
  *   movement ← exercise on D−1, for people who log exercise (v1)
+ *   environment ← the air where you live on D−1 and that day's environment check (v1.1)
  *
  * v1 (docs/NCBM.md §3.2) adds movement and fasting, and tunes the weights to each person once
  * their Brain speed checks show which inputs actually move their reaction time.
  */
-export const FOCUS_MODEL_VERSION = "v1";
+export const FOCUS_MODEL_VERSION = "v1.1";
 
-export const FOCUS_WEIGHTS: Record<keyof FocusComponents, number> = {
-  sleep: 0.35,
+export const FOCUS_WEIGHTS: FocusWeights = {
+  sleep: 0.3,
   timing: 0.2,
   glycemic: 0.15,
   stress: 0.15,
-  movement: 0.15,
+  movement: 0.1,
+  environment: 0.1,
 };
 
 export type FocusWeights = Record<keyof FocusComponents, number>;
@@ -55,6 +58,8 @@ export interface FocusInputs {
   fastHours?: number;
   /** Meals on `date`, for the overnight fast (the first one ends it). */
   todayMeals?: Meal[];
+  /** The previous day's air (US AQI) and environment check. */
+  environment?: { aqi: number | null; check: EnvironmentCheck | null };
 }
 
 /** Exercise minutes count by effort: a hard 15 minutes is worth a moderate 30. */
@@ -157,6 +162,7 @@ export function computeFocusComponents(inputs: FocusInputs): FocusComponents {
     glycemic: round(glycemicComponent(inputs.previousDayMeals)),
     stress: round(stressComponent(inputs.checkIns)),
     movement: round(movementComponent(inputs)),
+    environment: inputs.environment ? environmentSignal(inputs.environment.aqi, inputs.environment.check) : null,
   };
 }
 
@@ -226,6 +232,7 @@ const PHRASES: Record<keyof FocusComponents, string> = {
   glycemic: "Yesterday's high-glycemic food",
   stress: "How you've been feeling",
   movement: "Too little movement yesterday",
+  environment: "Yesterday's air and surroundings",
 };
 
 /** Plain explanation used when the AI explanation is unavailable. */

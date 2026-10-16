@@ -82,9 +82,9 @@ describe("stressComponent", () => {
 });
 
 describe("focusScoreFrom", () => {
-  it("weights sleep at 35%, timing 20%, food, stress and movement 15% each", () => {
-    // Movement has no data, so the other four are renormalised over 0.85: 100 × 0.675 / 0.85.
-    expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1, movement: null })).toBe(79);
+  it("weights sleep 30%, timing 20%, food and stress 15% each, movement and environment 10% each", () => {
+    // Movement and environment have no data, so the other four are renormalised over 0.8: 100 × 0.65 / 0.8.
+    expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1, movement: null })).toBe(81);
     expect(focusScoreFrom({ sleep: 0.5, timing: 1, glycemic: 1, stress: 1, movement: 1 })).toBe(83);
   });
 
@@ -101,7 +101,7 @@ describe("computeFocusComponents + fallbackExplanation", () => {
       sleep: [{ start: at("2026-09-29T07:00:00Z"), end: at("2026-09-29T11:00:00Z"), source: "manual" }],
       checkIns: [checkIn(["sharp"])],
     });
-    expect(components).toEqual({ sleep: 0.5, timing: null, glycemic: null, stress: 1, movement: null });
+    expect(components).toEqual({ sleep: 0.5, timing: null, glycemic: null, stress: 1, movement: null, environment: null });
     expect(fallbackExplanation(focusScoreFrom(components), components)).toBe(
       "Last night's sleep is pulling your score down the most today.",
     );

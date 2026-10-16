@@ -16,9 +16,10 @@ describe("ModelFigure", () => {
       "Supplements",
     ]);
     // The weights match the Focus Score as built (backend domain/focusScore.ts, model v1).
-    expect(within(pillars[2]!).getByText("35%")).toBeInTheDocument();
+    expect(within(pillars[2]!).getByText("30%")).toBeInTheDocument();
     expect(within(pillars[1]!).getByText("20%")).toBeInTheDocument();
-    for (const i of [0, 3, 4]) expect(within(pillars[i]!).getByText("15%")).toBeInTheDocument();
+    for (const i of [0, 3]) expect(within(pillars[i]!).getByText("15%")).toBeInTheDocument();
+    for (const i of [4, 5]) expect(within(pillars[i]!).getByText("10%")).toBeInTheDocument();
     expect(within(pillars[6]!).getByText("Safety checks, not scored")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "The loop" })).toHaveTextContent("Next action");
   });

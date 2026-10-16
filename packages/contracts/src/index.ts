@@ -280,6 +280,8 @@ export const FocusScore = z.object({
     stress: Component,
     /** Yesterday's exercise (model v1); null for people who don't log exercise. */
     movement: Component.optional(),
+    /** Yesterday's air and environment check (model v1.1); null without either. */
+    environment: Component.optional(),
   }),
   /** Plain-language summary of what drives the score. */
   explanation: z.string(),
@@ -316,7 +318,7 @@ export type HistoryDay = z.infer<typeof HistoryDay>;
 export const HistoryResponse = z.object({ days: z.array(HistoryDay) });
 export type HistoryResponse = z.infer<typeof HistoryResponse>;
 
-export const FocusComponentName = z.enum(["sleep", "timing", "glycemic", "stress", "movement"]);
+export const FocusComponentName = z.enum(["sleep", "timing", "glycemic", "stress", "movement", "environment"]);
 export type FocusComponentName = z.infer<typeof FocusComponentName>;
 
 /** A Focus Score input that averaged below par over the past week. */
@@ -716,6 +718,33 @@ export const ShoppingReviewResponse = z.object({
 });
 export type ShoppingReviewResponse = z.infer<typeof ShoppingReviewResponse>;
 
+export const EnvironmentItems = z.object({
+  /** 10+ minutes of outdoor light in the morning. */
+  daylight: z.boolean().optional(),
+  darkBedroom: z.boolean().optional(),
+  quietBedroom: z.boolean().optional(),
+  filteredWater: z.boolean().optional(),
+});
+export type EnvironmentItems = z.infer<typeof EnvironmentItems>;
+
+export const EnvironmentDay = z.object({
+  date: IsoDate,
+  /** The town air quality is measured for, rounded to about 10 km; null until set. */
+  location: z.object({ place: z.string(), latitude: z.number(), longitude: z.number() }).nullable(),
+  /** The day's mean US AQI and its EPA band; null without a place or a reading. */
+  air: z.object({ aqi: z.number().int(), category: z.enum(["good", "moderate", "sensitive", "unhealthy", "very_unhealthy", "hazardous"]) }).nullable(),
+  check: EnvironmentItems.nullable(),
+  /** The Focus Score's environment input for the day, 0–1. */
+  signal: z.number().min(0).max(1).nullable(),
+});
+export type EnvironmentDay = z.infer<typeof EnvironmentDay>;
+
+export const SetEnvironmentLocationRequest = z.object({ place: z.string().max(100).nullable() });
+export type SetEnvironmentLocationRequest = z.infer<typeof SetEnvironmentLocationRequest>;
+
+export const EnvironmentCheckRequest = z.object({ date: IsoDate.optional(), items: EnvironmentItems });
+export type EnvironmentCheckRequest = z.infer<typeof EnvironmentCheckRequest>;
+
 /** The biohacking level (docs/NCBM.md §8): 0 Getting started, 1 Aware … 5 Upgraded, from the last 28 days. */
 export const LevelResponse = z.object({
   level: z.number().int().min(0).max(5),
@@ -946,6 +975,8 @@ export const TodayResponse = z.object({
   brain: BrainCheckHistory.optional(),
   /** The day's exercise; left out only if it failed to load. */
   exercise: ExerciseDay.optional(),
+  /** The day's environment; left out only if it failed to load. */
+  environment: EnvironmentDay.optional(),
 });
 export type TodayResponse = z.infer<typeof TodayResponse>;
 
@@ -982,6 +1013,12 @@ export const endpoints = {
   /** A day's exercise (?date=, default today) with its totals. */
   getExercises: { method: "GET", path: "/exercises", response: ExerciseDay },
   deleteExercise: { method: "DELETE", path: "/exercises/:id" },
+  /** A day's environment (?date=, default today): air where you live, the check, and the score input. */
+  getEnvironment: { method: "GET", path: "/environment", response: EnvironmentDay },
+  /** Sets (or with null, clears) the town air quality is measured for. */
+  setEnvironmentLocation: { method: "PUT", path: "/environment/location", body: SetEnvironmentLocationRequest, response: EnvironmentDay },
+  /** Saves answers to the day's environment check; items not sent keep their answer. */
+  saveEnvironmentCheck: { method: "PUT", path: "/environment/check", body: EnvironmentCheckRequest, response: EnvironmentDay },
   /** The biohacking level from the last 28 days, with each habit and how close it is. */
   getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },

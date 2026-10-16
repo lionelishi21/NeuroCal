@@ -21,6 +21,9 @@ import {
   LevelResponse,
   ShoppingReviewRequest,
   AnalyzeRecipeRequest,
+  EnvironmentCheckRequest,
+  EnvironmentDay,
+  SetEnvironmentLocationRequest,
   RecipeAnalysis,
   AddKnowledgeSourceRequest,
   AddTranscriptRequest,
@@ -87,6 +90,7 @@ import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
+import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
@@ -145,6 +149,7 @@ export interface UseCases {
   reviewShoppingList: ReviewShoppingListUseCase;
   knowledge: KnowledgeUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
+  environment: EnvironmentUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
   gate: SubscriptionGate;
   analyzeSupplementLabel: AnalyzeSupplementLabelUseCase;
@@ -402,6 +407,24 @@ export function createApi(uc: UseCases) {
         return ok(RecipeAnalysis, "problem" in result ? { problem: result.problem, ingredients: [] } : result);
       },
     ],
+    ["GET", /^\/environment$/, async (req) => ok(EnvironmentDay, await uc.environment.day(req.userId, date(req)))],
+    [
+      "PUT",
+      /^\/environment\/location$/,
+      async (req) => {
+        await uc.environment.setLocation(req.userId, json(req, SetEnvironmentLocationRequest).place);
+        return ok(EnvironmentDay, await uc.environment.day(req.userId));
+      },
+    ],
+    [
+      "PUT",
+      /^\/environment\/check$/,
+      async (req) => {
+        const body = json(req, EnvironmentCheckRequest);
+        await uc.environment.check(req.userId, body);
+        return ok(EnvironmentDay, await uc.environment.day(req.userId, body.date));
+      },
+    ],
     ["GET", /^\/level$/, async (req) => ok(LevelResponse, await uc.getLevel.execute(req))],
     ["GET", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.list(req.userId) })],
     ["POST", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.add(req.userId, json(req, AddPantryItemsRequest).names) })],
@@ -558,13 +581,17 @@ export function createApi(uc: UseCases) {
             return undefined;
           }
         };
-        const [focus, bio, meals, exercise, recipes, fasting, stack, brain] = await Promise.all([
+        const [focus, bio, meals, exercise, environmentDay, recipes, fasting, stack, brain] = await Promise.all([
           uc.getFocusScore.execute(day),
           uc.getBioState.execute(day),
           uc.listMeals.execute(day),
           // Part of any day, past or present; still left out rather than failing the whole screen.
           uc.exercise.day(req.userId, day.date).then(toExerciseDay, (e: unknown) => {
             console.error(JSON.stringify({ event: "today_extra_failed", extra: "exercise", error: String(e) }));
+            return undefined;
+          }),
+          uc.environment.day(req.userId, day.date).catch((e: unknown) => {
+            console.error(JSON.stringify({ event: "today_extra_failed", extra: "environment", error: String(e) }));
             return undefined;
           }),
           extra("recipes", async () => {
@@ -586,6 +613,7 @@ export function createApi(uc: UseCases) {
           bio: toBioState(bio),
           meals: meals.map(toMeal),
           ...(exercise ? { exercise } : {}),
+          ...(environmentDay ? { environment: environmentDay } : {}),
           ...(recipes ? { recipes } : {}),
           ...(fasting ? { fasting } : {}),
           ...(stack ? { stack } : {}),

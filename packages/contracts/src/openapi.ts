@@ -68,6 +68,13 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   getExercises: { summary: "Get a day's exercise with its totals", query: dateQuery },
   deleteExercise: { summary: "Remove logged exercise", status: 204, params: { id: "The exercise's id." } },
+  getEnvironment: {
+    summary: "A day's environment",
+    description: "The day's mean US AQI for the town you set (Open-Meteo), your environment check (morning daylight, a dark and quiet bedroom, filtered water), and the Focus Score's environment input.",
+    query: dateQuery,
+  },
+  setEnvironmentLocation: { summary: "Set the town for air quality", description: "A town or postcode, looked up once and stored rounded to about 10 km. Null clears it." },
+  saveEnvironmentCheck: { summary: "Answer the day's environment check", description: "Items not sent keep their answer. Default date: today." },
   getLevel: {
     summary: "Your biohacking level",
     description: "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",

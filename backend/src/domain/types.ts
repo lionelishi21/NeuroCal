@@ -159,6 +159,8 @@ export interface FocusComponents {
   stress: number | null;
   /** v1: yesterday's exercise. Null for people who don't log exercise, so they aren't marked down. */
   movement: number | null;
+  /** v1.1: yesterday's air and environment check. Absent or null without either. */
+  environment?: number | null;
 }
 
 export interface FocusScore {

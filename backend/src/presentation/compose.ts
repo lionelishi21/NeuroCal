@@ -28,6 +28,7 @@ import type { IExerciseRepository } from "../application/interfaces/IExerciseRep
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
+import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../application/interfaces/IEnvironment";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed } from "../application/interfaces/IKnowledge";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
@@ -55,6 +56,7 @@ import { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
+import { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
@@ -96,6 +98,9 @@ export interface Ports {
   pantryRecipes: IPantryRecipeAssistant;
   shoppingReviewer: IShoppingListReviewer;
   recipeParser: IRecipeParser;
+  environment: IEnvironmentRepository;
+  airQuality: IAirQuality;
+  geocoder: IGeocoder;
   knowledge: IKnowledgeRepository;
   techniqueExtractor: ITechniqueExtractor;
   /** Null without a YouTube API key: videos are then only added by hand. */
@@ -114,6 +119,7 @@ export interface Ports {
 
 /** Wires use cases to whatever adapters the caller provides (ARCHITECTURE §2: composition root). */
 export function buildUseCases(p: Ports): UseCases {
+  const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock);
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock);
   return {
@@ -134,10 +140,11 @@ export function buildUseCases(p: Ports): UseCases {
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
-    getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock),
+    getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock, environment),
     pantry: new PantryUseCases(p.pantry, p.profiles, getBioState, p.pantryRecipes),
     reviewShoppingList: new ReviewShoppingListUseCase(p.profiles, p.shoppingReviewer, p.catalog),
     analyzeRecipe: new AnalyzeRecipeUseCase(p.recipeParser, p.foods),
+    environment,
     knowledge: new KnowledgeUseCases(p.knowledge, p.techniqueExtractor, p.catalog, p.embedder, p.videoFeed, p.knowledgeChannels),
     handleStoreEvent: new HandleStoreEventUseCase(p.subscriptions, p.storeWebhookAuth),
     gate: new SubscriptionGate(getSubscription, p.paywall),
@@ -149,10 +156,10 @@ export function buildUseCases(p: Ports): UseCases {
       allowedDomains: p.recipeDomains,
     }),
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
-    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks),
-    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises),
+    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment),
+    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment),
     adminProducts: new AdminProductUseCases(p.catalog, p.embedder),
-    getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock, undefined, p.exercises),
+    getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock, undefined, p.exercises, environment),
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
     adminWaitlist: new AdminWaitlistUseCase(p.waitlist, p.clock),

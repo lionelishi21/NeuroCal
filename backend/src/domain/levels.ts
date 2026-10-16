@@ -21,6 +21,8 @@ export interface LevelDay {
   sleep: number | null;
   stress: number | null;
   movement: number | null;
+  /** Null for people who haven't set a place or done the environment check. */
+  environment?: number | null;
   /** The overnight fast reached the plan's hours; null when fasting is off or it can't be told. */
   keptFast: boolean | null;
 }
@@ -82,6 +84,8 @@ export function levelOf(days: LevelDay[], brain: BrainTrend): LevelResult {
   const sleep = average("Sleep", days.map((d) => d.sleep));
   const stress = average("Stress", days.map((d) => d.stress));
   const movement = average("Movement", days.map((d) => d.movement));
+  const environmentDays = days.map((d) => d.environment ?? null);
+  const environment = average("Environment", environmentDays);
 
   const requirements: LevelRequirement[] = [
     { level: 1, title: "Log food on most days", met: food >= MOST_DAYS, progress: `${food} of the last ${LEVEL_WINDOW_DAYS} days (needs ${MOST_DAYS})` },
@@ -131,6 +135,12 @@ export function levelOf(days: LevelDay[], brain: BrainTrend): LevelResult {
             : `This week ${brain.recent}, your usual ${brain.usual}`,
     },
     { level: 5, title: "Move most days", ...movement },
+    {
+      level: 5,
+      title: "Look after your environment",
+      ...environment,
+      ...(known(environmentDays).length === 0 ? { progress: "Set your town for air quality, or do the daily environment check on Today" } : {}),
+    },
   ];
 
   let level = 0;

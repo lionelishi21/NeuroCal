@@ -10,6 +10,7 @@ const LABELS: Record<FocusComponentName, string> = {
   glycemic: "high-glycemic meals",
   stress: "stress and low focus",
   movement: "too little movement",
+  environment: "poor air, light or sleep surroundings",
 };
 
 /** The weakest components over the period, lowest first. Components without data are ignored. */

@@ -9,7 +9,7 @@ import type { IBrainCheckRepository } from "../interfaces/IBrainCheckRepository"
 import type { IClock } from "../interfaces/IClock";
 import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
 import type { ICheckInRepository, IMealRepository, IProfileRepository, ITelemetryRepository } from "../interfaces/IRepositories";
-import { loadFocusInputs } from "./GetFocusScoreUseCase";
+import { type EnvironmentInputs, loadFocusInputs } from "./GetFocusScoreUseCase";
 
 const DAY_MS = 86_400_000;
 
@@ -23,6 +23,7 @@ export class GetLevelUseCase {
     private readonly exercises: IExerciseRepository,
     private readonly brainChecks: IBrainCheckRepository,
     private readonly clock: IClock,
+    private readonly environment?: EnvironmentInputs,
   ) {}
 
   async execute(input: { userId: string }): Promise<LevelResult> {
@@ -30,7 +31,7 @@ export class GetLevelUseCase {
     if (!profile) throw new NotFoundError("Set up your profile first.");
     const now = this.clock.now();
     const today = localDateOf(now, profile.timeZone);
-    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises };
+    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment };
     const dates = Array.from({ length: LEVEL_WINDOW_DAYS }, (_, i) => addDays(today, i - LEVEL_WINDOW_DAYS + 1));
     const proteinTarget = profile.macroTargets.proteinG;
 
@@ -52,6 +53,7 @@ export class GetLevelUseCase {
           sleep: c.sleep,
           stress: c.stress,
           movement: c.movement,
+          environment: c.environment ?? null,
           keptFast: inputs.fastHours && inputs.previousDayMeals.length && inputs.todayMeals?.length ? keptFast(inputs) : null,
         };
       }),

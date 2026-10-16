@@ -9,11 +9,12 @@ import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import '../reminders/reminders.dart';
 import 'capture.dart';
+import 'environment_card.dart';
 import 'exercise_sheet.dart';
 import 'stack.dart';
 
 class _Day {
-  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise});
+  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise, this.environment});
 
   final DateTime date;
   final FocusScore focus;
@@ -34,6 +35,9 @@ class _Day {
 
   /// Null when it didn't load.
   final ExerciseDay? exercise;
+
+  /// Null when it didn't load.
+  final EnvironmentDay? environment;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -150,6 +154,7 @@ class _TodayScreenState extends State<TodayScreen> {
       stack: d.stack == null || d.stack!.items.isEmpty ? null : d.stack,
       brain: d.brain,
       exercise: d.exercise,
+      environment: d.environment,
     );
   }
 
@@ -241,6 +246,9 @@ class _TodayScreenState extends State<TodayScreen> {
                     onLogSleep: () => widget.onCapture(Capture.sleep),
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
                     onLogExercise: () => widget.onCapture(Capture.exercise),
+                    onSetUpEnvironment: () async {
+                      if (await showPlaceSheet(context) != null && mounted) widget.onChanged();
+                    },
                   ),
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
@@ -255,6 +263,10 @@ class _TodayScreenState extends State<TodayScreen> {
                   if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday) ...[
                     const SizedBox(height: Space.s3),
                     _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
+                  ],
+                  if (day.isToday && day.environment != null) ...[
+                    const SizedBox(height: Space.s3),
+                    EnvironmentCard(day.environment!, onChanged: widget.onChanged),
                   ],
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
@@ -490,13 +502,21 @@ class _WeekStrip extends StatelessWidget {
 
 /// The hero: the ring, a word for the score, the explanation, and the four signals behind it.
 class _FocusCard extends StatelessWidget {
-  const _FocusCard(this.focus, {required this.onCheckIn, required this.onLogSleep, required this.onLogScreens, required this.onLogExercise});
+  const _FocusCard(
+    this.focus, {
+    required this.onCheckIn,
+    required this.onLogSleep,
+    required this.onLogScreens,
+    required this.onLogExercise,
+    required this.onSetUpEnvironment,
+  });
 
   final FocusScore focus;
   final VoidCallback onCheckIn;
   final VoidCallback onLogSleep;
   final VoidCallback onLogScreens;
   final VoidCallback onLogExercise;
+  final VoidCallback onSetUpEnvironment;
 
   @override
   Widget build(BuildContext context) {
@@ -509,6 +529,7 @@ class _FocusCard extends StatelessWidget {
       ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
       ('Stress', 'Recent check-ins', parts.stress, null),
       ('Movement', "Yesterday's exercise", parts.movement, null),
+      ('Environment', 'Air and surroundings', parts.environment, null),
     ];
     // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card.
     return Container(
@@ -623,6 +644,7 @@ class _FocusCard extends StatelessWidget {
                           ),
                           'Stress' => (label: 'Check in', name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
                           'Movement' => (label: 'Log', name: 'Log exercise', empty: 'Counts once you log exercise', run: onLogExercise),
+                          'Environment' => (label: 'Set up', name: 'Set up environment', empty: 'Your town’s air, or the check below', run: onSetUpEnvironment),
                           _ => null,
                         },
                       ),
@@ -662,6 +684,7 @@ class _Signal extends StatelessWidget {
       'Evening timing' => (Icons.nights_stay_rounded, c.ionInk, c.ionSoft),
       'Glycemic load' => (Icons.water_drop_rounded, c.glucoseInk, c.glucoseSoft),
       'Movement' => (Icons.directions_run_rounded, c.chlorophyll, c.chlorophyllSoft),
+      'Environment' => (Icons.air_rounded, c.ionInk, c.ionSoft),
       _ => (Icons.spa_rounded, c.synapseInk, c.synapseSoft),
     };
     return Semantics(

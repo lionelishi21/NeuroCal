@@ -261,6 +261,45 @@ export const pantryItems = pgTable(
   (t) => [unique("pantry_items_user_key").on(t.userId, t.key)],
 );
 
+/** Where someone wants air quality for: a town, rounded to about 10 km. */
+export const environmentLocations = pgTable("environment_locations", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  place: text("place").notNull(),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+});
+
+/** The daily environment check; a null item wasn't answered. */
+export const environmentChecks = pgTable(
+  "environment_checks",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: date("date", { mode: "string" }).notNull(),
+    daylight: boolean("daylight"),
+    darkBedroom: boolean("dark_bedroom"),
+    quietBedroom: boolean("quiet_bedroom"),
+    filteredWater: boolean("filtered_water"),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] })],
+);
+
+/** A day's mean US AQI per rounded place, fetched once and shared by everyone in that town. */
+export const airQualityDays = pgTable(
+  "air_quality_days",
+  {
+    latitude: real("latitude").notNull(),
+    longitude: real("longitude").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    aqi: smallint("aqi"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.latitude, t.longitude, t.date] })],
+);
+
 /** Videos and episodes for the knowledge pipeline (docs/NCBM.md §7). Transcripts aren't stored. */
 export const knowledgeSources = pgTable("knowledge_sources", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -377,6 +416,7 @@ export const focusScores = pgTable(
     glycemicComponent: real("glycemic_component"),
     stressComponent: real("stress_component"),
     movementComponent: real("movement_component"),
+    environmentComponent: real("environment_component"),
     explanation: text("explanation").notNull(),
     modelVersion: text("model_version").notNull(),
     computedAt: timestamp("computed_at", { withTimezone: true }).notNull().defaultNow(),

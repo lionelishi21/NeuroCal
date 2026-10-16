@@ -101,8 +101,8 @@ describe("GetFocusScoreUseCase", () => {
 
     expect(result.date).toBe("2026-09-29");
     // No exercise logged lately, so movement has no data and doesn't count against the score.
-    expect(result.components).toEqual({ sleep: 0.75, timing: 1, glycemic: 0, stress: 0.75, movement: null });
-    expect(result.score).toBe(68); // 100 × (0.35·0.75 + 0.2·1 + 0.15·0 + 0.15·0.75) / 0.85
+    expect(result.components).toEqual({ sleep: 0.75, timing: 1, glycemic: 0, stress: 0.75, movement: null, environment: null });
+    expect(result.score).toBe(67); // 100 × (0.3·0.75 + 0.2·1 + 0.15·0 + 0.15·0.75) / 0.8
     expect(result.explanation).toBe("Sleep is the main thing holding you back today.");
     expect(await scores.get("u1", "2026-09-29")).toEqual(result);
   });

@@ -12,6 +12,7 @@ import {
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
+  DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -225,7 +226,7 @@ describe("DrizzleFocusScoreRepository", () => {
       userId: alice,
       date: "2026-09-29",
       score: 65,
-      components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null , movement: null},
+      components: { sleep: 0.75, timing: 1, glycemic: 0, stress: null, movement: null, environment: null },
       explanation: "Sleep matters most today.",
       modelVersion: "v0",
     };
@@ -305,6 +306,25 @@ describe("DrizzleStackRepository", () => {
     // Kept for the account-deletion test below.
     await repo.setTaken(alice, item.id, "2026-10-03", true);
     expect(await repo.delete(bob, item.id)).toBe(false);
+  });
+});
+
+describe("DrizzleEnvironmentRepository", () => {
+  it("keeps a place per user, merges the day's check answers, and caches air per place and day", async () => {
+    const repo = new DrizzleEnvironmentRepository(db);
+    await repo.setLocation(alice, { place: "Austin", latitude: 30.3, longitude: -97.7 });
+    expect(await repo.getLocation(alice)).toEqual({ place: "Austin", latitude: 30.3, longitude: -97.7 });
+    expect(await repo.getLocation(bob)).toBeNull();
+
+    await repo.saveCheck(alice, "2026-10-01", { daylight: true });
+    expect(await repo.saveCheck(alice, "2026-10-01", { darkBedroom: false })).toEqual({ daylight: true, darkBedroom: false });
+    expect(await repo.getCheck(bob, "2026-10-01")).toBeNull();
+
+    expect(await repo.cachedAqi(30.3, -97.7, "2026-10-01")).toBeUndefined();
+    await repo.cacheAqi(30.3, -97.7, "2026-10-01", null);
+    expect(await repo.cachedAqi(30.3, -97.7, "2026-10-01")).toBeNull();
+    await repo.cacheAqi(30.3, -97.7, "2026-10-01", 48);
+    expect(await repo.cachedAqi(30.3, -97.7, "2026-10-01")).toBe(48);
   });
 });
 

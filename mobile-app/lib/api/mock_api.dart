@@ -182,12 +182,14 @@ class MockNeuroCalApi implements NeuroCalApi {
     const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.wired};
     final stress = (1 - 0.25 * _flags.where(negative.contains).length).clamp(0.0, 1.0);
     const movement = 0.5; // a 15-minute walk yesterday
-    // The API's v1 weights (backend domain/focusScore.ts).
-    final score = (100 * (0.35 * sleep + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.15 * movement)).round();
+    final environment = _environmentSignal();
+    // The API's v1.1 weights (backend domain/focusScore.ts), renormalised when environment has no data.
+    final weighted = 0.3 * sleep + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
+    final score = (100 * weighted / (environment == null ? 0.9 : 1)).round();
     return FocusScore(
       date: isoDate(day),
       score: score,
-      components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress, movement: movement),
+      components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress, movement: movement, environment: environment),
       explanation:
           'About 6.5 hours of sleep is holding your focus back most. A short walk in daylight before lunch can help.',
     );
@@ -223,7 +225,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       totalMinutes: done.fold(0, (s, e) => s + e.minutes),
       totalKcal: done.fold(0, (s, e) => s + e.kcal),
     );
-    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals, exercise: exercise);
+    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals, exercise: exercise, environment: const EnvironmentDay());
     final (recipes, fast, supplements, brain) = await (recommendations(), fasting(), stack(), brainChecks()).wait;
     return TodayData(
       focus: focus,
@@ -234,6 +236,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       stack: supplements,
       brain: brain,
       exercise: exercise,
+      environment: _environmentDay(),
     );
   }
 
@@ -340,6 +343,46 @@ class MockNeuroCalApi implements NeuroCalApi {
       catalogShare: 0.6,
       ingredients: ingredients,
     );
+  }
+
+  String? _place;
+  final _check = <EnvironmentItem, bool>{};
+
+  double? _environmentSignal() {
+    final parts = <double>[
+      if (_place != null) 1.0, // sample air: AQI 38, good
+      if (_check.isNotEmpty) _check.values.where((v) => v).length / _check.length,
+    ];
+    return parts.isEmpty ? null : parts.reduce((a, b) => a + b) / parts.length;
+  }
+
+  EnvironmentDay _environmentDay() => EnvironmentDay(
+    place: _place,
+    aqi: _place == null ? null : 38,
+    category: _place == null ? null : 'good',
+    check: Map.of(_check),
+    signal: _environmentSignal(),
+  );
+
+  @override
+  Future<EnvironmentDay> environment() async {
+    await _wait();
+    return _environmentDay();
+  }
+
+  @override
+  Future<EnvironmentDay> setEnvironmentPlace(String? place) async {
+    await _wait();
+    if (place != null && place.toLowerCase().contains('nowhere')) throw ApiException(400, 'We couldn\'t find "$place". Try the nearest town.');
+    _place = place == null || place.trim().isEmpty ? null : '${place.trim()}, sample region';
+    return _environmentDay();
+  }
+
+  @override
+  Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items) async {
+    await _wait();
+    _check.addAll(items);
+    return _environmentDay();
   }
 
   @override

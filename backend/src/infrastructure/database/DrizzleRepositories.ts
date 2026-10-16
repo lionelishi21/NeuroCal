@@ -41,6 +41,8 @@ import type { IBrainCheckRepository, SavedBrainCheck } from "../../application/i
 import type { Exercise, IExerciseRepository, NewExercise } from "../../application/interfaces/IExerciseRepository";
 import type { IPantryRepository, PantryItem } from "../../application/interfaces/IPantry";
 import type { IKnowledgeRepository, NewTechnique } from "../../application/interfaces/IKnowledge";
+import type { IEnvironmentRepository } from "../../application/interfaces/IEnvironment";
+import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
@@ -48,7 +50,10 @@ import type { IStackRepository, NewStackItem, StackItemPatch } from "../../appli
 import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
 import type { Database } from "./client";
 import {
+  airQualityDays,
   brainChecks,
+  environmentChecks,
+  environmentLocations,
   exercises,
   knowledgeSources,
   knowledgeTechniques,
@@ -105,6 +110,8 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(brainChecks).where(eq(brainChecks.userId, userId));
       await tx.delete(exercises).where(eq(exercises.userId, userId));
       await tx.delete(pantryItems).where(eq(pantryItems.userId, userId));
+      await tx.delete(environmentChecks).where(eq(environmentChecks.userId, userId));
+      await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
       return { authSubject: user.subject };
@@ -460,6 +467,7 @@ export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
         glycemic: row.glycemicComponent,
         stress: row.stressComponent,
         movement: row.movementComponent,
+        environment: row.environmentComponent,
       },
       explanation: row.explanation,
       modelVersion: row.modelVersion,
@@ -474,6 +482,7 @@ export class DrizzleFocusScoreRepository implements IFocusScoreRepository {
       glycemicComponent: score.components.glycemic,
       stressComponent: score.components.stress,
       movementComponent: score.components.movement,
+      environmentComponent: score.components.environment ?? null,
       explanation: score.explanation,
       modelVersion: score.modelVersion,
       computedAt: new Date(),
@@ -889,6 +898,65 @@ export class DrizzleKnowledgeRepository implements IKnowledgeRepository {
       .where(eq(knowledgeTechniques.id, id))
       .returning();
     return DrizzleKnowledgeRepository.toTechnique(row!);
+  }
+}
+
+export class DrizzleEnvironmentRepository implements IEnvironmentRepository {
+  constructor(private readonly db: Database) {}
+
+  async getLocation(userId: string): Promise<AirLocation | null> {
+    const [row] = await this.db.select().from(environmentLocations).where(eq(environmentLocations.userId, userId));
+    return row ? { place: row.place, latitude: row.latitude, longitude: row.longitude } : null;
+  }
+
+  async setLocation(userId: string, location: AirLocation | null) {
+    if (!location) {
+      await this.db.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
+      return;
+    }
+    await this.db
+      .insert(environmentLocations)
+      .values({ userId, ...location })
+      .onConflictDoUpdate({ target: environmentLocations.userId, set: location });
+  }
+
+  private static toCheck(r: typeof environmentChecks.$inferSelect): EnvironmentCheck {
+    const out: EnvironmentCheck = {};
+    if (r.daylight !== null) out.daylight = r.daylight;
+    if (r.darkBedroom !== null) out.darkBedroom = r.darkBedroom;
+    if (r.quietBedroom !== null) out.quietBedroom = r.quietBedroom;
+    if (r.filteredWater !== null) out.filteredWater = r.filteredWater;
+    return out;
+  }
+
+  async getCheck(userId: string, day: string) {
+    const [row] = await this.db.select().from(environmentChecks).where(and(eq(environmentChecks.userId, userId), eq(environmentChecks.date, day)));
+    return row ? DrizzleEnvironmentRepository.toCheck(row) : null;
+  }
+
+  async saveCheck(userId: string, day: string, check: EnvironmentCheck) {
+    const set = Object.fromEntries(Object.entries(check).filter(([, v]) => typeof v === "boolean"));
+    const [row] = await this.db
+      .insert(environmentChecks)
+      .values({ userId, date: day, ...set })
+      .onConflictDoUpdate({ target: [environmentChecks.userId, environmentChecks.date], set: Object.keys(set).length ? set : { userId } })
+      .returning();
+    return DrizzleEnvironmentRepository.toCheck(row!);
+  }
+
+  async cachedAqi(latitude: number, longitude: number, day: string) {
+    const [row] = await this.db
+      .select({ aqi: airQualityDays.aqi })
+      .from(airQualityDays)
+      .where(and(eq(airQualityDays.latitude, latitude), eq(airQualityDays.longitude, longitude), eq(airQualityDays.date, day)));
+    return row ? row.aqi : undefined;
+  }
+
+  async cacheAqi(latitude: number, longitude: number, day: string, aqi: number | null) {
+    await this.db
+      .insert(airQualityDays)
+      .values({ latitude, longitude, date: day, aqi })
+      .onConflictDoUpdate({ target: [airQualityDays.latitude, airQualityDays.longitude, airQualityDays.date], set: { aqi, fetchedAt: new Date() } });
   }
 }
 

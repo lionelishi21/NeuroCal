@@ -367,4 +367,31 @@ void main() {
     expect(find.text('Log a meal'), findsWidgets);
     expect(find.textContaining('1 of 2 servings'), findsWidgets);
   });
+
+  /// Scrolls [finder] to the middle of the screen, clear of the tab bar, and taps it.
+  Future<void> tapCentered(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(finder, 200);
+    await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('environment: set the town for air quality and tick the day’s check', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tapCentered(tester, find.text('Set town'));
+
+    await tester.enterText(find.widgetWithText(TextField, 'Town or postcode'), 'Nowhere');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Try the nearest town'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Town or postcode'), 'Austin');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Air quality on for Austin, sample region'), findsOneWidget);
+
+    await tapCentered(tester, find.text('Morning daylight'));
+    expect(find.text('✓ Morning daylight'), findsOneWidget);
+  });
 }

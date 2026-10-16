@@ -3,7 +3,12 @@
  * `backend/src/domain/focusScore.ts` (ARCHITECTURE §6.8) for one imagined evening,
  * so what a visitor sees move is what the app would compute.
  */
-export const WEIGHTS = { sleep: 0.35, timing: 0.2, glycemic: 0.15, stress: 0.15, movement: 0.15 } as const;
+/**
+ * The app's weights (v1.1) for the inputs the demo has. Environment (10%) needs a town or the daily
+ * check, so the demo leaves it out and, like the app without it, scores over the rest.
+ */
+export const WEIGHTS = { sleep: 0.3, timing: 0.2, glycemic: 0.15, stress: 0.15, movement: 0.1 } as const;
+const WEIGHT_SUM = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
 export type Part = keyof typeof WEIGHTS;
 
 /** Feelings that lower the stress input; each one named takes a quarter off it. */
@@ -43,13 +48,13 @@ export function parts(evening: Evening): Record<Part, number> {
 }
 
 export function score(values: Record<Part, number>): number {
-  return Math.round(100 * (Object.keys(WEIGHTS) as Part[]).reduce((sum, part) => sum + WEIGHTS[part] * values[part], 0));
+  return Math.round((100 * (Object.keys(WEIGHTS) as Part[]).reduce((sum, part) => sum + WEIGHTS[part] * values[part], 0)) / WEIGHT_SUM);
 }
 
 /** The input taking the most points off, and how many; null when nothing takes a whole point. */
 export function biggestDrag(values: Record<Part, number>): { part: Part; points: number } | null {
   const [part, points] = (Object.keys(WEIGHTS) as Part[])
-    .map((key) => [key, Math.round(100 * WEIGHTS[key] * (1 - values[key]))] as const)
+    .map((key) => [key, Math.round((100 * WEIGHTS[key] * (1 - values[key])) / WEIGHT_SUM)] as const)
     .sort((a, b) => b[1] - a[1])[0]!;
   return points >= 1 ? { part, points } : null;
 }

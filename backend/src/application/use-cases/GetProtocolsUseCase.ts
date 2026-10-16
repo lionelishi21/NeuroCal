@@ -9,7 +9,7 @@ import type { ICatalogRepository } from "../interfaces/ICatalogRepository";
 import type { IClock } from "../interfaces/IClock";
 import type { IEmbeddingProvider } from "../interfaces/IEmbeddingProvider";
 import type { ICheckInRepository, IMealRepository, IProfileRepository, ITelemetryRepository } from "../interfaces/IRepositories";
-import { loadFocusInputs } from "./GetFocusScoreUseCase";
+import { type EnvironmentInputs, loadFocusInputs } from "./GetFocusScoreUseCase";
 
 const LOOKBACK_DAYS = 7;
 
@@ -41,6 +41,7 @@ export class GetProtocolsUseCase {
     private readonly clock: IClock,
     private readonly limits = { protocols: 2, products: 2 },
     private readonly exercises?: IExerciseRepository,
+    private readonly environment?: EnvironmentInputs,
   ) {}
 
   async execute(input: { userId: string }): Promise<ProtocolMatches> {
@@ -49,7 +50,7 @@ export class GetProtocolsUseCase {
 
     const dates = [localDateOf(this.clock.now(), profile.timeZone)];
     while (dates.length < LOOKBACK_DAYS) dates.unshift(previousDate(dates[0]!));
-    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises };
+    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment };
     const week = await Promise.all(dates.map(async (date) => computeFocusComponents(await loadFocusInputs(repos, profile, date))));
 
     const points = weakPoints(week);

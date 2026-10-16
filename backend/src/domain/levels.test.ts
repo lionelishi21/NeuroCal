@@ -11,6 +11,7 @@ const day = (over: Partial<LevelDay> = {}): LevelDay => ({
   sleep: 0.85,
   stress: 0.8,
   movement: 0.8,
+  environment: 0.8,
   keptFast: null,
   ...over,
 });

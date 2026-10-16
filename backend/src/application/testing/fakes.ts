@@ -7,6 +7,8 @@ import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrai
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
+import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../interfaces/IEnvironment";
+import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { IRecipeParser } from "../interfaces/IRecipeParser";
 import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
@@ -730,6 +732,50 @@ export class FakeRecipeParser implements IRecipeParser {
         processing: "whole" as const,
       })),
     };
+  }
+}
+
+export class InMemoryEnvironment implements IEnvironmentRepository {
+  readonly locations = new Map<string, AirLocation>();
+  readonly checks = new Map<string, EnvironmentCheck>();
+  readonly air = new Map<string, number | null>();
+  async getLocation(userId: string) {
+    return this.locations.get(userId) ?? null;
+  }
+  async setLocation(userId: string, location: AirLocation | null) {
+    if (location) this.locations.set(userId, location);
+    else this.locations.delete(userId);
+  }
+  async getCheck(userId: string, date: string) {
+    return this.checks.get(`${userId}|${date}`) ?? null;
+  }
+  async saveCheck(userId: string, date: string, check: EnvironmentCheck) {
+    const merged = { ...this.checks.get(`${userId}|${date}`), ...check };
+    this.checks.set(`${userId}|${date}`, merged);
+    return merged;
+  }
+  async cachedAqi(latitude: number, longitude: number, date: string) {
+    const key = `${latitude}|${longitude}|${date}`;
+    return this.air.has(key) ? this.air.get(key)! : undefined;
+  }
+  async cacheAqi(latitude: number, longitude: number, date: string, aqi: number | null) {
+    this.air.set(`${latitude}|${longitude}|${date}`, aqi);
+  }
+}
+
+/** The same AQI everywhere, and counts the lookups. */
+export class FakeAirQuality implements IAirQuality {
+  calls = 0;
+  constructor(private readonly aqi: number | null = 42) {}
+  async dailyAqi() {
+    this.calls++;
+    return this.aqi;
+  }
+}
+
+export class FakeGeocoder implements IGeocoder {
+  async find(place: string) {
+    return /nowhere/i.test(place) ? null : { name: `${place}, Texas, United States`, latitude: 30.26715, longitude: -97.74306 };
   }
 }
 

@@ -376,6 +376,7 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       glycemic: "high-glycemic meals",
       stress: "stress and low focus",
       movement: "too little movement",
+      environment: "poor air, light or sleep surroundings",
     };
     const week = history(7).map((d) => focusScore(d.date).components);
     const weakPoints = (Object.keys(labels) as WeakPoint["component"][])
@@ -416,6 +417,13 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
         summary: "A short, structured breathing break helps you reset when you feel stressed, wired or scattered.",
         steps: ["Breathe in for four counts.", "Hold for four.", "Breathe out for four.", "Hold for four, and repeat for two minutes."],
         match: 0.74,
+      },
+      environment: {
+        id: "morning-light",
+        title: "Ten minutes of morning daylight",
+        summary: "Outdoor light soon after waking sets your body clock, so you're alert by day and sleepy at night.",
+        steps: ["Go outside within an hour of waking.", "Stay out for 10 minutes, longer when it's cloudy.", "Keep the bedroom dark at night."],
+        match: 0.7,
       },
       movement: {
         id: "walk-after-meals",

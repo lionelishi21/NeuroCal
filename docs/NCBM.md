@@ -40,7 +40,7 @@ flowchart LR
     S3[Glycemic load]
     S4[Stress]
     S5[Movement]
-    S6[Environment]:::planned
+    S6[Environment]
   end
 
   FUEL --> S3
@@ -51,8 +51,7 @@ flowchart LR
   ENV --> S6
   SUPP -. "safety checks,<br/>not scored" .-> LOOP
 
-  S1 & S2 & S3 & S4 & S5 --> FS(("Focus Score<br/>0 to 100"))
-  S6 -.-> FS
+  S1 & S2 & S3 & S4 & S5 & S6 --> FS(("Focus Score<br/>0 to 100"))
   FS --> LOOP
   subgraph Outcomes["Outcomes"]
     direction TB
@@ -70,21 +69,22 @@ flowchart LR
   classDef planned stroke-dasharray: 5 5
 ```
 
-*Dashed: designed but not yet in the score.*
+*Every pillar but supplements is in the score (v1.1).*
 
-### 3.1 The Focus Score (v1, built)
+### 3.1 The Focus Score (v1.1, built)
 
 A morning score for day D, built from the day before and the night:
 
 | Signal | Weight | From | Good when |
 |---|---|---|---|
-| Sleep | 35% | Sleep that ended on D: 70% length (against 8 h), 30% deep sleep (against 90 min) | Long and deep |
+| Sleep | 30% | Sleep that ended on D: 70% length (against 8 h), 30% deep sleep (against 90 min) | Long and deep |
 | Evening timing | 20% | Last meal after 21:00 on D−1, screens from 22:00 to 04:00; +0.15 when the overnight fast reached the fasting plan's hours | Early dinner, screens off, fast kept |
 | Glycemic load | 15% | Share of D−1's calories from high-glycemic-load food | Mostly low-GL |
 | Stress | 15% | Negative check-ins (stressed, brain fog, low focus, wired) on D−1 and D | Few or none |
-| Movement | 15% | Exercise on D−1 against 30 moderate minutes (hard counts double, light half) | 30 moderate minutes |
+| Movement | 10% | Exercise on D−1 against 30 moderate minutes (hard counts double, light half) | 30 moderate minutes |
+| Environment | 10% | D−1's mean US AQI where you live (Open-Meteo, town rounded to ~10 km) and that day's check: morning daylight, a dark bedroom, a quiet bedroom, filtered water | Clean air, habits kept |
 
-A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. Movement only counts for people who've logged exercise in the past week, so nobody is marked down for a habit they don't track. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
+A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. Movement only counts for people who've logged exercise in the past week, and environment only once a town is set or the check is done, so nobody is marked down for a habit they don't track. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
 
 ### 3.2 Weights tuned to each person (built)
 
@@ -93,7 +93,7 @@ After **14 days** with both a stored score and a Brain speed check, each signal'
 ### 3.3 Next
 
 - **Calf and circulation work** gets extra credit within Movement, along with short walks after meals.
-- **Environment joins later** (section 6), once there is data to score.
+- **Light and noise from the phone's sensors**, and water quality by postcode, to add measured data next to the self-reported check.
 
 ## 4. A day in the loop
 
@@ -144,7 +144,7 @@ flowchart LR
 | Supplements: label scanning, stack, daily checklist, whole-stack limits and duplicates | Built |
 | Outcome: Brain speed check with personal baseline | Built, and it tunes each person's weights (v1) |
 | Weight: goal, smoothed trend, pace, projected date | Built |
-| Environment: air, water, light, noise, EMF | Not started. Air quality from a public API by location first; water by postcode; light and noise from the phone's sensors |
+| Environment: air quality where you live, and a daily check of daylight, a dark and quiet bedroom and filtered water | Built (v1.1). Water by postcode and light and noise from sensors next |
 | Shopper: review a typed or photographed shopping list, with swaps and gadget picks | Built. Gadgets come from the catalog by rule (air fryer, water filter, ice cream maker, blender), with your affiliate links; a device scraper isn't planned |
 | Knowledge pipeline (below) | Built |
 | Levels (below) | Built |
@@ -177,7 +177,7 @@ A simple ladder so people can see progress beyond one day's score. You move up b
 | 2 | Fuelled | Under 20% of graded calories ultra-processed; protein at 80%+ of target on average |
 | 3 | In rhythm | Last meal and screens on time (timing ≥ 0.75) on 5 of 7 evenings; for people who fast, the window kept 5 of 7 days |
 | 4 | Recovered | Sleep and stress signals averaging 0.75+; Brain speed this week at or above your usual |
-| 5 | Upgraded | Movement averaging 0.75+. An environment check joins once environment is measured |
+| 5 | Upgraded | Movement and environment each averaging 0.75+ |
 
 An average needs at least 10 days with data before it counts.
 

@@ -492,6 +492,104 @@
         }
       }
     },
+    "/environment": {
+      "get": {
+        "operationId": "getEnvironment",
+        "summary": "A day's environment",
+        "description": "The day's mean US AQI for the town you set (Open-Meteo), your environment check (morning daylight, a dark and quiet bedroom, filtered water), and the Focus Score's environment input.",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Calendar day in the user's time zone, e.g. 2026-09-29. Defaults to today.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentDay"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/environment/location": {
+      "put": {
+        "operationId": "setEnvironmentLocation",
+        "summary": "Set the town for air quality",
+        "description": "A town or postcode, looked up once and stored rounded to about 10 km. Null clears it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnvironmentLocationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentDay"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/environment/check": {
+      "put": {
+        "operationId": "saveEnvironmentCheck",
+        "summary": "Answer the day's environment check",
+        "description": "Items not sent keep their answer. Default date: today.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentDay"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/level": {
       "get": {
         "operationId": "getLevel",
@@ -2616,6 +2714,132 @@
           "standard"
         ]
       },
+      "EnvironmentCheckRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "items": {
+            "$ref": "#/components/schemas/EnvironmentItems"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "EnvironmentDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "place": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "place",
+                  "latitude",
+                  "longitude"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "air": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "aqi": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "good",
+                      "moderate",
+                      "sensitive",
+                      "unhealthy",
+                      "very_unhealthy",
+                      "hazardous"
+                    ]
+                  }
+                },
+                "required": [
+                  "aqi",
+                  "category"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentItems"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signal": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "location",
+          "air",
+          "check",
+          "signal"
+        ]
+      },
+      "EnvironmentItems": {
+        "type": "object",
+        "properties": {
+          "daylight": {
+            "type": "boolean"
+          },
+          "darkBedroom": {
+            "type": "boolean"
+          },
+          "quietBedroom": {
+            "type": "boolean"
+          },
+          "filteredWater": {
+            "type": "boolean"
+          }
+        }
+      },
       "Exercise": {
         "type": "object",
         "properties": {
@@ -2836,7 +3060,8 @@
           "timing",
           "glycemic",
           "stress",
-          "movement"
+          "movement",
+          "environment"
         ]
       },
       "FocusScore": {
@@ -2910,6 +3135,18 @@
                 ]
               },
               "movement": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "environment": {
                 "anyOf": [
                   {
                     "type": "number",
@@ -4213,6 +4450,25 @@
           "source"
         ]
       },
+      "SetEnvironmentLocationRequest": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "place"
+        ]
+      },
       "SetTakenRequest": {
         "type": "object",
         "properties": {
@@ -4648,6 +4904,9 @@
           },
           "exercise": {
             "$ref": "#/components/schemas/ExerciseDay"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/EnvironmentDay"
           }
         },
         "required": [

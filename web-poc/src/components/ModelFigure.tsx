@@ -14,10 +14,10 @@ type Pillar = {
 const PILLARS: Pillar[] = [
   { name: "Fuel", detail: "Meals, macros, glycemic load, how processed (NOVA)", signal: { name: "Glycemic load", tag: "15%" } },
   { name: "Rhythm", detail: "Last meal, late screens, fasting window, morning light", signal: { name: "Evening timing", tag: "20%" } },
-  { name: "Recovery", detail: "Sleep length and depth", signal: { name: "Sleep", tag: "35%" } },
+  { name: "Recovery", detail: "Sleep length and depth", signal: { name: "Sleep", tag: "30%" } },
   { name: "Mind", detail: "Check-ins: stressed, foggy, sharp, calm", signal: { name: "Stress", tag: "15%" } },
-  { name: "Movement", detail: "Exercise, steps, calf and circulation work", signal: { name: "Movement", tag: "15%" } },
-  { name: "Environment", detail: "Air, water, light, noise, EMF", signal: { name: "Environment", tag: "Later", planned: true } },
+  { name: "Movement", detail: "Exercise, steps, calf and circulation work", signal: { name: "Movement", tag: "10%" } },
+  { name: "Environment", detail: "The air where you live, daylight, a dark and quiet bedroom, filtered water", signal: { name: "Environment", tag: "10%" } },
   { name: "Supplements", detail: "What you take, checked across the whole stack", signal: null },
 ];
 

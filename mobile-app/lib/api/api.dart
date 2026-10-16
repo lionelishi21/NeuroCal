@@ -28,6 +28,15 @@ abstract interface class NeuroCalApi {
   /// Calories and macros per serving of a typed or pasted recipe.
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings});
 
+  /// Today's environment: air where you live and the daily check.
+  Future<EnvironmentDay> environment();
+
+  /// Sets the town for air quality (null clears it). Throws [ApiException] 400 when it can't be found.
+  Future<EnvironmentDay> setEnvironmentPlace(String? place);
+
+  /// Answers items of today's environment check.
+  Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items);
+
   /// The biohacking level from the last 28 days.
   Future<Level> level();
 
@@ -226,6 +235,27 @@ class HttpNeuroCalApi implements NeuroCalApi {
     );
     return RecipeAnalysis.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  @override
+  Future<EnvironmentDay> environment() async => EnvironmentDay.fromJson(await _get('/environment') as Map<String, dynamic>);
+
+  @override
+  Future<EnvironmentDay> setEnvironmentPlace(String? place) async => EnvironmentDay.fromJson(
+    _decode(await _client.put(_uri('/environment/location'), headers: await _headers(json: true), body: jsonEncode({'place': place})))
+        as Map<String, dynamic>,
+  );
+
+  @override
+  Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items) async => EnvironmentDay.fromJson(
+    _decode(
+          await _client.put(
+            _uri('/environment/check'),
+            headers: await _headers(json: true),
+            body: jsonEncode({'items': {for (final e in items.entries) e.key.wire: e.value}}),
+          ),
+        )
+        as Map<String, dynamic>,
+  );
 
   @override
   Future<Level> level() async => Level.fromJson(await _get('/level') as Map<String, dynamic>);

@@ -43,7 +43,7 @@ describe("GetHistoryUseCase", () => {
       flags: ["stressed", "wired"],
     });
     // sleep 0.75, timing 1 − 40/120 − 0.5 × 45/120, glycemic 1, stress 0.5 → 100 × (0.3 + 0.096 + 0.2 + 0.1)
-    expect(days[2]).toMatchObject({ focusScore: 69, sleepMinutes: 360, caloriesEaten: 0, lastMealAt: null, flags: [] });
+    expect(days[2]).toMatchObject({ focusScore: 68, sleepMinutes: 360, caloriesEaten: 0, lastMealAt: null, flags: [] });
     expect(days[2]).toMatchObject({ bedtime: "00:00", wakeTime: "06:00", lateScreenMinutes: 45 });
   });
 

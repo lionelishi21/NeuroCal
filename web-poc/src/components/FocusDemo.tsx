@@ -120,6 +120,7 @@ export function FocusDemo() {
             </div>
           ))}
         </dl>
+        <p className="mt-3 mb-0 text-2xs text-ink-faint">Environment (10%) counts once you set your town or do the daily check; until then the app scores over these five, as here.</p>
       </div>
     </div>
   );

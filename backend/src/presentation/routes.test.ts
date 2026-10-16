@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis, EnvironmentDay } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -27,6 +27,9 @@ import {
   FakePantryRecipes,
   FakeShoppingReviewer,
   FakeRecipeParser,
+  FakeAirQuality,
+  FakeGeocoder,
+  InMemoryEnvironment,
   FakeTechniqueExtractor,
   InMemoryKnowledge,
   FakeLabelReader,
@@ -138,6 +141,9 @@ beforeEach(async () => {
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
+    environment: new InMemoryEnvironment(),
+    airQuality: new FakeAirQuality(),
+    geocoder: new FakeGeocoder(),
     knowledge: new InMemoryKnowledge(),
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
@@ -486,7 +492,7 @@ describe("API routes", () => {
     expect((await call("GET", "/focus-score")).body).toEqual({
       date: "2026-09-29",
       score: null,
-      components: { sleep: null, timing: null, glycemic: null, stress: null, movement: null },
+      components: { sleep: null, timing: null, glycemic: null, stress: null, movement: null, environment: null },
       explanation: expect.stringMatching(/Log last night's sleep/),
     });
     const ingest = await call("POST", "/telemetry/sleep", {
@@ -543,6 +549,17 @@ describe("API routes", () => {
     expect(body.calories).toBeGreaterThan(0);
     expect(RecipeAnalysis.parse((await call("POST", "/recipes/analyze", { text: "just some words here" })).body)).toEqual({ problem: "not_a_recipe", ingredients: [] });
     expect((await call("POST", "/recipes/analyze", { text: "80 g rolled oats", servings: 0 })).status).toBe(400);
+  });
+
+  it("environment: set the town, answer the check, and Today and the score read it", async () => {
+    const located = EnvironmentDay.parse((await call("PUT", "/environment/location", { place: "Austin" })).body);
+    expect(located.location).toMatchObject({ place: "Austin, Texas, United States", latitude: 30.3 });
+    expect(located.air).toEqual({ aqi: 42, category: "good" });
+    const checked = EnvironmentDay.parse((await call("PUT", "/environment/check", { date: "2026-09-28", items: { daylight: true, filteredWater: true } })).body);
+    expect(checked.signal).toBe(1);
+    expect(TodayResponse.parse((await call("GET", "/today")).body).environment?.location?.place).toBe("Austin, Texas, United States");
+    // Yesterday's air and check feed this morning's score.
+    expect((await call("GET", "/focus-score")).body).toMatchObject({ components: { environment: 1 } });
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {

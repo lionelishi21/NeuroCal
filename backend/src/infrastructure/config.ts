@@ -36,6 +36,8 @@ export interface AppConfig {
   emailFrom: string;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
+  /** Open-Meteo API key (paid plan); without it the free, non-commercial API is used. */
+  openMeteoApiKey?: string;
   /** YouTube Data API key, to check channels for new videos (titles and links only). */
   youTubeApiKey?: string;
   /** YouTube channel ids the knowledge pipeline watches; Dave Asprey's by default. */
@@ -67,6 +69,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     adminEmails: (opt("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,
     youTubeApiKey: opt("YOUTUBE_API_KEY"),
+    openMeteoApiKey: opt("OPEN_METEO_API_KEY"),
     knowledgeChannels: opt("KNOWLEDGE_CHANNELS") ? opt("KNOWLEDGE_CHANNELS")!.split(",").map((c) => c.trim()).filter(Boolean) : DEFAULT_KNOWLEDGE_CHANNELS,
   };
 }

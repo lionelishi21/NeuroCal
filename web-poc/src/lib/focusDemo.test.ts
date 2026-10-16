@@ -19,9 +19,9 @@ describe("focusDemo", () => {
     expect(values.glycemic).toBeCloseTo(0.75);
     expect(values.stress).toBeCloseTo(0.75);
     expect(values.movement).toBeCloseTo(0.5);
-    // 100 × (0.35·0.875 + 0.2·0.5 + 0.15·0.75 + 0.15·0.75 + 0.15·0.5), the app's v1 weights.
+    // 100 × (0.3·0.875 + 0.2·0.5 + 0.15·0.75 + 0.15·0.75 + 0.1·0.5) / 0.9, the app's v1.1 weights without environment.
     expect(score(values)).toBe(71);
-    expect(biggestDrag(values)).toEqual({ part: "timing", points: 10 });
+    expect(biggestDrag(values)).toEqual({ part: "timing", points: 11 });
   });
 
   it("counts sleep across midnight and floors every input at zero", () => {
@@ -30,7 +30,7 @@ describe("focusDemo", () => {
     expect(worst.timing).toBe(0);
     expect(worst.stress).toBe(0);
     expect(worst.movement).toBe(0);
-    expect(score(worst)).toBe(20);
+    expect(score(worst)).toBe(19);
   });
 
   it("writes clock times", () => {

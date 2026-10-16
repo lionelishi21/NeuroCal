@@ -13,6 +13,7 @@ import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingL
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
+import { OpenMeteoAirQuality, OpenMeteoGeocoder } from "../infrastructure/environment/OpenMeteo";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
@@ -32,6 +33,7 @@ import {
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
+  DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
@@ -184,6 +186,9 @@ async function main() {
       pantryRecipes: config.anthropicApiKey ? new ClaudePantryRecipeAssistant({ apiKey: config.anthropicApiKey }) : stubPantryRecipes,
       shoppingReviewer: config.anthropicApiKey ? new ClaudeShoppingListReviewer({ apiKey: config.anthropicApiKey }) : stubShoppingReviewer,
       recipeParser: config.anthropicApiKey ? new ClaudeRecipeParser({ apiKey: config.anthropicApiKey }) : stubRecipeParser,
+      environment: new DrizzleEnvironmentRepository(db),
+      airQuality: new OpenMeteoAirQuality(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
+      geocoder: new OpenMeteoGeocoder(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
       knowledge: new DrizzleKnowledgeRepository(db),
       techniqueExtractor: config.anthropicApiKey ? new ClaudeTechniqueExtractor({ apiKey: config.anthropicApiKey }) : stubTechniqueExtractor,
       videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
