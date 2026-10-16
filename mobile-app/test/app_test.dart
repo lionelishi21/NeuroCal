@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
+import 'package:neurocal/api/models.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/main.dart';
+import 'package:neurocal/widgets/meal_visual.dart';
 import 'package:neurocal/widgets/ui.dart';
 import 'package:neurocal/theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -418,5 +420,61 @@ void main() {
     await tester.tap(find.descendant(of: card, matching: find.text('Log it')));
     await tester.pumpAndSettle();
     expect(find.text('Log a meal'), findsWidgets);
+  });
+
+  testWidgets('meal plan: a meal has its picture, cooks step by step and links to videos', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.pumpAndSettle();
+    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+    await tester.tap(find.text('Plan my meals'));
+    await tester.pumpAndSettle();
+
+    final title = find.text('Salmon and spinach rice bowl');
+    await tester.scrollUntilVisible(title, 200, scrollable: find.byType(Scrollable).first);
+    final card = find.ancestor(of: title, matching: find.byType(AppCard));
+    expect(find.descendant(of: card, matching: find.byType(MealVisual)), findsOneWidget);
+
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Watch how')));
+    expect(opened.single.host, 'www.youtube.com');
+    expect(opened.single.queryParameters['search_query'], 'Salmon and spinach rice bowl recipe');
+
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Cook')));
+    expect(find.text('Gather what you need'), findsOneWidget);
+    await tester.tap(find.text('Start cooking'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+    expect(find.text('Prepare the ingredients.'), findsOneWidget);
+    await tester.tap(find.text('Next step'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cook and serve.'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gather what you need'), findsNothing);
+    expect(title, findsOneWidget);
+  });
+
+  test('ingredients match the food catalog, longest name first', () {
+    CatalogFood food(String id, String name) => CatalogFood(
+      id: id,
+      name: name,
+      category: 'vegetable',
+      serving: '1 cup',
+      grams: 100,
+      calories: 50,
+      macros: const Macros(proteinG: 1, carbsG: 10, fatG: 0),
+      fiberG: 2,
+      glycemicLoad: GlycemicLoad.low,
+      processing: FoodProcessing.whole,
+      goals: const [],
+      why: '',
+      diets: const [],
+    );
+    final foods = [food('potato', 'Potato'), food('sweet-potato', 'Sweet potato'), food('eggs', 'Eggs')];
+    expect(foodFor('2 sweet potatoes, cubed', foods)?.id, 'sweet-potato');
+    expect(foodFor('Baby potatoes', foods)?.id, 'potato');
+    expect(foodFor('1 egg', foods)?.id, 'eggs');
+    expect(foodFor('Olive oil', foods), isNull);
   });
 }

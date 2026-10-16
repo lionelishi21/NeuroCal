@@ -4,6 +4,7 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/meal_visual.dart';
 import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
 
@@ -160,6 +161,8 @@ class _Result extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BlockTitle(r.title, note: r.servings == 1 ? '1 serving' : '${r.servings} servings'),
+            MealVisual(ingredients: [for (final i in r.ingredients) i.name]),
+            const SizedBox(height: Space.s3),
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +185,16 @@ class _Result extends StatelessWidget {
                       stat('${r.macros.fatG.round()} g', 'fat'),
                     ],
                   ),
-                  Align(alignment: Alignment.centerLeft, child: Tag(r.processing.label, fill: fill, ink: ink)),
+                  Row(
+                    children: [
+                      Expanded(child: Align(alignment: Alignment.centerLeft, child: Tag(r.processing.label, fill: fill, ink: ink))),
+                      TextButton.icon(
+                        onPressed: () => AppScope.of(context).openLink(videoSearchFor(r.title)),
+                        icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
+                        label: const Text('Watch how'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

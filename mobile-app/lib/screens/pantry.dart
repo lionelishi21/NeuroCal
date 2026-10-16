@@ -4,8 +4,10 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/meal_visual.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'cook_mode.dart';
 
 /// What's in the kitchen, and recipes cooked from it that fit what's left of today.
 /// [onCook] logs a recipe as a meal (Log a meal, filled in).
@@ -283,6 +285,7 @@ class _RecipeCardState extends State<_RecipeCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s2,
         children: [
+          MealVisual(ingredients: [for (final i in r.ingredients) i.name], height: 112),
           Text(r.title, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.25)),
           Text(
             '${r.minutes} min · ${r.calories} kcal · ${r.macros.proteinG.round()} g protein',
@@ -313,6 +316,11 @@ class _RecipeCardState extends State<_RecipeCard> {
                   Expanded(child: Text(step, style: const TextStyle(fontSize: TextSize.sm, height: 1.4))),
                 ],
               ),
+          CookActions(
+            title: r.title,
+            ingredients: [for (final i in r.ingredients) i.quantity.isEmpty ? i.name : '${i.quantity} ${i.name}'],
+            steps: r.steps,
+          ),
           Row(
             children: [
               Expanded(

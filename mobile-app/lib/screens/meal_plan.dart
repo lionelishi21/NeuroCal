@@ -4,8 +4,10 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/meal_visual.dart';
 import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
+import 'cook_mode.dart';
 
 /// A few days of meals sized to your targets, from your pantry first and fitting your fasting plan, with
 /// a shopping list for the rest. [onLog] logs a planned meal.
@@ -245,6 +247,7 @@ class _MealCardState extends State<_MealCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s2,
         children: [
+          MealVisual(ingredients: [for (final i in m.ingredients) i.name], height: 112),
           Text(kind, style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft)),
           Text(m.title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, height: 1.25)),
           Text('${m.calories} kcal · ${m.macros.proteinG.round()} g protein', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
@@ -265,6 +268,11 @@ class _MealCardState extends State<_MealCard> {
               Text('${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}', style: const TextStyle(fontSize: TextSize.sm)),
             for (final (n, step) in m.steps.indexed) Text('${n + 1}. $step', style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
           ],
+          CookActions(
+            title: m.title,
+            ingredients: [for (final i in m.ingredients) '${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}'],
+            steps: m.steps,
+          ),
           Row(
             children: [
               Expanded(
