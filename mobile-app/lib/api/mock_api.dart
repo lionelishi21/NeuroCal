@@ -7,9 +7,11 @@ import 'models.dart';
 /// In-memory API used when no API_URL is set, seeded like the web app's mock (`web-poc/src/mocks/db.ts`).
 /// The backend is the source of truth for the Focus Score; this only gives the screens believable data.
 class MockNeuroCalApi implements NeuroCalApi {
-  /// [newUser] starts without a profile, so the onboarding shows.
-  MockNeuroCalApi({DateTime? now, bool newUser = false})
-    : _profile = newUser
+  /// [newUser] starts without a profile, so the onboarding shows. [sleepLogged] false starts with no
+  /// sleep for last night, as a phone without a health store would.
+  MockNeuroCalApi({DateTime? now, bool newUser = false, bool? sleepLogged})
+    : _sleepLogged = sleepLogged ?? !newUser,
+      _profile = newUser
           ? null
           : const Profile(
               id: 'u1',
@@ -176,7 +178,7 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<FocusScore> focusScore(DateTime day) async {
     await _wait();
-    const sleep = 0.81; // 6.5 hours last night
+    final sleep = _sleepLogged ? 0.81 : null; // 6.5 hours last night
     const timing = 0.9;
     const glycemic = 0.85;
     const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.wired};
@@ -184,8 +186,8 @@ class MockNeuroCalApi implements NeuroCalApi {
     const movement = 0.5; // a 15-minute walk yesterday
     final environment = _environmentSignal();
     // The API's v1.1 weights (backend domain/focusScore.ts), renormalised when environment has no data.
-    final weighted = 0.3 * sleep + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
-    final score = (100 * weighted / (environment == null ? 0.9 : 1)).round();
+    final weighted = 0.3 * (sleep ?? 0) + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
+    final score = (100 * weighted / (1 - (sleep == null ? 0.3 : 0) - (environment == null ? 0.1 : 0))).round();
     return FocusScore(
       date: isoDate(day),
       score: score,
@@ -854,6 +856,7 @@ class MockNeuroCalApi implements NeuroCalApi {
 
   // Last night, until the person logs over it.
   ({String bed, String wake, int minutes})? _lastNight = (bed: '23:15', wake: '05:45', minutes: 390);
+  bool _sleepLogged;
   int? _lastNightScreens;
 
   static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -956,6 +959,21 @@ class MockNeuroCalApi implements NeuroCalApi {
   Future<void> logSleep(DateTime start, DateTime end) async {
     await _wait();
     _lastNight = (bed: _hhmm(start), wake: _hhmm(end), minutes: end.difference(start).inMinutes);
+    _sleepLogged = true;
+  }
+
+  /// Nights imported, for tests.
+  final imported = <({DateTime start, DateTime end, int deepMinutes, String source})>[];
+
+  @override
+  Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source) async {
+    await _wait();
+    for (final n in nights) {
+      imported.add((start: n.start, end: n.end, deepMinutes: n.deepMinutes, source: source));
+    }
+    final last = nights.last;
+    _lastNight = (bed: _hhmm(last.start), wake: _hhmm(last.end), minutes: last.end.difference(last.start).inMinutes);
+    _sleepLogged = true;
   }
 
   @override

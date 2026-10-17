@@ -59,6 +59,11 @@ Cognito values it uses the local mock sign-in (`lib/auth/auth.dart`), like the w
   or build an APK with `flutter build apk --dart-define-from-file=env/dev.json`
   (`build/app/outputs/flutter-apk/app-release.apk`).
 
+**Sleep from the phone.** Today's "Connect your sleep" reads sleep (read only) from Health Connect on
+Android 8+ (the Health Connect app must be installed; it is built in from Android 14) and from Apple
+Health on iOS. On iOS, also add the **HealthKit** capability once: Runner target → Signing &
+Capabilities → + Capability → HealthKit. Nights are sent on every app open; the API keeps one copy.
+
 ## Develop
 
 ```sh

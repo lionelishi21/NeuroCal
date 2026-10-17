@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../config.dart';
+import '../health/sleep_sync.dart';
 import '../reminders/reminders.dart';
 import '../theme/theme_controller.dart';
 import '../theme/tokens.dart';
@@ -183,6 +184,31 @@ class SettingsScreen extends StatelessWidget {
               child: Text(
                 'Set from when you wake up. While a window is open, we nudge up to three times; checking in stops it for the day.',
                 style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+              ),
+            ),
+          ],
+          if (scope.sleepSync case final sync? when sync.available) ...[
+            const GroupLabel('Sleep'),
+            ListenableBuilder(
+              listenable: sync,
+              builder: (context, _) => AppCard(
+                padding: EdgeInsets.zero,
+                child: SwitchListTile(
+                  contentPadding: const EdgeInsets.fromLTRB(Space.s4, Space.s1, Space.s3, Space.s1),
+                  title: Text('Sleep from ${sync.source.name}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: const Text('Last night logs itself when you open the app'),
+                  value: sync.access == SleepAccess.connected,
+                  onChanged: (on) async {
+                    if (!on) return sync.disconnect();
+                    final imported = await sync.connect(scope.api);
+                    if (!context.mounted) return;
+                    showToast(
+                      context,
+                      imported == null ? "${sync.source.name} didn't give access" : 'Sleep connected',
+                      imported == null ? ToastTone.info : ToastTone.done,
+                    );
+                  },
+                ),
               ),
             ),
           ],

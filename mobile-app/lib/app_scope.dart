@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'api/api.dart';
 import 'auth/auth.dart';
 import 'billing/billing.dart';
+import 'health/sleep_sync.dart';
 import 'reminders/reminders.dart';
 import 'theme/theme_controller.dart';
 
@@ -17,6 +18,7 @@ class AppScope extends InheritedWidget {
     required this.openLink,
     required this.billing,
     this.reminders,
+    this.sleepSync,
     required super.child,
   });
 
@@ -34,6 +36,9 @@ class AppScope extends InheritedWidget {
   /// Check-in reminders; null where notifications aren't set up (tests, previews).
   final ReminderSettings? reminders;
 
+  /// Sleep from Health Connect or Apple Health; null where there is no health store (tests, previews).
+  final SleepSync? sleepSync;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
@@ -44,5 +49,6 @@ class AppScope extends InheritedWidget {
       timeZone != oldWidget.timeZone ||
       openLink != oldWidget.openLink ||
       billing != oldWidget.billing ||
-      reminders != oldWidget.reminders;
+      reminders != oldWidget.reminders ||
+      sleepSync != oldWidget.sleepSync;
 }

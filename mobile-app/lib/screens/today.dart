@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import '../health/sleep_sync.dart';
 import '../reminders/reminders.dart';
 import 'calf_routine.dart';
 import 'capture.dart';
@@ -195,6 +196,22 @@ class _TodayScreenState extends State<TodayScreen> {
     widget.onChanged();
   }
 
+  /// Health Connect or Apple Health: asks for access and imports last night straight away.
+  Future<void> _connectSleep() async {
+    final sync = AppScope.of(context).sleepSync;
+    if (sync == null) return;
+    final imported = await sync.connect(_api);
+    if (!mounted) return;
+    if (imported == null) {
+      showToast(context, "${sync.source.name} didn't give access. You can still log sleep by hand.", ToastTone.info);
+    } else if (imported > 0) {
+      showToast(context, 'Sleep connected. Last night is in');
+      widget.onChanged();
+    } else {
+      showToast(context, 'Sleep connected. Nights will come in as ${sync.source.name} records them', ToastTone.info);
+    }
+  }
+
   /// Straight into the guided routine; logged when it's done.
   Future<void> _calfPump() async {
     final logged = await showCalfRoutine(context);
@@ -266,6 +283,8 @@ class _TodayScreenState extends State<TodayScreen> {
                   if (day.isToday) ...[
                     _UpNext(
                       day,
+                      sleepSync: AppScope.of(context).sleepSync,
+                      onConnectSleep: _connectSleep,
                       onCapture: widget.onCapture,
                       onDaylight: _daylight,
                       onCalfPump: _calfPump,
@@ -1407,6 +1426,8 @@ class _ExerciseCard extends StatelessWidget {
 class _UpNext extends StatefulWidget {
   const _UpNext(
     this.day, {
+    required this.sleepSync,
+    required this.onConnectSleep,
     required this.onCapture,
     required this.onDaylight,
     required this.onCalfPump,
@@ -1415,6 +1436,10 @@ class _UpNext extends StatefulWidget {
   });
 
   final _Day day;
+
+  /// Rebuilds the card when sleep is connected or disconnected.
+  final SleepSync? sleepSync;
+  final VoidCallback onConnectSleep;
   final void Function(Capture) onCapture;
   final VoidCallback onDaylight;
   final VoidCallback onCalfPump;
@@ -1429,8 +1454,34 @@ class _UpNextState extends State<_UpNext> {
   var _open = false;
 
   @override
+  void initState() {
+    super.initState();
+    widget.sleepSync?.addListener(_rebuild);
+  }
+
+  @override
+  void didUpdateWidget(_UpNext old) {
+    super.didUpdateWidget(old);
+    if (old.sleepSync != widget.sleepSync) {
+      old.sleepSync?.removeListener(_rebuild);
+      widget.sleepSync?.addListener(_rebuild);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.sleepSync?.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final sync = widget.sleepSync;
+    final access = sync?.access ?? SleepAccess.unavailable;
+    final store = sync?.source.name ?? '';
     final day = widget.day;
     final stack = day.stack?.items ?? const <StackItem>[];
     final daylight = day.environment?.check[EnvironmentItem.daylight];
@@ -1445,10 +1496,19 @@ class _UpNextState extends State<_UpNext> {
     );
     final step = nextStep(status, DateTime.now());
     final (icon, title, why, action, onAction) = switch (step) {
+      DayStep.sleep when access == SleepAccess.notConnected => (
+        Icons.bedtime_rounded,
+        'Connect your sleep',
+        'NeuroCal reads last night’s sleep from $store, so you never have to type it in.',
+        'Connect $store',
+        widget.onConnectSleep,
+      ),
       DayStep.sleep => (
         Icons.bedtime_rounded,
         'Log last night’s sleep',
-        'Sleep is the biggest part of your Focus Score.',
+        access == SleepAccess.connected
+            ? 'Nothing from $store for last night yet. Log it by hand, or check your watch or sleep app saves to $store.'
+            : 'Sleep is the biggest part of your Focus Score.',
         'Log sleep',
         () => widget.onCapture(Capture.sleep),
       ),
@@ -1491,7 +1551,11 @@ class _UpNextState extends State<_UpNext> {
         () => widget.onCapture(Capture.meal),
       ),
     };
-    final secondary = step == DayStep.move ? ('Log other exercise', () => widget.onCapture(Capture.exercise)) : null;
+    final secondary = switch (step) {
+      DayStep.move => ('Log other exercise', () => widget.onCapture(Capture.exercise)),
+      DayStep.sleep when access == SleepAccess.notConnected => ('Log it by hand', () => widget.onCapture(Capture.sleep)),
+      _ => null,
+    };
 
     final items = <({String title, bool done})>[
       (title: 'Log last night’s sleep', done: status.sleepLogged),

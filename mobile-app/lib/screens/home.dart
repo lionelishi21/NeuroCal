@@ -27,13 +27,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static const _today = 0, _kitchen = 1;
   var _tab = _today;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncSleep());
     if (widget.showGuide) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context) : null);
   }
 
@@ -51,7 +53,22 @@ class _HomeScreenState extends State<HomeScreen> {
   final _changes = ValueNotifier(0);
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _syncSleep();
+  }
+
+  /// Last night from the health store, when connected; Today reloads if anything came in.
+  Future<void> _syncSleep() async {
+    if (!mounted) return;
+    final scope = AppScope.of(context);
+    final sync = scope.sleepSync;
+    if (sync == null) return;
+    if (await sync.sync(scope.api) > 0 && mounted) _changed();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _reminders?.opened.removeListener(_reminderTapped);
     _changes.dispose();
     super.dispose();

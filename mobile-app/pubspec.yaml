@@ -19,6 +19,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.16.0
   # On-device barcode reading for food packages.
   google_mlkit_barcode_scanning: ^0.15.0
+  # Sleep from Health Connect (Android) and Apple Health (iOS), read only.
+  health: ^13.3.2
   http: ^1.6.0
   image_picker: ^1.2.3
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).

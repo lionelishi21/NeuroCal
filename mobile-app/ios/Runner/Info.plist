@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>NeuroCal reads your sleep so last night logs itself and your Focus Score stays accurate.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NeuroCal doesn't write to Apple Health; this is required alongside reading sleep.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>NeuroCal uses the camera to photograph your meals and scan supplement labels.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

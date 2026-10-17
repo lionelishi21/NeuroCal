@@ -112,6 +112,9 @@ abstract interface class NeuroCalApi {
   Future<Help> help();
   Future<void> logSleep(DateTime start, DateTime end);
 
+  /// Nights read from the phone's health store; the API keeps one copy of each.
+  Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source);
+
   /// Minutes on screens inside a window; logging the same window again replaces the earlier entry.
   Future<void> logScreenTime(DateTime windowStart, DateTime windowEnd, int minutes);
 }
@@ -484,6 +487,19 @@ class HttpNeuroCalApi implements NeuroCalApi {
   Future<void> logSleep(DateTime start, DateTime end) => _post('/telemetry/sleep', {
     'sessions': [
       {'start': start.toUtc().toIso8601String(), 'end': end.toUtc().toIso8601String(), 'source': 'manual'},
+    ],
+  });
+
+  @override
+  Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source) => _post('/telemetry/sleep', {
+    'sessions': [
+      for (final n in nights)
+        {
+          'start': n.start.toUtc().toIso8601String(),
+          'end': n.end.toUtc().toIso8601String(),
+          'source': source,
+          if (n.deepMinutes > 0) 'deepMinutes': n.deepMinutes,
+        },
     ],
   });
 

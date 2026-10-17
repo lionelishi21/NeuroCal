@@ -12,6 +12,7 @@ import 'auth/auth.dart';
 import 'auth/cognito_auth.dart';
 import 'billing/billing.dart';
 import 'config.dart';
+import 'health/sleep_sync.dart';
 import 'reminders/reminders.dart';
 import 'device_time_zone.dart';
 import 'api/models.dart';
@@ -48,7 +49,9 @@ Future<void> main() async {
   await device.start().catchError((Object _) {});
   // Again at every launch: the phone may have changed time zone, or the app was updated.
   reminders.restore().catchError((Object _) {});
-  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders));
+  final sleepSync = SleepSync(prefs, HealthSleepSource());
+  sleepSync.start();
+  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders, sleepSync: sleepSync));
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.
@@ -70,6 +73,7 @@ class NeuroCalApp extends StatelessWidget {
     this.openLink = _openOutside,
     this.billing,
     this.reminders,
+    this.sleepSync,
   });
 
   final NeuroCalApi api;
@@ -84,6 +88,9 @@ class NeuroCalApp extends StatelessWidget {
   /// Check-in reminders; none when left out.
   final ReminderSettings? reminders;
 
+  /// Sleep from the phone's health store; none when left out.
+  final SleepSync? sleepSync;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -94,6 +101,7 @@ class NeuroCalApp extends StatelessWidget {
       openLink: openLink,
       billing: billing ?? _unlocked,
       reminders: reminders,
+      sleepSync: sleepSync,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(
