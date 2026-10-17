@@ -517,22 +517,29 @@ void main() {
     await tester.scrollUntilVisible(find.text('Calf pump · 1 min · light'), 200);
   });
 
-  testWidgets('Your day: the checklist ticks off what was logged, and opens the way to the rest', (tester) async {
+  testWidgets('Up next: one step with the button that does it, and the next one appears by itself', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('Your day'), 200, scrollable: list);
-    final card = find.ancestor(of: find.text('Your day'), matching: find.byType(AppCard));
-    final before = (tester.widget<Text>(find.descendant(of: card, matching: find.textContaining(' of '))).data)!;
+    expect(find.text('Up next'), findsOneWidget);
+    // The sample day has sleep and a check-in, so morning light is next (or movement after 5 pm).
+    if (DateTime.now().hour < 17) {
+      expect(find.text('Get 10 minutes of daylight'), findsOneWidget);
+      await tester.tap(find.text('I’ve been outside'));
+      await tester.pumpAndSettle();
+      expect(find.text('Daylight ticked'), findsOneWidget);
+      expect(find.text('Get 10 minutes of daylight'), findsNothing);
+    }
+    expect(find.text('Move for 5 minutes'), findsOneWidget);
+    await tester.tap(find.text('Start the calf pump'));
+    await tester.pumpAndSettle();
+    expect(find.text('Calf pump'), findsWidgets);
+    await tester.tap(find.byTooltip('Back').evaluate().isNotEmpty ? find.byTooltip('Back') : find.byTooltip('Close'));
+    await tester.pumpAndSettle();
 
-    await tapCentered(tester, find.descendant(of: card, matching: find.text('Get morning daylight')));
-    expect(find.text('Daylight ticked'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Your day'), -200, scrollable: list);
-    final after = (tester.widget<Text>(find.descendant(of: card, matching: find.textContaining(' of '))).data)!;
-    expect(int.parse(after.split(' ').first), int.parse(before.split(' ').first) + 1);
-
-    await tapCentered(tester, find.descendant(of: card, matching: find.text('Move')));
-    expect(find.text('Do a calf pump'), findsOneWidget);
+    await tester.tap(find.text('See the whole day'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Log last night’s sleep, done'), findsOneWidget);
+    expect(find.bySemanticsLabel('Move, not done yet'), findsOneWidget);
   });
 
   testWidgets('the add menu is grouped, and How NeuroCal works opens from Me', (tester) async {

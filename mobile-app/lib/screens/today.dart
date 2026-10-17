@@ -8,10 +8,12 @@ import '../widgets/focus_ring.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import '../reminders/reminders.dart';
+import 'calf_routine.dart';
 import 'capture.dart';
 import 'environment_card.dart';
 import 'exercise_sheet.dart';
 import 'guide.dart';
+import 'next_step.dart';
 import 'stack.dart';
 
 class _Day {
@@ -193,6 +195,14 @@ class _TodayScreenState extends State<TodayScreen> {
     widget.onChanged();
   }
 
+  /// Straight into the guided routine; logged when it's done.
+  Future<void> _calfPump() async {
+    final logged = await showCalfRoutine(context);
+    if (logged == null || !mounted) return;
+    showToast(context, 'Exercise logged · ${logged.kcal} kcal burned');
+    widget.onChanged();
+  }
+
   Future<void> _removeExercise(Exercise e) async {
     try {
       await _api.deleteExercise(e.id);
@@ -253,6 +263,17 @@ class _TodayScreenState extends State<TodayScreen> {
                 else if (day == null || snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
                   const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
                 else ...[
+                  if (day.isToday) ...[
+                    _UpNext(
+                      day,
+                      onCapture: widget.onCapture,
+                      onDaylight: _daylight,
+                      onCalfPump: _calfPump,
+                      onStack: _manageStack,
+                      onHowItWorks: () => showGuide(context),
+                    ),
+                    const SizedBox(height: Space.s3),
+                  ],
                   _FocusCard(
                     day.focus,
                     onCheckIn: () => widget.onCapture(Capture.checkIn),
@@ -263,16 +284,6 @@ class _TodayScreenState extends State<TodayScreen> {
                       if (await showPlaceSheet(context) != null && mounted) widget.onChanged();
                     },
                   ),
-                  if (day.isToday) ...[
-                    const SizedBox(height: Space.s3),
-                    _YourDay(
-                      day,
-                      onCapture: widget.onCapture,
-                      onDaylight: _daylight,
-                      onStack: _manageStack,
-                      onHowItWorks: () => showGuide(context),
-                    ),
-                  ],
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
                     _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
@@ -1391,67 +1402,111 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
-/// "Your day": the few things that give tomorrow's Focus Score what it needs, each ticked off by what was
-/// logged today and opening the way to log it. Supplements show only for someone with a stack.
-class _YourDay extends StatelessWidget {
-  const _YourDay(this.day, {required this.onCapture, required this.onDaylight, required this.onStack, required this.onHowItWorks});
+/// "Up next": the one thing to do now, with the button that does it, so nobody has to work out what
+/// comes next. It moves on by itself as things are logged; the whole day folds out below.
+class _UpNext extends StatefulWidget {
+  const _UpNext(
+    this.day, {
+    required this.onCapture,
+    required this.onDaylight,
+    required this.onCalfPump,
+    required this.onStack,
+    required this.onHowItWorks,
+  });
 
   final _Day day;
   final void Function(Capture) onCapture;
   final VoidCallback onDaylight;
+  final VoidCallback onCalfPump;
   final VoidCallback onStack;
   final VoidCallback onHowItWorks;
 
   @override
+  State<_UpNext> createState() => _UpNextState();
+}
+
+class _UpNextState extends State<_UpNext> {
+  var _open = false;
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final meals = day.meals.length;
-    final moved = day.exercise?.totalMinutes ?? 0;
+    final day = widget.day;
     final stack = day.stack?.items ?? const <StackItem>[];
-    final items = <({String title, String detail, bool done, VoidCallback onTap})>[
-      (
-        title: 'Check in',
-        detail: day.bio.flags.isNotEmpty ? 'Done. Check in again later today' : 'How you feel: mood, energy, stress',
-        done: day.bio.flags.isNotEmpty,
-        onTap: () => onCapture(Capture.checkIn),
+    final daylight = day.environment?.check[EnvironmentItem.daylight];
+    final status = DayStatus(
+      sleepLogged: day.focus.components.sleep != null,
+      checkedIn: day.bio.flags.isNotEmpty,
+      daylight: day.environment == null ? null : daylight == true,
+      meals: day.meals.length,
+      movedMinutes: day.exercise?.totalMinutes ?? 0,
+      supplementsLeft: stack.where((i) => !i.takenToday).length,
+      fastingNow: day.fasting?.kind == FastingKind.fasting,
+    );
+    final step = nextStep(status, DateTime.now());
+    final (icon, title, why, action, onAction) = switch (step) {
+      DayStep.sleep => (
+        Icons.bedtime_rounded,
+        'Log last night’s sleep',
+        'Sleep is the biggest part of your Focus Score.',
+        'Log sleep',
+        () => widget.onCapture(Capture.sleep),
       ),
-      (
-        title: 'Log last night’s sleep',
-        detail: day.focus.components.sleep != null ? 'Logged' : 'Sleep is 30% of your score',
-        done: day.focus.components.sleep != null,
-        onTap: () => onCapture(Capture.sleep),
+      DayStep.checkIn => (Icons.mood_rounded, 'Check in', 'Tap how you feel right now. It takes ten seconds.', 'Check in', () => widget.onCapture(Capture.checkIn)),
+      DayStep.daylight => (
+        Icons.wb_sunny_rounded,
+        'Get 10 minutes of daylight',
+        'Morning light sets your body clock, so you sleep better tonight. Step outside, then tap below.',
+        'I’ve been outside',
+        widget.onDaylight,
       ),
-      if (day.environment case final env?)
-        (
-          title: 'Get morning daylight',
-          detail: env.check[EnvironmentItem.daylight] == true ? 'Done' : '10 minutes outside sets your body clock. Tap when done',
-          done: env.check[EnvironmentItem.daylight] == true,
-          onTap: env.check[EnvironmentItem.daylight] == true ? () {} : onDaylight,
-        ),
-      (
-        title: 'Log your meals',
-        detail: meals == 0 ? 'Snap each plate. Timing and blood sugar come from these' : '$meals logged so far',
-        done: meals > 0,
-        onTap: () => onCapture(Capture.meal),
+      DayStep.meal => (
+        Icons.photo_camera_rounded,
+        'Log your next meal',
+        'Snap your plate before you eat. NeuroCal works out the rest.',
+        'Log a meal',
+        () => widget.onCapture(Capture.meal),
       ),
-      (
-        title: 'Move',
-        detail: moved == 0 ? 'A walk, a workout or a 5-minute calf pump' : '$moved min today',
-        done: moved > 0,
-        onTap: () => onCapture(Capture.exercise),
+      DayStep.move => (
+        Icons.directions_run_rounded,
+        'Move for 5 minutes',
+        'A guided calf pump you can do at your desk. It’s logged when you finish.',
+        'Start the calf pump',
+        widget.onCalfPump,
       ),
-      if (stack.isNotEmpty)
-        (
-          title: 'Take your supplements',
-          detail: '${stack.where((i) => i.takenToday).length} of ${stack.length} taken',
-          done: stack.every((i) => i.takenToday),
-          onTap: onStack,
-        ),
+      DayStep.supplements => (
+        Icons.medication_rounded,
+        'Take your supplements',
+        '${status.supplementsLeft} still to take today. Tick them off in your stack.',
+        'Open my stack',
+        widget.onStack,
+      ),
+      DayStep.allDone => (
+        Icons.check_circle_rounded,
+        'You’re done for now',
+        status.fastingNow && day.meals.isEmpty
+            ? 'You’re fasting. Log your first meal when your eating window opens.'
+            : 'Tomorrow’s score has what it needs. Log meals as you eat them.',
+        'Log a meal',
+        () => widget.onCapture(Capture.meal),
+      ),
+    };
+    final secondary = step == DayStep.move ? ('Log other exercise', () => widget.onCapture(Capture.exercise)) : null;
+
+    final items = <({String title, bool done})>[
+      (title: 'Log last night’s sleep', done: status.sleepLogged),
+      (title: 'Check in', done: status.checkedIn),
+      if (status.daylight != null) (title: 'Get morning daylight', done: status.daylight!),
+      (title: 'Log your meals', done: status.meals > 0),
+      (title: 'Move', done: status.movedMinutes > 0),
+      if (stack.isNotEmpty) (title: 'Take your supplements', done: status.supplementsLeft == 0),
     ];
     final done = items.where((i) => i.done).length;
     final still = MediaQuery.disableAnimationsOf(context);
+    final finished = step == DayStep.allDone;
+
     return AppCard(
-      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s2, Space.s2),
+      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s2, Space.s3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1460,19 +1515,22 @@ class _YourDay extends StatelessWidget {
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: const Text('Your day', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                  child: Text(
+                    finished ? 'Your day' : 'Up next',
+                    style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: finished ? c.chlorophyll : c.synapseInk),
+                  ),
                 ),
               ),
-              Text('$done of ${items.length}', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
+              Text('$done of ${items.length} done', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
               IconButton(
                 tooltip: 'How NeuroCal works',
-                onPressed: onHowItWorks,
+                onPressed: widget.onHowItWorks,
                 icon: Icon(Icons.help_outline_rounded, size: 20, color: c.inkSoft),
               ),
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(right: Space.s2, bottom: Space.s1),
+            padding: const EdgeInsets.only(right: Space.s2),
             child: TweenAnimationBuilder<double>(
               tween: Tween(end: items.isEmpty ? 0 : done / items.length),
               duration: still ? Duration.zero : Motion.select,
@@ -1483,52 +1541,89 @@ class _YourDay extends StatelessWidget {
               ),
             ),
           ),
-          if (done == items.length)
-            Padding(
-              padding: const EdgeInsets.only(top: Space.s1, right: Space.s2),
-              child: Text('All done. Tomorrow’s score has what it needs.', style: TextStyle(fontSize: TextSize.xs, color: c.chlorophyll)),
+          const SizedBox(height: Space.s3),
+          // The step slides in when the last one is done.
+          AnimatedSwitcher(
+            duration: still ? Duration.zero : Motion.select,
+            transitionBuilder: (child, a) => FadeTransition(
+              opacity: a,
+              child: SlideTransition(position: Tween(begin: const Offset(0.15, 0), end: Offset.zero).animate(a), child: child),
             ),
-          for (final item in items)
-            Semantics(
-              button: !item.done,
-              label: '${item.title}, ${item.done ? 'done' : 'not done yet'}. ${item.detail}',
-              excludeSemantics: true,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(Radii.option),
-                onTap: item.onTap,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
+            child: Padding(
+              key: ValueKey(step),
+              padding: const EdgeInsets.only(right: Space.s2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: Space.s3,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: Space.s3,
                     children: [
-                      AnimatedSwitcher(
-                        duration: still ? Duration.zero : Motion.select,
-                        transitionBuilder: (child, a) => ScaleTransition(scale: a, child: child),
-                        child: Icon(
-                          item.done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                          key: ValueKey(item.done),
-                          size: 24,
-                          color: item.done ? c.chlorophyll : c.inkFaint,
-                        ),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: finished ? c.chlorophyllSoft : c.synapseSoft, shape: BoxShape.circle),
+                        child: Icon(icon, size: 26, color: finished ? c.chlorophyll : c.synapseInk),
                       ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: 2,
                           children: [
-                            Text(
-                              item.title,
-                              style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: item.done ? c.inkSoft : c.ink),
-                            ),
-                            Text(item.detail, style: TextStyle(fontSize: TextSize.xs, height: 1.3, color: c.inkSoft)),
+                            Text(title, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.2)),
+                            Text(why, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
                           ],
                         ),
                       ),
-                      if (!item.done) Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+                    ],
+                  ),
+                  FilledButton(
+                    style: finished ? FilledButton.styleFrom(backgroundColor: c.chlorophyllSoft, foregroundColor: c.chlorophyll) : null,
+                    onPressed: onAction,
+                    child: Text(action),
+                  ),
+                  if (secondary != null) TextButton(onPressed: secondary.$2, child: Text(secondary.$1)),
+                ],
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: c.inkSoft),
+              onPressed: () => setState(() => _open = !_open),
+              icon: Icon(_open ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 20),
+              label: Text(_open ? 'Hide the day' : 'See the whole day'),
+            ),
+          ),
+          if (_open)
+            for (final item in items)
+              Semantics(
+                container: true,
+                label: '${item.title}, ${item.done ? 'done' : 'not done yet'}',
+                excludeSemantics: true,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    spacing: Space.s3,
+                    children: [
+                      Icon(
+                        item.done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        size: 22,
+                        color: item.done ? c.chlorophyll : c.inkFaint,
+                      ),
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, color: item.done ? c.inkSoft : c.ink),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
         ],
       ),
     );

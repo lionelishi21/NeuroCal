@@ -199,14 +199,14 @@ class _YourDay extends StatelessWidget {
       ),
     );
     return _Page(
-      title: 'Follow your day',
-      lead: 'Today has a short checklist. Each item ticks itself off when you log it, and tapping one takes you straight there.',
+      title: 'Always know what’s next',
+      lead: 'The top of Today shows one thing to do now, with a button that does it. When it’s done, the next one appears by itself.',
       children: [
-        step('Check in'),
         step('Log last night’s sleep'),
+        step('Check in'),
         step('Get morning daylight'),
         step('Log your meals'),
-        step('Move'),
+        step('Move for 5 minutes'),
         const SizedBox(height: Space.s3),
         Text(
           'Anything else, any time: the + button in the middle of the tab bar.',
@@ -246,7 +246,7 @@ class _WhereThingsAre extends StatelessWidget {
       title: 'Where things are',
       lead: 'Five places along the bottom.',
       children: [
-        place(Icons.home_rounded, 'Today', 'Your score, your checklist, meals and what to eat next.'),
+        place(Icons.home_rounded, 'Today', 'What to do next, your score, meals and what to eat.'),
         place(Icons.soup_kitchen_rounded, 'Kitchen', 'Fasting, meal plans, your pantry, recipes and shopping.'),
         place(Icons.add_circle_rounded, '+', 'Log a meal, sleep, exercise, a check-in, and more.'),
         place(Icons.bar_chart_rounded, 'Progress', 'Your week, sleep, body and your level.'),
