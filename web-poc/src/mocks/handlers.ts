@@ -5,6 +5,8 @@ import {
   type KnowledgeSource,
   type KnowledgeTechnique,
   ReviewTechniqueRequest,
+  ReviewDeviceRequest,
+  type DeviceCandidate,
   type AdminProduct,
   type AdminWaitlistEntry,
   AnalyzeMealRequest,
@@ -38,6 +40,31 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   for (const p of adminProducts) catalogUrls.set(p.id, p.url);
   let adminCount = 0;
   // A few sign-ups so the admin dashboard has something to show. Newest first.
+  // Sample data for the admin Devices screen; links point at no real product page.
+  const devices: DeviceCandidate[] = [
+    {
+      id: "dev-1",
+      tag: "kitchen:air-fryer",
+      category: "Air fryer",
+      name: "Sample ceramic air fryer AF-200",
+      maker: "Sample Kitchen",
+      url: "https://example.com/air-fryer-af200",
+      description: "An air fryer with a ceramic-coated basket instead of PTFE non-stick. Its maker says it crisps vegetables and fish with a teaspoon of oil.",
+      status: "pending",
+      foundAt: new Date(Date.now() - 2 * DAY_MS).toISOString(),
+    },
+    {
+      id: "dev-2",
+      tag: "kitchen:water-filter",
+      category: "Water filter",
+      name: "Sample countertop filter CF-5",
+      maker: "Sample Water",
+      url: "https://example.com/filter-cf5",
+      description: "A countertop filter that fits on the tap. Its maker says it is certified to NSF/ANSI 53 for lead.",
+      status: "pending",
+      foundAt: new Date(Date.now() - 2 * DAY_MS).toISOString(),
+    },
+  ];
   // Sample data for the admin Knowledge screen; links point at no real video.
   let knowledgeCount = 0;
   let techniqueCount = 0;
@@ -211,6 +238,41 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     }),
     http.post(url("/admin/knowledge/sync"), async () => {
       await delay(latency);
+      return HttpResponse.json({ added: 0 });
+    }),
+    http.get(url("/admin/devices"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ devices, canScan: true });
+    }),
+    http.put(url("/admin/devices/:id"), async ({ params, request }) => {
+      const body = ReviewDeviceRequest.safeParse(await request.json());
+      if (!body.success) return invalid("Approve or dismiss it.");
+      const device = devices.find((d) => d.id === params.id);
+      if (!device) return HttpResponse.json({ code: "not_found", message: "That device is no longer in the list." }, { status: 404 });
+      await delay(latency);
+      if (body.data.decision === "dismiss") device.status = "dismissed";
+      else {
+        const name = body.data.name?.trim() || device.name;
+        const description = body.data.description?.trim() || device.description;
+        const product: AdminProduct = {
+          id: `admin-${++adminCount}`,
+          name,
+          description,
+          url: device.url,
+          affiliate: false,
+          ownBrand: false,
+          supplement: false,
+          tags: [device.tag, device.category.toLowerCase(), "kitchen"],
+          enabled: true,
+          managedBy: "admin",
+        };
+        adminProducts.push(product);
+        Object.assign(device, { status: "approved", productId: product.id, name, description });
+      }
+      return HttpResponse.json(device);
+    }),
+    http.post(url("/admin/devices/scan"), async () => {
+      await delay(latency * 2);
       return HttpResponse.json({ added: 0 });
     }),
     http.get(url("/admin/products"), async () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -33,6 +33,9 @@ import {
   FakeGeocoder,
   InMemoryEnvironment,
   FakeTechniqueExtractor,
+  FakeDeviceExtractor,
+  FakeWebSearch,
+  InMemoryDeviceCandidates,
   InMemoryKnowledge,
   FakeLabelReader,
   FakeFoodLabelReader,
@@ -152,6 +155,9 @@ beforeEach(async () => {
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
     knowledgeChannels: [],
+    deviceCandidates: new InMemoryDeviceCandidates(),
+    deviceExtractor: new FakeDeviceExtractor(),
+    webSearch: new FakeWebSearch(),
     subscriptionLookup: null,
     storeWebhookAuth: "Bearer rc-secret",
     paywall: false,
@@ -542,6 +548,22 @@ describe("API routes", () => {
     expect(AdminKnowledge.parse((await asAdmin("GET", "/admin/knowledge")).body)).toMatchObject({ watching: [] });
     // Without a YouTube key, checking channels says what's missing.
     expect((await asAdmin("POST", "/admin/knowledge/sync")).status).toBe(400);
+  });
+
+  it("admin devices: look for new ones, then approve one into the products", async () => {
+    const asAdmin = (method: string, path: string, body?: unknown) => call(method, path, body, {}, true);
+    expect((await call("GET", "/admin/devices")).status).toBe(403);
+    expect((await asAdmin("POST", "/admin/devices/scan")).body).toEqual({ added: 4 });
+    const { devices, canScan } = AdminDevices.parse((await asAdmin("GET", "/admin/devices")).body);
+    expect(canScan).toBe(true);
+    const fryer = devices.find((d) => d.tag === "kitchen:air-fryer")!;
+    expect(fryer).toMatchObject({ category: "Air fryer", status: "pending" });
+
+    const approved = DeviceCandidate.parse((await asAdmin("PUT", `/admin/devices/${fryer.id}`, { decision: "approve", name: "Ceramic air fryer" })).body);
+    expect(approved).toMatchObject({ status: "approved", name: "Ceramic air fryer" });
+    const products = (await asAdmin("GET", "/admin/products")).body as { products: { id: string; tags: string[] }[] };
+    expect(products.products.find((p) => p.id === approved.productId)!.tags).toContain("kitchen:air-fryer");
+    expect((await asAdmin("PUT", `/admin/devices/${fryer.id}`, { decision: "maybe" })).status).toBe(400);
   });
 
   it("POST /recipes/analyze gives calories per serving, from the catalog where it can", async () => {

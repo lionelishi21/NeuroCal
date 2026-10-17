@@ -32,6 +32,10 @@ import {
   AdminKnowledge,
   KnowledgeSource,
   KnowledgeSyncResponse,
+  AdminDevices,
+  DeviceCandidate as DeviceCandidateDto,
+  DeviceScanResponse,
+  ReviewDeviceRequest,
   KnowledgeTechnique,
   ReviewTechniqueRequest,
   ShoppingReviewResponse,
@@ -91,11 +95,13 @@ import type { PantryUseCases } from "../application/use-cases/PantryUseCases";
 import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
+import type { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
 import type { MealPlan } from "../domain/mealPlan";
 import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
+import { DEVICE_CATEGORIES, type DeviceCandidate as DeviceRecord } from "../domain/devices";
 import type { Exercise as SavedExercise } from "../application/interfaces/IExerciseRepository";
 import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepository";
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
@@ -152,6 +158,7 @@ export interface UseCases {
   getLevel: GetLevelUseCase;
   reviewShoppingList: ReviewShoppingListUseCase;
   knowledge: KnowledgeUseCases;
+  devices: DeviceScoutUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
@@ -245,6 +252,12 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
 const toExercise = ({ startedAt, ...e }: SavedExercise) => ({ ...e, startedAt: startedAt.toISOString() });
 const toTechnique = (url: string) => ({ sourceId: _, timestampSeconds, ...t }: Technique) => ({ ...t, link: linkAt(url, timestampSeconds) });
+const toDevice = (d: DeviceRecord) => ({
+  ...d,
+  category: DEVICE_CATEGORIES.find((c) => c.tag === d.tag)!.label,
+  foundAt: d.foundAt.toISOString(),
+});
+
 const toKnowledgeSource = ({ source, techniques }: { source: SourceRecord; techniques: Technique[] }) => ({
   id: source.id,
   url: source.url,
@@ -665,6 +678,13 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["POST", /^\/admin\/knowledge\/sync$/, async (req) => ok(KnowledgeSyncResponse, await uc.knowledge.syncAsAdmin(admin(req)))],
+    [
+      "GET",
+      /^\/admin\/devices$/,
+      async (req) => ok(AdminDevices, { devices: (await uc.devices.list(admin(req))).map(toDevice), canScan: uc.devices.canScan() }),
+    ],
+    ["PUT", /^\/admin\/devices\/([^/]+)$/, async (req, [id]) => ok(DeviceCandidateDto, toDevice(await uc.devices.review(admin(req), id!, json(req, ReviewDeviceRequest))))],
+    ["POST", /^\/admin\/devices\/scan$/, async (req) => ok(DeviceScanResponse, await uc.devices.scanAsAdmin(admin(req)))],
     ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
     [
       "GET",

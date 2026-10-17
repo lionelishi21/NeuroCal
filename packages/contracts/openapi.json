@@ -1716,6 +1716,93 @@
         }
       }
     },
+    "/admin/devices": {
+      "get": {
+        "operationId": "getAdminDevices",
+        "summary": "Kitchen devices found by the monthly scout",
+        "description": "Admins only. Each kitchen category the shopping review can suggest (air fryer, water filter, ice cream maker, blender) is searched once a month; devices found wait here as pending.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDevices"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/devices/{id}": {
+      "put": {
+        "operationId": "reviewDevice",
+        "summary": "Approve or dismiss a device",
+        "description": "Admins only. Approving adds it as a product (optionally edited), tagged for its category, so the shopping review can suggest it. Not an affiliate link; change that on the product afterwards.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDeviceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceCandidate"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/devices/scan": {
+      "post": {
+        "operationId": "scanDevices",
+        "summary": "Look for new devices now",
+        "description": "Admins only. Needs TAVILY_API_KEY. Only links from the search results are kept.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceScanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/admin/waitlist": {
       "get": {
         "operationId": "getAdminWaitlist",
@@ -1919,6 +2006,24 @@
         },
         "required": [
           "transcript"
+        ]
+      },
+      "AdminDevices": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceCandidate"
+            }
+          },
+          "canScan": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "devices",
+          "canScan"
         ]
       },
       "AdminKnowledge": {
@@ -2761,6 +2866,79 @@
         "required": [
           "mediaType",
           "sizeBytes"
+        ]
+      },
+      "DeviceCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/DeviceTag"
+          },
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "maker": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "dismissed"
+            ]
+          },
+          "productId": {
+            "type": "string"
+          },
+          "foundAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "tag",
+          "category",
+          "name",
+          "maker",
+          "url",
+          "description",
+          "status",
+          "foundAt"
+        ]
+      },
+      "DeviceScanResponse": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "added"
+        ]
+      },
+      "DeviceTag": {
+        "type": "string",
+        "enum": [
+          "kitchen:air-fryer",
+          "kitchen:water-filter",
+          "kitchen:ice-cream-maker",
+          "kitchen:blender"
         ]
       },
       "DietaryPreference": {
@@ -4602,6 +4780,46 @@
           "calories",
           "macros",
           "reasoning"
+        ]
+      },
+      "ReviewDeviceRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "decision": {
+                "type": "string",
+                "const": "approve"
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 600
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "decision": {
+                "type": "string",
+                "const": "dismiss"
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          }
         ]
       },
       "ReviewTechniqueRequest": {

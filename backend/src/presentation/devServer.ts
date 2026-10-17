@@ -13,6 +13,8 @@ import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingL
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
+import { ClaudeDeviceExtractor } from "../infrastructure/ai/ClaudeDeviceExtractor";
+import { TavilyWebSearch } from "../infrastructure/search/TavilyWebSearch";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenMeteoAirQuality, OpenMeteoGeocoder } from "../infrastructure/environment/OpenMeteo";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
@@ -34,6 +36,7 @@ import {
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
+  DrizzleDeviceCandidateRepository,
   DrizzleEnvironmentRepository,
   DrizzleMealPlanRepository,
   DrizzleStackRepository,
@@ -46,7 +49,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -197,6 +200,9 @@ async function main() {
       techniqueExtractor: config.anthropicApiKey ? new ClaudeTechniqueExtractor({ apiKey: config.anthropicApiKey }) : stubTechniqueExtractor,
       videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
       knowledgeChannels: config.knowledgeChannels,
+      deviceCandidates: new DrizzleDeviceCandidateRepository(db),
+      deviceExtractor: config.anthropicApiKey ? new ClaudeDeviceExtractor({ apiKey: config.anthropicApiKey }) : stubDeviceExtractor,
+      webSearch: config.tavilyApiKey ? new TavilyWebSearch({ apiKey: config.tavilyApiKey }) : null,
       subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
       ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
       paywall: config.paywall,

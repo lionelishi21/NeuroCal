@@ -103,6 +103,16 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     params: { id: "The technique's id." },
   },
   syncKnowledge: { summary: "Check watched channels for new videos now", description: "Admins only. Needs YOUTUBE_API_KEY; titles and links only." },
+  getAdminDevices: {
+    summary: "Kitchen devices found by the monthly scout",
+    description: "Admins only. Each kitchen category the shopping review can suggest (air fryer, water filter, ice cream maker, blender) is searched once a month; devices found wait here as pending.",
+  },
+  reviewDevice: {
+    summary: "Approve or dismiss a device",
+    description: "Admins only. Approving adds it as a product (optionally edited), tagged for its category, so the shopping review can suggest it. Not an affiliate link; change that on the product afterwards.",
+    params: { id: "The device's id." },
+  },
+  scanDevices: { summary: "Look for new devices now", description: "Admins only. Needs TAVILY_API_KEY. Only links from the search results are kept." },
   reviewShoppingList: {
     summary: "Review a shopping list",
     description: "Send the list as JSON `text`, or a photo of a written list, receipt or shopping app as multipart `photo`. Each item is graded (whole, processed, ultra-processed) and marked keep, swap (with a cleaner choice) or limit. Kitchen devices are suggested only when the list shows a swap they make easy, from enabled catalog products. Nothing is saved.",

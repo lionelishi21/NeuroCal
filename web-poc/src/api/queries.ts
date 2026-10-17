@@ -8,6 +8,10 @@ import {
   KnowledgeSyncResponse,
   KnowledgeTechnique,
   type ReviewTechniqueRequest,
+  AdminDevices,
+  DeviceCandidate,
+  DeviceScanResponse,
+  type ReviewDeviceRequest,
   AdminProduct,
   AdminProductList,
   AdminWaitlist,
@@ -49,6 +53,7 @@ export const keys = {
   adminProducts: ["admin", "products"] as const,
   adminWaitlist: ["admin", "waitlist"] as const,
   adminKnowledge: ["admin", "knowledge"] as const,
+  adminDevices: ["admin", "devices"] as const,
 };
 
 export function useProfile() {
@@ -364,3 +369,30 @@ export function useSyncKnowledge() {
   });
 }
 
+/** Kitchen devices the monthly scout found, for admins. */
+export function useAdminDevices() {
+  return useQuery({ queryKey: keys.adminDevices, queryFn: () => request("/admin/devices", AdminDevices), retry: false });
+}
+
+/** Approving a device adds a product, so the products list refreshes too. */
+function useInvalidateDevices() {
+  const client = useQueryClient();
+  return () => Promise.all([client.invalidateQueries({ queryKey: keys.adminDevices }), client.invalidateQueries({ queryKey: keys.adminProducts })]);
+}
+
+export function useReviewDevice() {
+  const invalidate = useInvalidateDevices();
+  return useMutation({
+    mutationFn: ({ id, review }: { id: string; review: ReviewDeviceRequest }) =>
+      request(`/admin/devices/${encodeURIComponent(id)}`, DeviceCandidate, { method: "PUT", body: JSON.stringify(review) }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useScanDevices() {
+  const invalidate = useInvalidateDevices();
+  return useMutation({
+    mutationFn: () => request("/admin/devices/scan", DeviceScanResponse, { method: "POST" }),
+    onSuccess: invalidate,
+  });
+}

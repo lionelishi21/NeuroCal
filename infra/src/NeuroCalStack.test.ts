@@ -52,6 +52,7 @@ describe("NeuroCalStack", () => {
 
   it("checks watched YouTube channels for new videos on the 1st of each month", () => {
     dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "cron(0 9 1 * ? *)" });
+    dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "cron(0 9 2 * ? *)" });
   });
 
   it("keeps a dev database awake when asked", () => {
@@ -67,7 +68,7 @@ describe("NeuroCalStack", () => {
     const functions = dev.findResources("AWS::Lambda::Function", {
       Properties: { Environment: { Variables: { APP_SECRET_ARN: Match.anyValue() } } },
     });
-    expect(Object.keys(functions)).toHaveLength(5); // API, migrations, catalog sync, trial reminders, knowledge sync
+    expect(Object.keys(functions)).toHaveLength(6); // API, migrations, catalog sync, trial reminders, knowledge sync, device scout
     for (const f of Object.values(functions)) {
       const vars = (f as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment.Variables;
       expect(Object.keys(vars)).not.toEqual(expect.arrayContaining(["OPENAI_API_KEY"]));

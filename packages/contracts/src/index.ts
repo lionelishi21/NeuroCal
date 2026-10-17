@@ -662,6 +662,49 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
+export const DeviceTag = z.enum(["kitchen:air-fryer", "kitchen:water-filter", "kitchen:ice-cream-maker", "kitchen:blender"]);
+export type DeviceTag = z.infer<typeof DeviceTag>;
+
+/** A kitchen device the monthly scout found, waiting for review. */
+export const DeviceCandidate = z.object({
+  id: z.string(),
+  tag: DeviceTag,
+  /** "Air fryer", "Water filter", … */
+  category: z.string(),
+  name: z.string(),
+  maker: z.string(),
+  url: z.string(),
+  description: z.string(),
+  status: z.enum(["pending", "approved", "dismissed"]),
+  /** The product it became, once approved. */
+  productId: z.string().optional(),
+  foundAt: IsoDateTime,
+});
+export type DeviceCandidate = z.infer<typeof DeviceCandidate>;
+
+export const AdminDevices = z.object({
+  /** Newest first. */
+  devices: z.array(DeviceCandidate),
+  /** False without a search key: the monthly scan and "Look now" can't run. */
+  canScan: z.boolean(),
+});
+export type AdminDevices = z.infer<typeof AdminDevices>;
+
+export const ReviewDeviceRequest = z.discriminatedUnion("decision", [
+  z.object({
+    decision: z.literal("approve"),
+    /** Edits before it becomes a product. */
+    name: z.string().max(120).optional(),
+    description: z.string().max(600).optional(),
+    url: z.url().optional(),
+  }),
+  z.object({ decision: z.literal("dismiss") }),
+]);
+export type ReviewDeviceRequest = z.infer<typeof ReviewDeviceRequest>;
+
+export const DeviceScanResponse = z.object({ added: z.number().int().nonnegative() });
+export type DeviceScanResponse = z.infer<typeof DeviceScanResponse>;
+
 export const CreateMealPlanRequest = z.object({ days: z.number().int().min(1).max(3) });
 export type CreateMealPlanRequest = z.infer<typeof CreateMealPlanRequest>;
 
@@ -1119,6 +1162,12 @@ export const endpoints = {
   reviewTechnique: { method: "PUT", path: "/admin/knowledge/techniques/:id", body: ReviewTechniqueRequest, response: KnowledgeTechnique },
   /** Checks the watched channels for new videos now, instead of waiting for the monthly run. */
   syncKnowledge: { method: "POST", path: "/admin/knowledge/sync", response: KnowledgeSyncResponse },
+  /** Admin only: kitchen devices the monthly scout found, for review. */
+  getAdminDevices: { method: "GET", path: "/admin/devices", response: AdminDevices },
+  /** Approve (into the products, optionally edited) or dismiss. */
+  reviewDevice: { method: "PUT", path: "/admin/devices/:id", body: ReviewDeviceRequest, response: DeviceCandidate },
+  /** Looks for new devices now, instead of waiting for the monthly run. */
+  scanDevices: { method: "POST", path: "/admin/devices/scan", response: DeviceScanResponse },
   /** Admin only (403 otherwise): the waitlist at a glance. */
   getAdminWaitlist: { method: "GET", path: "/admin/waitlist", response: AdminWaitlist },
   /** Public (no sign-in): join the list to be emailed when the app is ready. */

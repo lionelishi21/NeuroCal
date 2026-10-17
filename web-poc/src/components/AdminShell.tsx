@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/admin/waitlist", label: "Waitlist" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/knowledge", label: "Knowledge" },
+  { href: "/admin/devices", label: "Devices" },
   { href: "/app", label: "App preview" },
 ] as const;
 

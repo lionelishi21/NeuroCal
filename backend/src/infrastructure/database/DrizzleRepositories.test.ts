@@ -12,6 +12,7 @@ import {
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
+  DrizzleDeviceCandidateRepository,
   DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
@@ -346,6 +347,18 @@ describe("DrizzleKnowledgeRepository", () => {
     expect(listed!.source.status).toBe("extracted");
     expect(listed!.techniques).toHaveLength(1);
     expect(await repo.getTechnique("not-an-id")).toBeNull();
+  });
+});
+
+describe("DrizzleDeviceCandidateRepository", () => {
+  it("adds a device once, however its name is written, and records the review", async () => {
+    const repo = new DrizzleDeviceCandidateRepository(db);
+    const device = { tag: "kitchen:ice-cream-maker" as const, name: "Ninja CREAMi NC301", maker: "Ninja", url: "https://www.ninjakitchen.com/creami", description: "d" };
+    const [added] = await repo.add([device]);
+    expect(await repo.add([{ ...device, name: "ninja creami nc-301" }])).toEqual([]);
+    expect(await repo.update(added!.id, { status: "approved", productId: "admin-1", name: "Ninja Creami" })).toMatchObject({ status: "approved", productId: "admin-1", name: "Ninja Creami" });
+    expect((await repo.list()).map((d) => d.name)).toEqual(["Ninja Creami"]);
+    expect(await repo.get("nope")).toBeNull();
   });
 });
 

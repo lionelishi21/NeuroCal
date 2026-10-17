@@ -213,8 +213,16 @@ export class NeuroCalStack extends Stack {
       targets: [new targets.LambdaFunction(knowledgeSync, { retryAttempts: 1 })],
     });
 
+    // Device scout: on the 2nd of each month, new kitchen devices for the shopping review's categories go
+    // into the admin Devices list. Only links from the search results; nothing becomes a product until approved.
+    const deviceScout = fn("DeviceScoutFunction", "deviceScoutLambda.ts", { timeout: Duration.minutes(3) });
+    new events.Rule(this, "DeviceScout", {
+      schedule: events.Schedule.cron({ minute: "0", hour: "9", day: "2" }),
+      targets: [new targets.LambdaFunction(deviceScout, { retryAttempts: 1 })],
+    });
+
     // Everything but migrations connects through the proxy when there is one (backend secrets.ts reads DB_HOST).
-    if (proxy) for (const f of [api, catalogSync, trialReminders, knowledgeSync]) f.addEnvironment("DB_HOST", proxy.endpoint);
+    if (proxy) for (const f of [api, catalogSync, trialReminders, knowledgeSync, deviceScout]) f.addEnvironment("DB_HOST", proxy.endpoint);
 
     // Auth: Cognito user pool; API Gateway verifies the JWT before the Lambda runs (§10).
     const userPool = new cognito.UserPool(this, "Users", {

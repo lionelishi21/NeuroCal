@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { ClaudeDeviceExtractor, DEVICE_MODEL } from "./ClaudeDeviceExtractor";
 import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
@@ -9,7 +10,7 @@ import { ClaudeMealPlanner } from "./ClaudeMealPlanner";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
-import { FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { DEVICE_EXTRACTION_PROMPT, FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -376,3 +377,27 @@ describe("ClaudeMealPlanner", () => {
   });
 });
 
+describe("ClaudeDeviceExtractor", () => {
+  const device = { name: "Ceramic air fryer AF100", maker: "Maker", url: "https://maker.example/af100", description: "An air fryer with a ceramic basket. Its maker says it needs little oil." };
+  const extractorWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 300, output_tokens: 200 }, ...response }));
+    return { parse, extractor: new ClaudeDeviceExtractor({ messages: { parse } as unknown as ParseMessage }) };
+  };
+  const input = { category: "Air fryer", results: [{ title: "AF100", url: "https://maker.example/af100", snippet: "Ceramic basket." }] };
+
+  it("sends the category and results with a JSON schema", async () => {
+    const { parse, extractor } = extractorWith({ stop_reason: "end_turn", parsed_output: { devices: [device] } });
+    expect(await extractor.extract(input)).toEqual([device]);
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(DEVICE_MODEL);
+    expect(params.system).toBe(DEVICE_EXTRACTION_PROMPT);
+    expect(JSON.parse(params.messages[0].content)).toEqual(input);
+  });
+
+  it.each([
+    ["a refusal", { stop_reason: "refusal", parsed_output: null }],
+    ["output outside the schema", { stop_reason: "end_turn", parsed_output: { devices: [{ ...device, description: "short" }] } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(extractorWith(response).extractor.extract(input)).rejects.toThrow();
+  });
+});

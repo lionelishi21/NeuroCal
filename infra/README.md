@@ -42,6 +42,8 @@ Context options:
 
    **Knowledge pipeline.** To check Dave Asprey's YouTube channel for new videos each month, add `YOUTUBE_API_KEY` (a YouTube Data API v3 key from Google Cloud) to the same secret. `KNOWLEDGE_CHANNELS` (comma-separated channel ids) changes which channels are watched. Without the key, videos are added by hand on the admin Knowledge page.
 
+   **Device scout.** On the 2nd of each month the `DeviceScout` Lambda searches for new air fryers, water filters, ice cream makers and blenders (the devices the shopping review suggests) with `TAVILY_API_KEY`, and Claude (`ANTHROPIC_API_KEY`) picks specific models from the results. They wait on the admin Devices page; only approved ones become products. Without either key the run is skipped.
+
    **Air quality.** The environment pillar reads air quality and town names from Open-Meteo (https://open-meteo.com). Its free API is for non-commercial use only: once NeuroCal earns money, take a paid plan and add its key as `OPEN_METEO_API_KEY`, which moves the calls to Open-Meteo's customer endpoints.
 
    **Subscriptions.** Purchases go through RevenueCat (https://www.revenuecat.com). In RevenueCat, create an entitlement called `pro` with the yearly and monthly products, and a webhook to `<ApiUrl>/webhooks/revenuecat` with an Authorization header value of your choosing. Put that exact value in the secret as `REVENUECAT_WEBHOOK_AUTH` (for example `Bearer` plus a long random string), and RevenueCat's secret API key as `REVENUECAT_SECRET_KEY`. The paywall stays off until you add `PAYWALL` = `on`; do that once the store products are live and the apps that show the paywall are out, or the AI features will refuse everyone.

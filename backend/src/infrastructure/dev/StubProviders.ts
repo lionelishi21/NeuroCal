@@ -1,3 +1,4 @@
+import type { IDeviceExtractor } from "../../application/interfaces/IDevices";
 /**
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
@@ -182,3 +183,9 @@ export const stubMealPlanner: IMealPlanner = {
   },
 };
 
+export const stubDeviceExtractor: IDeviceExtractor = {
+  async extract({ category, results }) {
+    const first = results[0];
+    return first ? [{ name: `${first.title} (stub)`, maker: "Stub", url: first.url, description: `Stub ${category.toLowerCase()}: set ANTHROPIC_API_KEY to read real search results.` }] : [];
+  },
+};

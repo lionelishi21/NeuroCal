@@ -7,6 +7,8 @@ import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingL
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
 import { ClaudeTechniqueExtractor } from "../infrastructure/ai/ClaudeTechniqueExtractor";
+import { ClaudeDeviceExtractor } from "../infrastructure/ai/ClaudeDeviceExtractor";
+import { TavilyWebSearch } from "../infrastructure/search/TavilyWebSearch";
 import { YouTubeVideoFeed } from "../infrastructure/knowledge/YouTubeVideoFeed";
 import { OpenMeteoAirQuality, OpenMeteoGeocoder } from "../infrastructure/environment/OpenMeteo";
 import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReader";
@@ -29,6 +31,7 @@ import {
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
+  DrizzleDeviceCandidateRepository,
   DrizzleEnvironmentRepository,
   DrizzleMealPlanRepository,
   DrizzleStackRepository,
@@ -91,6 +94,9 @@ const api = createApi(
     techniqueExtractor: new ClaudeTechniqueExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
     knowledgeChannels: config.knowledgeChannels,
+    deviceCandidates: new DrizzleDeviceCandidateRepository(db),
+    deviceExtractor: new ClaudeDeviceExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    webSearch: config.tavilyApiKey ? new TavilyWebSearch({ apiKey: config.tavilyApiKey }) : null,
     subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
     ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
     paywall: config.paywall,

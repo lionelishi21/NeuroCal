@@ -46,6 +46,9 @@ import type { IMealPlanRepository } from "../../application/interfaces/IMealPlan
 import type { MealPlan } from "../../domain/mealPlan";
 import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
+import type { FoundDevice, IDeviceCandidateRepository } from "../../application/interfaces/IDevices";
+import { type DeviceCandidate, type DeviceStatus, type DeviceTag, deviceKey } from "../../domain/devices";
+import { NotFoundError } from "../../domain/errors";
 import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
@@ -55,6 +58,7 @@ import {
   airQualityDays,
   mealPlans,
   brainChecks,
+  deviceCandidates,
   environmentChecks,
   environmentLocations,
   exercises,
@@ -981,3 +985,51 @@ export class DrizzleMealPlanRepository implements IMealPlanRepository {
   }
 }
 
+export class DrizzleDeviceCandidateRepository implements IDeviceCandidateRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toCandidate(r: typeof deviceCandidates.$inferSelect): DeviceCandidate {
+    return {
+      id: r.id,
+      tag: r.tag,
+      name: r.name,
+      maker: r.maker,
+      url: r.url,
+      description: r.description,
+      status: r.status,
+      ...(r.productId ? { productId: r.productId } : {}),
+      foundAt: r.foundAt,
+    };
+  }
+
+  async list() {
+    const rows = await this.db.select().from(deviceCandidates).orderBy(desc(deviceCandidates.foundAt));
+    return rows.map(DrizzleDeviceCandidateRepository.toCandidate);
+  }
+
+  async get(id: string) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+    const [row] = await this.db.select().from(deviceCandidates).where(eq(deviceCandidates.id, id));
+    return row ? DrizzleDeviceCandidateRepository.toCandidate(row) : null;
+  }
+
+  async add(devices: (FoundDevice & { tag: DeviceTag })[]) {
+    if (devices.length === 0) return [];
+    const rows = await this.db
+      .insert(deviceCandidates)
+      .values(devices.map((d) => ({ ...d, nameKey: deviceKey(d.name) })))
+      .onConflictDoNothing({ target: deviceCandidates.nameKey })
+      .returning();
+    return rows.map(DrizzleDeviceCandidateRepository.toCandidate);
+  }
+
+  async update(id: string, patch: Partial<Pick<DeviceCandidate, "name" | "description" | "url">> & { status: DeviceStatus; productId?: string }) {
+    const [row] = await this.db
+      .update(deviceCandidates)
+      .set({ ...patch, reviewedAt: new Date() })
+      .where(eq(deviceCandidates.id, id))
+      .returning();
+    if (!row) throw new NotFoundError("That device is no longer in the list.");
+    return DrizzleDeviceCandidateRepository.toCandidate(row);
+  }
+}

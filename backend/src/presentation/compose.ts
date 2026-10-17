@@ -31,6 +31,8 @@ import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../application/interfaces/IEnvironment";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed } from "../application/interfaces/IKnowledge";
+import type { IDeviceCandidateRepository, IDeviceExtractor, IWebSearch } from "../application/interfaces/IDevices";
+import { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
@@ -110,6 +112,10 @@ export interface Ports {
   /** Null without a YouTube API key: videos are then only added by hand. */
   videoFeed: IVideoFeed | null;
   knowledgeChannels: string[];
+  deviceCandidates: IDeviceCandidateRepository;
+  deviceExtractor: IDeviceExtractor;
+  /** Null without TAVILY_API_KEY: the device scout can't run. */
+  webSearch: IWebSearch | null;
   /** RevenueCat's REST API, when its key is set. */
   subscriptionLookup: ISubscriptionLookup | null;
   /** The Authorization header RevenueCat's webhook sends. */
@@ -126,6 +132,7 @@ export function buildUseCases(p: Ports): UseCases {
   const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock);
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock);
+  const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
   return {
     getProfile: new GetProfileUseCase(p.profiles),
     updateProfile: new UpdateProfileUseCase(p.profiles),
@@ -163,7 +170,8 @@ export function buildUseCases(p: Ports): UseCases {
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment),
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment),
-    adminProducts: new AdminProductUseCases(p.catalog, p.embedder),
+    adminProducts,
+    devices: new DeviceScoutUseCases(p.deviceCandidates, p.webSearch, p.deviceExtractor, adminProducts),
     getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock, undefined, p.exercises, environment),
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),

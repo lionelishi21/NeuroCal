@@ -4,6 +4,7 @@
  */
 import { sql } from "drizzle-orm";
 import { EXERCISE_KINDS, INTENSITIES } from "../../domain/exercise";
+import { DEVICE_TAGS } from "../../domain/devices";
 import { PILLARS } from "../../domain/knowledge";
 import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
@@ -343,6 +344,22 @@ export const knowledgeTechniques = pgTable(
   },
   (t) => [index("knowledge_techniques_source_idx").on(t.sourceId)],
 );
+
+/** Kitchen devices the monthly scout found, waiting for an admin; approved ones become products. */
+export const deviceCandidates = pgTable("device_candidates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tag: text("tag", { enum: DEVICE_TAGS }).notNull(),
+  name: text("name").notNull(),
+  /** domain/devices.ts deviceKey: the same device is never added twice. */
+  nameKey: text("name_key").notNull().unique(),
+  maker: text("maker").notNull(),
+  url: text("url").notNull(),
+  description: text("description").notNull(),
+  status: text("status", { enum: ["pending", "approved", "dismissed"] }).notNull().default("pending"),
+  productId: text("product_id"),
+  foundAt: timestamp("found_at", { withTimezone: true }).notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+});
 
 /** Supplements someone takes. Ingredients are kept as read from the label. */
 export const stackItems = pgTable(

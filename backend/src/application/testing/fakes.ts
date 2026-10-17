@@ -6,6 +6,8 @@ import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
+import type { FoundDevice, IDeviceCandidateRepository, IDeviceExtractor, IWebSearch, WebResult } from "../interfaces/IDevices";
+import type { DeviceCandidate, DeviceStatus, DeviceTag } from "../../domain/devices";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../interfaces/IEnvironment";
 import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
@@ -810,3 +812,46 @@ export class InMemoryMealPlans implements IMealPlanRepository {
   }
 }
 
+export class InMemoryDeviceCandidates implements IDeviceCandidateRepository {
+  readonly items: DeviceCandidate[] = [];
+  async list() {
+    return [...this.items].reverse();
+  }
+  async get(id: string) {
+    return this.items.find((d) => d.id === id) ?? null;
+  }
+  async add(devices: (FoundDevice & { tag: DeviceTag })[]) {
+    const added = devices.map((d): DeviceCandidate => ({ ...d, id: `d${this.items.length + 1}`, status: "pending", foundAt: new Date() }));
+    for (const d of added) this.items.push(d);
+    return added;
+  }
+  async update(id: string, patch: Partial<Pick<DeviceCandidate, "name" | "description" | "url">> & { status: DeviceStatus; productId?: string }) {
+    const i = this.items.findIndex((d) => d.id === id);
+    this.items[i] = { ...this.items[i]!, ...patch };
+    return this.items[i]!;
+  }
+}
+
+/** Two results per query: one product page, one listicle. */
+export class FakeWebSearch implements IWebSearch {
+  readonly queries: string[] = [];
+  async search(query: string): Promise<WebResult[]> {
+    this.queries.push(query);
+    const n = this.queries.length;
+    return [
+      { title: `Device ${n}`, url: `https://maker${n}.example/device`, snippet: "A new model." },
+      { title: "Best of the year", url: "https://reviews.example/best", snippet: "Our picks." },
+    ];
+  }
+}
+
+/** Finds the first result's device, plus one with an invented link (which must be dropped). */
+export class FakeDeviceExtractor implements IDeviceExtractor {
+  async extract(input: { category: string; results: WebResult[] }): Promise<FoundDevice[]> {
+    const first = input.results[0]!;
+    return [
+      { name: `${first.title} ${input.category}`, maker: "Maker", url: first.url, description: `A ${input.category.toLowerCase()}.` },
+      { name: "Made-up device", maker: "Nobody", url: "https://invented.example/x", description: "Not in the results." },
+    ];
+  }
+}
