@@ -15,6 +15,7 @@ describe("Open Food Facts", () => {
         code: "0123456789012",
         product_name: "Honey Granola",
         brands: "Crunchy Co, Parent Co",
+        brand_owner: "Crunchy Foods Inc.",
         serving_size: "55 g",
         nutriments: { "energy-kcal_serving": 260, proteins_serving: 5, carbohydrates_serving: 38, fat_serving: 10, sodium_serving: 0.14, "energy-kcal_100g": 473 },
         ingredients_text: "Oats, sugar, soy lecithin",
@@ -24,6 +25,7 @@ describe("Open Food Facts", () => {
     const db = new OpenFoodFactsDatabase({ fetch });
     expect(await db.lookup("0123456789012")).toEqual({
       brand: "Crunchy Co",
+      manufacturer: "Crunchy Foods Inc.",
       productName: "Honey Granola",
       barcode: "0123456789012",
       servingSize: "55 g",

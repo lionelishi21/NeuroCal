@@ -29,6 +29,8 @@ export const FoodLabelSchema = z.object({
     })
     .nullable(),
   ingredients: z.array(z.string().min(1)),
+  manufacturer: z.string().min(1).nullable(),
+  producedOn: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/).nullable(),
   bestBefore: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/).nullable(),
   lotNumber: z.string().nullable(),
 });
@@ -100,6 +102,8 @@ export class OpenAiFoodLabelReader implements IFoodLabelReader {
           }
         : {}),
       ingredients: r.ingredients,
+      ...(r.manufacturer ? { manufacturer: r.manufacturer } : {}),
+      ...(r.producedOn ? { producedOn: r.producedOn } : {}),
       ...(r.bestBefore ? { bestBefore: r.bestBefore } : {}),
       ...(r.lotNumber ? { lotNumber: r.lotNumber } : {}),
       source: "label",

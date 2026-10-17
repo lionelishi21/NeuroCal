@@ -2994,6 +2994,7 @@
           "yoga",
           "swim",
           "sport",
+          "calf",
           "other"
         ]
       },
@@ -3398,6 +3399,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "producedOn": {
+            "type": "string"
           },
           "bestBefore": {
             "type": "string"

@@ -477,4 +477,39 @@ void main() {
     expect(foodFor('1 egg', foods)?.id, 'eggs');
     expect(foodFor('Olive oil', foods), isNull);
   });
+
+  testWidgets('calf pump: a guided routine counts down each move, then logs itself', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await add(tester, 'Log exercise');
+    await tester.tap(find.text('Do a calf pump'));
+    await tester.pumpAndSettle();
+    expect(find.text('Seated soleus push-ups'), findsWidgets);
+
+    await tester.tap(find.text('Start'));
+    // The pace dot keeps moving, so pump frames rather than settle.
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Standing calf raises'), findsOneWidget);
+    expect(find.text('45'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('44'), findsOneWidget);
+    await tester.tap(find.text('Pause'));
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('44'), findsOneWidget);
+    await tester.tap(find.text('Resume'));
+    await tester.pump();
+
+    for (var i = 0; i < 9; i++) {
+      await tester.tap(find.text('Skip'));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('Routine done'), findsOneWidget);
+    await tester.tap(find.text('Log exercise'));
+    await tester.pumpAndSettle();
+
+    // A minute at least: (2.0 − 1) × 75 kg × 1/60 h in the mock.
+    expect(find.text('Exercise logged · 1 kcal burned'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Calf pump · 1 min · light'), 200);
+  });
 }

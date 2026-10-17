@@ -4,6 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
+import 'calf_routine.dart';
 
 /// Log exercise that just ended: what, how long and how hard. Returns it with its calories, or null.
 Future<Exercise?> showExerciseSheet(BuildContext context) =>
@@ -18,6 +19,7 @@ IconData exerciseIcon(ExerciseKind kind) => switch (kind) {
   ExerciseKind.yoga => Icons.self_improvement_rounded,
   ExerciseKind.swim => Icons.pool_rounded,
   ExerciseKind.sport => Icons.sports_tennis_rounded,
+  ExerciseKind.calf => Icons.airline_seat_legroom_normal_rounded,
   ExerciseKind.other => Icons.bolt_rounded,
 };
 
@@ -36,6 +38,11 @@ class _LogExerciseState extends State<_LogExercise> {
   var _intensity = ExerciseIntensity.moderate;
   var _busy = false;
   var _failed = false;
+
+  Future<void> _calfPump() async {
+    final logged = await showCalfRoutine(context);
+    if (logged != null && mounted) Navigator.of(context).pop(logged);
+  }
 
   Future<void> _save() async {
     setState(() {
@@ -63,6 +70,33 @@ class _LogExerciseState extends State<_LogExercise> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
+        Material(
+          color: c.chlorophyllSoft,
+          borderRadius: BorderRadius.circular(Radii.option),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(Radii.option),
+            onTap: _calfPump,
+            child: Padding(
+              padding: const EdgeInsets.all(Space.s3),
+              child: Row(
+                spacing: Space.s3,
+                children: [
+                  Icon(exerciseIcon(ExerciseKind.calf), color: c.chlorophyll),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Do a calf pump', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.chlorophyll)),
+                        Text('5 minutes, guided, mostly at your desk', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: c.chlorophyll),
+                ],
+              ),
+            ),
+          ),
+        ),
         Text('What did you do?', style: label),
         Wrap(
           spacing: Space.s2,

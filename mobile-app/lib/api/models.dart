@@ -462,7 +462,10 @@ class FoodScan {
     this.addedSugarsG,
     this.sodiumMg,
     this.ingredients = const [],
+    this.manufacturer,
+    this.producedOn,
     this.bestBefore,
+    this.lotNumber,
     required this.fromDatabase,
     required this.processing,
     this.markers = const [],
@@ -483,7 +486,14 @@ class FoodScan {
   final double? addedSugarsG;
   final double? sodiumMg;
   final List<String> ingredients;
+
+  /// The company that makes or distributes it.
+  final String? manufacturer;
+
+  /// Production or packed-on date, "YYYY-MM" or "YYYY-MM-DD".
+  final String? producedOn;
   final String? bestBefore;
+  final String? lotNumber;
 
   /// From Open Food Facts, which must be credited where its data shows.
   final bool fromDatabase;
@@ -519,7 +529,10 @@ class FoodScan {
       addedSugarsG: d('addedSugarsG'),
       sodiumMg: d('sodiumMg'),
       ingredients: [for (final i in j['ingredients'] as List) i as String],
+      manufacturer: j['manufacturer'] as String?,
+      producedOn: j['producedOn'] as String?,
       bestBefore: j['bestBefore'] as String?,
+      lotNumber: j['lotNumber'] as String?,
       fromDatabase: j['source'] == 'open_food_facts',
       processing: FoodProcessing.fromWire(p['level']) ?? FoodProcessing.whole,
       markers: [for (final m in p['markers'] as List) m as String],
@@ -1053,6 +1066,7 @@ enum ExerciseKind {
   yoga('Yoga'),
   swim('Swim'),
   sport('Sport'),
+  calf('Calf pump'),
   other('Other');
 
   const ExerciseKind(this.label);

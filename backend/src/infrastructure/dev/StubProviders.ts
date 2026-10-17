@@ -56,6 +56,8 @@ export const stubFoodLabels: IFoodLabelReader = {
       servingsPerContainer: 8,
       nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, sugarsG: 14, addedSugarsG: 12, sodiumMg: 140 },
       ingredients: ["Whole grain rolled oats", "sugar", "canola oil", "almonds", "honey", "soy lecithin", "natural flavor"],
+      manufacturer: "Crunchy Foods Inc.",
+      producedOn: "2026-08-14",
       bestBefore: "2027-02",
       source: "label",
     };

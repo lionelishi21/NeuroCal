@@ -76,6 +76,10 @@ else null. If the panel only gives values per 100 g, use those and set servingSi
 If no nutrition panel is visible, set nutrition to null.
 ingredients: each ingredient from the ingredient list in order, as printed, keeping sub-ingredients
 in brackets with their parent. Empty if no ingredient list is visible.
+manufacturer: the company named after "Manufactured by", "Made by", "Distributed by" or
+"Packed by" (the company name only, no address), else null.
+producedOn: the production, manufactured or packed-on date as YYYY-MM-DD or YYYY-MM, else null.
+Only use a date the label marks as production or packing; never infer it from the best-before date.
 bestBefore: the best-before, use-by or expiry date as YYYY-MM-DD or YYYY-MM, else null.
 lotNumber: the lot or batch code if printed.
 If the photos are not a food label, are too blurry or too dark to read, or the panel is cut off,

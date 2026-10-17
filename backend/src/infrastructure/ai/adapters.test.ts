@@ -205,6 +205,8 @@ describe("OpenAiFoodLabelReader", () => {
     servingsPerContainer: 8,
     nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, sugarsG: null, addedSugarsG: 12, sodiumMg: null },
     ingredients: ["Oats", "sugar"],
+    manufacturer: "Crunchy Foods Inc.",
+    producedOn: null,
     bestBefore: "2027-02",
     lotNumber: null,
   };
@@ -218,6 +220,7 @@ describe("OpenAiFoodLabelReader", () => {
       servingsPerContainer: 8,
       nutrition: { calories: 260, proteinG: 5, carbsG: 38, fatG: 10, fiberG: 3, addedSugarsG: 12 },
       ingredients: ["Oats", "sugar"],
+      manufacturer: "Crunchy Foods Inc.",
       bestBefore: "2027-02",
       source: "label",
     });

@@ -252,6 +252,7 @@ class MockNeuroCalApi implements NeuroCalApi {
     ExerciseKind.yoga: [2.5, 3.0, 4.0],
     ExerciseKind.swim: [5.8, 7.0, 9.8],
     ExerciseKind.sport: [4.5, 6.5, 8.0],
+    ExerciseKind.calf: [2.0, 2.8, 3.8],
     ExerciseKind.other: [3.0, 4.5, 6.5],
   };
 
@@ -629,7 +630,10 @@ class MockNeuroCalApi implements NeuroCalApi {
       addedSugarsG: 12,
       sodiumMg: 140,
       ingredients: ['Whole grain rolled oats', 'sugar', 'canola oil', 'almonds', 'honey', 'soy lecithin', 'natural flavor'],
+      manufacturer: 'Crunchy Foods Inc.',
+      producedOn: '2026-08-14',
       bestBefore: '2027-02',
+      lotNumber: 'L2608B',
       fromDatabase: false,
       processing: FoodProcessing.ultraProcessed,
       markers: ['emulsifier', 'flavouring'],

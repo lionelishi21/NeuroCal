@@ -1,7 +1,7 @@
 import type { IProductDatabase } from "../../application/interfaces/IFoodLabels";
 import type { FoodLabelReading, FoodNutrition } from "../../domain/foodLabel";
 
-const FIELDS = ["code", "product_name", "brands", "serving_size", "nutriments", "ingredients_text_en", "ingredients_text", "nova_group"].join(",");
+const FIELDS = ["code", "product_name", "brands", "brand_owner", "serving_size", "nutriments", "ingredients_text_en", "ingredients_text", "nova_group"].join(",");
 
 /** Splits an ingredient list on commas that aren't inside brackets: "oats, chocolate (sugar, cocoa)". */
 export function splitIngredients(text: string): string[] {
@@ -41,6 +41,8 @@ export class OpenFoodFactsDatabase implements IProductDatabase {
         code?: string;
         product_name?: string;
         brands?: string;
+        /** The company behind the brand (mostly US products, from USDA Branded Foods). */
+        brand_owner?: string;
         serving_size?: string;
         nutriments?: Record<string, number | string | undefined>;
         ingredients_text_en?: string;
@@ -79,6 +81,7 @@ export class OpenFoodFactsDatabase implements IProductDatabase {
     const nova = p.nova_group;
     return {
       ...(p.brands ? { brand: p.brands.split(",")[0]!.trim() } : {}),
+      ...(p.brand_owner?.trim() ? { manufacturer: p.brand_owner.trim() } : {}),
       ...(p.product_name?.trim() ? { productName: p.product_name.trim() } : {}),
       barcode: p.code ?? barcode,
       ...(servingSize ? { servingSize } : {}),

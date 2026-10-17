@@ -86,6 +86,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Crunchy Co Honey Almond Granola'), findsOneWidget);
+    expect(find.text('Made by Crunchy Foods Inc.'), findsOneWidget);
+    expect(find.text('Made on 2026-08-14'), findsOneWidget);
+    expect(find.text('Lot L2608B'), findsOneWidget);
     expect(find.text('Ultra-processed'), findsOneWidget);
     expect(find.textContaining('it contains emulsifier, flavouring'), findsOneWidget);
     expect(find.textContaining('Open Food Facts'), findsNothing);

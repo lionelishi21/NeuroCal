@@ -526,7 +526,7 @@ export const BrainCheck = z.object({
 });
 export type BrainCheck = z.infer<typeof BrainCheck>;
 
-export const ExerciseKind = z.enum(["walk", "run", "cycle", "strength", "hiit", "yoga", "swim", "sport", "other"]);
+export const ExerciseKind = z.enum(["walk", "run", "cycle", "strength", "hiit", "yoga", "swim", "sport", "calf", "other"]);
 export type ExerciseKind = z.infer<typeof ExerciseKind>;
 export const ExerciseIntensity = z.enum(["light", "moderate", "hard"]);
 export type ExerciseIntensity = z.infer<typeof ExerciseIntensity>;
@@ -823,6 +823,10 @@ export const FoodScanResponse = z.object({
     })
     .optional(),
   ingredients: z.array(z.string()),
+  /** The company that makes or distributes it ("Manufactured by …", "Distributed by …"), when printed. */
+  manufacturer: z.string().optional(),
+  /** Production or packed-on date, "YYYY-MM" or "YYYY-MM-DD", when printed. */
+  producedOn: z.string().optional(),
   bestBefore: z.string().optional(),
   lotNumber: z.string().optional(),
   /** "open_food_facts" data must be credited where it shows (Open Database License). */

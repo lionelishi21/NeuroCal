@@ -1,5 +1,5 @@
 /** Kinds of exercise someone can log, and how hard it felt. */
-export const EXERCISE_KINDS = ["walk", "run", "cycle", "strength", "hiit", "yoga", "swim", "sport", "other"] as const;
+export const EXERCISE_KINDS = ["walk", "run", "cycle", "strength", "hiit", "yoga", "swim", "sport", "calf", "other"] as const;
 export type ExerciseKind = (typeof EXERCISE_KINDS)[number];
 export const INTENSITIES = ["light", "moderate", "hard"] as const;
 export type Intensity = (typeof INTENSITIES)[number];
@@ -22,6 +22,8 @@ const METS: Record<ExerciseKind, Record<Intensity, number>> = {
   yoga: { light: 2.5, moderate: 3.0, hard: 4.0 },
   swim: { light: 5.8, moderate: 7.0, hard: 9.8 },
   sport: { light: 4.5, moderate: 6.5, hard: 8.0 },
+  // Calf raises and seated soleus push-ups: below light calisthenics (2.8) when done sitting.
+  calf: { light: 2.0, moderate: 2.8, hard: 3.8 },
   other: { light: 3.0, moderate: 4.5, hard: 6.5 },
 };
 

@@ -180,13 +180,16 @@ class _FoodScanState extends State<_FoodScan> {
           spacing: Space.s2,
           children: [
             Text(scan.name, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800)),
+            if (scan.manufacturer != null) Text('Made by ${scan.manufacturer}', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
                 Tag(scan.processing.label, fill: badgeFill, ink: badgeInk),
                 if (scan.servingSize != null) Tag('Per ${scan.servingSize}', fill: c.mist, ink: c.inkSoft),
+                if (scan.producedOn != null) Tag('Made on ${scan.producedOn}', fill: c.mist, ink: c.inkSoft),
                 if (scan.bestBefore != null) Tag('Best before ${scan.bestBefore}', fill: c.mist, ink: c.inkSoft),
+                if (scan.lotNumber != null) Tag('Lot ${scan.lotNumber}', fill: c.mist, ink: c.inkSoft),
               ],
             ),
           ],

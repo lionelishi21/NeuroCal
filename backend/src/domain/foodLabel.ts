@@ -32,6 +32,10 @@ export interface FoodLabelReading {
   nutrition?: FoodNutrition;
   /** In label order, as printed. */
   ingredients: string[];
+  /** Who makes or distributes it, as printed (or Open Food Facts' brand owner). */
+  manufacturer?: string;
+  /** Production or packed-on date, "YYYY-MM" or "YYYY-MM-DD". */
+  producedOn?: string;
   /** "YYYY-MM" or "YYYY-MM-DD". */
   bestBefore?: string;
   lotNumber?: string;
