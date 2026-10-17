@@ -5,26 +5,47 @@ import '../app_scope.dart';
 import '../reminders/reminders.dart';
 import '../theme/tokens.dart';
 import 'capture.dart';
-import 'plan.dart';
+import 'guide.dart';
+import 'kitchen.dart';
 import 'progress.dart';
 import 'settings.dart';
 import 'stack.dart';
 import 'today.dart';
 
-/// The signed-in app: Today, Progress, Stack and Me under a bottom tab bar, with the add button in
-/// the middle for everything that can be logged. Each tab keeps its place while another is open.
+/// The signed-in app: Today, Kitchen, Progress and Stack under a bottom tab bar, with the add button
+/// in the middle for everything that can be logged. Me opens from the initials on Today. Each tab keeps
+/// its place while another is open.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.profile});
+  const HomeScreen({super.key, required this.profile, this.showGuide = false});
 
   final Profile profile;
+
+  /// Just finished onboarding: "How NeuroCal works" opens once.
+  final bool showGuide;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _today = 0, _stack = 2, _me = 3;
+  static const _today = 0, _kitchen = 1;
   var _tab = _today;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showGuide) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context) : null);
+  }
+
+  Future<void> _openMe() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (route) => Scaffold(
+        backgroundColor: route.colors.mist,
+        appBar: AppBar(backgroundColor: route.colors.mist, surfaceTintColor: Colors.transparent),
+        body: SettingsScreen(profile: widget.profile),
+      ),
+    ),
+  );
 
   // Bumped whenever something is logged, so every tab reloads what it shows.
   final _changes = ValueNotifier(0);
@@ -89,9 +110,23 @@ class _HomeScreenState extends State<HomeScreen> {
           changes: _changes,
           onChanged: _changed,
           onCapture: _capture,
-          onOpenMe: () => setState(() => _tab = _me),
-          onOpenStack: () => setState(() => _tab = _stack),
+          onOpenMe: _openMe,
+          onOpenKitchen: () => setState(() => _tab = _kitchen),
           onOpenPantry: () => openPantry(context, onChanged: _changed),
+        ),
+      ),
+      (
+        label: 'Kitchen',
+        icon: Icons.soup_kitchen_outlined,
+        selectedIcon: Icons.soup_kitchen_rounded,
+        screen: KitchenScreen(
+          changes: _changes,
+          onOpenMealPlan: () => openMealPlan(context, onChanged: _changed),
+          onOpenPantry: () => openPantry(context, onChanged: _changed),
+          onOpenRecipe: () => _capture(Capture.recipe),
+          onOpenShopping: () => openShopping(context),
+          onScanPackage: () => _capture(Capture.foodPackage),
+          onBrowseFoods: () => openFoods(context, onChanged: _changed),
         ),
       ),
       (
@@ -100,24 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIcon: Icons.bar_chart_rounded,
         screen: ProgressScreen(changes: _changes, onChanged: _changed, onCapture: _capture),
       ),
-      (
-        label: 'Stack',
-        icon: Icons.medication_outlined,
-        selectedIcon: Icons.medication_rounded,
-        screen: StackScreen(
-          changes: _changes,
-          footer: [
-            PlanExtras(
-              changes: _changes,
-              onBrowseFoods: () => openFoods(context, onChanged: _changed),
-              onOpenPantry: () => openPantry(context, onChanged: _changed),
-              onOpenShopping: () => openShopping(context),
-              onOpenMealPlan: () => openMealPlan(context, onChanged: _changed),
-            ),
-          ],
-        ),
-      ),
-      (label: 'Me', icon: Icons.person_outline_rounded, selectedIcon: Icons.person_rounded, screen: SettingsScreen(profile: widget.profile)),
+      (label: 'Stack', icon: Icons.medication_outlined, selectedIcon: Icons.medication_rounded, screen: StackScreen(changes: _changes)),
     ];
     Widget tab(int i) => Expanded(child: _TabButton(label: tabs[i].label, icon: _tab == i ? tabs[i].selectedIcon : tabs[i].icon, selected: _tab == i, onTap: () => setState(() => _tab = i)));
     final c = context.colors;

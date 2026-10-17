@@ -72,7 +72,7 @@ void main() {
   }
 
   Future<void> openMe(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(InkWell, 'Me'));
+    await tester.tap(find.bySemanticsLabel('Me'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Evening · 19:30–22:00'), 200);
   }

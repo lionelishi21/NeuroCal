@@ -149,13 +149,11 @@ class _StackCardState extends State<StackCard> {
 }
 
 /// The whole stack: change servings, timing or bottle size, start a new bottle, remove, or add one.
-/// With [changes] it is the Stack tab: no back bar, it reloads when something is logged anywhere, and
-/// [footer] (fasting, foods) follows the supplements.
+/// With [changes] it is the Stack tab: no back bar, and it reloads when something is logged anywhere.
 class StackScreen extends StatefulWidget {
-  const StackScreen({super.key, this.changes, this.footer = const []});
+  const StackScreen({super.key, this.changes});
 
   final Listenable? changes;
-  final List<Widget> footer;
 
   @override
   State<StackScreen> createState() => _StackScreenState();
@@ -206,9 +204,8 @@ class _StackScreenState extends State<StackScreen> {
       builder: (context, snapshot) => ListView(
         padding: EdgeInsets.fromLTRB(Space.s4, tab ? Space.s4 : 0, Space.s4, Space.s6),
         children: [
-          if (tab) ...[const ScreenTitle('Your stack', detail: 'Supplements, fasting and foods'), const BlockTitle('Supplements')],
+          if (tab) ...[const ScreenTitle('Your stack', detail: 'Your supplements and when to take them'), const BlockTitle('Supplements')],
           ..._supplements(context, snapshot),
-          ...widget.footer,
         ],
       ),
     );

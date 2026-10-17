@@ -9,6 +9,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'guide.dart';
 
 /// "SR" for "Sam Rivera": the first letters of the first two words.
 String _initials(String name) =>
@@ -185,6 +186,18 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+          const GroupLabel('Help'),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              contentPadding: const EdgeInsets.fromLTRB(Space.s4, Space.s1, Space.s3, Space.s1),
+              leading: Icon(Icons.lightbulb_outline_rounded, color: c.synapseInk),
+              title: const Text('How NeuroCal works', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Your score, what moves it, and where things are'),
+              trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              onTap: () => showGuide(context),
+            ),
+          ),
           const GroupLabel('Account'),
           AppCard(
             padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),

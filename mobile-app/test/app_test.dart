@@ -176,7 +176,7 @@ void main() {
     final (_, auth) = await pumpApp(tester);
     await signIn(tester);
 
-    await tester.tap(find.widgetWithText(InkWell, 'Me'));
+    await tester.tap(find.bySemanticsLabel('Me'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.widgetWithText(TextButton, 'Delete account'), 300);
     await tester.tap(find.widgetWithText(TextButton, 'Delete account'));
@@ -266,6 +266,10 @@ void main() {
     await tester.tap(find.widgetWithText(InkWell, 'Stack'));
     await tester.pumpAndSettle();
     expect(find.text('Your stack'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan and cook'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Browse foods'), 300);
     expect(find.text('Browse foods'), findsOneWidget);
   });
@@ -304,7 +308,7 @@ void main() {
   testWidgets('the pantry: add items, get recipes marked by what you have, and log one', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.bySemanticsLabel('Your pantry: What can I make from it?'), 300);
     await tester.tap(find.bySemanticsLabel('Your pantry: What can I make from it?'));
@@ -336,7 +340,7 @@ void main() {
   testWidgets('review a shopping list: swaps with cleaner choices, and the gadget the list calls for', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
     await tapCentered(tester, find.bySemanticsLabel('Review my shopping list: Cleaner swaps, and gadgets that help'));
 
@@ -398,7 +402,7 @@ void main() {
   testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
     await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
 
@@ -425,7 +429,7 @@ void main() {
   testWidgets('meal plan: a meal has its picture, cooks step by step and links to videos', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
-    await tester.tap(find.widgetWithText(InkWell, 'Stack'));
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
     await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
     await tester.tap(find.text('Plan my meals'));
@@ -511,5 +515,45 @@ void main() {
     // A minute at least: (2.0 − 1) × 75 kg × 1/60 h in the mock.
     expect(find.text('Exercise logged · 1 kcal burned'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Calf pump · 1 min · light'), 200);
+  });
+
+  testWidgets('Your day: the checklist ticks off what was logged, and opens the way to the rest', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    final list = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('Your day'), 200, scrollable: list);
+    final card = find.ancestor(of: find.text('Your day'), matching: find.byType(AppCard));
+    final before = (tester.widget<Text>(find.descendant(of: card, matching: find.textContaining(' of '))).data)!;
+
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Get morning daylight')));
+    expect(find.text('Daylight ticked'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Your day'), -200, scrollable: list);
+    final after = (tester.widget<Text>(find.descendant(of: card, matching: find.textContaining(' of '))).data)!;
+    expect(int.parse(after.split(' ').first), int.parse(before.split(' ').first) + 1);
+
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Move')));
+    expect(find.text('Do a calf pump'), findsOneWidget);
+  });
+
+  testWidgets('the add menu is grouped, and How NeuroCal works opens from Me', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.bySemanticsLabel('Add'));
+    await tester.pumpAndSettle();
+    for (final section in ['Food', 'Body', 'Mind']) {
+      expect(find.text(section), findsOneWidget);
+    }
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Me'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('How NeuroCal works'), 200);
+    await tester.tap(find.text('How NeuroCal works'));
+    await tester.pumpAndSettle();
+    expect(find.text('One number for your brain'), findsOneWidget);
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(find.text('One number for your brain'), findsNothing);
   });
 }

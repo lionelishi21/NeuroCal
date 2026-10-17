@@ -11,6 +11,7 @@ import '../reminders/reminders.dart';
 import 'capture.dart';
 import 'environment_card.dart';
 import 'exercise_sheet.dart';
+import 'guide.dart';
 import 'stack.dart';
 
 class _Day {
@@ -94,7 +95,7 @@ class TodayScreen extends StatefulWidget {
     required this.onChanged,
     required this.onCapture,
     required this.onOpenMe,
-    required this.onOpenStack,
+    required this.onOpenKitchen,
     required this.onOpenPantry,
   });
 
@@ -107,7 +108,8 @@ class TodayScreen extends StatefulWidget {
   /// Runs a flow from the add menu (log a meal, check in, …).
   final void Function(Capture) onCapture;
   final VoidCallback onOpenMe;
-  final VoidCallback onOpenStack;
+  /// The fasting timer lives in Kitchen.
+  final VoidCallback onOpenKitchen;
   final VoidCallback onOpenPantry;
 
   @override
@@ -180,6 +182,17 @@ class _TodayScreenState extends State<TodayScreen> {
     if (mounted) _refresh();
   }
 
+  /// Morning daylight from the checklist: the same answer as the environment card's.
+  Future<void> _daylight() async {
+    try {
+      await _api.saveEnvironmentCheck({EnvironmentItem.daylight: true});
+      if (mounted) showToast(context, 'Daylight ticked');
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't save that. Try again.", ToastTone.problem);
+    }
+    widget.onChanged();
+  }
+
   Future<void> _removeExercise(Exercise e) async {
     try {
       await _api.deleteExercise(e.id);
@@ -224,7 +237,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   initials: initials(widget.profile.displayName),
                   fasting: today ? day?.fasting : null,
                   onOpenMe: widget.onOpenMe,
-                  onOpenFasting: widget.onOpenStack,
+                  onOpenFasting: widget.onOpenKitchen,
                 ),
                 const SizedBox(height: Space.s3),
                 _WeekStrip(selected: date, onPick: _show),
@@ -250,6 +263,16 @@ class _TodayScreenState extends State<TodayScreen> {
                       if (await showPlaceSheet(context) != null && mounted) widget.onChanged();
                     },
                   ),
+                  if (day.isToday) ...[
+                    const SizedBox(height: Space.s3),
+                    _YourDay(
+                      day,
+                      onCapture: widget.onCapture,
+                      onDaylight: _daylight,
+                      onStack: _manageStack,
+                      onHowItWorks: () => showGuide(context),
+                    ),
+                  ],
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
                     _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
@@ -380,6 +403,7 @@ class _TopBar extends StatelessWidget {
         ),
         if (chip case (final icon, final label, final fill, final ink))
           Semantics(
+            container: true,
             button: true,
             label: label,
             excludeSemantics: true,
@@ -404,7 +428,9 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
+        // Its own node: otherwise the date and greeting merge into it for screen readers.
         Semantics(
+          container: true,
           button: true,
           label: 'Me',
           excludeSemantics: true,
@@ -1365,3 +1391,146 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
+/// "Your day": the few things that give tomorrow's Focus Score what it needs, each ticked off by what was
+/// logged today and opening the way to log it. Supplements show only for someone with a stack.
+class _YourDay extends StatelessWidget {
+  const _YourDay(this.day, {required this.onCapture, required this.onDaylight, required this.onStack, required this.onHowItWorks});
+
+  final _Day day;
+  final void Function(Capture) onCapture;
+  final VoidCallback onDaylight;
+  final VoidCallback onStack;
+  final VoidCallback onHowItWorks;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final meals = day.meals.length;
+    final moved = day.exercise?.totalMinutes ?? 0;
+    final stack = day.stack?.items ?? const <StackItem>[];
+    final items = <({String title, String detail, bool done, VoidCallback onTap})>[
+      (
+        title: 'Check in',
+        detail: day.bio.flags.isNotEmpty ? 'Done. Check in again later today' : 'How you feel: mood, energy, stress',
+        done: day.bio.flags.isNotEmpty,
+        onTap: () => onCapture(Capture.checkIn),
+      ),
+      (
+        title: 'Log last night’s sleep',
+        detail: day.focus.components.sleep != null ? 'Logged' : 'Sleep is 30% of your score',
+        done: day.focus.components.sleep != null,
+        onTap: () => onCapture(Capture.sleep),
+      ),
+      if (day.environment case final env?)
+        (
+          title: 'Get morning daylight',
+          detail: env.check[EnvironmentItem.daylight] == true ? 'Done' : '10 minutes outside sets your body clock. Tap when done',
+          done: env.check[EnvironmentItem.daylight] == true,
+          onTap: env.check[EnvironmentItem.daylight] == true ? () {} : onDaylight,
+        ),
+      (
+        title: 'Log your meals',
+        detail: meals == 0 ? 'Snap each plate. Timing and blood sugar come from these' : '$meals logged so far',
+        done: meals > 0,
+        onTap: () => onCapture(Capture.meal),
+      ),
+      (
+        title: 'Move',
+        detail: moved == 0 ? 'A walk, a workout or a 5-minute calf pump' : '$moved min today',
+        done: moved > 0,
+        onTap: () => onCapture(Capture.exercise),
+      ),
+      if (stack.isNotEmpty)
+        (
+          title: 'Take your supplements',
+          detail: '${stack.where((i) => i.takenToday).length} of ${stack.length} taken',
+          done: stack.every((i) => i.takenToday),
+          onTap: onStack,
+        ),
+    ];
+    final done = items.where((i) => i.done).length;
+    final still = MediaQuery.disableAnimationsOf(context);
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s2, Space.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: const Text('Your day', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                ),
+              ),
+              Text('$done of ${items.length}', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
+              IconButton(
+                tooltip: 'How NeuroCal works',
+                onPressed: onHowItWorks,
+                icon: Icon(Icons.help_outline_rounded, size: 20, color: c.inkSoft),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: Space.s2, bottom: Space.s1),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: items.isEmpty ? 0 : done / items.length),
+              duration: still ? Duration.zero : Motion.select,
+              curve: Motion.settle,
+              builder: (context, v, _) => ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.pill),
+                child: LinearProgressIndicator(value: v, minHeight: 6, backgroundColor: c.track, color: c.chlorophyll),
+              ),
+            ),
+          ),
+          if (done == items.length)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.s1, right: Space.s2),
+              child: Text('All done. Tomorrow’s score has what it needs.', style: TextStyle(fontSize: TextSize.xs, color: c.chlorophyll)),
+            ),
+          for (final item in items)
+            Semantics(
+              button: !item.done,
+              label: '${item.title}, ${item.done ? 'done' : 'not done yet'}. ${item.detail}',
+              excludeSemantics: true,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(Radii.option),
+                onTap: item.onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    spacing: Space.s3,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: still ? Duration.zero : Motion.select,
+                        transitionBuilder: (child, a) => ScaleTransition(scale: a, child: child),
+                        child: Icon(
+                          item.done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                          key: ValueKey(item.done),
+                          size: 24,
+                          color: item.done ? c.chlorophyll : c.inkFaint,
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: item.done ? c.inkSoft : c.ink),
+                            ),
+                            Text(item.detail, style: TextStyle(fontSize: TextSize.xs, height: 1.3, color: c.inkSoft)),
+                          ],
+                        ),
+                      ),
+                      if (!item.done) Icon(Icons.chevron_right_rounded, color: c.inkFaint),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}

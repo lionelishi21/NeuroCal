@@ -57,6 +57,9 @@ final _unlocked = MockBilling(active: true);
 /// In the person's browser, not inside the app: product pages are other companies' sites.
 Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
 
+/// The app's navigator, so pages opened on top (Me, a sheet) close when the session ends.
+final _navigator = GlobalKey<NavigatorState>();
+
 class NeuroCalApp extends StatelessWidget {
   const NeuroCalApp({
     super.key,
@@ -94,6 +97,7 @@ class NeuroCalApp extends StatelessWidget {
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(
+          navigatorKey: _navigator,
           title: 'NeuroCal',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(Brightness.light),
@@ -103,7 +107,10 @@ class NeuroCalApp extends StatelessWidget {
           // Signed out → account screens; signed in → onboarding or the tabs. Rebuilds when the session changes.
           home: ListenableBuilder(
             listenable: auth,
-            builder: (context, _) => auth.signedIn ? _SignedIn(key: ValueKey(auth.email)) : const AccountScreen(),
+            builder: (context, _) {
+              if (!auth.signedIn) WidgetsBinding.instance.addPostFrameCallback((_) => _navigator.currentState?.popUntil((r) => r.isFirst));
+              return auth.signedIn ? _SignedIn(key: ValueKey(auth.email)) : const AccountScreen();
+            },
           ),
         ),
       ),
@@ -126,6 +133,9 @@ class _SignedInState extends State<_SignedIn> {
 
   /// Whether the subscription or trial gives access, per profile loaded.
   final _access = <Profile, Future<bool>>{};
+
+  /// Set when onboarding finishes, so Home opens "How NeuroCal works" once.
+  var _justOnboarded = false;
 
   @override
   void didChangeDependencies() {
@@ -195,6 +205,7 @@ class _SignedInState extends State<_SignedIn> {
           return OnboardingScreen(
             onDone: (profile) => setState(() {
               _profile = Future.value(profile);
+              _justOnboarded = true;
             }),
           );
         }
@@ -203,7 +214,7 @@ class _SignedInState extends State<_SignedIn> {
           future: _access[profile] ??= _hasAccess(profile),
           builder: (context, access) {
             if (!access.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            if (access.data!) return HomeScreen(profile: profile);
+            if (access.data!) return HomeScreen(profile: profile, showGuide: _justOnboarded);
             return PaywallScreen(
               profile: profile,
               billing: scope.billing,
