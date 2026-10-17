@@ -32,7 +32,7 @@ enum CaptureGroup {
 
 /// Everything that can be logged or measured, behind the add button in the tab bar.
 enum Capture {
-  meal('Log a meal', 'Snap or describe a plate', Icons.photo_camera_outlined, CaptureGroup.food),
+  meal('Log a meal', 'Photo or a few words', Icons.photo_camera_outlined, CaptureGroup.food),
   foodPackage('Scan a food package', 'Barcode or label', Icons.qr_code_scanner_rounded, CaptureGroup.food),
   recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined, CaptureGroup.food),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined, CaptureGroup.food),
