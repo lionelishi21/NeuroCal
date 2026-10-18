@@ -31,3 +31,8 @@ export class PaymentRequiredError extends DomainError {
 export class UpstreamError extends DomainError {
   readonly code = "upstream_failed";
 }
+
+/** → 429. Today's allowance for something is used up; it resets the next day. */
+export class LimitReachedError extends DomainError {
+  readonly code = "daily_limit";
+}

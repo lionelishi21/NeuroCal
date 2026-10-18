@@ -169,6 +169,13 @@
       "when": 1792261284987,
       "tag": "0023_large_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792287512572,
+      "tag": "0024_flashy_jean_grey",
+      "breakpoints": true
     }
   ]
 }

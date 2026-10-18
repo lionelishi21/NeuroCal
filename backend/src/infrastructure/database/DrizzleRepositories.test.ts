@@ -13,6 +13,7 @@ import {
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
   DrizzleDeviceCandidateRepository,
+  DrizzleAiUsageRepository,
   DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
@@ -359,6 +360,17 @@ describe("DrizzleDeviceCandidateRepository", () => {
     expect(await repo.update(added!.id, { status: "approved", productId: "admin-1", name: "Ninja Creami" })).toMatchObject({ status: "approved", productId: "admin-1", name: "Ninja Creami" });
     expect((await repo.list()).map((d) => d.name)).toEqual(["Ninja Creami"]);
     expect(await repo.get("nope")).toBeNull();
+  });
+});
+
+describe("DrizzleAiUsageRepository", () => {
+  it("counts per person, day and feature", async () => {
+    const repo = new DrizzleAiUsageRepository(db);
+    expect(await repo.spend(alice, "2026-10-17", "read")).toBe(1);
+    expect(await repo.spend(alice, "2026-10-17", "read")).toBe(2);
+    expect(await repo.spend(alice, "2026-10-17", "generate")).toBe(1);
+    expect(await repo.spend(bob, "2026-10-17", "read")).toBe(1);
+    expect(await repo.spend(alice, "2026-10-18", "read")).toBe(1);
   });
 });
 

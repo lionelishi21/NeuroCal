@@ -6,6 +6,8 @@ import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
+import type { IAiUsage } from "../interfaces/IAiUsage";
+import type { AiFeature } from "../../domain/aiAllowance";
 import type { FoundDevice, IDeviceCandidateRepository, IDeviceExtractor, IWebSearch, WebResult } from "../interfaces/IDevices";
 import type { DeviceCandidate, DeviceStatus, DeviceTag } from "../../domain/devices";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
@@ -853,5 +855,15 @@ export class FakeDeviceExtractor implements IDeviceExtractor {
       { name: `${first.title} ${input.category}`, maker: "Maker", url: first.url, description: `A ${input.category.toLowerCase()}.` },
       { name: "Made-up device", maker: "Nobody", url: "https://invented.example/x", description: "Not in the results." },
     ];
+  }
+}
+
+export class InMemoryAiUsage implements IAiUsage {
+  readonly counts = new Map<string, number>();
+  async spend(userId: string, day: string, feature: AiFeature) {
+    const key = `${userId}|${day}|${feature}`;
+    const n = (this.counts.get(key) ?? 0) + 1;
+    this.counts.set(key, n);
+    return n;
   }
 }

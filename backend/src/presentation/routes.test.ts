@@ -36,6 +36,7 @@ import {
   FakeDeviceExtractor,
   FakeWebSearch,
   InMemoryDeviceCandidates,
+  InMemoryAiUsage,
   InMemoryKnowledge,
   FakeLabelReader,
   FakeFoodLabelReader,
@@ -155,6 +156,7 @@ beforeEach(async () => {
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
     knowledgeChannels: [],
+    aiUsage: new InMemoryAiUsage(),
     deviceCandidates: new InMemoryDeviceCandidates(),
     deviceExtractor: new FakeDeviceExtractor(),
     webSearch: new FakeWebSearch(),
@@ -564,6 +566,13 @@ describe("API routes", () => {
     const products = (await asAdmin("GET", "/admin/products")).body as { products: { id: string; tags: string[] }[] };
     expect(products.products.find((p) => p.id === approved.productId)!.tags).toContain("kitchen:air-fryer");
     expect((await asAdmin("PUT", `/admin/devices/${fryer.id}`, { decision: "maybe" })).status).toBe(400);
+  });
+
+  it("AI features have a daily allowance: the call after it gets a 429 that says when it resets", async () => {
+    for (let i = 0; i < 30; i++) expect((await call("POST", "/recipes/analyze", { text: "80 g rolled oats" })).status).toBe(200);
+    const over = await call("POST", "/recipes/analyze", { text: "80 g rolled oats" });
+    expect(over.status).toBe(429);
+    expect(over.body).toMatchObject({ code: "daily_limit", message: expect.stringContaining("resets tomorrow") });
   });
 
   it("POST /recipes/analyze gives calories per serving, from the catalog where it can", async () => {

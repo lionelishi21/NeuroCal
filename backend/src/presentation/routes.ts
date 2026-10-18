@@ -96,6 +96,7 @@ import type { GetLevelUseCase } from "../application/use-cases/GetLevelUseCase";
 import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppingListUseCase";
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import type { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
+import type { AiAllowanceUseCase } from "../application/use-cases/AiAllowanceUseCase";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
@@ -159,6 +160,7 @@ export interface UseCases {
   reviewShoppingList: ReviewShoppingListUseCase;
   knowledge: KnowledgeUseCases;
   devices: DeviceScoutUseCases;
+  aiAllowance: AiAllowanceUseCase;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
@@ -181,7 +183,7 @@ export interface UseCases {
 
 class BadRequest extends Error {}
 
-const STATUS: Record<string, number> = { invalid_request: 400, subscription_required: 402, forbidden: 403, not_found: 404, upstream_failed: 502 };
+const STATUS: Record<string, number> = { invalid_request: 400, subscription_required: 402, forbidden: 403, not_found: 404, daily_limit: 429, upstream_failed: 502 };
 
 const error = (status: number, code: string, message: string): ApiResponse => ({
   status,
@@ -343,6 +345,7 @@ export function createApi(uc: UseCases) {
       /^\/meals\/analyze$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "read");
         // JSON names a photo uploaded first; multipart carries the photo itself (older clients, small photos).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
           ? await uc.analyzeMealPhoto.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
@@ -406,6 +409,7 @@ export function createApi(uc: UseCases) {
       /^\/shopping\/review$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
         const isJson = (req.headers["content-type"] ?? "").startsWith("application/json");
         const review = isJson
           ? await uc.reviewShoppingList.execute({ userId: req.userId, text: json(req, ShoppingReviewRequest).text })
@@ -422,6 +426,7 @@ export function createApi(uc: UseCases) {
       /^\/recipes\/analyze$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
         const result = await uc.analyzeRecipe.execute(json(req, AnalyzeRecipeRequest));
         return ok(RecipeAnalysis, "problem" in result ? { problem: result.problem, ingredients: [] } : result);
       },
@@ -439,6 +444,7 @@ export function createApi(uc: UseCases) {
       /^\/meal-plan$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
         return ok(MealPlanResponse, toMealPlan(await uc.mealPlans.create(req.userId, json(req, CreateMealPlanRequest).days)), 201);
       },
     ],
@@ -468,6 +474,7 @@ export function createApi(uc: UseCases) {
       /^\/pantry\/recipes$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
         return ok(PantryRecipesResponse, { recipes: await uc.pantry.recipes(req.userId) });
       },
     ],
@@ -522,6 +529,7 @@ export function createApi(uc: UseCases) {
       /^\/foods\/scan$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "read");
         const scan = (req.headers["content-type"] ?? "").startsWith("application/json")
           ? await uc.scanFood.byPhotoKeys({ userId: req.userId, photoKeys: json(req, AnalyzeSupplementRequest).photoKeys })
           : await uc.scanFood.byPhotos(await photosFrom(req, MAX_LABEL_PHOTOS));
@@ -542,6 +550,7 @@ export function createApi(uc: UseCases) {
       /^\/supplements\/analyze$/,
       async (req) => {
         await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "read");
         // Same two ways in as a meal photo: photoKeys from uploads, or multipart (one `photo` field per side).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")
           ? await uc.analyzeSupplementLabel.executeForKeys({ userId: req.userId, photoKeys: json(req, AnalyzeSupplementRequest).photoKeys })

@@ -47,6 +47,8 @@ import type { MealPlan } from "../../domain/mealPlan";
 import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { FoundDevice, IDeviceCandidateRepository } from "../../application/interfaces/IDevices";
+import type { IAiUsage } from "../../application/interfaces/IAiUsage";
+import type { AiFeature } from "../../domain/aiAllowance";
 import { type DeviceCandidate, type DeviceStatus, type DeviceTag, deviceKey } from "../../domain/devices";
 import { NotFoundError } from "../../domain/errors";
 import { pantryKey } from "../../domain/pantry";
@@ -56,6 +58,7 @@ import type { EndingTrial, ISubscriptionRepository } from "../../application/int
 import type { Database } from "./client";
 import {
   airQualityDays,
+  aiUsage,
   mealPlans,
   brainChecks,
   deviceCandidates,
@@ -1031,5 +1034,19 @@ export class DrizzleDeviceCandidateRepository implements IDeviceCandidateReposit
       .returning();
     if (!row) throw new NotFoundError("That device is no longer in the list.");
     return DrizzleDeviceCandidateRepository.toCandidate(row);
+  }
+}
+
+export class DrizzleAiUsageRepository implements IAiUsage {
+  constructor(private readonly db: Database) {}
+
+  /** One statement, so two calls at once can't both read the old count. */
+  async spend(userId: string, day: string, feature: AiFeature) {
+    const [row] = await this.db
+      .insert(aiUsage)
+      .values({ userId, day, feature, count: 1 })
+      .onConflictDoUpdate({ target: [aiUsage.userId, aiUsage.day, aiUsage.feature], set: { count: sql`${aiUsage.count} + 1` } })
+      .returning({ count: aiUsage.count });
+    return row!.count;
   }
 }

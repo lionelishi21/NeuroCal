@@ -345,6 +345,20 @@ export const knowledgeTechniques = pgTable(
   (t) => [index("knowledge_techniques_source_idx").on(t.sourceId)],
 );
 
+/** AI calls per person, day (UTC) and feature, for the daily allowance (domain/aiAllowance.ts). */
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    feature: text("feature", { enum: ["read", "generate"] }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day, t.feature] })],
+);
+
 /** Kitchen devices the monthly scout found, waiting for an admin; approved ones become products. */
 export const deviceCandidates = pgTable("device_candidates", {
   id: uuid("id").primaryKey().defaultRandom(),
