@@ -212,7 +212,9 @@ class _TodayScreenState extends State<TodayScreen> {
   Future<void> _connectSleep() async {
     final sync = AppScope.of(context).sleepSync;
     if (sync == null) return;
+    final analytics = AppScope.of(context).analytics;
     final imported = await sync.connect(_api);
+    if (imported != null) analytics.track('sleep_connected');
     if (!mounted) return;
     if (imported == null) {
       showToast(context, "${sync.source.name} didn't give access. You can still log sleep by hand.", ToastTone.info);
@@ -1699,7 +1701,10 @@ class _UpNextState extends State<_UpNext> {
                   ),
                   FilledButton(
                     style: finished ? FilledButton.styleFrom(backgroundColor: c.chlorophyllSoft, foregroundColor: c.chlorophyll) : null,
-                    onPressed: onAction,
+                    onPressed: () {
+                      AppScope.of(context).analytics.track('up_next_tapped', {'step': step.name});
+                      onAction();
+                    },
                     child: Text(action),
                   ),
                   if (secondary != null) TextButton(onPressed: secondary.$2, child: Text(secondary.$1)),

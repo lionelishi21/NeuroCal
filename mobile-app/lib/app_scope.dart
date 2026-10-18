@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import 'analytics/analytics.dart';
 import 'api/api.dart';
 import 'auth/auth.dart';
 import 'billing/billing.dart';
@@ -20,6 +21,7 @@ class AppScope extends InheritedWidget {
     required this.timeZone,
     required this.openLink,
     this.shareImage = _noShare,
+    this.analytics = const NoAnalytics(),
     required this.billing,
     this.reminders,
     this.sleepSync,
@@ -35,6 +37,9 @@ class AppScope extends InheritedWidget {
 
   /// Opens a web link outside the app; false when nothing could open it.
   final Future<bool> Function(Uri link) openLink;
+
+  /// Product events for the funnel; nothing is sent without a key.
+  final Analytics analytics;
 
   /// Hands a PNG and a caption to the phone's share sheet.
   final Future<void> Function(Uint8List png, String text) shareImage;
@@ -56,6 +61,7 @@ class AppScope extends InheritedWidget {
       timeZone != oldWidget.timeZone ||
       openLink != oldWidget.openLink ||
       shareImage != oldWidget.shareImage ||
+      analytics != oldWidget.analytics ||
       billing != oldWidget.billing ||
       reminders != oldWidget.reminders ||
       sleepSync != oldWidget.sleepSync;

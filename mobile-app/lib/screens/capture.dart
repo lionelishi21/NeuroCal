@@ -159,6 +159,7 @@ Future<Capture?> showCaptureMenu(BuildContext context) => showAppSheet<Capture>(
 Future<void> runCapture(BuildContext context, Capture capture, {required VoidCallback onChanged}) async {
   Future<void> done(bool? saved, String message) async {
     if (saved == true && context.mounted) {
+      AppScope.of(context).analytics.track('logged', {'kind': capture.name});
       showToast(context, message);
       onChanged();
     }
@@ -208,6 +209,7 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
     case Capture.exercise:
       final logged = await showExerciseSheet(context);
       if (logged != null && context.mounted) {
+        AppScope.of(context).analytics.track('logged', {'kind': capture.name});
         showToast(context, 'Exercise logged · ${logged.kcal} kcal burned');
         onChanged();
       }

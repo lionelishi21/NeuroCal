@@ -44,6 +44,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_load == null) AppScope.of(context).analytics.track('paywall_viewed');
     _load ??= _fetch();
   }
 

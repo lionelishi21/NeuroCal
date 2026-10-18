@@ -55,6 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool get _ready => _current == null ? _name.text.trim().isNotEmpty : stepComplete(_current!, _answers);
 
   void _go(int to) {
+    if (to > _step) AppScope.of(context).analytics.track('onboarding_step', {'step': to});
     setState(() {
       _forward = to >= _step;
       _step = to;
@@ -90,6 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       });
       if (!mounted) return;
       // No toast: the closing screen says "Profile saved", and a toast would cover its button.
+      AppScope.of(context).analytics.track('starting_point_seen');
       setState(() => _saved = profile);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.status >= 500 ? 'Try again in a moment.' : e.message);

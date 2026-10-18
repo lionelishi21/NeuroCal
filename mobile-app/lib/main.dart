@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'analytics/analytics.dart';
 import 'api/api.dart';
 import 'api/mock_api.dart';
 import 'app_scope.dart';
@@ -53,7 +54,11 @@ Future<void> main() async {
   reminders.restore().catchError((Object _) {});
   final sleepSync = SleepSync(prefs, HealthSleepSource());
   sleepSync.start();
-  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders, sleepSync: sleepSync));
+  final Analytics analytics = AppConfig.posthogKey.isEmpty
+      ? const NoAnalytics()
+      : PostHogAnalytics(prefs, apiKey: AppConfig.posthogKey, host: AppConfig.posthogHost);
+  analytics.track('app_opened');
+  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders, sleepSync: sleepSync, analytics: analytics));
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.
@@ -78,6 +83,7 @@ class NeuroCalApp extends StatelessWidget {
     this.timeZone = deviceTimeZone,
     this.openLink = _openOutside,
     this.shareImage = _shareOutside,
+    this.analytics = const NoAnalytics(),
     this.billing,
     this.reminders,
     this.sleepSync,
@@ -89,6 +95,7 @@ class NeuroCalApp extends StatelessWidget {
   final Future<String?> Function() timeZone;
   final Future<bool> Function(Uri link) openLink;
   final Future<void> Function(Uint8List png, String text) shareImage;
+  final Analytics analytics;
 
   /// Subscriptions; unlocked test billing when left out.
   final Billing? billing;
@@ -108,6 +115,7 @@ class NeuroCalApp extends StatelessWidget {
       timeZone: timeZone,
       openLink: openLink,
       shareImage: shareImage,
+      analytics: analytics,
       billing: billing ?? _unlocked,
       reminders: reminders,
       sleepSync: sleepSync,
@@ -220,13 +228,17 @@ class _SignedInState extends State<_SignedIn> {
         }
         if (snapshot.data == null) {
           return OnboardingScreen(
-            onDone: (profile) => setState(() {
-              _profile = Future.value(profile);
-              _justOnboarded = true;
-            }),
+            onDone: (profile) {
+              AppScope.of(context).analytics.track('onboarding_completed');
+              setState(() {
+                _profile = Future.value(profile);
+                _justOnboarded = true;
+              });
+            },
           );
         }
         final profile = snapshot.data!;
+        if (profile.id case final id?) AppScope.of(context).analytics.identify(id);
         return FutureBuilder(
           future: _access[profile] ??= _hasAccess(profile),
           builder: (context, access) {
@@ -236,9 +248,12 @@ class _SignedInState extends State<_SignedIn> {
               profile: profile,
               billing: scope.billing,
               // A block, not an arrow: setState must not return the Future being stored.
-              onUnlocked: () => setState(() {
-                _access[profile] = Future.value(true);
-              }),
+              onUnlocked: () {
+                AppScope.of(context).analytics.track('trial_started');
+                setState(() {
+                  _access[profile] = Future.value(true);
+                });
+              },
             );
           },
         );

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:neurocal/api/api.dart';
+import 'package:neurocal/analytics/analytics.dart';
 import 'package:neurocal/api/mock_api.dart';
 import 'package:neurocal/api/models.dart';
 import 'package:neurocal/auth/auth.dart';
@@ -77,6 +78,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final api = _RecordingApi();
     final auth = MockAuthClient();
+    final analytics = FakeAnalytics();
     await auth.signIn('sam@example.com', 'correct-horse');
     await tester.pumpWidget(
       NeuroCalApp(
@@ -84,6 +86,7 @@ void main() {
         auth: auth,
         theme: ThemeController(await SharedPreferences.getInstance()),
         timeZone: () async => 'America/Chicago',
+        analytics: analytics,
       ),
     );
     await tester.pumpAndSettle();
@@ -192,6 +195,12 @@ void main() {
     }
     await tester.tap(find.text('Start my day'));
     await tester.pumpAndSettle();
+    // The funnel, in order: each step, the starting point, onboarding done; no health values in events.
+    final names = analytics.names.toList();
+    expect(names.where((n) => n == 'onboarding_step'), hasLength(11));
+    expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('onboarding_completed')));
+    expect(names, contains('guide_opened'));
+    expect(analytics.events.expand((e) => e.$2.keys).toSet(), {'step'});
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Up next'), findsOneWidget);
   });

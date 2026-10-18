@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/sheet.dart';
@@ -33,6 +34,15 @@ class _GuideScreenState extends State<GuideScreen> {
   var _page = 0;
 
   static const _count = 4;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_tracked) AppScope.of(context).analytics.track('guide_opened');
+    _tracked = true;
+  }
+
+  var _tracked = false;
 
   @override
   void dispose() {

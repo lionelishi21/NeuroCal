@@ -171,7 +171,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] AI cost per user: log the cost of each call, and cap or cache so a heavy user costs well under their subscription
 
 **B. See what users do**
-- [ ] Product analytics behind a port (PostHog: free tier, EU or US hosting): onboarding steps, paywall seen, trial started, first meal, day 1/7/30 return. _(you: create the PostHog project, add the key to `env/*.json`)_
+- [x] Product analytics behind a port, sent to PostHog over its HTTP batch API (no native SDK): app opened, onboarding steps, starting point seen, paywall viewed, trial started, each kind of log, Up next taps, score shared, sleep connected, guide opened; no health values. Day 1/7/30 return comes from `app_opened` in PostHog. _(you: create the PostHog project and add `POSTHOG_KEY` to `env/*.json`; mention analytics in the privacy policy)_
 - [ ] Crash and error reporting (Sentry) in the app and the API. _(you: create the Sentry project)_
 - [ ] Ad attribution: SKAdNetwork and Meta/TikTok SDKs or AppsFlyer, wired to RevenueCat so each subscriber's ad is known. _(you: the ad accounts)_
 - [ ] One funnel dashboard: install → onboarding done → paywall → trial → paid, by week and by ad

@@ -201,6 +201,7 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (on) async {
                     if (!on) return sync.disconnect();
                     final imported = await sync.connect(scope.api);
+                    if (imported != null) scope.analytics.track('sleep_connected');
                     if (!context.mounted) return;
                     showToast(
                       context,

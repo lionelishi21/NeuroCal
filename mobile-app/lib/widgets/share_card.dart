@@ -40,7 +40,9 @@ class _ShareScoreState extends State<_ShareScore> {
       final image = await boundary.toImage(pixelRatio: 1080 / _size.width);
       final png = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
       if (!mounted) return;
-      await AppScope.of(context).shareImage(
+      final scope = AppScope.of(context);
+      scope.analytics.track('score_shared');
+      await scope.shareImage(
         png,
         'My Focus Score today: ${widget.score}. I track how food, sleep and stress shape my focus with NeuroCal. neurocal.ai',
       );

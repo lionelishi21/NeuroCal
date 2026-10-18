@@ -15,6 +15,10 @@ abstract final class AppConfig {
   static const revenueCatIosKey = String.fromEnvironment('REVENUECAT_IOS_KEY');
   static const revenueCatAndroidKey = String.fromEnvironment('REVENUECAT_ANDROID_KEY');
 
+  /// PostHog project key and host for product analytics. Without the key nothing is sent.
+  static const posthogKey = String.fromEnvironment('POSTHOG_KEY');
+  static const posthogHost = String.fromEnvironment('POSTHOG_HOST', defaultValue: 'https://us.i.posthog.com');
+
   static bool get usesMockApi => apiUrl.isEmpty;
   static bool get usesMockAuth => userPoolId.isEmpty || clientId.isEmpty;
 }
