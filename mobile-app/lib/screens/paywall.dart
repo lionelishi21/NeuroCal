@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../billing/billing.dart';
+import '../onboarding/starting_score.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
 import '../widgets/sheet.dart';
@@ -82,12 +83,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final goal = _goalNames[p.bioProfile?['goal']];
     final fasting = fastingLabels[p.bioProfile?['fasting']];
     final w = p.weightGoal;
+    final answers = p.bioProfile;
+    final start = answers == null || answers.isEmpty ? null : startingScore({for (final e in answers.entries) if (e.value != null) e.key: e.value as Object});
     return [
+      if (start != null && start.target > start.score) 'Focus Score from ${start.score} to ${start.target} in 3 weeks',
       if (w != null) _weightLine(w, unit) else ?goal,
       if (p.calorieTarget != null)
         '${_thousands(p.calorieTarget!)} kcal a day${p.macroTargets == null ? '' : ', ${p.macroTargets!.proteinG.round()} g protein'}',
       if (fasting != null) '$fasting fasting, with a timer that runs from your last meal',
-      'A Focus Score every morning, and what to eat next',
+      'A Focus Score every morning, and one clear next step',
     ];
   }
 

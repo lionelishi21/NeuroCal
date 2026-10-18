@@ -150,7 +150,10 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Save bio-profile'));
     await tester.pumpAndSettle();
-    expect(find.text("You're set, Sam."), findsOneWidget);
+    // The starting point: an estimate from the answers, a three-week target and where it comes from.
+    expect(find.text('Your starting point, Sam'), findsOneWidget);
+    expect(find.text('Your 3-week target'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Screens off an hour before bed'), 200);
     expect(api.saved, {
       'displayName': 'Sam',
       'timeZone': 'America/Chicago',
@@ -178,7 +181,7 @@ void main() {
       },
     });
 
-    await tester.tap(find.text('Go to Today'));
+    await tester.tap(find.text('See my plan'));
     await tester.pumpAndSettle();
     // A new account gets "How NeuroCal works" once, then lands on Today.
     expect(find.text('One number for your brain'), findsOneWidget);

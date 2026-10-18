@@ -4,6 +4,7 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../onboarding/bio_profile.dart';
+import '../onboarding/starting_score.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
@@ -102,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final saved = _saved;
-    if (saved != null) return _ProfileSaved(name: saved.displayName, onContinue: () => widget.onDone(saved));
+    if (saved != null) return _StartingPoint(name: saved.displayName, start: startingScore(_answers), onContinue: () => widget.onDone(saved));
 
     final c = context.colors;
     final text = Theme.of(context).textTheme;
@@ -788,10 +789,14 @@ class _ErrorPanel extends StatelessWidget {
 }
 
 /// The closing screen: the ring with a tick, then on to Today.
-class _ProfileSaved extends StatelessWidget {
-  const _ProfileSaved({required this.name, required this.onContinue});
+/// The end of onboarding: the starting Focus Score estimated from the answers, a three-week target drawn
+/// as a line, and the changes worth the most points. Said to be an estimate; the real score starts from
+/// what gets logged.
+class _StartingPoint extends StatelessWidget {
+  const _StartingPoint({required this.name, required this.start, required this.onContinue});
 
   final String name;
+  final StartingScore start;
   final VoidCallback onContinue;
 
   @override
@@ -803,47 +808,176 @@ class _ProfileSaved extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 416),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.s5, Space.s4, Space.s5, Space.s5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: FocusRing(
-                        score: null,
-                        size: 200,
-                        label: 'Profile saved',
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_rounded, size: 48, color: c.chlorophyll),
-                            Text(
-                              'Profile saved',
-                              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
-                            ),
-                          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(Space.s5, Space.s4, Space.s5, Space.s4),
+                    children: [
+                      Row(
+                        spacing: Space.s1,
+                        children: [
+                          Icon(Icons.check_circle_rounded, size: 18, color: c.chlorophyll),
+                          Text('Profile saved', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
+                        ],
+                      ),
+                      const SizedBox(height: Space.s2),
+                      Semantics(
+                        header: true,
+                        child: Text('Your starting point, $name', style: text.headlineMedium?.copyWith(letterSpacing: -0.7)),
+                      ),
+                      const SizedBox(height: Space.s4),
+                      Center(
+                        child: FocusRing(
+                          score: start.score,
+                          size: 176,
+                          label: 'Estimated starting Focus Score: ${start.score} out of 100',
                         ),
                       ),
-                    ),
+                      const SizedBox(height: Space.s3),
+                      Text(
+                        'Estimated from your answers. Your real score starts tomorrow, from your sleep, food and check-ins.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+                      ),
+                      const SizedBox(height: Space.s4),
+                      _Projection(start: start),
+                      const SizedBox(height: Space.s4),
+                      Text('Where the points come from', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink)),
+                      const SizedBox(height: Space.s2),
+                      for (final g in start.gains)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: Space.s2),
+                          child: Row(
+                            spacing: Space.s3,
+                            children: [
+                              Container(
+                                width: 48,
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(color: c.chlorophyllSoft, borderRadius: BorderRadius.circular(Radii.pill)),
+                                child: Text('+${g.points}', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.chlorophyll)),
+                              ),
+                              Expanded(child: Text(g.change, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, height: 1.3))),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
-                  Semantics(
-                    header: true,
-                    child: Text("You're set, $name.", style: text.headlineMedium?.copyWith(letterSpacing: -0.7)),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Your first Focus Score appears once you log last night's sleep or check in.",
-                    style: text.bodyLarge?.copyWith(color: c.inkSoft),
-                  ),
-                  const SizedBox(height: Space.s6),
-                  FilledButton(onPressed: onContinue, child: const Text('Go to Today')),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.s5, Space.s2, Space.s5, Space.s5),
+                  child: FilledButton(onPressed: onContinue, child: const Text('See my plan')),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// "58 → 80 in 3 weeks": the target as a line that draws itself in (still under reduced motion).
+class _Projection extends StatelessWidget {
+  const _Projection({required this.start});
+
+  final StartingScore start;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      label: 'Three-week target: from ${start.score} to ${start.target}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(Space.s4),
+        decoration: BoxDecoration(color: c.paper, borderRadius: BorderRadius.circular(Radii.card), border: Border.all(color: c.rule)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Your 3-week target', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: '${start.score}', style: TextStyle(color: c.inkSoft)),
+                  const TextSpan(text: '  →  '),
+                  TextSpan(text: '${start.target}', style: TextStyle(color: c.chlorophyll)),
+                ],
+              ),
+              style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: Space.s3),
+            SizedBox(
+              height: 110,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: still ? 1 : 0, end: 1),
+                duration: const Duration(milliseconds: 1200),
+                curve: Curves.easeOutCubic,
+                builder: (context, t, _) => CustomPaint(
+                  size: Size.infinite,
+                  painter: _ProjectionPainter(from: start.score, to: start.target, progress: t, line: c.chlorophyll, grid: c.rule, faint: c.inkFaint),
+                ),
+              ),
+            ),
+            const SizedBox(height: Space.s1),
+            Row(
+              children: [
+                Expanded(child: Text('Today', style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft))),
+                Text('In 3 weeks', style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectionPainter extends CustomPainter {
+  _ProjectionPainter({required this.from, required this.to, required this.progress, required this.line, required this.grid, required this.faint});
+
+  final int from;
+  final int to;
+  final double progress;
+  final Color line;
+  final Color grid;
+  final Color faint;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final lo = (from - 10).clamp(0, 100).toDouble();
+    final hi = (to + 5).clamp(0, 100).toDouble();
+    double y(double v) => size.height - (v - lo) / (hi - lo) * size.height;
+    final gridPaint = Paint()
+      ..color = grid
+      ..strokeWidth = 1;
+    for (final f in [0.25, 0.5, 0.75]) {
+      canvas.drawLine(Offset(0, size.height * f), Offset(size.width, size.height * f), gridPaint);
+    }
+    // Fast early gains that level off, as habits settle.
+    final path = Path();
+    const steps = 40;
+    for (var i = 0; i <= steps * progress; i++) {
+      final x = i / steps;
+      final v = from + (to - from) * (1 - (1 - x) * (1 - x));
+      final p = Offset(x * size.width, y(v));
+      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = line
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawCircle(Offset(0, y(from.toDouble())), 5, Paint()..color = faint);
+    if (progress >= 1) canvas.drawCircle(Offset(size.width - 2, y(to.toDouble())), 6, Paint()..color = line);
+  }
+
+  @override
+  bool shouldRepaint(_ProjectionPainter old) => old.progress != progress || old.from != from || old.to != to || old.line != line;
 }

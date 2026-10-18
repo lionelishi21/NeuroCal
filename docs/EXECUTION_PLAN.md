@@ -179,7 +179,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 **C. Onboarding that sells**
 - [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product
 - [ ] Snap your first meal inside onboarding (or skip), so people see the AI work before paying
-- [ ] A promised result before the paywall: "Focus Score 58 → 80 in 3 weeks", and the weight curve with a date for anyone with a weight goal
+- [x] A promised result before the paywall: the onboarding ends on "Your starting point" (a starting Focus Score estimated from the answers, a 3-week target drawn as a line, and the three changes worth the most points), and the paywall's plan says "Focus Score from 58 to 80 in 3 weeks". _To do: the weight curve with a date for anyone with a weight goal_
 - [ ] Commitment step and social proof (what people report, the science in one line)
 - [ ] App store rating prompt at the high point of onboarding (`in_app_review`)
 - [ ] Lead every screen and the store listing with the one hook
