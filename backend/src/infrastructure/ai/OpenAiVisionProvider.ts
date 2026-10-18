@@ -7,6 +7,7 @@ import type {
   MealPhotoAnalysis,
 } from "../../application/interfaces/IAiVisionProvider";
 import { MEAL_VISION_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const MEAL_VISION_MODEL = "gpt-4o";
 
@@ -61,16 +62,13 @@ export class OpenAiVisionProvider implements IAiVisionProvider {
 
     const choice = completion.choices[0];
     // Cost and latency only: never log the photo or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: MEAL_VISION_MODEL,
-        ms: Date.now() - started,
-        inputTokens: completion.usage?.prompt_tokens,
-        outputTokens: completion.usage?.completion_tokens,
-        finishReason: choice?.finish_reason,
-      }),
-    );
+    logLlmCall({
+      model: MEAL_VISION_MODEL,
+      ms: Date.now() - started,
+      inputTokens: completion.usage?.prompt_tokens,
+      outputTokens: completion.usage?.completion_tokens,
+      finishReason: choice?.finish_reason,
+    });
 
     if (!choice || choice.finish_reason !== "stop" || choice.message.refusal) {
       throw new Error(`Meal vision did not complete: ${choice?.finish_reason ?? "no choice"}`);

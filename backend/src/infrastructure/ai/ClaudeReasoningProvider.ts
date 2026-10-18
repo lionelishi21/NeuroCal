@@ -7,6 +7,7 @@ import type {
   RecipeQueryOutput,
 } from "../../application/interfaces/IAiReasoningProvider";
 import { RECIPE_QUERY_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const RECIPE_QUERY_MODEL = "claude-haiku-4-5";
 
@@ -40,16 +41,13 @@ export class ClaudeReasoningProvider implements IAiReasoningProvider {
     });
 
     // Cost and latency only: never log prompts or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: RECIPE_QUERY_MODEL,
-        ms: Date.now() - started,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        stopReason: response.stop_reason,
-      }),
-    );
+    logLlmCall({
+      model: RECIPE_QUERY_MODEL,
+      ms: Date.now() - started,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      stopReason: response.stop_reason,
+    });
 
     if (response.stop_reason !== "end_turn") {
       throw new Error(`Recipe query stopped early: ${response.stop_reason}`);

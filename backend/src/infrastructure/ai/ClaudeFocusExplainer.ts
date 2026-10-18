@@ -5,6 +5,7 @@ import type { IFocusExplainer } from "../../application/interfaces/IFocusExplain
 import type { FocusComponents } from "../../domain/types";
 import type { ParseMessage } from "./ClaudeReasoningProvider";
 import { FOCUS_EXPLANATION_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const FOCUS_EXPLANATION_MODEL = "claude-haiku-4-5";
 
@@ -30,16 +31,13 @@ export class ClaudeFocusExplainer implements IFocusExplainer {
       messages: [{ role: "user", content: JSON.stringify(input) }],
       output_config: { format: zodOutputFormat(FocusExplanationSchema) },
     });
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: FOCUS_EXPLANATION_MODEL,
-        ms: Date.now() - started,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        stopReason: response.stop_reason,
-      }),
-    );
+    logLlmCall({
+      model: FOCUS_EXPLANATION_MODEL,
+      ms: Date.now() - started,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      stopReason: response.stop_reason,
+    });
     if (response.stop_reason !== "end_turn") throw new Error(`Focus explanation stopped early: ${response.stop_reason}`);
     return FocusExplanationSchema.parse(response.parsed_output).explanation;
   }

@@ -6,6 +6,7 @@ import type { ISupplementLabelReader } from "../../application/interfaces/ISuppl
 import type { SupplementLabelReading } from "../../domain/supplement";
 import type { ParseCompletion } from "./OpenAiVisionProvider";
 import { SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const SUPPLEMENT_LABEL_MODEL = "gpt-4o";
 
@@ -66,16 +67,13 @@ export class OpenAiSupplementLabelReader implements ISupplementLabelReader {
 
     const choice = completion.choices[0];
     // Cost and latency only: never log the photo or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: SUPPLEMENT_LABEL_MODEL,
-        ms: Date.now() - started,
-        inputTokens: completion.usage?.prompt_tokens,
-        outputTokens: completion.usage?.completion_tokens,
-        finishReason: choice?.finish_reason,
-      }),
-    );
+    logLlmCall({
+      model: SUPPLEMENT_LABEL_MODEL,
+      ms: Date.now() - started,
+      inputTokens: completion.usage?.prompt_tokens,
+      outputTokens: completion.usage?.completion_tokens,
+      finishReason: choice?.finish_reason,
+    });
 
     if (!choice || choice.finish_reason !== "stop" || choice.message.refusal) {
       throw new Error(`Supplement label reading did not complete: ${choice?.finish_reason ?? "no choice"}`);

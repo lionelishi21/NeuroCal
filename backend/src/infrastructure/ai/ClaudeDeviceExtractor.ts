@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { FoundDevice, IDeviceExtractor, WebResult } from "../../application/interfaces/IDevices";
 import type { ParseMessage } from "./ClaudeReasoningProvider";
 import { DEVICE_EXTRACTION_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const DEVICE_MODEL = "claude-haiku-4-5";
 
@@ -38,16 +39,13 @@ export class ClaudeDeviceExtractor implements IDeviceExtractor {
       output_config: { format: zodOutputFormat(DevicesSchema) },
     });
     // Cost and latency only: never log prompts or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: DEVICE_MODEL,
-        ms: Date.now() - started,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        stopReason: response.stop_reason,
-      }),
-    );
+    logLlmCall({
+      model: DEVICE_MODEL,
+      ms: Date.now() - started,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      stopReason: response.stop_reason,
+    });
     if (response.stop_reason !== "end_turn") throw new Error(`Device extraction stopped early: ${response.stop_reason}`);
     // Validate again in our own schema even though the SDK parsed it (CLAUDE.md: LLM safety).
     return DevicesSchema.parse(response.parsed_output).devices;

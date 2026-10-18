@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { IRecipeParser } from "../../application/interfaces/IRecipeParser";
 import type { ParseMessage } from "./ClaudeReasoningProvider";
 import { RECIPE_PARSE_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const RECIPE_PARSE_MODEL = "claude-haiku-4-5";
 
@@ -48,16 +49,13 @@ export class ClaudeRecipeParser implements IRecipeParser {
       output_config: { format: zodOutputFormat(ParsedRecipeSchema) },
     });
     // Cost and latency only: never log prompts or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: RECIPE_PARSE_MODEL,
-        ms: Date.now() - started,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        stopReason: response.stop_reason,
-      }),
-    );
+    logLlmCall({
+      model: RECIPE_PARSE_MODEL,
+      ms: Date.now() - started,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      stopReason: response.stop_reason,
+    });
     if (response.stop_reason !== "end_turn") throw new Error(`Recipe parsing stopped early: ${response.stop_reason}`);
     // Validate again in our own schema even though the SDK parsed it (CLAUDE.md: LLM safety).
     const out = ParsedRecipeSchema.parse(response.parsed_output);

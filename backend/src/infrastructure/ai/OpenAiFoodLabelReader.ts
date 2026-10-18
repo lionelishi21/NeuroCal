@@ -6,6 +6,7 @@ import type { IFoodLabelReader } from "../../application/interfaces/IFoodLabels"
 import type { FoodLabelReading } from "../../domain/foodLabel";
 import type { ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_PROMPT } from "./prompts";
+import { logLlmCall } from "./logLlmCall";
 
 export const FOOD_LABEL_MODEL = "gpt-4o";
 
@@ -65,16 +66,13 @@ export class OpenAiFoodLabelReader implements IFoodLabelReader {
     });
     const choice = completion.choices[0];
     // Cost and latency only: never log the photo or output text (ARCHITECTURE §7).
-    console.info(
-      JSON.stringify({
-        event: "llm_call",
-        model: FOOD_LABEL_MODEL,
-        ms: Date.now() - started,
-        inputTokens: completion.usage?.prompt_tokens,
-        outputTokens: completion.usage?.completion_tokens,
-        finishReason: choice?.finish_reason,
-      }),
-    );
+    logLlmCall({
+      model: FOOD_LABEL_MODEL,
+      ms: Date.now() - started,
+      inputTokens: completion.usage?.prompt_tokens,
+      outputTokens: completion.usage?.completion_tokens,
+      finishReason: choice?.finish_reason,
+    });
     if (!choice || choice.finish_reason !== "stop" || choice.message.refusal) {
       throw new Error(`Food label reading did not complete: ${choice?.finish_reason ?? "no choice"}`);
     }
