@@ -21,14 +21,16 @@ dependencies:
   google_mlkit_barcode_scanning: ^0.15.0
   # Sleep from Health Connect (Android) and Apple Health (iOS), read only.
   health: ^13.3.2
+  # The Android home-screen widget's data (android/.../FocusWidget.kt).
+  home_widget: ^0.10.0
   http: ^1.6.0
   image_picker: ^1.2.3
   # The store's own rating dialog, at good moments only (lib/review/review_prompt.dart).
   in_app_review: ^2.0.12
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
   purchases_flutter: ^10.15.2
-  # Crash and error reports, when SENTRY_DSN is set (lib/main.dart).
-  sentry_flutter: ^8.14.2
+  # Crash and error reports, when SENTRY_DSN is set (lib/main.dart). The Dart SDK: no native code.
+  sentry: ^9.30.1
   # The phone's share sheet, for the Focus Score card.
   share_plus: ^13.3.1
   shared_preferences: ^2.5.5

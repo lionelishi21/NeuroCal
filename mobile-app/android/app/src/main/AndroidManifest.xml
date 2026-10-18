@@ -53,6 +53,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- The home-screen widget: today's score and Up next (FocusWidget.kt). -->
+        <receiver android:name=".FocusWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/focus_widget_info" />
+        </receiver>
         <!-- Shows scheduled reminders, and schedules them again after a restart or an app update. -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">

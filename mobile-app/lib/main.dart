@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:sentry/sentry.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +18,7 @@ import 'auth/cognito_auth.dart';
 import 'billing/billing.dart';
 import 'config.dart';
 import 'health/sleep_sync.dart';
+import 'home_widget/focus_widget.dart';
 import 'reminders/reminders.dart';
 import 'review/review_prompt.dart';
 import 'device_time_zone.dart';
@@ -74,16 +75,27 @@ Future<void> main() async {
     sleepSync: sleepSync,
     analytics: analytics,
     reviewPrompt: reviewPrompt,
+    homeWidget: const HomeScreenFocusWidget(),
   );
   if (AppConfig.sentryDsn.isEmpty) return runApp(app);
-  // Crashes and errors only: no personal details, no screenshots, no performance tracing.
-  await SentryFlutter.init((o) {
+  // Crashes and errors only: no personal details, no performance tracing. The Dart SDK, so no native
+  // code: it catches Flutter and Dart errors, which is where nearly all app crashes are.
+  await Sentry.init((o) {
     o.dsn = AppConfig.sentryDsn;
     o.environment = AppConfig.sentryEnvironment;
     o.sendDefaultPii = false;
-    o.attachScreenshot = false;
     o.tracesSampleRate = 0;
-  }, appRunner: () => runApp(app));
+  });
+  final flutterError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    Sentry.captureException(details.exception, stackTrace: details.stack);
+    flutterError?.call(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    Sentry.captureException(error, stackTrace: stack);
+    return false;
+  };
+  runApp(app);
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.
@@ -113,6 +125,7 @@ class NeuroCalApp extends StatelessWidget {
     this.reminders,
     this.sleepSync,
     this.reviewPrompt,
+    this.homeWidget,
   });
 
   final NeuroCalApi api;
@@ -135,6 +148,9 @@ class NeuroCalApp extends StatelessWidget {
   /// The store's rating dialog; none when left out.
   final ReviewPrompt? reviewPrompt;
 
+  /// The home-screen widget; none when left out.
+  final FocusWidgetSink? homeWidget;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -149,6 +165,7 @@ class NeuroCalApp extends StatelessWidget {
       reminders: reminders,
       sleepSync: sleepSync,
       reviewPrompt: reviewPrompt,
+      homeWidget: homeWidget,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(

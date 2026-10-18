@@ -55,6 +55,21 @@ void main() {
     );
   });
 
+  test('an API error surfaces its sentence and code, not the raw body', () async {
+    final api = HttpNeuroCalApi(
+      baseUrl: 'https://api.example.com',
+      token: () async => 't',
+      client: MockClient((_) async => http.Response('{"code":"daily_limit","message":"Daily limit reached."}', 429)),
+      retryDelays: const [],
+    );
+    await expectLater(
+      api.createMealPlan(3),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Daily limit reached.').having((e) => e.code, 'code', 'daily_limit')),
+    );
+    final gateway = HttpNeuroCalApi(baseUrl: 'https://api.example.com', token: () async => 't', client: MockClient((_) async => http.Response('<html>Bad gateway</html>', 502, reasonPhrase: 'Bad Gateway')), retryDelays: const []);
+    await expectLater(gateway.createMealPlan(3), throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Bad Gateway')));
+  });
+
   test('check-ins post wire flag names', () async {
     late Map<String, dynamic> body;
     final api = HttpNeuroCalApi(

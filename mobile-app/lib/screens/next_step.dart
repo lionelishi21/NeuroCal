@@ -37,3 +37,14 @@ DayStep nextStep(DayStatus s, DateTime now) {
   if (s.supplementsLeft > 0) return DayStep.supplements;
   return DayStep.allDone;
 }
+
+/// Each step's title, as Up next and the home-screen widget show it.
+String stepTitle(DayStep step) => switch (step) {
+  DayStep.sleep => 'Log last night’s sleep',
+  DayStep.checkIn => 'Check in',
+  DayStep.daylight => 'Get 10 minutes of daylight',
+  DayStep.meal => 'Log your next meal',
+  DayStep.move => 'Move for 5 minutes',
+  DayStep.supplements => 'Take your supplements',
+  DayStep.allDone => 'You’re done for now',
+};

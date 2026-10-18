@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
+import 'package:neurocal/home_widget/focus_widget.dart';
 import 'package:neurocal/api/models.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/main.dart';
@@ -13,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Links the app asked to open, most recent last.
 final opened = <Uri>[];
+
+/// The home-screen widget, as the app last filled it.
+var homeWidget = FakeFocusWidget();
 
 /// Images handed to the share sheet, with their captions.
 final shared = <(Uint8List, String)>[];
@@ -28,6 +32,7 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
   final api = MockNeuroCalApi()..latency = Duration.zero;
   opened.clear();
   shared.clear();
+  homeWidget = FakeFocusWidget();
   await tester.pumpWidget(
     NeuroCalApp(
       api: api,
@@ -38,6 +43,7 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
         return true;
       },
       shareImage: (png, text) async => shared.add((png, text)),
+      homeWidget: homeWidget,
     ),
   );
   return (theme, auth);
@@ -593,5 +599,15 @@ void main() {
     expect(shared.single.$1.sublist(1, 4), 'PNG'.codeUnits);
     expect(shared.single.$2, startsWith('My Focus Score today: '));
     expect(find.text('Share your score'), findsNothing);
+  });
+
+  testWidgets('the home-screen widget gets today’s score, the Up next step and the streak', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    final shown = homeWidget.shown!;
+    expect(shown.score, isNotNull);
+    expect(shown.word, isNot('No score yet'));
+    expect(shown.streakDays, 8);
+    expect(find.text(shown.next), findsWidgets);
   });
 }

@@ -6,6 +6,7 @@ import 'api/api.dart';
 import 'auth/auth.dart';
 import 'billing/billing.dart';
 import 'health/sleep_sync.dart';
+import 'home_widget/focus_widget.dart';
 import 'reminders/reminders.dart';
 import 'review/review_prompt.dart';
 import 'theme/theme_controller.dart';
@@ -27,6 +28,7 @@ class AppScope extends InheritedWidget {
     this.reminders,
     this.sleepSync,
     this.reviewPrompt,
+    this.homeWidget,
     required super.child,
   });
 
@@ -56,6 +58,9 @@ class AppScope extends InheritedWidget {
   /// The store's rating dialog at good moments; null in tests and previews.
   final ReviewPrompt? reviewPrompt;
 
+  /// The home-screen widget; null in tests and previews.
+  final FocusWidgetSink? homeWidget;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
@@ -70,5 +75,6 @@ class AppScope extends InheritedWidget {
       billing != oldWidget.billing ||
       reminders != oldWidget.reminders ||
       sleepSync != oldWidget.sleepSync ||
-      reviewPrompt != oldWidget.reviewPrompt;
+      reviewPrompt != oldWidget.reviewPrompt ||
+      homeWidget != oldWidget.homeWidget;
 }

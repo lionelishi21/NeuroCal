@@ -51,6 +51,20 @@ class _Day {
   bool get isToday => _sameDay(date, DateTime.now());
 }
 
+/// What Up next and the home-screen widget read from the day.
+DayStatus _statusOf(_Day day) {
+  final stack = day.stack?.items ?? const <StackItem>[];
+  return DayStatus(
+    sleepLogged: day.focus.components.sleep != null,
+    checkedIn: day.bio.flags.isNotEmpty,
+    daylight: day.environment == null ? null : day.environment!.check[EnvironmentItem.daylight] == true,
+    meals: day.meals.length,
+    movedMinutes: day.exercise?.totalMinutes ?? 0,
+    supplementsLeft: stack.where((i) => !i.takenToday).length,
+    fastingNow: day.fasting?.kind == FastingKind.fasting,
+  );
+}
+
 bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
 const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -161,6 +175,14 @@ class _TodayScreenState extends State<TodayScreen> {
     final streak = days == null ? null : streakFrom(days, date);
     // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
     if (streak != null) reminders?.streak(days: streak.days, todayDone: streak.todayDone).catchError((Object _) {});
+    final widget = scope.homeWidget;
+    if (widget != null && _date == null) {
+      final status = _statusOf(_Day(date, d.focus, d.bio, d.meals, stack: d.stack, exercise: d.exercise, environment: d.environment, fasting: d.fasting));
+      final score = d.focus.score;
+      widget
+          .show((score: score, word: score == null ? 'No score yet' : scoreWord(score), next: stepTitle(nextStep(status, DateTime.now())), streakDays: streak?.days ?? 0))
+          .catchError((Object _) {});
+    }
     // A first full week is a good moment to ask for a rating.
     if (streak case (days: 7, todayDone: true)) {
       scope.reviewPrompt?.maybeAsk().then((asked) => asked ? scope.analytics.track('review_prompted', {'moment': 'week_streak'}) : null);
@@ -1526,16 +1548,7 @@ class _UpNextState extends State<_UpNext> {
     final store = sync?.source.name ?? '';
     final day = widget.day;
     final stack = day.stack?.items ?? const <StackItem>[];
-    final daylight = day.environment?.check[EnvironmentItem.daylight];
-    final status = DayStatus(
-      sleepLogged: day.focus.components.sleep != null,
-      checkedIn: day.bio.flags.isNotEmpty,
-      daylight: day.environment == null ? null : daylight == true,
-      meals: day.meals.length,
-      movedMinutes: day.exercise?.totalMinutes ?? 0,
-      supplementsLeft: stack.where((i) => !i.takenToday).length,
-      fastingNow: day.fasting?.kind == FastingKind.fasting,
-    );
+    final status = _statusOf(day);
     final step = nextStep(status, DateTime.now());
     final (icon, title, why, action, onAction) = switch (step) {
       DayStep.sleep when access == SleepAccess.notConnected => (
@@ -1547,45 +1560,45 @@ class _UpNextState extends State<_UpNext> {
       ),
       DayStep.sleep => (
         Icons.bedtime_rounded,
-        'Log last night’s sleep',
+        stepTitle(DayStep.sleep),
         access == SleepAccess.connected
             ? 'Nothing from $store for last night yet. Log it by hand, or check your watch or sleep app saves to $store.'
             : 'Sleep is the biggest part of your Focus Score.',
         'Log sleep',
         () => widget.onCapture(Capture.sleep),
       ),
-      DayStep.checkIn => (Icons.mood_rounded, 'Check in', 'Tap how you feel right now. It takes ten seconds.', 'Check in', () => widget.onCapture(Capture.checkIn)),
+      DayStep.checkIn => (Icons.mood_rounded, stepTitle(DayStep.checkIn), 'Tap how you feel right now. It takes ten seconds.', 'Check in', () => widget.onCapture(Capture.checkIn)),
       DayStep.daylight => (
         Icons.wb_sunny_rounded,
-        'Get 10 minutes of daylight',
+        stepTitle(DayStep.daylight),
         'Morning light sets your body clock, so you sleep better tonight. Step outside, then tap below.',
         'I’ve been outside',
         widget.onDaylight,
       ),
       DayStep.meal => (
         Icons.photo_camera_rounded,
-        'Log your next meal',
+        stepTitle(DayStep.meal),
         'Snap your plate before you eat. NeuroCal works out the rest.',
         'Log a meal',
         () => widget.onCapture(Capture.meal),
       ),
       DayStep.move => (
         Icons.directions_run_rounded,
-        'Move for 5 minutes',
+        stepTitle(DayStep.move),
         'A guided calf pump you can do at your desk. It’s logged when you finish.',
         'Start the calf pump',
         widget.onCalfPump,
       ),
       DayStep.supplements => (
         Icons.medication_rounded,
-        'Take your supplements',
+        stepTitle(DayStep.supplements),
         '${status.supplementsLeft} still to take today. Tick them off in your stack.',
         'Open my stack',
         widget.onStack,
       ),
       DayStep.allDone => (
         Icons.check_circle_rounded,
-        'You’re done for now',
+        stepTitle(DayStep.allDone),
         status.fastingNow && day.meals.isEmpty
             ? 'You’re fasting. Log your first meal when your eating window opens.'
             : 'Tomorrow’s score has what it needs. Log meals as you eat them.',

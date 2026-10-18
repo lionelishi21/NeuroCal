@@ -120,10 +120,15 @@ abstract interface class NeuroCalApi {
 }
 
 class ApiException implements Exception {
-  ApiException(this.status, this.message);
+  ApiException(this.status, this.message, {this.code});
 
   final int status;
+
+  /// The API's sentence for people (`ApiError.message` in the contracts).
   final String message;
+
+  /// `ApiError.code`, e.g. "daily_limit"; null when the body wasn't an API error.
+  final String? code;
 
   bool get unauthorized => status == 401;
 
@@ -170,7 +175,15 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   dynamic _decode(http.Response res) {
     if (res.statusCode >= 400) {
-      throw ApiException(res.statusCode, res.body.isEmpty ? res.reasonPhrase ?? 'Request failed' : res.body);
+      // The API answers errors as {code, message}; anything else (a gateway page) keeps its reason phrase.
+      Object? body;
+      try {
+        body = res.body.isEmpty ? null : jsonDecode(res.body);
+      } on FormatException {
+        body = null;
+      }
+      if (body case {'message': final String message, 'code': final String code}) throw ApiException(res.statusCode, message, code: code);
+      throw ApiException(res.statusCode, res.reasonPhrase ?? 'Request failed');
     }
     return res.body.isEmpty ? null : jsonDecode(res.body);
   }

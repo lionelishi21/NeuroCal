@@ -61,7 +61,7 @@ Cognito values it uses the local mock sign-in (`lib/auth/auth.dart`), like the w
 
 **Product analytics.** With `POSTHOG_KEY` (and `POSTHOG_HOST` for the EU cloud) in `env/*.json`, the app sends funnel events to PostHog: app opened, onboarding steps, starting point seen, paywall viewed, trial started, each kind of log, Up next taps, score shared, sleep connected, guide opened (`lib/analytics/analytics.dart`). Events say what happened, never what was logged. Without the key nothing is sent.
 
-**Crash reports.** With `SENTRY_DSN` (and `SENTRY_ENVIRONMENT`, default `dev`) the app reports crashes and errors to Sentry, without personal details or screenshots.
+**Crash reports.** With `SENTRY_DSN` (and `SENTRY_ENVIRONMENT`, default `dev`) the app reports Flutter and Dart crashes and errors to Sentry, without personal details (Sentry's Dart SDK, so crashes inside native code aren't caught).
 
 **Sleep from the phone.** Today's "Connect your sleep" reads sleep (read only) from Health Connect on
 Android 8+ (the Health Connect app must be installed; it is built in from Android 14) and from Apple

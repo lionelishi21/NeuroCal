@@ -172,7 +172,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 
 **B. See what users do**
 - [x] Product analytics behind a port, sent to PostHog over its HTTP batch API (no native SDK): app opened, onboarding steps, starting point seen, paywall viewed, trial started, each kind of log, Up next taps, score shared, sleep connected, guide opened; no health values. Day 1/7/30 return comes from `app_opened` in PostHog. _(you: create the PostHog project and add `POSTHOG_KEY` to `env/*.json`; mention analytics in the privacy policy)_
-- [x] Crash and error reporting in the app (Sentry, when `SENTRY_DSN` is set; no personal details or screenshots). _To do: the API's Lambdas. (you: create the Sentry project and add the DSN to `env/*.json`)_
+- [x] Crash and error reporting in the app (Sentry's Dart SDK, when `SENTRY_DSN` is set; Flutter and Dart errors, no personal details; the Flutter SDK's native code doesn't build with this Kotlin version). _To do: the API's Lambdas. (you: create the Sentry project and add the DSN to `env/*.json`)_
 - [ ] Ad attribution: SKAdNetwork and Meta/TikTok SDKs or AppsFlyer, wired to RevenueCat so each subscriber's ad is known. _(you: the ad accounts)_
 - [ ] One funnel dashboard: install → onboarding done → paywall → trial → paid, by week and by ad
 
