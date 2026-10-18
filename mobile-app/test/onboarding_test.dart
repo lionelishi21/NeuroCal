@@ -192,6 +192,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1300));
     await hold.up();
     await tester.pumpAndSettle();
+    // Then a first meal, read before the plan; skipping goes straight on.
+    expect(find.text('See it work: snap a meal'), findsOneWidget);
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
     // A new account gets "How NeuroCal works" once, then lands on Today.
     expect(find.text('One number for your brain'), findsOneWidget);
     for (final title in ['Six things move it', 'Always know what’s next', 'Where things are']) {
@@ -207,6 +211,7 @@ void main() {
     expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('committed')));
     expect(names.indexOf('committed'), lessThan(names.indexOf('onboarding_completed')));
     expect(names, contains('guide_opened'));
+    expect(names, contains('first_meal_skipped'));
     expect(analytics.events.expand((e) => e.$2.keys).toSet(), {'step'});
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Up next'), findsOneWidget);

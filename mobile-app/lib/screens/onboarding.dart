@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../api/api.dart';
 import '../api/models.dart';
@@ -9,6 +10,7 @@ import '../onboarding/starting_score.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
+import 'first_meal.dart';
 
 /// Devices that will feed sleep and activity in automatically. Not connected yet: shown so people know it is coming.
 const _devices = [('Oura', 'Ring'), ('Whoop', 'Strap'), ('Apple Health', 'iPhone and Watch')];
@@ -19,10 +21,13 @@ Duration _motion(BuildContext context, Duration duration) =>
 /// The bio-profile onboarding: a name, then ten short steps of questions, ending in the
 /// profile they produce. Saves once, at the end. The same flow as the web app's /welcome.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key, required this.onDone});
+  const OnboardingScreen({super.key, required this.onDone, this.picker});
 
   /// Called with the saved profile when the person leaves the closing screen.
   final ValueChanged<Profile> onDone;
+
+  /// The camera and gallery for the first meal; the device's own when left out.
+  final ImagePicker? picker;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -37,6 +42,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   var _saving = false;
   String? _error;
   Profile? _saved;
+
+  /// Committed on the starting point: the first meal comes next.
+  var _committed = false;
 
   @override
   void initState() {
@@ -110,7 +118,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final saved = _saved;
-    if (saved != null) return _StartingPoint(name: saved.displayName, start: startingScore(_answers), onContinue: () => widget.onDone(saved));
+    if (saved != null && _committed) return FirstMealScreen(picker: widget.picker ?? ImagePicker(), onDone: () => widget.onDone(saved));
+    if (saved != null) return _StartingPoint(name: saved.displayName, start: startingScore(_answers), onContinue: () => setState(() => _committed = true));
 
     final c = context.colors;
     final text = Theme.of(context).textTheme;
