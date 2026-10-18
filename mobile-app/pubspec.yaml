@@ -27,6 +27,8 @@ dependencies:
   in_app_review: ^2.0.12
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
   purchases_flutter: ^10.15.2
+  # Crash and error reports, when SENTRY_DSN is set (lib/main.dart).
+  sentry_flutter: ^8.14.2
   # The phone's share sheet, for the Focus Score card.
   share_plus: ^13.3.1
   shared_preferences: ^2.5.5

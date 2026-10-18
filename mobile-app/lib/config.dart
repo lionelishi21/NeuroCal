@@ -19,6 +19,11 @@ abstract final class AppConfig {
   static const posthogKey = String.fromEnvironment('POSTHOG_KEY');
   static const posthogHost = String.fromEnvironment('POSTHOG_HOST', defaultValue: 'https://us.i.posthog.com');
 
+  /// Sentry DSN for crash and error reports, and the environment they're filed under. Without the DSN
+  /// nothing is sent.
+  static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static const sentryEnvironment = String.fromEnvironment('SENTRY_ENVIRONMENT', defaultValue: 'dev');
+
   static bool get usesMockApi => apiUrl.isEmpty;
   static bool get usesMockAuth => userPoolId.isEmpty || clientId.isEmpty;
 }

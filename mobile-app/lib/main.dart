@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -64,18 +65,25 @@ Future<void> main() async {
     final store = InAppReview.instance;
     if (await store.isAvailable()) await store.requestReview();
   });
-  runApp(
-    NeuroCalApp(
-      api: api,
-      auth: auth,
-      theme: theme,
-      billing: billing,
-      reminders: reminders,
-      sleepSync: sleepSync,
-      analytics: analytics,
-      reviewPrompt: reviewPrompt,
-    ),
+  final app = NeuroCalApp(
+    api: api,
+    auth: auth,
+    theme: theme,
+    billing: billing,
+    reminders: reminders,
+    sleepSync: sleepSync,
+    analytics: analytics,
+    reviewPrompt: reviewPrompt,
   );
+  if (AppConfig.sentryDsn.isEmpty) return runApp(app);
+  // Crashes and errors only: no personal details, no screenshots, no performance tracing.
+  await SentryFlutter.init((o) {
+    o.dsn = AppConfig.sentryDsn;
+    o.environment = AppConfig.sentryEnvironment;
+    o.sendDefaultPii = false;
+    o.attachScreenshot = false;
+    o.tracesSampleRate = 0;
+  }, appRunner: () => runApp(app));
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.

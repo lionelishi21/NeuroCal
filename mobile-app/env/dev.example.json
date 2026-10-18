@@ -3,5 +3,7 @@
   "COGNITO_USER_POOL_ID": "us-east-1_<UserPoolId output>",
   "COGNITO_CLIENT_ID": "<UserPoolClientId output>",
   "POSTHOG_KEY": "<optional: PostHog project API key, phc_...; leave out to send no analytics>",
-  "POSTHOG_HOST": "https://us.i.posthog.com"
+  "POSTHOG_HOST": "https://us.i.posthog.com",
+  "SENTRY_DSN": "<optional: Sentry DSN for crash reports; leave out to send none>",
+  "SENTRY_ENVIRONMENT": "dev"
 }
