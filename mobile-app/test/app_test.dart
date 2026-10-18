@@ -48,6 +48,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Today'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Focus Score'), 200);
     expect(find.text('Focus Score'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Lunch'), 200);
     expect(find.text('Breakfast'), findsOneWidget);
@@ -521,6 +522,8 @@ void main() {
     await pumpApp(tester);
     await signIn(tester);
     expect(find.text('Up next'), findsOneWidget);
+    // Seven sample days and today, each with something logged.
+    expect(find.text('8-day streak. Today counts'), findsOneWidget);
     // The sample day has sleep and a check-in, so morning light is next (or movement after 5 pm).
     if (DateTime.now().hour < 17) {
       expect(find.text('Get 10 minutes of daylight'), findsOneWidget);

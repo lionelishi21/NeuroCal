@@ -119,4 +119,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Save check-in'), findsOneWidget);
   });
+
+  test('the streak nudge is set for 20:00 while a streak is at risk, and goes once today counts', () async {
+    SharedPreferences.setMockInitialValues({});
+    final device = FakeReminders();
+    var now = DateTime(2026, 10, 17, 10);
+    final settings = ReminderSettings(await SharedPreferences.getInstance(), device, now: () => now);
+
+    await settings.streak(days: 4, todayDone: false);
+    expect(device.oneOffs[streakNudgeId]?.at, DateTime(2026, 10, 17, 20));
+    expect(device.oneOffs[streakNudgeId]?.title, 'Keep your 4-day streak');
+    // Check-in nudges being rescheduled leaves it alone.
+    await settings.restore();
+    expect(device.oneOffs, contains(streakNudgeId));
+
+    await settings.streak(days: 5, todayDone: true);
+    expect(device.oneOffs, isEmpty);
+    now = DateTime(2026, 10, 17, 21);
+    await settings.streak(days: 4, todayDone: false);
+    expect(device.oneOffs, isEmpty);
+  });
 }

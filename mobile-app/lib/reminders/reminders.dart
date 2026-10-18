@@ -47,6 +47,10 @@ const defaultWakeHour = 7.0;
 /// One notification to show. [id] encodes the day, window and nudge, so it can be replaced.
 typedef Nudge = ({int id, DateTime at, String title, String body, ReminderSlot slot});
 
+/// One-off nudges use ids from here up, so rescheduling the check-in nudges leaves them alone.
+const oneOffIds = 900000;
+const streakNudgeId = oneOffIds + 1;
+
 /// Every nudge from [now] for the next [days] days, for the windows switched on. Windows already
 /// checked in today ([doneToday]) get no more nudges today; times already past are left out.
 List<Nudge> nudgesFor({
@@ -82,8 +86,11 @@ abstract interface class Reminders {
   /// Asks to show notifications; false when the person said no.
   Future<bool> requestPermission();
 
-  /// Replaces whatever was scheduled with [nudges].
+  /// Replaces the check-in nudges with [nudges]. One-off nudges stay.
   Future<void> schedule(List<Nudge> nudges);
+
+  /// A single nudge under its own [id] at [at], replacing any earlier one with that id; null [at] cancels it.
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''});
 
   /// Bumped when a reminder is tapped, so the app opens the check-in.
   ValueListenable<int> get opened;
@@ -170,11 +177,26 @@ class ReminderSettings extends ChangeNotifier {
     return _reminders.schedule(nudgesFor(slots: slots, wakeHour: wakeHour, now: now, doneToday: doneOn(now)));
   }
 
+  /// The evening nudge that keeps a streak: at 20:00 on a day with a streak going and nothing logged
+  /// yet; cancelled once something is logged, or when there's no streak to keep.
+  Future<void> streak({required int days, required bool todayDone}) {
+    final now = _now();
+    final at = DateTime(now.year, now.month, now.day, 20);
+    final due = days > 0 && !todayDone && now.isBefore(at);
+    return _reminders.oneOff(
+      streakNudgeId,
+      due ? at : null,
+      title: 'Keep your $days-day streak',
+      body: 'Log a meal or last night’s sleep before bed.',
+    );
+  }
+
   /// Signed out: no reminders for an account that isn't here.
   Future<void> clear() async {
     await _prefs.remove(_key);
     await _prefs.remove(_doneKey);
     await _reminders.schedule(const []);
+    await _reminders.oneOff(streakNudgeId, null);
     notifyListeners();
   }
 }
@@ -232,9 +254,26 @@ class DeviceReminders implements Reminders {
   }
 
   @override
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''}) async {
+    await _init();
+    await _plugin.cancel(id: id);
+    if (at == null) return;
+    await _plugin.zonedSchedule(
+      id: id,
+      scheduledDate: tz.TZDateTime.from(at, tz.local),
+      notificationDetails: _details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      title: title,
+      body: body,
+    );
+  }
+
+  @override
   Future<void> schedule(List<Nudge> nudges) async {
     await _init();
-    await _plugin.cancelAll();
+    for (final p in await _plugin.pendingNotificationRequests()) {
+      if (p.id < oneOffIds) await _plugin.cancel(id: p.id);
+    }
     for (final n in nudges) {
       await _plugin.zonedSchedule(
         id: n.id,
@@ -272,4 +311,12 @@ class FakeReminders implements Reminders {
 
   @override
   Future<void> schedule(List<Nudge> nudges) async => scheduled = [...nudges];
+
+  /// One-off nudges by id.
+  final oneOffs = <int, ({DateTime at, String title, String body})>{};
+
+  @override
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''}) async {
+    at == null ? oneOffs.remove(id) : oneOffs[id] = (at: at, title: title, body: body);
+  }
 }

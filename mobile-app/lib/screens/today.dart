@@ -15,10 +15,11 @@ import 'environment_card.dart';
 import 'exercise_sheet.dart';
 import 'guide.dart';
 import 'next_step.dart';
+import 'streak.dart';
 import 'stack.dart';
 
 class _Day {
-  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise, this.environment});
+  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise, this.environment, this.streak});
 
   final DateTime date;
   final FocusScore focus;
@@ -42,6 +43,9 @@ class _Day {
 
   /// Null when it didn't load.
   final EnvironmentDay? environment;
+
+  /// Today only; null when history didn't load.
+  final Streak? streak;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -148,7 +152,13 @@ class _TodayScreenState extends State<TodayScreen> {
   /// One call for the whole screen; the server leaves out an extra that failed, so the day still shows.
   Future<_Day> _load() async {
     final date = _date ?? DateTime.now();
+    final reminders = AppScope.of(context).reminders;
+    final history = _date == null ? _api.history(60).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
     final d = await _api.today(_date);
+    final days = await history;
+    final streak = days == null ? null : streakFrom(days, date);
+    // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
+    if (streak != null) reminders?.streak(days: streak.days, todayDone: streak.todayDone).catchError((Object _) {});
     return _Day(
       date,
       d.focus,
@@ -160,6 +170,7 @@ class _TodayScreenState extends State<TodayScreen> {
       brain: d.brain,
       exercise: d.exercise,
       environment: d.environment,
+      streak: streak,
     );
   }
 
@@ -1605,6 +1616,25 @@ class _UpNextState extends State<_UpNext> {
               ),
             ),
           ),
+          if (day.streak case final streak?) ...[
+            const SizedBox(height: Space.s2),
+            Row(
+              spacing: 6,
+              children: [
+                Icon(Icons.local_fire_department_rounded, size: 18, color: streak.days > 0 ? c.glucoseInk : c.inkFaint),
+                Expanded(
+                  child: Text(
+                    streak.days == 0
+                        ? 'Log something today to start a streak'
+                        : streak.todayDone
+                        ? '${streak.days}-day streak. Today counts'
+                        : '${streak.days}-day streak. Log a meal or your sleep to keep it',
+                    style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: streak.days > 0 ? c.glucoseInk : c.inkSoft),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: Space.s3),
           // The step slides in when the last one is done.
           AnimatedSwitcher(

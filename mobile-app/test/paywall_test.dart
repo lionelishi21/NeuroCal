@@ -51,6 +51,7 @@ void main() {
     await tester.tap(find.text('Start my 14-day free trial'));
     await tester.pumpAndSettle();
     expect(billing.active, isTrue);
+    await tester.scrollUntilVisible(find.text('Focus Score'), 200);
     expect(find.text('Focus Score'), findsOneWidget);
   });
 }

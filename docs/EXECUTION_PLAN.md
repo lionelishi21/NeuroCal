@@ -185,7 +185,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] Lead every screen and the store listing with the one hook
 
 **D. Reasons to come back every day**
-- [ ] Daily logging streak on Today, kept by finishing Up next, with a gentle "streak at risk" nudge in the evening
+- [x] Daily logging streak in the Up next card (a day counts when a meal or a night's sleep is logged), with a "Keep your N-day streak" nudge at 20:00 on a day with nothing logged yet, cancelled once something is
 - [ ] Morning notification when the Focus Score is ready: "Your Focus Score is 74. Here's your one thing today"
 - [ ] Weekly report every Sunday: score trend, weight trend, best day and why
 - [ ] Home-screen widget: today's score and the Up next step
