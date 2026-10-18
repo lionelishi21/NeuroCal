@@ -180,7 +180,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product
 - [ ] Snap your first meal inside onboarding (or skip), so people see the AI work before paying
 - [x] A promised result before the paywall: the onboarding ends on "Your starting point" (a starting Focus Score estimated from the answers, a 3-week target drawn as a line, and the three changes worth the most points), and the paywall's plan says "Focus Score from 58 to 80 in 3 weeks". _To do: the weight curve with a date for anyone with a weight goal_
-- [ ] Commitment step and social proof (what people report, the science in one line)
+- [x] Commitment step and social proof: the starting point ends with "Hold to commit to 3 weeks" (fills as it's held; a tap for screen readers) and one line of science on why sleep counts most. _To do: real user quotes once testers give them_
 - [x] App store rating prompt (`in_app_review`, the store's own dialog, never gated by a screen of ours): 1.8 s after the starting-point reveal, and on reaching a 7-day streak; at most once every 90 days
 - [ ] Lead every screen and the store listing with the one hook
 

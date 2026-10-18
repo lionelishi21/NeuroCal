@@ -184,7 +184,13 @@ void main() {
       },
     });
 
-    await tester.tap(find.text('See my plan'));
+    // Hold until the button fills.
+    final commit = find.bySemanticsLabel('Hold to commit to 3 weeks');
+    await tester.ensureVisible(commit);
+    final hold = await tester.startGesture(tester.getCenter(commit));
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 1300));
+    await hold.up();
     await tester.pumpAndSettle();
     // A new account gets "How NeuroCal works" once, then lands on Today.
     expect(find.text('One number for your brain'), findsOneWidget);
@@ -198,7 +204,8 @@ void main() {
     // The funnel, in order: each step, the starting point, onboarding done; no health values in events.
     final names = analytics.names.toList();
     expect(names.where((n) => n == 'onboarding_step'), hasLength(11));
-    expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('onboarding_completed')));
+    expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('committed')));
+    expect(names.indexOf('committed'), lessThan(names.indexOf('onboarding_completed')));
     expect(names, contains('guide_opened'));
     expect(analytics.events.expand((e) => e.$2.keys).toSet(), {'step'});
     expect(find.text('Today'), findsOneWidget);

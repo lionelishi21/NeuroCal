@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api/api.dart';
 import '../api/models.dart';
@@ -849,6 +850,11 @@ class _StartingPoint extends StatelessWidget {
                       ),
                       const SizedBox(height: Space.s4),
                       _Projection(start: start),
+                      const SizedBox(height: Space.s3),
+                      Text(
+                        'Why sleep counts most: one short night measurably slows attention and reaction time the next day (Lim & Dinges, 2010).',
+                        style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+                      ),
                       const SizedBox(height: Space.s4),
                       Text('Where the points come from', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink)),
                       const SizedBox(height: Space.s2),
@@ -874,9 +880,82 @@ class _StartingPoint extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(Space.s5, Space.s2, Space.s5, Space.s5),
-                  child: FilledButton(onPressed: onContinue, child: const Text('See my plan')),
+                  child: _HoldToCommit(label: 'Hold to commit to 3 weeks', onCommitted: onContinue),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A commitment: press and hold while the button fills, then it continues. A tap does the same for
+/// screen readers and switch access, and under reduced motion it fills at once.
+class _HoldToCommit extends StatefulWidget {
+  const _HoldToCommit({required this.label, required this.onCommitted});
+
+  final String label;
+  final VoidCallback onCommitted;
+
+  @override
+  State<_HoldToCommit> createState() => _HoldToCommitState();
+}
+
+class _HoldToCommitState extends State<_HoldToCommit> with SingleTickerProviderStateMixin {
+  late final _fill = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+    ..addStatusListener((s) {
+      if (s == AnimationStatus.completed) _done();
+    });
+  var _committed = false;
+
+  void _done() {
+    if (_committed) return;
+    _committed = true;
+    HapticFeedback.heavyImpact();
+    AppScope.of(context).analytics.track('committed');
+    widget.onCommitted();
+  }
+
+  @override
+  void dispose() {
+    _fill.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      label: widget.label,
+      onTap: _done,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTapDown: (_) => still ? _done() : _fill.forward(),
+        onTapUp: (_) => _fill.isCompleted ? null : _fill.reverse(),
+        onTapCancel: () => _fill.isCompleted ? null : _fill.reverse(),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(Radii.pill),
+          child: SizedBox(
+            height: 56,
+            child: AnimatedBuilder(
+              animation: _fill,
+              builder: (context, _) => Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColoredBox(color: c.synapseSoft),
+                  FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: _fill.value, child: ColoredBox(color: c.synapse)),
+                  Center(
+                    child: Text(
+                      _fill.value > 0.5 ? 'Keep holding…' : widget.label,
+                      style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, color: _fill.value > 0.5 ? c.onAccent : c.synapseInk),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
