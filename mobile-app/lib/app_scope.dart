@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'api/api.dart';
@@ -6,6 +7,8 @@ import 'billing/billing.dart';
 import 'health/sleep_sync.dart';
 import 'reminders/reminders.dart';
 import 'theme/theme_controller.dart';
+
+Future<void> _noShare(Uint8List png, String text) async {}
 
 /// The app's services, wired once in main.dart (the composition root) and read by screens.
 class AppScope extends InheritedWidget {
@@ -16,6 +19,7 @@ class AppScope extends InheritedWidget {
     required this.theme,
     required this.timeZone,
     required this.openLink,
+    this.shareImage = _noShare,
     required this.billing,
     this.reminders,
     this.sleepSync,
@@ -31,6 +35,9 @@ class AppScope extends InheritedWidget {
 
   /// Opens a web link outside the app; false when nothing could open it.
   final Future<bool> Function(Uri link) openLink;
+
+  /// Hands a PNG and a caption to the phone's share sheet.
+  final Future<void> Function(Uint8List png, String text) shareImage;
   final Billing billing;
 
   /// Check-in reminders; null where notifications aren't set up (tests, previews).
@@ -48,6 +55,7 @@ class AppScope extends InheritedWidget {
       theme != oldWidget.theme ||
       timeZone != oldWidget.timeZone ||
       openLink != oldWidget.openLink ||
+      shareImage != oldWidget.shareImage ||
       billing != oldWidget.billing ||
       reminders != oldWidget.reminders ||
       sleepSync != oldWidget.sleepSync;

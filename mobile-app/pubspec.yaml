@@ -25,6 +25,8 @@ dependencies:
   image_picker: ^1.2.3
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
   purchases_flutter: ^10.15.2
+  # The phone's share sheet, for the Focus Score card.
+  share_plus: ^13.3.1
   shared_preferences: ^2.5.5
   timezone: ^0.11.2
   url_launcher: ^6.3.3

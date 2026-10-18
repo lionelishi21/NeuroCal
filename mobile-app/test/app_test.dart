@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
@@ -12,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Links the app asked to open, most recent last.
 final opened = <Uri>[];
 
+/// Images handed to the share sheet, with their captions.
+final shared = <(Uint8List, String)>[];
+
 Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<String, Object> saved = const {}}) async {
   // A small phone, so layout overflows fail the test.
   tester.view.physicalSize = const Size(360, 740);
@@ -22,6 +27,7 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
   final auth = MockAuthClient();
   final api = MockNeuroCalApi()..latency = Duration.zero;
   opened.clear();
+  shared.clear();
   await tester.pumpWidget(
     NeuroCalApp(
       api: api,
@@ -31,6 +37,7 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
         opened.add(link);
         return true;
       },
+      shareImage: (png, text) async => shared.add((png, text)),
     ),
   );
   return (theme, auth);
@@ -565,5 +572,26 @@ void main() {
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
     expect(find.text('One number for your brain'), findsNothing);
+  });
+
+  testWidgets('share my score: a story card goes to the share sheet as a PNG', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tapCentered(tester, find.byTooltip('Share my score'));
+    expect(find.text('Share your score'), findsOneWidget);
+    expect(find.text('My Focus Score today'), findsOneWidget);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Share'));
+      // The card is drawn to an image off the UI thread.
+      for (var i = 0; i < 20 && shared.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(shared, hasLength(1));
+    expect(shared.single.$1.sublist(1, 4), 'PNG'.codeUnits);
+    expect(shared.single.$2, startsWith('My Focus Score today: '));
+    expect(find.text('Share your score'), findsNothing);
   });
 }

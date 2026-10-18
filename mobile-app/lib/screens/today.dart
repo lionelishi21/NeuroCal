@@ -5,6 +5,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
+import '../widgets/share_card.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import '../health/sleep_sync.dart';
@@ -310,6 +311,9 @@ class _TodayScreenState extends State<TodayScreen> {
                     onLogSleep: () => widget.onCapture(Capture.sleep),
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
                     onLogExercise: () => widget.onCapture(Capture.exercise),
+                    onShare: day.isToday && day.focus.score != null
+                        ? () => showShareScore(context, score: day.focus.score!, word: scoreWord(day.focus.score!), streakDays: day.streak?.days ?? 0)
+                        : null,
                     onSetUpEnvironment: () async {
                       if (await showPlaceSheet(context) != null && mounted) widget.onChanged();
                     },
@@ -576,9 +580,13 @@ class _FocusCard extends StatelessWidget {
     required this.onLogScreens,
     required this.onLogExercise,
     required this.onSetUpEnvironment,
+    this.onShare,
   });
 
   final FocusScore focus;
+
+  /// Null where there's nothing to share (no score, a past day).
+  final VoidCallback? onShare;
   final VoidCallback onCheckIn;
   final VoidCallback onLogSleep;
   final VoidCallback onLogScreens;
@@ -653,9 +661,25 @@ class _FocusCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: Space.s1,
                   children: [
-                    Text(
-                      'Focus Score',
-                      style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Focus Score',
+                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
+                          ),
+                        ),
+                        if (onShare != null)
+                          SizedBox.square(
+                            dimension: 32,
+                            child: IconButton(
+                              tooltip: 'Share my score',
+                              padding: EdgeInsets.zero,
+                              onPressed: onShare,
+                              icon: Icon(Icons.ios_share_rounded, size: 18, color: c.synapseInk),
+                            ),
+                          ),
+                      ],
                     ),
                     Text(
                       score == null ? 'No score yet' : scoreWord(score),

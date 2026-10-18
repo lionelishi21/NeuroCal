@@ -1,7 +1,9 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -58,6 +60,10 @@ Future<void> main() async {
 final _unlocked = MockBilling(active: true);
 
 /// In the person's browser, not inside the app: product pages are other companies' sites.
+Future<void> _shareOutside(Uint8List png, String text) => SharePlus.instance.share(
+  ShareParams(files: [XFile.fromData(png, mimeType: 'image/png')], fileNameOverrides: ['neurocal-focus-score.png'], text: text),
+);
+
 Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
 
 /// The app's navigator, so pages opened on top (Me, a sheet) close when the session ends.
@@ -71,6 +77,7 @@ class NeuroCalApp extends StatelessWidget {
     required this.theme,
     this.timeZone = deviceTimeZone,
     this.openLink = _openOutside,
+    this.shareImage = _shareOutside,
     this.billing,
     this.reminders,
     this.sleepSync,
@@ -81,6 +88,7 @@ class NeuroCalApp extends StatelessWidget {
   final ThemeController theme;
   final Future<String?> Function() timeZone;
   final Future<bool> Function(Uri link) openLink;
+  final Future<void> Function(Uint8List png, String text) shareImage;
 
   /// Subscriptions; unlocked test billing when left out.
   final Billing? billing;
@@ -99,6 +107,7 @@ class NeuroCalApp extends StatelessWidget {
       theme: theme,
       timeZone: timeZone,
       openLink: openLink,
+      shareImage: shareImage,
       billing: billing ?? _unlocked,
       reminders: reminders,
       sleepSync: sleepSync,
