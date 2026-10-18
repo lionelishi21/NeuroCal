@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,6 +18,7 @@ import 'billing/billing.dart';
 import 'config.dart';
 import 'health/sleep_sync.dart';
 import 'reminders/reminders.dart';
+import 'review/review_prompt.dart';
 import 'device_time_zone.dart';
 import 'api/models.dart';
 import 'screens/account.dart';
@@ -58,7 +60,22 @@ Future<void> main() async {
       ? const NoAnalytics()
       : PostHogAnalytics(prefs, apiKey: AppConfig.posthogKey, host: AppConfig.posthogHost);
   analytics.track('app_opened');
-  runApp(NeuroCalApp(api: api, auth: auth, theme: theme, billing: billing, reminders: reminders, sleepSync: sleepSync, analytics: analytics));
+  final reviewPrompt = ReviewPrompt(prefs, () async {
+    final store = InAppReview.instance;
+    if (await store.isAvailable()) await store.requestReview();
+  });
+  runApp(
+    NeuroCalApp(
+      api: api,
+      auth: auth,
+      theme: theme,
+      billing: billing,
+      reminders: reminders,
+      sleepSync: sleepSync,
+      analytics: analytics,
+      reviewPrompt: reviewPrompt,
+    ),
+  );
 }
 
 /// Tests and previews: already subscribed, so the paywall stays out of the way.
@@ -87,6 +104,7 @@ class NeuroCalApp extends StatelessWidget {
     this.billing,
     this.reminders,
     this.sleepSync,
+    this.reviewPrompt,
   });
 
   final NeuroCalApi api;
@@ -106,6 +124,9 @@ class NeuroCalApp extends StatelessWidget {
   /// Sleep from the phone's health store; none when left out.
   final SleepSync? sleepSync;
 
+  /// The store's rating dialog; none when left out.
+  final ReviewPrompt? reviewPrompt;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -119,6 +140,7 @@ class NeuroCalApp extends StatelessWidget {
       billing: billing ?? _unlocked,
       reminders: reminders,
       sleepSync: sleepSync,
+      reviewPrompt: reviewPrompt,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(

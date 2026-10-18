@@ -153,13 +153,18 @@ class _TodayScreenState extends State<TodayScreen> {
   /// One call for the whole screen; the server leaves out an extra that failed, so the day still shows.
   Future<_Day> _load() async {
     final date = _date ?? DateTime.now();
-    final reminders = AppScope.of(context).reminders;
+    final scope = AppScope.of(context);
+    final reminders = scope.reminders;
     final history = _date == null ? _api.history(60).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
     final d = await _api.today(_date);
     final days = await history;
     final streak = days == null ? null : streakFrom(days, date);
     // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
     if (streak != null) reminders?.streak(days: streak.days, todayDone: streak.todayDone).catchError((Object _) {});
+    // A first full week is a good moment to ask for a rating.
+    if (streak case (days: 7, todayDone: true)) {
+      scope.reviewPrompt?.maybeAsk().then((asked) => asked ? scope.analytics.track('review_prompted', {'moment': 'week_streak'}) : null);
+    }
     return _Day(
       date,
       d.focus,

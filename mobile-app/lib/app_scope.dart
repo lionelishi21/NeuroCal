@@ -7,6 +7,7 @@ import 'auth/auth.dart';
 import 'billing/billing.dart';
 import 'health/sleep_sync.dart';
 import 'reminders/reminders.dart';
+import 'review/review_prompt.dart';
 import 'theme/theme_controller.dart';
 
 Future<void> _noShare(Uint8List png, String text) async {}
@@ -25,6 +26,7 @@ class AppScope extends InheritedWidget {
     required this.billing,
     this.reminders,
     this.sleepSync,
+    this.reviewPrompt,
     required super.child,
   });
 
@@ -51,6 +53,9 @@ class AppScope extends InheritedWidget {
   /// Sleep from Health Connect or Apple Health; null where there is no health store (tests, previews).
   final SleepSync? sleepSync;
 
+  /// The store's rating dialog at good moments; null in tests and previews.
+  final ReviewPrompt? reviewPrompt;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
@@ -64,5 +69,6 @@ class AppScope extends InheritedWidget {
       analytics != oldWidget.analytics ||
       billing != oldWidget.billing ||
       reminders != oldWidget.reminders ||
-      sleepSync != oldWidget.sleepSync;
+      sleepSync != oldWidget.sleepSync ||
+      reviewPrompt != oldWidget.reviewPrompt;
 }

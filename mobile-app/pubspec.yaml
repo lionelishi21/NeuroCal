@@ -23,6 +23,8 @@ dependencies:
   health: ^13.3.2
   http: ^1.6.0
   image_picker: ^1.2.3
+  # The store's own rating dialog, at good moments only (lib/review/review_prompt.dart).
+  in_app_review: ^2.0.12
   # Subscriptions through the App Store and Google Play (https://www.revenuecat.com).
   purchases_flutter: ^10.15.2
   # The phone's share sheet, for the Focus Score card.

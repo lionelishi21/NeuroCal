@@ -91,8 +91,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       });
       if (!mounted) return;
       // No toast: the closing screen says "Profile saved", and a toast would cover its button.
-      AppScope.of(context).analytics.track('starting_point_seen');
+      scope.analytics.track('starting_point_seen');
       setState(() => _saved = profile);
+      // Once the score has drawn in: the high point of onboarding, before the paywall.
+      Future<void>.delayed(const Duration(milliseconds: 1800), () async {
+        if (mounted && await scope.reviewPrompt?.maybeAsk() == true) scope.analytics.track('review_prompted', {'moment': 'starting_point'});
+      });
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.status >= 500 ? 'Try again in a moment.' : e.message);
     } catch (_) {

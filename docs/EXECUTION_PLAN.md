@@ -181,7 +181,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] Snap your first meal inside onboarding (or skip), so people see the AI work before paying
 - [x] A promised result before the paywall: the onboarding ends on "Your starting point" (a starting Focus Score estimated from the answers, a 3-week target drawn as a line, and the three changes worth the most points), and the paywall's plan says "Focus Score from 58 to 80 in 3 weeks". _To do: the weight curve with a date for anyone with a weight goal_
 - [ ] Commitment step and social proof (what people report, the science in one line)
-- [ ] App store rating prompt at the high point of onboarding (`in_app_review`)
+- [x] App store rating prompt (`in_app_review`, the store's own dialog, never gated by a screen of ours): 1.8 s after the starting-point reveal, and on reaching a 7-day streak; at most once every 90 days
 - [ ] Lead every screen and the store listing with the one hook
 
 **D. Reasons to come back every day**
@@ -194,7 +194,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 **E. Users bring users**
 - [x] Share card for the Focus Score: "Share my score" on Today's score card draws a story-sized card (1080 × 1920, dark, with the streak) and hands it to the phone's share sheet. _To do: weight-progress and level-up cards_
 - [ ] Referral: "Give a friend a free month, get one", through RevenueCat promotional offers. _(you: the offer in App Store Connect and Play Console)_
-- [ ] Rating prompt again after a good week, at most once a quarter
+- [x] Rating prompt again after a good week, at most once a quarter (the 7-day streak above)
 
 **F. iPhone and the stores** _(mostly you)_
 - [ ] HealthKit capability in Xcode, then a TestFlight build
