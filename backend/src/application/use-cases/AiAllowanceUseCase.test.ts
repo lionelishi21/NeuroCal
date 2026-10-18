@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { AI_ALLOWANCE } from "../../domain/aiAllowance";
+import { AI_ALLOWANCE, FREE_READS } from "../../domain/aiAllowance";
 import { FixedClock, InMemoryAiUsage } from "../testing/fakes";
 import { AiAllowanceUseCase } from "./AiAllowanceUseCase";
 
@@ -16,5 +16,16 @@ describe("AiAllowanceUseCase", () => {
     await expect(allowance.spend({ userId: "u1", isAdmin: true }, "generate")).resolves.toBeUndefined();
     clock.current = new Date("2026-10-18T00:01:00Z");
     await expect(allowance.spend(sam, "generate")).resolves.toBeUndefined();
+  });
+
+  it("an account's first few photo reads are free of the paywall; generations never are", async () => {
+    const allowance = new AiAllowanceUseCase(new InMemoryAiUsage(), new FixedClock(new Date("2026-10-17T10:00:00Z")));
+    const sam = { userId: "u1" };
+    expect(await allowance.isFree(sam, "generate")).toBe(false);
+    for (let i = 0; i < FREE_READS; i++) {
+      expect(await allowance.isFree(sam, "read")).toBe(true);
+      await allowance.spend(sam, "read");
+    }
+    expect(await allowance.isFree(sam, "read")).toBe(false);
   });
 });

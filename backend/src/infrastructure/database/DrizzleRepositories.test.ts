@@ -371,6 +371,8 @@ describe("DrizzleAiUsageRepository", () => {
     expect(await repo.spend(alice, "2026-10-17", "generate")).toBe(1);
     expect(await repo.spend(bob, "2026-10-17", "read")).toBe(1);
     expect(await repo.spend(alice, "2026-10-18", "read")).toBe(1);
+    expect(await repo.total(alice, "read")).toBe(3);
+    expect(await repo.total(bob, "generate")).toBe(0);
   });
 });
 

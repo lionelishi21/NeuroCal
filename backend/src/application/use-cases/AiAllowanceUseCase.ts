@@ -1,4 +1,4 @@
-import { AI_ALLOWANCE, type AiFeature, limitMessage } from "../../domain/aiAllowance";
+import { AI_ALLOWANCE, type AiFeature, FREE_READS, limitMessage } from "../../domain/aiAllowance";
 import { LimitReachedError } from "../../domain/errors";
 import type { IAiUsage } from "../interfaces/IAiUsage";
 import type { IClock } from "../interfaces/IClock";
@@ -12,6 +12,14 @@ export class AiAllowanceUseCase {
     private readonly usage: IAiUsage,
     private readonly clock: IClock,
   ) {}
+
+  /**
+   * An account's first few photo reads (FREE_READS) don't need a subscription, so onboarding can show a
+   * meal being read before the trial starts. After them, reads need the subscription like everything else.
+   */
+  async isFree(caller: { userId: string }, feature: AiFeature): Promise<boolean> {
+    return feature === "read" && (await this.usage.total(caller.userId, feature)) < FREE_READS;
+  }
 
   async spend(caller: { userId: string; isAdmin?: boolean }, feature: AiFeature): Promise<void> {
     if (caller.isAdmin) return;

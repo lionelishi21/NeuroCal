@@ -344,7 +344,8 @@ export function createApi(uc: UseCases) {
       "POST",
       /^\/meals\/analyze$/,
       async (req) => {
-        await uc.gate.require(req);
+        // The first few reads are free, for the meal snapped during onboarding (before the trial starts).
+        if (!(await uc.aiAllowance.isFree(req, "read"))) await uc.gate.require(req);
         await uc.aiAllowance.spend(req, "read");
         // JSON names a photo uploaded first; multipart carries the photo itself (older clients, small photos).
         const analysis = (req.headers["content-type"] ?? "").startsWith("application/json")

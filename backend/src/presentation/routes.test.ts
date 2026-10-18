@@ -319,6 +319,10 @@ describe("API routes", () => {
     expect(refused).toMatchObject({ status: 402, body: { code: "subscription_required" } });
     expect((await call("POST", "/supplements/analyze", { photoKeys: ["uploads/u1/x"] })).status).toBe(402);
     expect((await call("GET", "/recommendations/next", undefined, {}, true)).status).toBe(200);
+    // A new account's first few meal photos are read anyway, for onboarding; then the paywall applies.
+    storage.objects.set("uploads/u1/meal", { bytes: new Uint8Array([1, 2, 3]), mediaType: "image/jpeg" });
+    for (let i = 0; i < 3; i++) expect((await call("POST", "/meals/analyze", { photoKey: "uploads/u1/meal" })).status).toBe(200);
+    expect((await call("POST", "/meals/analyze", { photoKey: "uploads/u1/meal" })).status).toBe(402);
     // Everything else keeps working, so people can still see their data and subscribe.
     expect((await call("GET", "/me")).status).toBe(200);
 

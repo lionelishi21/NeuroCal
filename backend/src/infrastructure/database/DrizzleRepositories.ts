@@ -1049,4 +1049,12 @@ export class DrizzleAiUsageRepository implements IAiUsage {
       .returning({ count: aiUsage.count });
     return row!.count;
   }
+
+  async total(userId: string, feature: AiFeature) {
+    const [row] = await this.db
+      .select({ total: sql<number>`coalesce(sum(${aiUsage.count}), 0)::int` })
+      .from(aiUsage)
+      .where(and(eq(aiUsage.userId, userId), eq(aiUsage.feature, feature)));
+    return row?.total ?? 0;
+  }
 }

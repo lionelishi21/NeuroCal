@@ -866,4 +866,7 @@ export class InMemoryAiUsage implements IAiUsage {
     this.counts.set(key, n);
     return n;
   }
+  async total(userId: string, feature: AiFeature) {
+    return [...this.counts].filter(([k]) => k.startsWith(`${userId}|`) && k.endsWith(`|${feature}`)).reduce((s, [, n]) => s + n, 0);
+  }
 }

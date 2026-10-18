@@ -10,6 +10,12 @@ export const AI_ALLOWANCE = {
   generate: 30,
 } as const;
 
+/**
+ * Photo reads allowed before a subscription, so onboarding can show a meal being read before the trial
+ * starts. More than one, so a blurry first photo can be tried again.
+ */
+export const FREE_READS = 3;
+
 export type AiFeature = keyof typeof AI_ALLOWANCE;
 
 export function limitMessage(feature: AiFeature): string {
