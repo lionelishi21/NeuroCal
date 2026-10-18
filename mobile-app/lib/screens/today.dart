@@ -169,7 +169,8 @@ class _TodayScreenState extends State<TodayScreen> {
     final date = _date ?? DateTime.now();
     final scope = AppScope.of(context);
     final reminders = scope.reminders;
-    final history = _date == null ? _api.history(60).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
+    // The API keeps 31 days, so a longer streak shows as 31 until history goes further back.
+    final history = _date == null ? _api.history(31).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
     final d = await _api.today(_date);
     final days = await history;
     final streak = days == null ? null : streakFrom(days, date);

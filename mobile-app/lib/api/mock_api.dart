@@ -863,6 +863,8 @@ class MockNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<List<HistoryDay>> history(int days) async {
+    // As the API (backend GetHistoryUseCase, MAX_HISTORY_DAYS).
+    if (days < 1 || days > 31) throw ApiException(400, 'Ask for between 1 and 31 days.', code: 'invalid_request');
     final today = DateTime.now();
     final eaten = await meals(today);
     final score = await focusScore(today);
