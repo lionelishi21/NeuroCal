@@ -28,7 +28,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  static const _today = 0, _kitchen = 1;
+  static const _today = 0, _kitchen = 1, _progress = 2;
   var _tab = _today;
 
   @override
@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _reminders?.opened.removeListener(_reminderTapped);
+    _reminders?.openedWeek.removeListener(_weekTapped);
     _changes.dispose();
     super.dispose();
   }
@@ -82,7 +83,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final reminders = AppScope.of(context).reminders;
     if (reminders != _reminders) {
       _reminders?.opened.removeListener(_reminderTapped);
-      _reminders = reminders?..opened.addListener(_reminderTapped);
+      _reminders?.openedWeek.removeListener(_weekTapped);
+      _reminders = reminders
+        ?..opened.addListener(_reminderTapped)
+        ..openedWeek.addListener(_weekTapped);
+      reminders?.weekly().catchError((Object _) {});
+      if (reminders != null && reminders.openedWeek.value > _weekHandled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _weekTapped());
+      }
       // The windows follow the wake time from onboarding.
       reminders?.useWake(widget.profile.bioProfile?['wake']).catchError((Object _) {});
       // Started by tapping a reminder: open the check-in once the tabs are showing.
@@ -90,6 +98,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         WidgetsBinding.instance.addPostFrameCallback((_) => _reminderTapped());
       }
     }
+  }
+
+  /// Weekly nudge taps already acted on.
+  var _weekHandled = 0;
+
+  /// The weekly nudge was tapped: the week, on Progress.
+  void _weekTapped() {
+    final reminders = _reminders;
+    if (!mounted || reminders == null || reminders.openedWeek.value <= _weekHandled) return;
+    _weekHandled = reminders.openedWeek.value;
+    AppScope.of(context).analytics.track('weekly_opened');
+    setState(() => _tab = _progress);
   }
 
   /// A reminder was tapped: straight to the check-in on Today.

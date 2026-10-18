@@ -120,6 +120,20 @@ void main() {
     expect(find.text('Save check-in'), findsOneWidget);
   });
 
+  testWidgets('the weekly nudge is set for Sunday evening, and tapping it opens the week', (tester) async {
+    final device = await pumpSignedIn(tester);
+    final weekly = device.oneOffs[weeklyNudgeId]!;
+    expect(weekly.at.weekday, DateTime.sunday);
+    expect(weekly.at.hour, 18);
+    expect(weekly.at.isAfter(DateTime.now()), isTrue);
+    expect(weekly.payload, weeklyPayload);
+
+    expect(find.text('This week'), findsNothing);
+    device.tapWeek();
+    await tester.pumpAndSettle();
+    expect(find.text('This week'), findsWidgets);
+  });
+
   test('the streak nudge is set for 20:00 while a streak is at risk, and goes once today counts', () async {
     SharedPreferences.setMockInitialValues({});
     final device = FakeReminders();

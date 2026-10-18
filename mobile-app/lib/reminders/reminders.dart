@@ -50,6 +50,10 @@ typedef Nudge = ({int id, DateTime at, String title, String body, ReminderSlot s
 /// One-off nudges use ids from here up, so rescheduling the check-in nudges leaves them alone.
 const oneOffIds = 900000;
 const streakNudgeId = oneOffIds + 1;
+const weeklyNudgeId = oneOffIds + 2;
+
+/// Tapping it opens the week (Progress) instead of the check-in.
+const weeklyPayload = 'week';
 
 /// Every nudge from [now] for the next [days] days, for the windows switched on. Windows already
 /// checked in today ([doneToday]) get no more nudges today; times already past are left out.
@@ -90,7 +94,11 @@ abstract interface class Reminders {
   Future<void> schedule(List<Nudge> nudges);
 
   /// A single nudge under its own [id] at [at], replacing any earlier one with that id; null [at] cancels it.
-  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''});
+  /// [payload] says what a tap opens.
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = '', String? payload});
+
+  /// Bumped when the weekly nudge is tapped, so the app opens the week.
+  ValueListenable<int> get openedWeek;
 
   /// Bumped when a reminder is tapped, so the app opens the check-in.
   ValueListenable<int> get opened;
@@ -191,12 +199,30 @@ class ReminderSettings extends ChangeNotifier {
     );
   }
 
+  /// The week in review, every Sunday at 18:00: the next one from [now], scheduled again at each open.
+  Future<void> weekly() {
+    final now = _now();
+    var at = DateTime(now.year, now.month, now.day + (DateTime.sunday - now.weekday) % 7, 18);
+    if (!at.isAfter(now)) at = DateTime(at.year, at.month, at.day + 7, 18);
+    return _reminders.oneOff(
+      weeklyNudgeId,
+      at,
+      title: 'Your week in NeuroCal',
+      body: 'Your average Focus Score, your best day and what made it. Tap to see your week.',
+      payload: weeklyPayload,
+    );
+  }
+
+  /// Bumped when the weekly nudge is tapped.
+  ValueListenable<int> get openedWeek => _reminders.openedWeek;
+
   /// Signed out: no reminders for an account that isn't here.
   Future<void> clear() async {
     await _prefs.remove(_key);
     await _prefs.remove(_doneKey);
     await _reminders.schedule(const []);
     await _reminders.oneOff(streakNudgeId, null);
+    await _reminders.oneOff(weeklyNudgeId, null);
     notifyListeners();
   }
 }
@@ -205,6 +231,7 @@ class ReminderSettings extends ChangeNotifier {
 class DeviceReminders implements Reminders {
   final _plugin = FlutterLocalNotificationsPlugin();
   final _opened = ValueNotifier(0);
+  final _openedWeek = ValueNotifier(0);
   Future<void>? _ready;
 
   static const _payload = 'check_in';
@@ -221,6 +248,14 @@ class DeviceReminders implements Reminders {
   @override
   ValueListenable<int> get opened => _opened;
 
+  @override
+  ValueListenable<int> get openedWeek => _openedWeek;
+
+  void _tapped(String? payload) {
+    if (payload == _payload) _opened.value++;
+    if (payload == weeklyPayload) _openedWeek.value++;
+  }
+
   Future<void> _init() => _ready ??= () async {
     tzdata.initializeTimeZones();
     final zone = await deviceTimeZone();
@@ -231,13 +266,11 @@ class DeviceReminders implements Reminders {
         // Asked for when the first window is switched on, not at launch.
         iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
       ),
-      onDidReceiveNotificationResponse: (r) {
-        if (r.payload == _payload) _opened.value++;
-      },
+      onDidReceiveNotificationResponse: (r) => _tapped(r.payload),
     );
     // The app was started by tapping a reminder.
     final launch = await _plugin.getNotificationAppLaunchDetails();
-    if (launch?.didNotificationLaunchApp == true && launch?.notificationResponse?.payload == _payload) _opened.value++;
+    if (launch?.didNotificationLaunchApp == true) _tapped(launch?.notificationResponse?.payload);
   }();
 
   /// Sets up the plugin at launch, so a tapped reminder is noticed.
@@ -254,7 +287,7 @@ class DeviceReminders implements Reminders {
   }
 
   @override
-  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''}) async {
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = '', String? payload}) async {
     await _init();
     await _plugin.cancel(id: id);
     if (at == null) return;
@@ -265,6 +298,7 @@ class DeviceReminders implements Reminders {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       title: title,
       body: body,
+      payload: payload,
     );
   }
 
@@ -296,6 +330,13 @@ class FakeReminders implements Reminders {
   bool allowed;
   List<Nudge> scheduled = [];
   final _opened = ValueNotifier(0);
+  final _openedWeek = ValueNotifier(0);
+
+  @override
+  ValueListenable<int> get openedWeek => _openedWeek;
+
+  /// As if the weekly nudge was tapped.
+  void tapWeek() => _openedWeek.value++;
 
   /// The windows with at least one nudge scheduled.
   Set<ReminderSlot> get windows => {for (final n in scheduled) n.slot};
@@ -313,10 +354,10 @@ class FakeReminders implements Reminders {
   Future<void> schedule(List<Nudge> nudges) async => scheduled = [...nudges];
 
   /// One-off nudges by id.
-  final oneOffs = <int, ({DateTime at, String title, String body})>{};
+  final oneOffs = <int, ({DateTime at, String title, String body, String? payload})>{};
 
   @override
-  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = ''}) async {
-    at == null ? oneOffs.remove(id) : oneOffs[id] = (at: at, title: title, body: body);
+  Future<void> oneOff(int id, DateTime? at, {String title = '', String body = '', String? payload}) async {
+    at == null ? oneOffs.remove(id) : oneOffs[id] = (at: at, title: title, body: body, payload: payload);
   }
 }
