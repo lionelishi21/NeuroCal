@@ -161,6 +161,53 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] Accessibility and performance pass
 - [ ] Observability and AI cost tracking per request
 
+### Phase 5 — Growth to $500k a month
+**Goal (agreed 17 October 2026):** $500k a month is about 100,000–120,000 paying subscribers at $59.99 a year, so 1.5–2 million installs at 6–8% install-to-paid. That comes from paid ads and creator videos feeding a funnel we can measure. One hook leads everywhere: **lose weight and think clearer**. The rest of the app is depth people discover after paying. Items marked _(you)_ need an account, key or store step from Lionel; the rest are built here.
+
+**A. The core action works, fast** (blocked on keys)
+- [ ] _(you)_ Workspace-scoped `ANTHROPIC_API_KEY` and OpenAI credits in the dev secret
+- [ ] Meal photo → result in about 3 seconds: measure it, and if gpt-4o is too slow, try a faster model or a smaller image
+- [ ] Run every AI feature on the phone end to end: meal photo, label, supplement, meal plan, pantry, shopping review, recipe, device scout
+- [ ] AI cost per user: log the cost of each call, and cap or cache so a heavy user costs well under their subscription
+
+**B. See what users do**
+- [ ] Product analytics behind a port (PostHog: free tier, EU or US hosting): onboarding steps, paywall seen, trial started, first meal, day 1/7/30 return. _(you: create the PostHog project, add the key to `env/*.json`)_
+- [ ] Crash and error reporting (Sentry) in the app and the API. _(you: create the Sentry project)_
+- [ ] Ad attribution: SKAdNetwork and Meta/TikTok SDKs or AppsFlyer, wired to RevenueCat so each subscriber's ad is known. _(you: the ad accounts)_
+- [ ] One funnel dashboard: install → onboarding done → paywall → trial → paid, by week and by ad
+
+**C. Onboarding that sells**
+- [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product
+- [ ] Snap your first meal inside onboarding (or skip), so people see the AI work before paying
+- [ ] A promised result before the paywall: "Focus Score 58 → 80 in 3 weeks", and the weight curve with a date for anyone with a weight goal
+- [ ] Commitment step and social proof (what people report, the science in one line)
+- [ ] App store rating prompt at the high point of onboarding (`in_app_review`)
+- [ ] Lead every screen and the store listing with the one hook
+
+**D. Reasons to come back every day**
+- [ ] Daily logging streak on Today, kept by finishing Up next, with a gentle "streak at risk" nudge in the evening
+- [ ] Morning notification when the Focus Score is ready: "Your Focus Score is 74. Here's your one thing today"
+- [ ] Weekly report every Sunday: score trend, weight trend, best day and why
+- [ ] Home-screen widget: today's score and the Up next step
+- [ ] Progress photos alongside the weight trend (kept on the phone)
+
+**E. Users bring users**
+- [ ] Share cards: Focus Score, a weight-progress image and a level-up, sized for TikTok and Instagram stories
+- [ ] Referral: "Give a friend a free month, get one", through RevenueCat promotional offers. _(you: the offer in App Store Connect and Play Console)_
+- [ ] Rating prompt again after a good week, at most once a quarter
+
+**F. iPhone and the stores** _(mostly you)_
+- [ ] HealthKit capability in Xcode, then a TestFlight build
+- [ ] RevenueCat products and the 14-day trial on yearly in both stores
+- [ ] Store listings: screenshots telling the hook, keywords, preview video
+- [ ] Final privacy policy and terms on the website; the Health Connect permission screen links to the privacy policy
+- [ ] Google Play Health Connect declaration form; App Store review notes on health claims
+- [ ] Production stage deployed with production keys (`infra/README.md`, Production)
+
+**G. Launch**
+- [ ] 10–20 testers on both platforms for two weeks; fix where they get stuck
+- [ ] Creator videos (UGC) built on the hook; small paid tests on TikTok and Meta, scaled by the funnel dashboard
+
 ## 6. First API contract (drives mocks and backend)
 
 | Method | Path | Purpose |
