@@ -10,7 +10,7 @@ import '../device_time_zone.dart';
 /// While a window is open and they haven't checked in, the phone nudges: at the start, an hour later,
 /// and a last call half an hour before it closes. Checking in silences the rest of that window.
 enum ReminderSlot {
-  morning('Morning', 0.5, 3.0, 'Morning check-in', 'How did you sleep, and how do you feel? It sets today’s Focus Score.'),
+  morning('Morning', 0.5, 3.0, 'Your Focus Score is ready', 'Check in to see it, and your one thing for today.'),
   afternoon('Afternoon', 6.5, 9.0, 'Afternoon check-in', 'How’s your focus? Ten seconds shows what lunch did to your afternoon.'),
   evening('Evening', 12.5, 15.0, 'Evening check-in', 'How was today? Then dim the screens for a better night.');
 

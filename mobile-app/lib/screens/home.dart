@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncSleep());
-    if (widget.showGuide) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context) : null);
+    if (widget.showGuide) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context, offerReminders: true) : null);
   }
 
   Future<void> _openMe() => Navigator.of(context).push(

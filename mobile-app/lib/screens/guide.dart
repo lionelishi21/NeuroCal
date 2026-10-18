@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
+import '../reminders/reminders.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/sheet.dart';
 
 /// "How NeuroCal works": four short pages on the Focus Score, what moves it, the daily checklist and
 /// where things are. Shown once after onboarding, and from Me and the Today checklist.
-Future<void> showGuide(BuildContext context) =>
-    Navigator.of(context).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => const GuideScreen()));
+Future<void> showGuide(BuildContext context, {bool offerReminders = false}) => Navigator.of(context).push(
+  MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => GuideScreen(offerReminders: offerReminders)),
+);
 
 /// One input of the Focus Score (docs/NCBM.md §4, model v1.1 weights) and how to give it data.
 typedef _Pillar = ({String name, int weight, String how, IconData icon});
@@ -23,7 +25,10 @@ const _pillars = <_Pillar>[
 ];
 
 class GuideScreen extends StatefulWidget {
-  const GuideScreen({super.key});
+  const GuideScreen({super.key, this.offerReminders = false});
+
+  /// The first time, after onboarding: the last page turns the check-in reminders on.
+  final bool offerReminders;
 
   @override
   State<GuideScreen> createState() => _GuideScreenState();
@@ -48,6 +53,24 @@ class _GuideScreenState extends State<GuideScreen> {
   void dispose() {
     _pages.dispose();
     super.dispose();
+  }
+
+  var _asking = false;
+
+  /// All three check-in windows; the phone asks for permission on the first.
+  Future<void> _turnOnReminders() async {
+    final scope = AppScope.of(context);
+    final reminders = scope.reminders;
+    setState(() => _asking = true);
+    var on = false;
+    if (reminders != null) {
+      for (final slot in ReminderSlot.values) {
+        on = await reminders.set(slot, true).catchError((Object _) => false);
+        if (!on) break;
+      }
+    }
+    scope.analytics.track(on ? 'reminders_on' : 'reminders_refused', {'moment': 'guide'});
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _next() {
@@ -103,7 +126,21 @@ class _GuideScreenState extends State<GuideScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(Space.s4),
-              child: SheetAction(label: _page == _count - 1 ? 'Start my day' : 'Next', onPressed: _next),
+              child: _page == _count - 1 && widget.offerReminders && AppScope.of(context).reminders != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'A nudge in the morning, afternoon and evening keeps your score honest. Checking in stops them for that part of the day.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+                        ),
+                        const SizedBox(height: Space.s3),
+                        SheetAction(label: _asking ? 'Turning on…' : 'Turn on reminders and start', onPressed: _asking ? null : _turnOnReminders),
+                        TextButton(onPressed: _asking ? null : () => Navigator.of(context).pop(), child: const Text('Not now')),
+                      ],
+                    )
+                  : SheetAction(label: _page == _count - 1 ? 'Start my day' : 'Next', onPressed: _next),
             ),
           ],
         ),

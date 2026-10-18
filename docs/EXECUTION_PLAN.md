@@ -186,7 +186,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 
 **D. Reasons to come back every day**
 - [x] Daily logging streak in the Up next card (a day counts when a meal or a night's sleep is logged), with a "Keep your N-day streak" nudge at 20:00 on a day with nothing logged yet, cancelled once something is
-- [ ] Morning notification when the Focus Score is ready: "Your Focus Score is 74. Here's your one thing today"
+- [x] Morning notification: the morning check-in nudge now says "Your Focus Score is ready", and the first-run guide ends with "Turn on reminders and start" (all three windows, one permission prompt), so new users get nudges without finding the switches in Me. _To do: the score's number in the notification (needs a server push)_
 - [ ] Weekly report every Sunday: score trend, weight trend, best day and why
 - [ ] Home-screen widget: today's score and the Up next step
 - [ ] Progress photos alongside the weight trend (kept on the phone)
