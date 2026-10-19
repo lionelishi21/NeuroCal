@@ -186,6 +186,21 @@ const call = (method: string, path: string, body?: unknown, headers: Record<stri
 };
 
 describe("API routes", () => {
+  it("an unexpected error is a plain 500 and is reported with its route; domain errors are not", async () => {
+    const reported: { error: unknown; context: unknown }[] = [];
+    const reporter = { async report(error: unknown, context: unknown) { reported.push({ error, context }); } };
+    const broken: Ports["markers"] = Object.assign(Object.create(ports.markers), { listSince: async () => { throw new Error("connection reset"); } });
+    api = createApi(buildUseCases({ ...ports, markers: broken }), reporter);
+    const res = await call("GET", "/markers");
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ code: "internal", message: "Something went wrong on our side. Try again in a moment." });
+    expect(reported).toHaveLength(1);
+    expect(reported[0]!.context).toEqual({ source: "api", method: "GET", route: "/markers" });
+
+    expect((await call("DELETE", "/markers/0b8e2f3c-1d2e-4f5a-8b9c-0d1e2f3a4b5c")).status).toBe(404);
+    expect(reported).toHaveLength(1);
+  });
+
   it("DELETE /me deletes the account, its photos and its sign-in", async () => {
     storage.objects.set("uploads/u1/a", { bytes: new Uint8Array(1), mediaType: "image/jpeg" });
     storage.objects.set("uploads/u2/b", { bytes: new Uint8Array(1), mediaType: "image/jpeg" });

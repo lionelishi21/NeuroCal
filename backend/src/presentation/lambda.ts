@@ -48,6 +48,7 @@ import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
+import { errorReporterFor, routeOf } from "../infrastructure/monitoring/SentryErrorReporter";
 import { buildUseCases, systemClock } from "./compose";
 import { type ApiResponse, createApi } from "./routes";
 
@@ -62,6 +63,7 @@ const required = <T>(name: string, value: T | undefined): T => {
   if (!value) throw new Error(`Missing required setting ${name}`);
   return value;
 };
+const errors = errorReporterFor(config.sentryDsn, config.stage);
 const db = createDatabase(required("DATABASE_URL", config.databaseUrl));
 const users = new DrizzleUserRepository(db);
 const api = createApi(
@@ -119,6 +121,7 @@ const api = createApi(
     webUrl: config.webUrl,
     recipeDomains: config.recipeDomains,
   }),
+  errors,
 );
 const userIds = new Map<string, string>();
 
@@ -130,6 +133,16 @@ function isAdminClaim(claims: Record<string, unknown>): boolean {
 }
 
 export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
+  try {
+    return await handle(event);
+  } catch (e) {
+    // Outside the routes (signing a user in, reading the request): report, then fail as before.
+    await errors.report(e, { source: "api", method: event.requestContext.http.method, route: routeOf(event.rawPath) });
+    throw e;
+  }
+}
+
+async function handle(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
   // CORS preflight carries no token; API Gateway adds the CORS headers.
   if (event.requestContext.http.method === "OPTIONS") return { statusCode: 204 };
   const request = {

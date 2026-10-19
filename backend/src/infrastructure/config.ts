@@ -42,6 +42,10 @@ export interface AppConfig {
   youTubeApiKey?: string;
   /** YouTube channel ids the knowledge pipeline watches; Dave Asprey's by default. */
   knowledgeChannels: string[];
+  /** Sentry project DSN; without it no crash reports are sent. */
+  sentryDsn?: string;
+  /** dev or prod; set by the stack. */
+  stage: string;
 }
 
 /** Dave Asprey's YouTube channel (youtube.com/@DaveAspreyBPR). */
@@ -70,6 +74,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,
     youTubeApiKey: opt("YOUTUBE_API_KEY"),
     openMeteoApiKey: opt("OPEN_METEO_API_KEY"),
+    sentryDsn: opt("SENTRY_DSN"),
+    stage: opt("STAGE") ?? "local",
     knowledgeChannels: opt("KNOWLEDGE_CHANNELS") ? opt("KNOWLEDGE_CHANNELS")!.split(",").map((c) => c.trim()).filter(Boolean) : DEFAULT_KNOWLEDGE_CHANNELS,
   };
 }

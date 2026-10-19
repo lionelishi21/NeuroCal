@@ -123,8 +123,10 @@ import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
+import type { IErrorReporter } from "../application/interfaces/IErrorReporter";
 import { DomainError } from "../domain/errors";
 import { storeEventFrom } from "../infrastructure/billing/RevenueCat";
+import { routeOf } from "../infrastructure/monitoring/SentryErrorReporter";
 import { imageTypeOf } from "../domain/photo";
 import { toAnalysis, toBioState, toCheckIn, toFasting, toFocusScore, toFoodItem, toMeal, toProductRecommendation, toProfile, toProtocols, toRecommendations, toSupplementLabel } from "./mappers";
 
@@ -305,7 +307,8 @@ const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
 type Route = [method: string, pattern: RegExp, handler: (req: ApiRequest, params: string[]) => Promise<ApiResponse>];
 const normalise = (path: string) => path.replace(/\/+$/, "") || "/";
 
-export function createApi(uc: UseCases) {
+/** `errors` gets every unexpected error (the 500s); none without one. */
+export function createApi(uc: UseCases, errors?: IErrorReporter) {
   // Open to anyone, signed in or not: the transport checks `isPublic` before it asks for an identity.
   const publicRoutes: Route[] = [
     [
@@ -820,6 +823,7 @@ export function createApi(uc: UseCases) {
       if (e instanceof BadRequest) return error(400, "invalid_request", e.message);
       if (e instanceof DomainError) return error(STATUS[e.code] ?? 500, e.code, e.message);
       console.error(JSON.stringify({ event: "unhandled_error", path, method: req.method, error: String(e) }));
+      await errors?.report(e, { source: "api", method: req.method, route: routeOf(path) });
       return error(500, "internal", "Something went wrong on our side. Try again in a moment.");
     }
   }
