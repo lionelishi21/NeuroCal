@@ -221,6 +221,7 @@ void main() {
     expect(names, contains('first_meal_skipped'));
     expect(analytics.events.expand((e) => e.$2.keys).toSet(), {'step'});
     expect(find.text('Today'), findsOneWidget);
-    expect(find.text('Up next'), findsOneWidget);
+    // The test font is wide, so the top bar can push Up next below the fold at some times of day.
+    await tester.scrollUntilVisible(find.text('Up next'), 200);
   });
 }

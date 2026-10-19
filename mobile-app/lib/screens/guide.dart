@@ -296,7 +296,7 @@ class _WhereThingsAre extends StatelessWidget {
         place(Icons.home_rounded, 'Today', 'What to do next, your score, meals and what to eat.'),
         place(Icons.soup_kitchen_rounded, 'Kitchen', 'Fasting, meal plans, your pantry, recipes and shopping.'),
         place(Icons.add_circle_rounded, '+', 'Log a meal, sleep, exercise, a check-in, and more.'),
-        place(Icons.bar_chart_rounded, 'Progress', 'Your week, sleep, body and your level.'),
+        place(Icons.bar_chart_rounded, 'Progress', 'Your week and healthspan habits, sleep, body and your level.'),
         place(Icons.medication_rounded, 'Stack', 'Your supplements and when to take them.'),
         place(Icons.account_circle_rounded, 'Your initials, top of Today', 'Profile, reminders and settings. This guide is there too.'),
       ],

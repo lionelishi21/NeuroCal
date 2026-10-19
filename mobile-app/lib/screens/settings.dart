@@ -22,9 +22,12 @@ String _thousands(int n) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+
 
 /// Me: the profile at a glance, appearance, the account and the subscription.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.profile});
+  const SettingsScreen({super.key, required this.profile, this.onChanged});
 
   final Profile profile;
+
+  /// Something that changes the plan was saved (health conditions): every tab reloads.
+  final VoidCallback? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +218,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
           const GroupLabel('Health'),
-          _Health(profile.healthConditions ?? const []),
+          _Health(profile.healthConditions ?? const [], onChanged: onChanged),
           const GroupLabel('Help'),
           AppCard(
             padding: EdgeInsets.zero,
@@ -471,9 +474,10 @@ class _Reminders extends StatelessWidget {
 /// The health conditions the plan allows for, and a way to change them. NeuroCal doesn't treat any of
 /// them: they make the plan safer (fasting, weight goal, suggestions, supplement checks).
 class _Health extends StatefulWidget {
-  const _Health(this.conditions);
+  const _Health(this.conditions, {this.onChanged});
 
   final List<String> conditions;
+  final VoidCallback? onChanged;
 
   @override
   State<_Health> createState() => _HealthState();
@@ -486,6 +490,7 @@ class _HealthState extends State<_Health> {
     final saved = await showAppSheet<List<String>>(context, title: 'Your health', builder: (_) => _HealthSheet(_conditions));
     if (saved == null || !mounted) return;
     setState(() => _conditions = saved);
+    widget.onChanged?.call();
     showToast(context, saved.isEmpty ? 'Saved' : 'Saved. Your plan now allows for these');
   }
 

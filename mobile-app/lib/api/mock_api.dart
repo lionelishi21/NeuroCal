@@ -862,6 +862,46 @@ class MockNeuroCalApi implements NeuroCalApi {
 
   static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
+  /// A part-done week, worked out like the API (backend domain/healthspan.ts).
+  @override
+  Future<HealthspanWeek> healthspan() async {
+    await _wait();
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final joints = _profile?.healthConditions?.contains('joint_pain') ?? false;
+    final noHard = _profile?.healthConditions?.any((c) => c == 'heart_condition' || c == 'pregnant') ?? false;
+    return HealthspanWeek(
+      weekStart: isoDate(monday),
+      days: now.weekday,
+      habits: [
+        HealthspanHabit(
+          id: 'zone2',
+          title: 'Easy cardio',
+          detail: joints ? 'Cycling, swimming or brisk walks you could chat through. Kind to joints.' : 'Brisk walks, easy rides or swims you could chat through.',
+          progress: 95,
+          target: 150,
+          unit: 'min',
+          done: false,
+        ),
+        const HealthspanHabit(id: 'strength', title: 'Strength', detail: 'Muscle is the organ of longevity: two sessions keep it as you age.', progress: 2, target: 2, unit: 'sessions', done: true),
+        HealthspanHabit(
+          id: 'hard_cardio',
+          title: 'One hard session',
+          detail: 'A few all-out minutes lift your fitness ceiling (VO2max).',
+          progress: 0,
+          target: 1,
+          unit: 'sessions',
+          done: false,
+          skipped: noHard ? 'Left out for your health. Ask your clinician what intensity suits you.' : null,
+        ),
+        const HealthspanHabit(id: 'protein', title: 'Protein most days', detail: 'At least 104 g on 5 days, to keep muscle.', progress: 3, target: 5, unit: 'days', done: false),
+        const HealthspanHabit(id: 'whole_food', title: 'Mostly whole food', detail: "12% of this week's calories were ultra-processed. Under 20% is the goal.", progress: 12, target: 20, unit: '%', done: true),
+        const HealthspanHabit(id: 'steady_wake', title: 'A steady wake time', detail: 'Waking within 45 minutes of your usual time keeps your body clock set.', progress: 4, target: 5, unit: 'nights', done: false),
+        const HealthspanHabit(id: 'daylight', title: 'Morning daylight', detail: 'Ten minutes outside in the morning, five days a week.', progress: 2, target: 5, unit: 'days', done: false),
+      ],
+    );
+  }
+
   @override
   Future<List<HistoryDay>> history(int days) async {
     // As the API (backend GetHistoryUseCase, MAX_HISTORY_DAYS).

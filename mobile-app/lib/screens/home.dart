@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       builder: (route) => Scaffold(
         backgroundColor: route.colors.mist,
         appBar: AppBar(backgroundColor: route.colors.mist, surfaceTintColor: Colors.transparent),
-        body: SettingsScreen(profile: widget.profile),
+        body: SettingsScreen(profile: widget.profile, onChanged: _changed),
       ),
     ),
   );

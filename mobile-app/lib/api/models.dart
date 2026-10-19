@@ -1423,3 +1423,56 @@ class MealPlan {
   );
 }
 
+
+/// One weekly longevity habit (`HealthspanHabit` in the contracts).
+class HealthspanHabit {
+  const HealthspanHabit({
+    required this.id,
+    required this.title,
+    required this.detail,
+    required this.progress,
+    required this.target,
+    required this.unit,
+    required this.done,
+    this.skipped,
+  });
+
+  final String id;
+  final String title;
+  final String detail;
+  final double progress;
+  final double target;
+
+  /// "min", "sessions", "days", "nights" or "%" (for "%", lower is better).
+  final String unit;
+  final bool done;
+
+  /// Why a health condition leaves it out; skipped habits don't count.
+  final String? skipped;
+
+  factory HealthspanHabit.fromJson(Map<String, dynamic> j) => HealthspanHabit(
+    id: j['id'] as String,
+    title: j['title'] as String,
+    detail: j['detail'] as String,
+    progress: (j['progress'] as num).toDouble(),
+    target: (j['target'] as num).toDouble(),
+    unit: j['unit'] as String,
+    done: j['done'] as bool,
+    skipped: j['skipped'] as String?,
+  );
+}
+
+/// This week's healthspan habits (`HealthspanResponse` in the contracts).
+class HealthspanWeek {
+  const HealthspanWeek({required this.weekStart, required this.days, required this.habits});
+
+  final String weekStart;
+  final int days;
+  final List<HealthspanHabit> habits;
+
+  factory HealthspanWeek.fromJson(Map<String, dynamic> j) => HealthspanWeek(
+    weekStart: j['weekStart'] as String,
+    days: (j['days'] as num).toInt(),
+    habits: [for (final h in j['habits'] as List) HealthspanHabit.fromJson(h as Map<String, dynamic>)],
+  );
+}

@@ -218,7 +218,8 @@ void main() {
 
     await tester.tap(find.widgetWithText(InkWell, 'Progress'));
     await tester.pumpAndSettle();
-    expect(find.text('Today so far'), findsOneWidget);
+    // Below the Healthspan card.
+    await tester.scrollUntilVisible(find.text('Today so far'), 300);
     await tester.scrollUntilVisible(find.text('Routines to try'), 300);
     expect(find.text('Weak points this week'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Affiliate link'), 300);
@@ -629,5 +630,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Saved. Your plan now allows for these'), findsOneWidget);
     expect(find.text('Joint pain or arthritis'), findsOneWidget);
+  });
+
+  testWidgets('healthspan: this week\'s longevity habits on Progress, with hard cardio left out for a heart condition', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    expect(find.text('Healthspan'), findsOneWidget);
+    expect(find.text('2 of 7 this week'), findsOneWidget);
+    expect(find.text('95 / 150 min'), findsOneWidget);
+    expect(find.text('12% (under 20%)'), findsOneWidget);
+
+    // A heart condition, set in Me, reloads the week with the hard session left out of the count.
+    await tester.tap(find.widgetWithText(InkWell, 'Today'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Me'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('No conditions'), 200);
+    final card = find.ancestor(of: find.text('No conditions'), matching: find.byType(AppCard));
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Change')));
+    await tester.ensureVisible(find.text('A heart condition'));
+    await tester.tap(find.text('A heart condition'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 6 this week'), findsOneWidget);
+    expect(find.textContaining('Left out for your health'), findsOneWidget);
   });
 }

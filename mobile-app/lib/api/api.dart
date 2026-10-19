@@ -108,6 +108,9 @@ abstract interface class NeuroCalApi {
   /// The last [days] days, oldest first, ending today.
   Future<List<HistoryDay>> history(int days);
 
+  /// This week's healthspan habits, Monday to today.
+  Future<HealthspanWeek> healthspan();
+
   /// Weak points of the week with the routines and products matched to them.
   Future<Help> help();
   Future<void> logSleep(DateTime start, DateTime end);
@@ -502,6 +505,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
       {'start': start.toUtc().toIso8601String(), 'end': end.toUtc().toIso8601String(), 'source': 'manual'},
     ],
   });
+
+  @override
+  Future<HealthspanWeek> healthspan() async => HealthspanWeek.fromJson(await _get('/healthspan') as Map<String, dynamic>);
 
   @override
   Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source) => _post('/telemetry/sleep', {

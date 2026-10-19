@@ -6,6 +6,7 @@ import '../nights.dart';
 import '../theme/tokens.dart';
 import '../widgets/product_card.dart';
 import '../widgets/ui.dart';
+import 'healthspan_card.dart';
 
 const _fullWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const _fullMonths = [
@@ -102,6 +103,7 @@ class _WeekScreenState extends State<WeekScreen> {
                 detail: days.isEmpty ? null : '${_short(days.first.day)} – ${_short(days.last.day)}',
               ),
               const SizedBox(height: 14),
+              HealthspanCard(changes: widget.changes),
               if (snapshot.hasError)
                 ScreenFailed(
                   title: "Couldn't load this week",
