@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -38,6 +38,7 @@ import {
   InMemoryDeviceCandidates,
   InMemoryAiUsage,
   InMemoryMarkers,
+  InMemoryGlucose,
   InMemoryKnowledge,
   FakeLabelReader,
   FakeFoodLabelReader,
@@ -157,6 +158,7 @@ beforeEach(async () => {
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
     knowledgeChannels: [],
+    glucose: new InMemoryGlucose(),
     markers: new InMemoryMarkers(),
     aiUsage: new InMemoryAiUsage(),
     deviceCandidates: new InMemoryDeviceCandidates(),
@@ -504,6 +506,14 @@ describe("API routes", () => {
   it("PUT /me/profile applies a partial update", async () => {
     const res = await call("PUT", "/me/profile", { dailyCalorieTarget: 2000 });
     expect(res.body).toMatchObject({ dailyCalorieTarget: 2000, displayName: "Lionel" });
+  });
+
+  it("a glucose-sensor day replaces the meal estimate for blood sugar in the next day's score", async () => {
+    const day = { date: "2026-09-28", meanMgdl: 108, inRange140Pct: 82, inRange180Pct: 97, cvPct: 22, readings: 280, source: "health_connect" };
+    expect((await call("POST", "/glucose", { days: [day] })).body).toEqual({ accepted: 1 });
+    expect((await call("POST", "/glucose", { days: [{ ...day, inRange180Pct: 50 }] })).status).toBe(400);
+    expect(GlucoseResponse.parse((await call("GET", "/glucose")).body).days).toEqual([day]);
+    expect((await call("GET", "/focus-score")).body).toMatchObject({ components: { glycemic: 0.82 }, glycemicFromSensor: true });
   });
 
   it("POST /telemetry/sleep feeds GET /focus-score", async () => {

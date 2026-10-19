@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
@@ -49,6 +49,8 @@ import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "
 import type { FoundDevice, IDeviceCandidateRepository } from "../../application/interfaces/IDevices";
 import type { IAiUsage } from "../../application/interfaces/IAiUsage";
 import type { IMarkerRepository, NewMarkerReading } from "../../application/interfaces/IMarkers";
+import type { IGlucoseRepository } from "../../application/interfaces/IGlucose";
+import type { GlucoseDay } from "../../domain/glucose";
 import type { MarkerReading } from "../../domain/markers";
 import type { AiFeature } from "../../domain/aiAllowance";
 import { type DeviceCandidate, type DeviceStatus, type DeviceTag, deviceKey } from "../../domain/devices";
@@ -62,6 +64,7 @@ import {
   airQualityDays,
   aiUsage,
   healthMarkers,
+  glucoseDays,
   mealPlans,
   brainChecks,
   deviceCandidates,
@@ -1090,5 +1093,29 @@ export class DrizzleMarkerRepository implements IMarkerRepository {
     if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
     const rows = await this.db.delete(healthMarkers).where(and(eq(healthMarkers.userId, userId), eq(healthMarkers.id, id))).returning({ id: healthMarkers.id });
     return rows.length > 0;
+  }
+}
+
+export class DrizzleGlucoseRepository implements IGlucoseRepository {
+  constructor(private readonly db: Database) {}
+
+  async upsertDays(userId: string, days: GlucoseDay[]) {
+    for (const d of days) {
+      const { date, source, ...values } = d;
+      await this.db
+        .insert(glucoseDays)
+        .values({ userId, date, source, ...values })
+        .onConflictDoUpdate({ target: [glucoseDays.userId, glucoseDays.date, glucoseDays.source], set: values });
+    }
+    return days.length;
+  }
+
+  async listBetween(userId: string, from: string, to: string): Promise<GlucoseDay[]> {
+    const rows = await this.db
+      .select()
+      .from(glucoseDays)
+      .where(and(eq(glucoseDays.userId, userId), gte(glucoseDays.date, from), lte(glucoseDays.date, to)))
+      .orderBy(asc(glucoseDays.date));
+    return rows.map(({ userId: _, ...d }) => d);
   }
 }

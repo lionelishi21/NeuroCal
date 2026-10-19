@@ -69,6 +69,8 @@ export interface FocusInputs {
   todayMeals?: Meal[];
   /** The previous day's air (US AQI) and environment check. */
   environment?: { aqi: number | null; check: EnvironmentCheck | null };
+  /** The previous day's glucose-sensor summary, already scored 0–1 (domain/glucose.ts); replaces the meal estimate. */
+  previousDayGlucose?: number;
 }
 
 /** Exercise minutes count by effort: a hard 15 minutes is worth a moderate 30. */
@@ -168,7 +170,7 @@ export function computeFocusComponents(inputs: FocusInputs): FocusComponents {
   return {
     sleep: round(sleepComponent(inputs.sleep)),
     timing: round(timingComponent(inputs)),
-    glycemic: round(glycemicComponent(inputs.previousDayMeals)),
+    glycemic: round(inputs.previousDayGlucose ?? glycemicComponent(inputs.previousDayMeals)),
     stress: round(stressComponent(inputs.checkIns)),
     movement: round(movementComponent(inputs)),
     environment: inputs.environment ? environmentSignal(inputs.environment.aqi, inputs.environment.check) : null,

@@ -308,6 +308,8 @@ export const FocusScore = z.object({
   explanation: z.string(),
   /** The weights have been tuned to this person's Brain speed checks (model v1). */
   tuned: z.boolean().optional(),
+  /** The blood-sugar input came from yesterday's glucose sensor rather than meals. */
+  glycemicFromSensor: z.boolean().optional(),
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 
@@ -682,6 +684,27 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
+
+/** One glucose-sensor day, summarised on the phone (backend domain/glucose.ts). */
+export const GlucoseDay = z.object({
+  date: IsoDate,
+  meanMgdl: z.number(),
+  /** Share of readings 70–140 mg/dL, 0–100. */
+  inRange140Pct: z.number().min(0).max(100),
+  /** Share of readings 70–180 mg/dL, 0–100. */
+  inRange180Pct: z.number().min(0).max(100),
+  /** Coefficient of variation, 0–100. */
+  cvPct: z.number().min(0).max(100),
+  readings: z.number().int().positive(),
+  source: z.enum(["health_connect", "apple_health"]),
+});
+export type GlucoseDay = z.infer<typeof GlucoseDay>;
+
+export const RecordGlucoseRequest = z.object({ days: z.array(GlucoseDay).min(1).max(31) });
+export type RecordGlucoseRequest = z.infer<typeof RecordGlucoseRequest>;
+
+export const GlucoseResponse = z.object({ days: z.array(GlucoseDay) });
+export type GlucoseResponse = z.infer<typeof GlucoseResponse>;
 
 export const HealthMarkerId = z.enum([
   "resting_hr",
@@ -1269,6 +1292,10 @@ export const endpoints = {
   reviewTechnique: { method: "PUT", path: "/admin/knowledge/techniques/:id", body: ReviewTechniqueRequest, response: KnowledgeTechnique },
   /** Checks the watched channels for new videos now, instead of waiting for the monthly run. */
   syncKnowledge: { method: "POST", path: "/admin/knowledge/sync", response: KnowledgeSyncResponse },
+  /** The last 14 glucose-sensor days, oldest first. */
+  getGlucose: { method: "GET", path: "/glucose", response: GlucoseResponse },
+  /** Daily summaries from a glucose sensor; a day sent again replaces the earlier one. */
+  recordGlucose: { method: "POST", path: "/glucose", body: RecordGlucoseRequest, response: IngestResponse },
   /** Health markers with readings: the latest, the three-month change and recent points. */
   getMarkers: { method: "GET", path: "/markers", response: HealthMarkersResponse },
   /** Readings typed in or imported from Health Connect / Apple Health; the same marker, time and source is kept once. */

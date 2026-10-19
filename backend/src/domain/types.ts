@@ -175,6 +175,8 @@ export interface FocusScore {
   modelVersion: string;
   /** Scored with weights tuned to this person's Brain speed checks (model v1). Not stored. */
   tuned?: boolean;
+  /** The blood-sugar input came from yesterday's glucose sensor, not meals. Not stored. */
+  glycemicFromSensor?: boolean;
 }
 
 /** NeuroCal-authored habit protocol (ARCHITECTURE §3). Content lives in the repo, not generated. */

@@ -15,6 +15,7 @@ import {
   DrizzleDeviceCandidateRepository,
   DrizzleAiUsageRepository,
   DrizzleMarkerRepository,
+  DrizzleGlucoseRepository,
   DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
@@ -390,6 +391,18 @@ describe("DrizzleMarkerRepository", () => {
     expect(await repo.listSince(bob, new Date("2026-01-01T00:00:00Z"))).toEqual([]);
     expect(await repo.delete(bob, listed[0]!.id)).toBe(false);
     expect(await repo.delete(alice, listed[0]!.id)).toBe(true);
+  });
+});
+
+describe("DrizzleGlucoseRepository", () => {
+  it("keeps one day per source, replacing it when sent again, and lists a date range", async () => {
+    const repo = new DrizzleGlucoseRepository(db);
+    const day = { date: "2026-10-17", meanMgdl: 104, inRange140Pct: 88, inRange180Pct: 99, cvPct: 18, readings: 288, source: "health_connect" as const };
+    await repo.upsertDays(alice, [day, { ...day, date: "2026-10-18" }]);
+    await repo.upsertDays(alice, [{ ...day, inRange140Pct: 90 }]);
+    const listed = await repo.listBetween(alice, "2026-10-17", "2026-10-17");
+    expect(listed).toEqual([{ ...day, inRange140Pct: 90 }]);
+    expect(await repo.listBetween(bob, "2026-10-01", "2026-10-31")).toEqual([]);
   });
 });
 

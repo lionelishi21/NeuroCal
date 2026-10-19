@@ -8,6 +8,8 @@ import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/I
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
 import type { IAiUsage } from "../interfaces/IAiUsage";
 import type { IMarkerRepository, NewMarkerReading } from "../interfaces/IMarkers";
+import type { IGlucoseRepository } from "../interfaces/IGlucose";
+import type { GlucoseDay } from "../../domain/glucose";
 import type { MarkerReading } from "../../domain/markers";
 import type { AiFeature } from "../../domain/aiAllowance";
 import type { FoundDevice, IDeviceCandidateRepository, IDeviceExtractor, IWebSearch, WebResult } from "../interfaces/IDevices";
@@ -896,5 +898,19 @@ export class InMemoryMarkers implements IMarkerRepository {
     if (i < 0) return false;
     this.rows.splice(i, 1);
     return true;
+  }
+}
+
+export class InMemoryGlucose implements IGlucoseRepository {
+  readonly rows = new Map<string, GlucoseDay & { userId: string }>();
+  async upsertDays(userId: string, days: GlucoseDay[]) {
+    for (const d of days) this.rows.set(`${userId}|${d.date}|${d.source}`, { ...d, userId });
+    return days.length;
+  }
+  async listBetween(userId: string, from: string, to: string) {
+    return [...this.rows.values()]
+      .filter((d) => d.userId === userId && d.date >= from && d.date <= to)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(({ userId: _, ...d }) => d);
   }
 }

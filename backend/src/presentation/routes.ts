@@ -35,6 +35,8 @@ import {
   AdminDevices,
   HealthspanResponse,
   HealthMarkersResponse,
+  GlucoseResponse,
+  RecordGlucoseRequest,
   RecordMarkersRequest,
   DeviceCandidate as DeviceCandidateDto,
   DeviceScanResponse,
@@ -102,6 +104,7 @@ import type { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUs
 import type { AiAllowanceUseCase } from "../application/use-cases/AiAllowanceUseCase";
 import type { GetHealthspanUseCase } from "../application/use-cases/GetHealthspanUseCase";
 import type { MarkerUseCases } from "../application/use-cases/MarkerUseCases";
+import type { GlucoseUseCases } from "../application/use-cases/GlucoseUseCases";
 import { MARKERS, type MarkerSummary as MarkerSummaryRecord } from "../domain/markers";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
@@ -169,6 +172,7 @@ export interface UseCases {
   aiAllowance: AiAllowanceUseCase;
   getHealthspan: GetHealthspanUseCase;
   markers: MarkerUseCases;
+  glucose: GlucoseUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
@@ -711,6 +715,8 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["POST", /^\/admin\/knowledge\/sync$/, async (req) => ok(KnowledgeSyncResponse, await uc.knowledge.syncAsAdmin(admin(req)))],
+    ["GET", /^\/glucose$/, async (req) => ok(GlucoseResponse, { days: await uc.glucose.recent(req.userId) })],
+    ["POST", /^\/glucose$/, async (req) => ok(IngestResponse, await uc.glucose.record(req.userId, json(req, RecordGlucoseRequest).days), 201)],
     ["GET", /^\/markers$/, async (req) => ok(HealthMarkersResponse, { markers: (await uc.markers.list(req.userId)).map(toMarkerSummary) })],
     [
       "POST",

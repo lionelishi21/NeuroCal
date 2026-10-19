@@ -1716,6 +1716,58 @@
         }
       }
     },
+    "/glucose": {
+      "get": {
+        "operationId": "getGlucose",
+        "summary": "Glucose-sensor days",
+        "description": "The last 14 days with a glucose-sensor summary: average, time in range (70–140 and 70–180 mg/dL) and variability.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlucoseResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordGlucose",
+        "summary": "Record glucose-sensor days",
+        "description": "Daily summaries the app works out from Health Connect / Apple Health samples (only days with about 12 hours or more of sensor readings). When yesterday has one, the Focus Score's blood-sugar input is measured from it: time in range (70–180 with diabetes, else 70–140), less a little for large swings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordGlucoseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/markers": {
       "get": {
         "operationId": "getMarkers",
@@ -3514,6 +3566,9 @@
           },
           "tuned": {
             "type": "boolean"
+          },
+          "glycemicFromSensor": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3753,6 +3808,67 @@
           "source",
           "processing",
           "flags"
+        ]
+      },
+      "GlucoseDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "meanMgdl": {
+            "type": "number"
+          },
+          "inRange140Pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "inRange180Pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "cvPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "readings": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "health_connect",
+              "apple_health"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "meanMgdl",
+          "inRange140Pct",
+          "inRange180Pct",
+          "cvPct",
+          "readings",
+          "source"
+        ]
+      },
+      "GlucoseResponse": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlucoseDay"
+            }
+          }
+        },
+        "required": [
+          "days"
         ]
       },
       "HealthCondition": {
@@ -5113,6 +5229,22 @@
           "calories",
           "macros",
           "reasoning"
+        ]
+      },
+      "RecordGlucoseRequest": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "minItems": 1,
+            "maxItems": 31,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlucoseDay"
+            }
+          }
+        },
+        "required": [
+          "days"
         ]
       },
       "RecordMarkersRequest": {

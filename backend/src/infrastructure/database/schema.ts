@@ -348,6 +348,24 @@ export const knowledgeTechniques = pgTable(
   (t) => [index("knowledge_techniques_source_idx").on(t.sourceId)],
 );
 
+/** One glucose-sensor day (domain/glucose.ts): summarised on the phone from Health Connect / Apple Health. */
+export const glucoseDays = pgTable(
+  "glucose_days",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    source: text("source", { enum: ["health_connect", "apple_health"] }).notNull(),
+    meanMgdl: real("mean_mgdl").notNull(),
+    inRange140Pct: real("in_range_140_pct").notNull(),
+    inRange180Pct: real("in_range_180_pct").notNull(),
+    cvPct: real("cv_pct").notNull(),
+    readings: integer("readings").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date, t.source] })],
+);
+
 /** Health marker readings (domain/markers.ts): typed in, or imported from the phone's health store. */
 export const healthMarkers = pgTable(
   "health_markers",

@@ -103,6 +103,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     params: { id: "The technique's id." },
   },
   syncKnowledge: { summary: "Check watched channels for new videos now", description: "Admins only. Needs YOUTUBE_API_KEY; titles and links only." },
+  getGlucose: { summary: "Glucose-sensor days", description: "The last 14 days with a glucose-sensor summary: average, time in range (70–140 and 70–180 mg/dL) and variability." },
+  recordGlucose: {
+    summary: "Record glucose-sensor days",
+    description: "Daily summaries the app works out from Health Connect / Apple Health samples (only days with about 12 hours or more of sensor readings). When yesterday has one, the Focus Score's blood-sugar input is measured from it: time in range (70–180 with diabetes, else 70–140), less a little for large swings.",
+  },
   getMarkers: {
     summary: "Health markers",
     description: "Each marker with readings in the last 400 days: the latest reading, the change against the reading closest to 90 days earlier, whether that went the healthier way, and up to 12 recent points. References are general adult ranges in plain words, never a diagnosis.",

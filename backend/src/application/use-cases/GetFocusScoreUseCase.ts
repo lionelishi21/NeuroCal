@@ -1,3 +1,5 @@
+import { glucoseComponent } from "../../domain/glucose";
+import type { IGlucoseRepository } from "../interfaces/IGlucose";
 import { conditionsOf, glycemicWeightFor } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { FAST_HOURS, fastingProtocolOf } from "../../domain/fasting";
@@ -49,6 +51,7 @@ export class GetFocusScoreUseCase {
     private readonly exercises?: IExerciseRepository,
     private readonly brainChecks?: IBrainCheckRepository,
     private readonly environment?: EnvironmentInputs,
+    private readonly glucose?: IGlucoseRepository,
   ) {}
 
   async execute(input: { userId: string; date?: string }): Promise<FocusScore> {
@@ -59,14 +62,18 @@ export class GetFocusScoreUseCase {
     const { userId } = profile;
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
     const [inputs, stored, tuning] = await Promise.all([
-      loadFocusInputs({ meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment }, profile, date),
+      loadFocusInputs(
+        { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, glucose: this.glucose },
+        profile,
+        date,
+      ),
       this.scores.get(userId, date),
       this.weightsFor(profile, date),
     ]);
 
     const components = computeFocusComponents(inputs);
     const score = focusScoreFrom(components, tuning.weights);
-    const tuned = tuning.tuned ? { tuned: true } : {};
+    const tuned = { ...(tuning.tuned ? { tuned: true } : {}), ...(inputs.previousDayGlucose !== undefined ? { glycemicFromSensor: true } : {}) };
 
     if (stored && stored.score === score && sameComponents(stored.components, components)) return { ...stored, ...tuned };
 
@@ -134,6 +141,8 @@ export async function loadFocusInputs(
     exercises?: IExerciseRepository | undefined;
     /** Yesterday's air and environment check (EnvironmentUseCases.inputsFor). */
     environment?: EnvironmentInputs | undefined;
+    /** Glucose-sensor days, when the person has a sensor. */
+    glucose?: IGlucoseRepository | undefined;
   },
   profile: Profile,
   date: string,
@@ -142,7 +151,7 @@ export async function loadFocusInputs(
   const yesterday = previousDate(date);
   const protocol = fastingProtocolOf(profile);
   const noon = Date.parse(`${date}T12:00:00Z`);
-  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, todayMeals, exercise, environment] = await Promise.all([
+  const [sleep, previousDayMeals, screenTime, checkInsYesterday, checkInsToday, todayMeals, exercise, environment, glucose] = await Promise.all([
     repos.telemetry.sleepEndingOn(userId, { date, timeZone }),
     repos.meals.listForDay(userId, { date: yesterday, timeZone }),
     repos.telemetry.screenTimeStartingOn(userId, [yesterday, date], timeZone),
@@ -152,7 +161,10 @@ export async function loadFocusInputs(
     // The week before D, wide enough for any time zone; split into "yesterday" and "lately" below.
     repos.exercises?.listBetween(userId, new Date(noon - 8 * 86_400_000), new Date(noon - 86_400_000 / 2)) ?? Promise.resolve([]),
     repos.environment?.inputsFor(userId, yesterday, timeZone) ?? Promise.resolve(undefined),
+    repos.glucose?.listBetween(userId, yesterday, yesterday) ?? Promise.resolve([]),
   ]);
+  const sensorDay = glucose[0];
+  const diabetic = conditionsOf(profile).some((c) => c === "type1_diabetes" || c === "type2_diabetes");
   const lastWeek = exercise.filter((e) => {
     const day = localDateOf(e.startedAt, timeZone);
     return day < date && day >= addDays(date, -7);
@@ -168,5 +180,6 @@ export async function loadFocusInputs(
     logsExercise: lastWeek.length > 0,
     ...(protocol === "none" ? {} : { fastHours: FAST_HOURS[protocol], todayMeals }),
     ...(environment ? { environment } : {}),
+    ...(sensorDay ? { previousDayGlucose: glucoseComponent(sensorDay, diabetic) } : {}),
   };
 }
