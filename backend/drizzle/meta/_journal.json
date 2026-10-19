@@ -183,6 +183,13 @@
       "when": 1792372495163,
       "tag": "0025_fuzzy_vargas",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792432128838,
+      "tag": "0026_lowly_vertigo",
+      "breakpoints": true
     }
   ]
 }

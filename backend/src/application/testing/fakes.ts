@@ -7,6 +7,8 @@ import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrai
 import type { Exercise, IExerciseRepository, NewExercise } from "../interfaces/IExerciseRepository";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed, NewTechnique } from "../interfaces/IKnowledge";
 import type { IAiUsage } from "../interfaces/IAiUsage";
+import type { IMarkerRepository, NewMarkerReading } from "../interfaces/IMarkers";
+import type { MarkerReading } from "../../domain/markers";
 import type { AiFeature } from "../../domain/aiAllowance";
 import type { FoundDevice, IDeviceCandidateRepository, IDeviceExtractor, IWebSearch, WebResult } from "../interfaces/IDevices";
 import type { DeviceCandidate, DeviceStatus, DeviceTag } from "../../domain/devices";
@@ -868,5 +870,31 @@ export class InMemoryAiUsage implements IAiUsage {
   }
   async total(userId: string, feature: AiFeature) {
     return [...this.counts].filter(([k]) => k.startsWith(`${userId}|`) && k.endsWith(`|${feature}`)).reduce((s, [, n]) => s + n, 0);
+  }
+}
+
+export class InMemoryMarkers implements IMarkerRepository {
+  readonly rows: (MarkerReading & { userId: string })[] = [];
+  async add(userId: string, readings: NewMarkerReading[]) {
+    let added = 0;
+    for (const r of readings) {
+      const same = this.rows.some((x) => x.userId === userId && x.marker === r.marker && x.source === r.source && x.measuredAt.getTime() === r.measuredAt.getTime());
+      if (same) continue;
+      this.rows.push({ ...r, userId, id: `m${this.rows.length + 1}` });
+      added++;
+    }
+    return added;
+  }
+  async listSince(userId: string, since: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && r.measuredAt >= since)
+      .sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime())
+      .map(({ userId: _, ...r }) => r);
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
   }
 }

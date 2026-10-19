@@ -14,6 +14,7 @@ import {
   DrizzleKnowledgeRepository,
   DrizzleDeviceCandidateRepository,
   DrizzleAiUsageRepository,
+  DrizzleMarkerRepository,
   DrizzleEnvironmentRepository,
   DrizzleStackRepository,
   DrizzleSubscriptionRepository,
@@ -375,6 +376,20 @@ describe("DrizzleAiUsageRepository", () => {
     expect(await repo.spend(alice, "2026-10-18", "read")).toBe(1);
     expect(await repo.total(alice, "read")).toBe(3);
     expect(await repo.total(bob, "generate")).toBe(0);
+  });
+});
+
+describe("DrizzleMarkerRepository", () => {
+  it("keeps one reading per marker, time and source, lists them oldest first, and deletes only your own", async () => {
+    const repo = new DrizzleMarkerRepository(db);
+    const at = new Date("2026-10-01T07:00:00Z");
+    expect(await repo.add(alice, [{ marker: "resting_hr", value: 60, measuredAt: at, source: "health_connect" }, { marker: "hba1c", value: 5.4, measuredAt: new Date("2026-09-01T09:00:00Z"), source: "manual" }])).toBe(2);
+    expect(await repo.add(alice, [{ marker: "resting_hr", value: 60, measuredAt: at, source: "health_connect" }])).toBe(0);
+    const listed = await repo.listSince(alice, new Date("2026-08-01T00:00:00Z"));
+    expect(listed.map((r) => r.marker)).toEqual(["hba1c", "resting_hr"]);
+    expect(await repo.listSince(bob, new Date("2026-01-01T00:00:00Z"))).toEqual([]);
+    expect(await repo.delete(bob, listed[0]!.id)).toBe(false);
+    expect(await repo.delete(alice, listed[0]!.id)).toBe(true);
   });
 });
 

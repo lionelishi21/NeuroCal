@@ -48,6 +48,8 @@ import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { FoundDevice, IDeviceCandidateRepository } from "../../application/interfaces/IDevices";
 import type { IAiUsage } from "../../application/interfaces/IAiUsage";
+import type { IMarkerRepository, NewMarkerReading } from "../../application/interfaces/IMarkers";
+import type { MarkerReading } from "../../domain/markers";
 import type { AiFeature } from "../../domain/aiAllowance";
 import { type DeviceCandidate, type DeviceStatus, type DeviceTag, deviceKey } from "../../domain/devices";
 import { NotFoundError } from "../../domain/errors";
@@ -59,6 +61,7 @@ import type { Database } from "./client";
 import {
   airQualityDays,
   aiUsage,
+  healthMarkers,
   mealPlans,
   brainChecks,
   deviceCandidates,
@@ -1058,5 +1061,34 @@ export class DrizzleAiUsageRepository implements IAiUsage {
       .from(aiUsage)
       .where(and(eq(aiUsage.userId, userId), eq(aiUsage.feature, feature)));
     return row?.total ?? 0;
+  }
+}
+
+export class DrizzleMarkerRepository implements IMarkerRepository {
+  constructor(private readonly db: Database) {}
+
+  async add(userId: string, readings: NewMarkerReading[]) {
+    if (readings.length === 0) return 0;
+    const rows = await this.db
+      .insert(healthMarkers)
+      .values(readings.map((r) => ({ ...r, userId })))
+      .onConflictDoNothing({ target: [healthMarkers.userId, healthMarkers.marker, healthMarkers.measuredAt, healthMarkers.source] })
+      .returning({ id: healthMarkers.id });
+    return rows.length;
+  }
+
+  async listSince(userId: string, since: Date): Promise<MarkerReading[]> {
+    const rows = await this.db
+      .select()
+      .from(healthMarkers)
+      .where(and(eq(healthMarkers.userId, userId), gte(healthMarkers.measuredAt, since)))
+      .orderBy(asc(healthMarkers.measuredAt));
+    return rows.map((r) => ({ id: r.id, marker: r.marker, value: r.value, measuredAt: r.measuredAt, source: r.source }));
+  }
+
+  async delete(userId: string, id: string) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return false;
+    const rows = await this.db.delete(healthMarkers).where(and(eq(healthMarkers.userId, userId), eq(healthMarkers.id, id))).returning({ id: healthMarkers.id });
+    return rows.length > 0;
   }
 }

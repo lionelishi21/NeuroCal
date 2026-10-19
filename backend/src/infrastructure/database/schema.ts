@@ -5,6 +5,7 @@
 import { sql } from "drizzle-orm";
 import { EXERCISE_KINDS, INTENSITIES } from "../../domain/exercise";
 import { DEVICE_TAGS } from "../../domain/devices";
+import { MARKER_IDS } from "../../domain/markers";
 import { PILLARS } from "../../domain/knowledge";
 import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
@@ -345,6 +346,26 @@ export const knowledgeTechniques = pgTable(
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   },
   (t) => [index("knowledge_techniques_source_idx").on(t.sourceId)],
+);
+
+/** Health marker readings (domain/markers.ts): typed in, or imported from the phone's health store. */
+export const healthMarkers = pgTable(
+  "health_markers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    marker: text("marker", { enum: MARKER_IDS }).notNull(),
+    value: real("value").notNull(),
+    measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
+    source: text("source", { enum: ["manual", "health_connect", "apple_health"] }).notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    unique("health_markers_user_marker_time_source_unique").on(t.userId, t.marker, t.measuredAt, t.source),
+    index("health_markers_user_time_idx").on(t.userId, t.measuredAt),
+  ],
 );
 
 /** AI calls per person, day (UTC) and feature, for the daily allowance (domain/aiAllowance.ts). */

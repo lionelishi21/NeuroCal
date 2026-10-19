@@ -683,6 +683,67 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
+export const HealthMarkerId = z.enum([
+  "resting_hr",
+  "hrv",
+  "vo2max",
+  "bp_systolic",
+  "bp_diastolic",
+  "waist_cm",
+  "grip_kg",
+  "body_fat_pct",
+  "hba1c",
+  "ldl",
+  "hdl",
+  "triglycerides",
+]);
+export type HealthMarkerId = z.infer<typeof HealthMarkerId>;
+
+export const MarkerReading = z.object({
+  id: z.string(),
+  marker: HealthMarkerId,
+  value: z.number(),
+  measuredAt: IsoDateTime,
+  source: z.enum(["manual", "health_connect", "apple_health"]),
+});
+export type MarkerReading = z.infer<typeof MarkerReading>;
+
+/** One marker with readings (backend domain/markers.ts): label, unit and a plain-words reference. */
+export const MarkerSummary = z.object({
+  marker: HealthMarkerId,
+  label: z.string(),
+  unit: z.string(),
+  better: z.enum(["lower", "higher"]).nullable(),
+  /** General adult reference in plain words; never a diagnosis. */
+  reference: z.string(),
+  latest: MarkerReading,
+  /** Latest minus the reading closest to 90 days earlier; null without one at least 30 days older. */
+  change: z.number().nullable(),
+  improving: z.boolean().nullable(),
+  /** Up to 12 readings, oldest first. */
+  points: z.array(z.object({ value: z.number(), measuredAt: IsoDateTime })),
+});
+export type MarkerSummary = z.infer<typeof MarkerSummary>;
+
+export const HealthMarkersResponse = z.object({ markers: z.array(MarkerSummary) });
+export type HealthMarkersResponse = z.infer<typeof HealthMarkersResponse>;
+
+export const RecordMarkersRequest = z.object({
+  readings: z
+    .array(
+      z.object({
+        marker: HealthMarkerId,
+        value: z.number(),
+        /** Defaults to now. */
+        measuredAt: IsoDateTime.optional(),
+        source: z.enum(["manual", "health_connect", "apple_health"]).default("manual"),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+export type RecordMarkersRequest = z.infer<typeof RecordMarkersRequest>;
+
 /** One weekly longevity habit (backend domain/healthspan.ts), worked out from what's logged. */
 export const HealthspanHabit = z.object({
   id: z.enum(["zone2", "strength", "hard_cardio", "protein", "whole_food", "steady_wake", "daylight"]),
@@ -1208,6 +1269,11 @@ export const endpoints = {
   reviewTechnique: { method: "PUT", path: "/admin/knowledge/techniques/:id", body: ReviewTechniqueRequest, response: KnowledgeTechnique },
   /** Checks the watched channels for new videos now, instead of waiting for the monthly run. */
   syncKnowledge: { method: "POST", path: "/admin/knowledge/sync", response: KnowledgeSyncResponse },
+  /** Health markers with readings: the latest, the three-month change and recent points. */
+  getMarkers: { method: "GET", path: "/markers", response: HealthMarkersResponse },
+  /** Readings typed in or imported from Health Connect / Apple Health; the same marker, time and source is kept once. */
+  recordMarkers: { method: "POST", path: "/markers", body: RecordMarkersRequest, response: IngestResponse },
+  deleteMarker: { method: "DELETE", path: "/markers/:id" },
   /** This week's healthspan habits (Monday to today), from what's logged. */
   getHealthspan: { method: "GET", path: "/healthspan", response: HealthspanResponse },
   /** Admin only: kitchen devices the monthly scout found, for review. */

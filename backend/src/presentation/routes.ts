@@ -34,6 +34,8 @@ import {
   KnowledgeSyncResponse,
   AdminDevices,
   HealthspanResponse,
+  HealthMarkersResponse,
+  RecordMarkersRequest,
   DeviceCandidate as DeviceCandidateDto,
   DeviceScanResponse,
   ReviewDeviceRequest,
@@ -99,6 +101,8 @@ import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCas
 import type { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
 import type { AiAllowanceUseCase } from "../application/use-cases/AiAllowanceUseCase";
 import type { GetHealthspanUseCase } from "../application/use-cases/GetHealthspanUseCase";
+import type { MarkerUseCases } from "../application/use-cases/MarkerUseCases";
+import { MARKERS, type MarkerSummary as MarkerSummaryRecord } from "../domain/markers";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
@@ -164,6 +168,7 @@ export interface UseCases {
   devices: DeviceScoutUseCases;
   aiAllowance: AiAllowanceUseCase;
   getHealthspan: GetHealthspanUseCase;
+  markers: MarkerUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
@@ -257,6 +262,21 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
 const toExercise = ({ startedAt, ...e }: SavedExercise) => ({ ...e, startedAt: startedAt.toISOString() });
 const toTechnique = (url: string) => ({ sourceId: _, timestampSeconds, ...t }: Technique) => ({ ...t, link: linkAt(url, timestampSeconds) });
+const toMarkerSummary = (s: MarkerSummaryRecord) => {
+  const def = MARKERS[s.marker];
+  return {
+    marker: s.marker,
+    label: def.label,
+    unit: def.unit,
+    better: def.better,
+    reference: def.reference,
+    latest: { ...s.latest, measuredAt: s.latest.measuredAt.toISOString() },
+    change: s.change,
+    improving: s.improving,
+    points: s.points.map((p) => ({ value: p.value, measuredAt: p.measuredAt.toISOString() })),
+  };
+};
+
 const toDevice = (d: DeviceRecord) => ({
   ...d,
   category: DEVICE_CATEGORIES.find((c) => c.tag === d.tag)!.label,
@@ -691,6 +711,28 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["POST", /^\/admin\/knowledge\/sync$/, async (req) => ok(KnowledgeSyncResponse, await uc.knowledge.syncAsAdmin(admin(req)))],
+    ["GET", /^\/markers$/, async (req) => ok(HealthMarkersResponse, { markers: (await uc.markers.list(req.userId)).map(toMarkerSummary) })],
+    [
+      "POST",
+      /^\/markers$/,
+      async (req) => {
+        const readings = json(req, RecordMarkersRequest).readings.map((r) => ({
+          marker: r.marker,
+          value: r.value,
+          source: r.source,
+          ...(r.measuredAt ? { measuredAt: new Date(r.measuredAt) } : {}),
+        }));
+        return ok(IngestResponse, await uc.markers.record(req.userId, readings), 201);
+      },
+    ],
+    [
+      "DELETE",
+      /^\/markers\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.markers.delete(req.userId, id!);
+        return { status: 204 };
+      },
+    ],
     ["GET", /^\/healthspan$/, async (req) => ok(HealthspanResponse, await uc.getHealthspan.execute({ userId: req.userId }))],
     [
       "GET",

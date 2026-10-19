@@ -1716,6 +1716,83 @@
         }
       }
     },
+    "/markers": {
+      "get": {
+        "operationId": "getMarkers",
+        "summary": "Health markers",
+        "description": "Each marker with readings in the last 400 days: the latest reading, the change against the reading closest to 90 days earlier, whether that went the healthier way, and up to 12 recent points. References are general adult ranges in plain words, never a diagnosis.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthMarkersResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordMarkers",
+        "summary": "Record health marker readings",
+        "description": "From the app (typed in) or imported from Health Connect / Apple Health. A reading with the same marker, time and source is kept once, so imports can be sent again. Values outside each marker's plausible range are refused.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMarkersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/markers/{id}": {
+      "delete": {
+        "operationId": "deleteMarker",
+        "summary": "Delete a health marker reading",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The reading's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/healthspan": {
       "get": {
         "operationId": "getHealthspan",
@@ -3694,6 +3771,37 @@
           "blood_thinners"
         ]
       },
+      "HealthMarkerId": {
+        "type": "string",
+        "enum": [
+          "resting_hr",
+          "hrv",
+          "vo2max",
+          "bp_systolic",
+          "bp_diastolic",
+          "waist_cm",
+          "grip_kg",
+          "body_fat_pct",
+          "hba1c",
+          "ldl",
+          "hdl",
+          "triglycerides"
+        ]
+      },
+      "HealthMarkersResponse": {
+        "type": "object",
+        "properties": {
+          "markers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarkerSummary"
+            }
+          }
+        },
+        "required": [
+          "markers"
+        ]
+      },
       "HealthspanHabit": {
         "type": "object",
         "properties": {
@@ -4218,6 +4326,115 @@
           "proteinG",
           "carbsG",
           "fatG"
+        ]
+      },
+      "MarkerReading": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "marker": {
+            "$ref": "#/components/schemas/HealthMarkerId"
+          },
+          "value": {
+            "type": "number"
+          },
+          "measuredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "health_connect",
+              "apple_health"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "marker",
+          "value",
+          "measuredAt",
+          "source"
+        ]
+      },
+      "MarkerSummary": {
+        "type": "object",
+        "properties": {
+          "marker": {
+            "$ref": "#/components/schemas/HealthMarkerId"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "better": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "lower",
+                  "higher"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "type": "string"
+          },
+          "latest": {
+            "$ref": "#/components/schemas/MarkerReading"
+          },
+          "change": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "improving": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "measuredAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "value",
+                "measuredAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "marker",
+          "label",
+          "unit",
+          "better",
+          "reference",
+          "latest",
+          "change",
+          "improving",
+          "points"
         ]
       },
       "Meal": {
@@ -4896,6 +5113,47 @@
           "calories",
           "macros",
           "reasoning"
+        ]
+      },
+      "RecordMarkersRequest": {
+        "type": "object",
+        "properties": {
+          "readings": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "marker": {
+                  "$ref": "#/components/schemas/HealthMarkerId"
+                },
+                "value": {
+                  "type": "number"
+                },
+                "measuredAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source": {
+                  "default": "manual",
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "health_connect",
+                    "apple_health"
+                  ]
+                }
+              },
+              "required": [
+                "marker",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "readings"
         ]
       },
       "ReviewDeviceRequest": {

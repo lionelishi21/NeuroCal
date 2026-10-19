@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -37,6 +37,7 @@ import {
   FakeWebSearch,
   InMemoryDeviceCandidates,
   InMemoryAiUsage,
+  InMemoryMarkers,
   InMemoryKnowledge,
   FakeLabelReader,
   FakeFoodLabelReader,
@@ -156,6 +157,7 @@ beforeEach(async () => {
     techniqueExtractor: new FakeTechniqueExtractor(),
     videoFeed: null,
     knowledgeChannels: [],
+    markers: new InMemoryMarkers(),
     aiUsage: new InMemoryAiUsage(),
     deviceCandidates: new InMemoryDeviceCandidates(),
     deviceExtractor: new FakeDeviceExtractor(),
@@ -644,6 +646,28 @@ describe("API routes", () => {
 
     expect((await call("DELETE", `/pantry/${added.items[0]!.id}`)).status).toBe(204);
     expect(PantryResponse.parse((await call("GET", "/pantry")).body).items).toHaveLength(2);
+  });
+
+  it("markers: record readings (imports repeat safely), see the latest with its three-month change, delete one", async () => {
+    const post = (readings: unknown[]) => call("POST", "/markers", { readings });
+    expect(
+      (await post([
+        { marker: "resting_hr", value: 68, measuredAt: "2026-06-30T07:00:00Z", source: "health_connect" },
+        { marker: "resting_hr", value: 61, measuredAt: "2026-09-28T07:00:00Z", source: "health_connect" },
+        { marker: "hba1c", value: 5.4 },
+      ])).body,
+    ).toEqual({ accepted: 3 });
+    // The same import again adds nothing.
+    expect((await post([{ marker: "resting_hr", value: 61, measuredAt: "2026-09-28T07:00:00Z", source: "health_connect" }])).body).toEqual({ accepted: 0 });
+    expect((await post([{ marker: "resting_hr", value: 400 }])).status).toBe(400);
+
+    const { markers } = HealthMarkersResponse.parse((await call("GET", "/markers")).body);
+    const hr = markers.find((m) => m.marker === "resting_hr")!;
+    expect(hr).toMatchObject({ label: "Resting heart rate", unit: "bpm", latest: { value: 61 }, change: -7, improving: true });
+    const a1c = markers.find((m) => m.marker === "hba1c")!;
+    expect(a1c.reference).toMatch(/clinician/);
+    expect((await call("DELETE", `/markers/${a1c.latest.id}`)).status).toBe(204);
+    expect(HealthMarkersResponse.parse((await call("GET", "/markers")).body).markers.map((m) => m.marker)).toEqual(["resting_hr"]);
   });
 
   it("GET /healthspan counts this week's habits from what's logged", async () => {

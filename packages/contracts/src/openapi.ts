@@ -103,6 +103,15 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     params: { id: "The technique's id." },
   },
   syncKnowledge: { summary: "Check watched channels for new videos now", description: "Admins only. Needs YOUTUBE_API_KEY; titles and links only." },
+  getMarkers: {
+    summary: "Health markers",
+    description: "Each marker with readings in the last 400 days: the latest reading, the change against the reading closest to 90 days earlier, whether that went the healthier way, and up to 12 recent points. References are general adult ranges in plain words, never a diagnosis.",
+  },
+  recordMarkers: {
+    summary: "Record health marker readings",
+    description: "From the app (typed in) or imported from Health Connect / Apple Health. A reading with the same marker, time and source is kept once, so imports can be sent again. Values outside each marker's plausible range are refused.",
+  },
+  deleteMarker: { summary: "Delete a health marker reading", params: { id: "The reading's id." } },
   getHealthspan: {
     summary: "This week's healthspan habits",
     description: "Monday to today in the user's time zone: easy cardio minutes, strength and hard sessions, protein days, the ultra-processed share, a steady wake time and morning daylight, each against its weekly target. Health conditions can leave a habit out (skipped, with the reason).",
