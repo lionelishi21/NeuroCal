@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../health/sleep_sync.dart';
+import '../lab_units.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
 import '../widgets/toast.dart';
@@ -98,7 +99,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, BrainCheckHistory? brain, List<MarkerSummary>? markers, List<GlucoseDay> glucose, bool diabetic});
+typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, LabUnits labUnits, BrainCheckHistory? brain, List<MarkerSummary>? markers, List<GlucoseDay> glucose, bool diabetic});
 
 /// Weight trend and Brain speed over the past month.
 class _Body extends StatefulWidget {
@@ -136,6 +137,7 @@ class _BodyState extends State<_Body> {
   Future<_BodyData> _load() async {
     final api = AppScope.of(context).api;
     final unit = WeightUnit.load(Localizations.localeOf(context));
+    final labUnits = LabUnits.load(Localizations.localeOf(context));
     final weights = api.weights(days: 60).then<WeightHistory?>((w) => w).catchError((Object _) => null);
     final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
     final markers = api.markers().then<List<MarkerSummary>?>((m) => m).catchError((Object _) => null);
@@ -145,6 +147,7 @@ class _BodyState extends State<_Body> {
     return (
       weights: await weights,
       unit: await unit,
+      labUnits: await labUnits,
       brain: await brain,
       markers: await markers,
       glucose: await glucose,
@@ -157,7 +160,9 @@ class _BodyState extends State<_Body> {
   });
 
   Future<void> _addMarker() async {
-    if (await showAddMarkerSheet(context) == true && mounted) {
+    final units = (await _data)!.labUnits;
+    if (!mounted) return;
+    if (await showAddMarkerSheet(context, units: units) == true && mounted) {
       showToast(context, 'Reading saved');
       widget.onChanged();
     }
@@ -216,10 +221,17 @@ class _BodyState extends State<_Body> {
           _BrainHistory(snapshot.data!.brain, onCheck: () => widget.onCapture(Capture.brain)),
           if (snapshot.data!.glucose.isNotEmpty) ...[
             const BlockTitle('Blood sugar'),
-            GlucoseCard(snapshot.data!.glucose, diabetic: snapshot.data!.diabetic),
+            GlucoseCard(snapshot.data!.glucose, diabetic: snapshot.data!.diabetic, units: snapshot.data!.labUnits),
           ],
           const BlockTitle('Health markers'),
-          MarkersSection(snapshot.data!.markers, onAdd: _addMarker, onImport: _canImport ? _importHealth : null),
+          MarkersSection(
+            snapshot.data!.markers,
+            units: snapshot.data!.labUnits,
+            onUnits: (u) async {
+              await u.save();
+              _reload();
+            },
+            onAdd: _addMarker, onImport: _canImport ? _importHealth : null),
         ],
       ],
     ),

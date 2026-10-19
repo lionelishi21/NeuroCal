@@ -685,4 +685,37 @@ void main() {
     await tester.scrollUntilVisible(find.text('VO2max'), 300);
     expect(find.text('42 '), findsOneWidget);
   });
+
+  testWidgets('lab results typed in mmol/L are saved in mg/dL and shown in either unit', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InkWell, 'Body'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('+ Add a reading'), 300);
+    await tapCentered(tester, find.text('+ Add a reading'));
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('LDL cholesterol').last);
+    await tester.pumpAndSettle();
+    expect(find.text('mg/dL'), findsOneWidget);
+    await tester.tap(find.text('mmol/L, mmol/mol'));
+    await tester.pumpAndSettle();
+    expect(find.text('mmol/L'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Value'), '2.6');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reading saved'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('LDL cholesterol'), 300);
+    expect(find.text('2.6 '), findsOneWidget);
+    expect(find.textContaining('Under 2.6 mmol/L'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('mg/dL, %'), 300);
+    await tapCentered(tester, find.text('mg/dL, %'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('LDL cholesterol'), -300);
+    expect(find.text('100.5 '), findsOneWidget);
+  });
 }
