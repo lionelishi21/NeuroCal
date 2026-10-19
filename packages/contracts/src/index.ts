@@ -683,6 +683,30 @@ export type ReviewTechniqueRequest = z.infer<typeof ReviewTechniqueRequest>;
 export const KnowledgeSyncResponse = z.object({ added: z.number().int().nonnegative() });
 export type KnowledgeSyncResponse = z.infer<typeof KnowledgeSyncResponse>;
 
+/** One weekly longevity habit (backend domain/healthspan.ts), worked out from what's logged. */
+export const HealthspanHabit = z.object({
+  id: z.enum(["zone2", "strength", "hard_cardio", "protein", "whole_food", "steady_wake", "daylight"]),
+  title: z.string(),
+  detail: z.string(),
+  progress: z.number(),
+  target: z.number(),
+  /** "min", "sessions", "days", "nights" or "%" (for "%", lower is better: under the target). */
+  unit: z.string(),
+  done: z.boolean(),
+  /** Set when a health condition leaves the habit out; says why. Skipped habits don't count. */
+  skipped: z.string().optional(),
+});
+export type HealthspanHabit = z.infer<typeof HealthspanHabit>;
+
+export const HealthspanResponse = z.object({
+  /** Monday. */
+  weekStart: IsoDate,
+  /** Days of the week so far, today included. */
+  days: z.number().int().min(1).max(7),
+  habits: z.array(HealthspanHabit),
+});
+export type HealthspanResponse = z.infer<typeof HealthspanResponse>;
+
 export const DeviceTag = z.enum(["kitchen:air-fryer", "kitchen:water-filter", "kitchen:ice-cream-maker", "kitchen:blender"]);
 export type DeviceTag = z.infer<typeof DeviceTag>;
 
@@ -1184,6 +1208,8 @@ export const endpoints = {
   reviewTechnique: { method: "PUT", path: "/admin/knowledge/techniques/:id", body: ReviewTechniqueRequest, response: KnowledgeTechnique },
   /** Checks the watched channels for new videos now, instead of waiting for the monthly run. */
   syncKnowledge: { method: "POST", path: "/admin/knowledge/sync", response: KnowledgeSyncResponse },
+  /** This week's healthspan habits (Monday to today), from what's logged. */
+  getHealthspan: { method: "GET", path: "/healthspan", response: HealthspanResponse },
   /** Admin only: kitchen devices the monthly scout found, for review. */
   getAdminDevices: { method: "GET", path: "/admin/devices", response: AdminDevices },
   /** Approve (into the products, optionally edited) or dismiss. */

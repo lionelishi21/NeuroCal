@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -644,6 +644,23 @@ describe("API routes", () => {
 
     expect((await call("DELETE", `/pantry/${added.items[0]!.id}`)).status).toBe(204);
     expect(PantryResponse.parse((await call("GET", "/pantry")).body).items).toHaveLength(2);
+  });
+
+  it("GET /healthspan counts this week's habits from what's logged", async () => {
+    await call("POST", "/exercises", { kind: "strength", intensity: "moderate", minutes: 40 });
+    await call("POST", "/exercises", { kind: "walk", intensity: "moderate", minutes: 50 });
+    await call("POST", "/meals", {
+      kind: "lunch",
+      eatenAt: "2026-09-29T12:30:00-05:00",
+      items: [{ name: "Cola", portion: "1 can", calories: 140, macros: { proteinG: 0, carbsG: 39, fatG: 0 }, processing: "ultra_processed" }],
+    });
+    const week = HealthspanResponse.parse((await call("GET", "/healthspan")).body);
+    // 29 Sep 2026 is a Tuesday in Chicago.
+    expect(week).toMatchObject({ weekStart: "2026-09-28", days: 2 });
+    const byId = Object.fromEntries(week.habits.map((h) => [h.id, h]));
+    expect(byId.strength).toMatchObject({ progress: 1, target: 2, done: false });
+    expect(byId.zone2).toMatchObject({ progress: 50, target: 150 });
+    expect(byId.whole_food!.progress).toBe(100);
   });
 
   it("POST /exercises logs exercise with calories from the latest weigh-in, and GET /exercises totals the day", async () => {

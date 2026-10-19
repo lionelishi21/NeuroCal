@@ -33,6 +33,7 @@ import {
   KnowledgeSource,
   KnowledgeSyncResponse,
   AdminDevices,
+  HealthspanResponse,
   DeviceCandidate as DeviceCandidateDto,
   DeviceScanResponse,
   ReviewDeviceRequest,
@@ -97,6 +98,7 @@ import type { ReviewShoppingListUseCase } from "../application/use-cases/ReviewS
 import type { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import type { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
 import type { AiAllowanceUseCase } from "../application/use-cases/AiAllowanceUseCase";
+import type { GetHealthspanUseCase } from "../application/use-cases/GetHealthspanUseCase";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
@@ -161,6 +163,7 @@ export interface UseCases {
   knowledge: KnowledgeUseCases;
   devices: DeviceScoutUseCases;
   aiAllowance: AiAllowanceUseCase;
+  getHealthspan: GetHealthspanUseCase;
   analyzeRecipe: AnalyzeRecipeUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
@@ -688,6 +691,7 @@ export function createApi(uc: UseCases) {
       },
     ],
     ["POST", /^\/admin\/knowledge\/sync$/, async (req) => ok(KnowledgeSyncResponse, await uc.knowledge.syncAsAdmin(admin(req)))],
+    ["GET", /^\/healthspan$/, async (req) => ok(HealthspanResponse, await uc.getHealthspan.execute({ userId: req.userId }))],
     [
       "GET",
       /^\/admin\/devices$/,

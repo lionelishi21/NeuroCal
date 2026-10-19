@@ -103,6 +103,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     params: { id: "The technique's id." },
   },
   syncKnowledge: { summary: "Check watched channels for new videos now", description: "Admins only. Needs YOUTUBE_API_KEY; titles and links only." },
+  getHealthspan: {
+    summary: "This week's healthspan habits",
+    description: "Monday to today in the user's time zone: easy cardio minutes, strength and hard sessions, protein days, the ultra-processed share, a steady wake time and morning daylight, each against its weekly target. Health conditions can leave a habit out (skipped, with the reason).",
+  },
   getAdminDevices: {
     summary: "Kitchen devices found by the monthly scout",
     description: "Admins only. Each kitchen category the shopping review can suggest (air fryer, water filter, ice cream maker, blender) is searched once a month; devices found wait here as pending.",

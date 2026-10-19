@@ -34,6 +34,7 @@ import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed } from "../a
 import type { IDeviceCandidateRepository, IDeviceExtractor, IWebSearch } from "../application/interfaces/IDevices";
 import { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
 import { AiAllowanceUseCase } from "../application/use-cases/AiAllowanceUseCase";
+import { GetHealthspanUseCase } from "../application/use-cases/GetHealthspanUseCase";
 import type { IAiUsage } from "../application/interfaces/IAiUsage";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
@@ -175,6 +176,7 @@ export function buildUseCases(p: Ports): UseCases {
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),
+    getHealthspan: new GetHealthspanUseCase(p.profiles, p.meals, p.telemetry, p.exercises, p.environment, p.clock),
     devices: new DeviceScoutUseCases(p.deviceCandidates, p.webSearch, p.deviceExtractor, adminProducts),
     getProtocols: new GetProtocolsUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.catalog, p.embedder, p.clock, undefined, p.exercises, environment),
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
