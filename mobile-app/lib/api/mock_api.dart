@@ -99,6 +99,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       weightGoal: fields.containsKey('weightGoal')
           ? (fields['weightGoal'] == null ? null : WeightGoal.fromJson(fields['weightGoal'] as Map<String, dynamic>))
           : _profile?.weightGoal,
+      healthConditions: (fields['healthConditions'] as List?)?.cast<String>() ?? _profile?.healthConditions,
     );
   }
 

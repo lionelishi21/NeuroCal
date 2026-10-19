@@ -25,9 +25,9 @@ export const HEALTH_CONDITIONS = [
 
 export type HealthCondition = (typeof HEALTH_CONDITIONS)[number];
 
-export function conditionsOf(profile: { bioProfile?: Readonly<Record<string, unknown>> | null }): HealthCondition[] {
-  const listed = profile.bioProfile?.conditions;
-  return Array.isArray(listed) ? HEALTH_CONDITIONS.filter((c) => listed.includes(c)) : [];
+export function conditionsOf(profile: { healthConditions?: readonly string[] | null }): HealthCondition[] {
+  const listed = profile.healthConditions ?? [];
+  return HEALTH_CONDITIONS.filter((c) => listed.includes(c));
 }
 
 const has = (conditions: readonly HealthCondition[], ...any: HealthCondition[]) => any.some((c) => conditions.includes(c));

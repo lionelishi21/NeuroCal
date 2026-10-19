@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "health_conditions" text[];

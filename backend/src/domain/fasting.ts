@@ -18,7 +18,7 @@ export const CAUTIOUS_PROTOCOL = "12_12";
  * or with an eating-disorder history; 12:12 with type 1 diabetes or blood-sugar-lowering medicines) and
  * at 12:12 by the weight goal's safety answer.
  */
-export function fastingProtocolOf(profile: Pick<Profile, "bioProfile" | "weightGoal">): FastingProtocol {
+export function fastingProtocolOf(profile: Pick<Profile, "bioProfile" | "weightGoal" | "healthConditions">): FastingProtocol {
   const chosen = (profile.bioProfile?.fasting as FastingProtocol | undefined) ?? "none";
   if (chosen === "none") return "none";
   const limit = fastingLimit(conditionsOf(profile));

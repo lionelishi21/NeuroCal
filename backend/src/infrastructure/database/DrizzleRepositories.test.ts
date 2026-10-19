@@ -51,6 +51,8 @@ describe("DrizzleProfileRepository", () => {
     expect(await repo.get(alice)).toEqual(profile({ userId: alice }));
     await repo.save(profile({ userId: alice, dailyCalorieTarget: 2000 }));
     expect((await repo.get(alice))?.dailyCalorieTarget).toBe(2000);
+    await repo.save(profile({ userId: alice, healthConditions: ["joint_pain", "type2_diabetes"] }));
+    expect((await repo.get(alice))?.healthConditions).toEqual(["joint_pain", "type2_diabetes"]);
     expect(await repo.get(bob)).toBeNull();
   });
 });

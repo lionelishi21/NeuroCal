@@ -210,7 +210,7 @@ describe("GetProtocolsUseCase with health conditions", () => {
     const telemetry = new InMemoryTelemetry();
     const catalog = new InMemoryCatalog();
     const embedder = new FakeEmbedder();
-    await profiles.save(profile({ timeZone: "UTC", cognitiveGoals: [], bioProfile: { conditions } }));
+    await profiles.save(profile({ timeZone: "UTC", cognitiveGoals: [], healthConditions: conditions }));
     for (let d = 23; d <= 29; d++) {
       const end = new Date(Date.UTC(2026, 8, d, 6));
       await telemetry.upsertSleep("u1", [{ start: new Date(end.getTime() - 5 * 3_600_000), end, source: "manual" }]);

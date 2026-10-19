@@ -4,6 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../config.dart';
 import '../health/sleep_sync.dart';
+import '../onboarding/bio_profile.dart';
 import '../reminders/reminders.dart';
 import '../theme/theme_controller.dart';
 import '../theme/tokens.dart';
@@ -213,6 +214,8 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+          const GroupLabel('Health'),
+          _Health(profile.healthConditions ?? const []),
           const GroupLabel('Help'),
           AppCard(
             padding: EdgeInsets.zero,
@@ -461,6 +464,120 @@ class _Reminders extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// The health conditions the plan allows for, and a way to change them. NeuroCal doesn't treat any of
+/// them: they make the plan safer (fasting, weight goal, suggestions, supplement checks).
+class _Health extends StatefulWidget {
+  const _Health(this.conditions);
+
+  final List<String> conditions;
+
+  @override
+  State<_Health> createState() => _HealthState();
+}
+
+class _HealthState extends State<_Health> {
+  late var _conditions = widget.conditions;
+
+  Future<void> _change() async {
+    final saved = await showAppSheet<List<String>>(context, title: 'Your health', builder: (_) => _HealthSheet(_conditions));
+    if (saved == null || !mounted) return;
+    setState(() => _conditions = saved);
+    showToast(context, saved.isEmpty ? 'Saved' : 'Saved. Your plan now allows for these');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final labels = {for (final (value, label, _) in conditionChoices) value: label};
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text(
+                  _conditions.isEmpty ? 'No conditions' : _conditions.map((v) => labels[v] ?? v).join(', '),
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  'Keeps your plan safe around them. NeuroCal doesn’t treat any condition; check changes with your clinician.',
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Space.s3),
+          TextButton(onPressed: _change, child: const Text('Change')),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthSheet extends StatefulWidget {
+  const _HealthSheet(this.current);
+
+  final List<String> current;
+
+  @override
+  State<_HealthSheet> createState() => _HealthSheetState();
+}
+
+class _HealthSheetState extends State<_HealthSheet> {
+  late final _picked = {...widget.current};
+  var _saving = false;
+  var _failed = false;
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+      _failed = false;
+    });
+    // In the choices' order, so the list reads the same everywhere.
+    final picked = [for (final (value, _, _) in conditionChoices) if (_picked.contains(value)) value];
+    try {
+      await AppScope.of(context).api.saveProfile({'healthConditions': picked});
+      if (mounted) Navigator.of(context).pop(picked);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Tick any that apply. They change what NeuroCal suggests, like no long fasts on diabetes medicines and no cold plunges with a heart condition.',
+          style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+        ),
+        const SizedBox(height: Space.s2),
+        for (final (value, label, _) in conditionChoices)
+          CheckboxListTile(
+            value: _picked.contains(value),
+            onChanged: (on) => setState(() => on == true ? _picked.add(value) : _picked.remove(value)),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            title: Text(label),
+          ),
+        if (_failed) const SheetNote(lead: "Couldn't save.", detail: 'Check your connection and try again.'),
+        const SizedBox(height: Space.s2),
+        SheetAction(label: _saving ? 'Saving…' : 'Save', onPressed: _saving ? null : _save),
+      ],
     );
   }
 }

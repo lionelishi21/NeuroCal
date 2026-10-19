@@ -146,6 +146,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       macroTargets: { proteinG: row.proteinTargetG, carbsG: row.carbsTargetG, fatG: row.fatTargetG },
       ...(row.bioProfile ? { bioProfile: row.bioProfile } : {}),
       ...(row.weightGoal ? { weightGoal: row.weightGoal } : {}),
+      ...(row.healthConditions ? { healthConditions: row.healthConditions } : {}),
     };
   }
 
@@ -161,6 +162,7 @@ export class DrizzleProfileRepository implements IProfileRepository {
       fatTargetG: profile.macroTargets.fatG,
       bioProfile: profile.bioProfile ?? null,
       weightGoal: profile.weightGoal ?? null,
+      healthConditions: profile.healthConditions ?? null,
     };
     await this.db
       .insert(profiles)

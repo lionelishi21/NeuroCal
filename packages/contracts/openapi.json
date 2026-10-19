@@ -2422,12 +2422,6 @@
               "longevity",
               "weight_loss"
             ]
-          },
-          "conditions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HealthCondition"
-            }
           }
         },
         "required": [
@@ -4578,6 +4572,12 @@
           },
           "weightGoal": {
             "$ref": "#/components/schemas/WeightGoal"
+          },
+          "healthConditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCondition"
+            }
           }
         },
         "required": [
@@ -5441,6 +5441,12 @@
                 "type": "null"
               }
             ]
+          },
+          "healthConditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCondition"
+            }
           }
         }
       },

@@ -28,10 +28,10 @@ describe("UpdateProfileUseCase", () => {
     const update = new UpdateProfileUseCase(new InMemoryProfiles());
     const goal = { startKg: 80, targetKg: 72, startedOn: "2026-10-01", pacePctPerWeek: 0.5 as const, fastingCaution: false };
     await update.execute({ userId: "u1", patch: { ...full, weightGoal: goal } });
-    const pregnant = await update.execute({ userId: "u1", patch: { bioProfile: { conditions: ["pregnant"] } } });
+    const pregnant = await update.execute({ userId: "u1", patch: { healthConditions: ["pregnant"] } });
     expect(pregnant.weightGoal).toBeUndefined();
     await expect(update.execute({ userId: "u1", patch: { weightGoal: goal } })).rejects.toThrow("talk to your clinician");
-    const joints = await update.execute({ userId: "u1", patch: { bioProfile: { conditions: ["joint_pain"] }, weightGoal: goal } });
+    const joints = await update.execute({ userId: "u1", patch: { healthConditions: ["joint_pain"], weightGoal: goal } });
     expect(joints.weightGoal).toEqual(goal);
   });
 

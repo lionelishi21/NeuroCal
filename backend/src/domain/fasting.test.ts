@@ -48,7 +48,7 @@ describe("fasting timer", () => {
 
 describe("fastingProtocolOf with health conditions", () => {
   const profile = (fasting: string, conditions: string[], fastingCaution = false) =>
-    ({ bioProfile: { fasting, conditions }, ...(fastingCaution ? { weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution } } : {}) }) as Parameters<typeof fastingProtocolOf>[0];
+    ({ bioProfile: { fasting }, healthConditions: conditions, ...(fastingCaution ? { weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution } } : {}) }) as Parameters<typeof fastingProtocolOf>[0];
 
   it("drops fasting when pregnant or with an eating-disorder history, and caps it at 12:12 on diabetes medicines", () => {
     expect(fastingProtocolOf(profile("omad", ["pregnant"]))).toBe("none");

@@ -154,6 +154,23 @@ final steps = <OnboardingStep>[
       ],
     ),
   ]),
+  OnboardingStep(
+    'Your health',
+    'Anything we should know?',
+    detail: 'NeuroCal keeps your plan safe around these, like no long fasts on diabetes medicines. It doesn’t treat any condition; check changes with your clinician.',
+    [
+      const Question('hasConditions', QuestionKind.segments, [('no', 'None of these', null), ('yes', 'Yes, some', null)]),
+      Question(
+        'conditions',
+        QuestionKind.multi,
+        prompt: 'Which ones?',
+        note: 'Pick any',
+        optional: true,
+        when: (a) => a['hasConditions'] == 'yes',
+        conditionChoices,
+      ),
+    ],
+  ),
   const OnboardingStep('Movement vs strain', 'How do you train?', [
     Question('movement', QuestionKind.rows, [
       ('heavy_lifting', 'Heavy lifting', null),
@@ -189,6 +206,24 @@ final steps = <OnboardingStep>[
 
 /// Total steps shown in the progress bar, including the first (name and devices).
 final stepCount = steps.length + 1;
+
+/// Health conditions (`HealthCondition` in the contracts; backend domain/conditions.ts).
+const conditionChoices = <Choice>[
+  ('type2_diabetes', 'Type 2 diabetes or prediabetes', null),
+  ('type1_diabetes', 'Type 1 diabetes', null),
+  ('glucose_lowering_meds', 'Insulin or other diabetes medicines', null),
+  ('sleep_disorder', 'Narcolepsy, sleep apnoea or insomnia', null),
+  ('brain_fog', 'Chronic fatigue or brain fog', null),
+  ('joint_pain', 'Joint pain or arthritis', null),
+  ('heart_condition', 'A heart condition', null),
+  ('mitochondrial', 'A mitochondrial condition', null),
+  ('blood_thinners', 'Blood thinners', null),
+  ('pregnant', 'Pregnant or breastfeeding', null),
+  ('eating_disorder_history', 'An eating disorder, now or before', null),
+];
+
+List<String> conditionsOf(Answers answers) =>
+    answers['hasConditions'] == 'yes' ? (answers['conditions'] as List<String>?) ?? const [] : const [];
 
 List<String> supplementsOf(Answers answers) => (answers['supplements'] as List<String>?) ?? const [];
 
@@ -296,5 +331,6 @@ Map<String, dynamic> toProfileFields(Answers answers) {
       'friction': answers['friction'],
       'goal': answers['goal'],
     },
+    'healthConditions': conditionsOf(answers),
   };
 }

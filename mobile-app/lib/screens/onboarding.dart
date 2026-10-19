@@ -75,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _pick(Question question, String value) => setState(() {
     if (question.kind == QuestionKind.multi) {
-      final picked = [...supplementsOf(_answers)];
+      final picked = [...(_answers[question.key] as List<String>?) ?? const <String>[]];
       picked.contains(value) ? picked.remove(value) : picked.add(value);
       _answers[question.key] = picked;
     } else {
@@ -362,7 +362,7 @@ class _QuestionField extends StatelessWidget {
   final ValueChanged<String> onPick;
 
   bool get _multi => question.kind == QuestionKind.multi;
-  bool _isOn(String value) => _multi ? supplementsOf(answers).contains(value) : answers[question.key] == value;
+  bool _isOn(String value) => _multi ? ((answers[question.key] as List<String>?) ?? const <String>[]).contains(value) : answers[question.key] == value;
 
   /// A food photo for a choice, where one says it at a glance.
   static const _choiceFoods = <String, Map<String, (String, String)>>{
@@ -540,7 +540,9 @@ class _QuestionField extends StatelessWidget {
                   Expanded(child: Text(question.prompt!, style: labelStyle.copyWith(height: 1.4))),
                   if (question.note != null) ...[
                     const SizedBox(width: Space.s3),
-                    Text(question.note!, style: detailStyle.copyWith(fontWeight: FontWeight.w500)),
+                    Flexible(
+                      child: Text(question.note!, textAlign: TextAlign.end, style: detailStyle.copyWith(fontWeight: FontWeight.w500)),
+                    ),
                   ],
                 ],
               ),

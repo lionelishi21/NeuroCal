@@ -62,6 +62,8 @@ export interface Profile {
   /** Onboarding answers, stored as given. The contract (presentation) validates their shape in and out. */
   bioProfile?: BioProfileAnswers;
   weightGoal?: WeightGoal;
+  /** domain/conditions.ts HealthCondition values. */
+  healthConditions?: string[];
 }
 
 export type BioProfileAnswers = Readonly<Record<string, string | boolean | string[]>>;

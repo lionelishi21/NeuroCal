@@ -22,7 +22,7 @@ describe("MealPlanUseCases", () => {
 
   it("plans for health conditions: no fasting window when pregnant, and the food rules go to the planner", async () => {
     const profiles = new InMemoryProfiles();
-    await profiles.save(profile({ bioProfile: { fasting: "omad", conditions: ["pregnant", "type2_diabetes"] } }));
+    await profiles.save(profile({ bioProfile: { fasting: "omad" }, healthConditions: ["pregnant", "type2_diabetes"] }));
     const planner = new FakeMealPlanner();
     const useCase = new MealPlanUseCases(profiles, new InMemoryPantry(), planner, new InMemoryMealPlans(), FOODS, new FixedClock(new Date("2026-10-16T12:00:00Z")));
     await useCase.create("u1", 1);

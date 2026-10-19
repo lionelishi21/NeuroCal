@@ -70,7 +70,7 @@ void main() {
     expect((await api.me())?.displayName, 'Sam');
   });
 
-  testWidgets('a new account walks through the eleven steps, saves the bio-profile and lands on Today', (tester) async {
+  testWidgets('a new account walks through the twelve steps, saves the bio-profile and lands on Today', (tester) async {
     // A small phone, so layout overflows fail the test.
     tester.view.physicalSize = const Size(360, 740);
     tester.view.devicePixelRatio = 1;
@@ -104,7 +104,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    expect(find.text('Step 1 of 11'), findsOneWidget);
+    expect(find.text('Step 1 of 12'), findsOneWidget);
     expect(tester.widget<FilledButton>(next).onPressed, isNull);
     await tester.enterText(find.widgetWithText(TextField, 'First name'), 'Sam');
     await tester.pump();
@@ -134,6 +134,12 @@ void main() {
     await pick('Yes');
     await pick('C8 MCT');
     await advance();
+    // Health: two conditions, which go into the bio-profile.
+    expect(find.text('Anything we should know?'), findsOneWidget);
+    await pick('Yes, some');
+    await pick('Joint pain or arthritis');
+    await pick('Type 2 diabetes or prediabetes');
+    await advance();
     await pick('Heavy lifting');
     await advance();
     await pick('Brain fog after meals');
@@ -141,11 +147,11 @@ void main() {
     // Back keeps the answers.
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 9 of 11'), findsOneWidget);
+    expect(find.text('Step 10 of 12'), findsOneWidget);
     await advance();
     await advance();
 
-    expect(find.text('Step 11 of 11'), findsOneWidget);
+    expect(find.text('Step 12 of 12'), findsOneWidget);
     await pick('Unshakable focus');
     await tester.scrollUntilVisible(find.text('Amber light from'), 200);
     expect(find.text('40%'), findsOneWidget);
@@ -182,6 +188,7 @@ void main() {
         'friction': 'post_meal_fog',
         'goal': 'focus',
       },
+      'healthConditions': ['joint_pain', 'type2_diabetes'],
     });
 
     // Hold until the button fills.
@@ -207,7 +214,7 @@ void main() {
     await tester.pumpAndSettle();
     // The funnel, in order: each step, the starting point, onboarding done; no health values in events.
     final names = analytics.names.toList();
-    expect(names.where((n) => n == 'onboarding_step'), hasLength(11));
+    expect(names.where((n) => n == 'onboarding_step'), hasLength(12));
     expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('committed')));
     expect(names.indexOf('committed'), lessThan(names.indexOf('onboarding_completed')));
     expect(names, contains('guide_opened'));

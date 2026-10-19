@@ -176,6 +176,13 @@
       "when": 1792287512572,
       "tag": "0024_flashy_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792372495163,
+      "tag": "0025_fuzzy_vargas",
+      "breakpoints": true
     }
   ]
 }

@@ -833,6 +833,7 @@ class Profile {
     this.macroTargets,
     this.bioProfile,
     this.weightGoal,
+    this.healthConditions,
   });
 
   /// The account's id on the API; purchases are tied to it.
@@ -850,6 +851,9 @@ class Profile {
   final Map<String, dynamic>? bioProfile;
   final WeightGoal? weightGoal;
 
+  /// `HealthCondition` values; null when never asked (profiles from before the question).
+  final List<String>? healthConditions;
+
   /// Chose "Lose weight" in onboarding.
   bool get losingWeight => bioProfile?['goal'] == 'weight_loss' || weightGoal != null;
 
@@ -863,6 +867,7 @@ class Profile {
     macroTargets: j['macroTargets'] == null ? null : Macros.fromJson(j['macroTargets'] as Map<String, dynamic>),
     bioProfile: j['bioProfile'] as Map<String, dynamic>?,
     weightGoal: j['weightGoal'] == null ? null : WeightGoal.fromJson(j['weightGoal'] as Map<String, dynamic>),
+    healthConditions: (j['healthConditions'] as List?)?.cast<String>(),
   );
 }
 

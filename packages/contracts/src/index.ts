@@ -90,8 +90,6 @@ export const BioProfile = z.object({
   /** The daily problem to watch for first. */
   friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
   goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity", "weight_loss"]),
-  /** Absent for profiles made before the question existed; empty for "none of these". */
-  conditions: z.array(HealthCondition).optional(),
 });
 export type BioProfile = z.infer<typeof BioProfile>;
 
@@ -122,6 +120,8 @@ export const Profile = z.object({
   /** Set by the bio-profile onboarding; absent for profiles made before it existed. */
   bioProfile: BioProfile.optional(),
   weightGoal: WeightGoal.optional(),
+  /** Health conditions that make the plan safer; absent for profiles made before the question existed. */
+  healthConditions: z.array(HealthCondition).optional(),
 });
 export type Profile = z.infer<typeof Profile>;
 

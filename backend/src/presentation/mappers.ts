@@ -19,6 +19,7 @@ export const toProfile = (p: Profile): C.Profile => ({
   ...(p.bioProfile ? { bioProfile: p.bioProfile as C.BioProfile } : {}),
   // The use case only accepts the contract's paces.
   ...(p.weightGoal ? { weightGoal: p.weightGoal as C.WeightGoal } : {}),
+  ...(p.healthConditions ? { healthConditions: p.healthConditions as C.HealthCondition[] } : {}),
 });
 
 export const toFasting = (f: FastingStatus): C.FastingStatus => ({

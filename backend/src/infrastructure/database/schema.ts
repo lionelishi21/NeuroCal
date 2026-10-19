@@ -50,6 +50,8 @@ export const profiles = pgTable(
     bioProfile: jsonb("bio_profile").$type<Record<string, string | boolean | string[]>>(),
     /** Weight-loss plan (packages/contracts WeightGoal), or null. */
     weightGoal: jsonb("weight_goal").$type<WeightGoal>(),
+    /** Health conditions (domain/conditions.ts), or null when never asked. */
+    healthConditions: text("health_conditions").array(),
     ...timestamps,
   },
   (t) => [

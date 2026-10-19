@@ -610,4 +610,24 @@ void main() {
     expect(shown.streakDays, 8);
     expect(find.text(shown.next), findsWidgets);
   });
+
+  testWidgets('health conditions can be set from Me, with the clinician note', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.bySemanticsLabel('Me'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('No conditions'), 200);
+    expect(find.textContaining('check changes with your clinician'), findsOneWidget);
+    final card = find.ancestor(of: find.text('No conditions'), matching: find.byType(AppCard));
+    await tapCentered(tester, find.descendant(of: card, matching: find.text('Change')));
+    expect(find.text('Your health'), findsOneWidget);
+    await tester.ensureVisible(find.text('Joint pain or arthritis'));
+    await tester.tap(find.text('Joint pain or arthritis'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved. Your plan now allows for these'), findsOneWidget);
+    expect(find.text('Joint pain or arthritis'), findsOneWidget);
+  });
 }

@@ -8,8 +8,8 @@ const fast = { title: "16:8 eating window", summary: "Fast for 16 hours.", tags:
 
 describe("health conditions", () => {
   it("reads only known conditions from the profile", () => {
-    expect(conditionsOf({ bioProfile: { conditions: ["joint_pain", "made_up"] } })).toEqual(["joint_pain"]);
-    expect(conditionsOf({ bioProfile: { goal: "focus" } })).toEqual([]);
+    expect(conditionsOf({ healthConditions: ["joint_pain", "made_up"] })).toEqual(["joint_pain"]);
+    expect(conditionsOf({ healthConditions: null })).toEqual([]);
     expect(conditionsOf({})).toEqual([]);
   });
 
