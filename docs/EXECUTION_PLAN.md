@@ -208,6 +208,15 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] 10–20 testers on both platforms for two weeks; fix where they get stuck
 - [ ] Creator videos (UGC) built on the hook; small paid tests on TikTok and Meta, scaled by the funnel dashboard
 
+**H. Health conditions and longevity** (agreed 18 October 2026): a condition makes the plan safer and points it at what suits it; NeuroCal never treats one, and says to check changes with a clinician.
+- [x] Conditions (`backend/src/domain/conditions.ts`): type 1 and type 2 diabetes, blood-sugar-lowering medicines, sleep disorders, joint pain, brain fog, heart condition, mitochondrial, pregnancy, eating-disorder history, blood thinners. Asked in onboarding (Your health), changed in Me → Health, stored as `healthConditions`
+- [x] Safety rules: fasting capped (none when pregnant or with an eating-disorder history, 12:12 on diabetes medicines); no weight-loss goal where it isn't safe; unsuitable routines and products left out of suggestions; supplement interactions flagged on the stack
+- [x] Tailoring: fitting routines first; food rules for the meal-plan, pantry and recipe AI; blood sugar weighted 25% in the Focus Score with diabetes
+- [ ] Healthspan track: a weekly checklist (Zone 2 minutes, two strength sessions, short hard cardio, daily protein, regular sleep, daylight and nature) and longevity routines in the catalog through the knowledge pipeline
+- [ ] Health markers: resting heart rate and VO2max (from Health Connect / Apple Health), grip strength, waist, and lab values (HbA1c, blood pressure, lipids), each with a trend
+- [ ] Glucose sensors (Dexcom, Libre) through Health Connect / Apple Health, so the blood-sugar input is measured, not estimated
+- [ ] _(you)_ Privacy policy and Google Play health declaration: say health conditions are collected, why, and that they only change the plan
+
 ## 6. First API contract (drives mocks and backend)
 
 | Method | Path | Purpose |
