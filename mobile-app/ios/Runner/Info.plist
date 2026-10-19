@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>NeuroCal reads your sleep so last night logs itself and your Focus Score stays accurate.</string>
+	<string>NeuroCal reads your sleep, resting heart rate, heart rate variability and blood pressure, so they log themselves and your Focus Score and health markers stay accurate.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>NeuroCal doesn't write to Apple Health; this is required alongside reading sleep.</string>
 	<key>NSCameraUsageDescription</key>

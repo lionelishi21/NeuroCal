@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../health/sleep_sync.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'markers_view.dart';
 import 'capture.dart';
 import 'level.dart';
 import 'sleep.dart';
@@ -85,7 +87,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 WeekScreen(changes: widget.changes),
                 SleepScreen(changes: widget.changes, onChanged: widget.onChanged),
-                _Body(changes: widget.changes, onCapture: widget.onCapture),
+                _Body(changes: widget.changes, onCapture: widget.onCapture, onChanged: widget.onChanged),
                 LevelView(changes: widget.changes),
               ],
             ),
@@ -96,14 +98,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, BrainCheckHistory? brain});
+typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, BrainCheckHistory? brain, List<MarkerSummary>? markers});
 
 /// Weight trend and Brain speed over the past month.
 class _Body extends StatefulWidget {
-  const _Body({required this.changes, required this.onCapture});
+  const _Body({required this.changes, required this.onCapture, required this.onChanged});
 
   final Listenable changes;
   final void Function(Capture) onCapture;
+  final VoidCallback onChanged;
 
   @override
   State<_Body> createState() => _BodyState();
@@ -135,12 +138,39 @@ class _BodyState extends State<_Body> {
     final unit = WeightUnit.load(Localizations.localeOf(context));
     final weights = api.weights(days: 60).then<WeightHistory?>((w) => w).catchError((Object _) => null);
     final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
-    return (weights: await weights, unit: await unit, brain: await brain);
+    final markers = api.markers().then<List<MarkerSummary>?>((m) => m).catchError((Object _) => null);
+    return (weights: await weights, unit: await unit, brain: await brain, markers: await markers);
   }
 
   void _reload() => setState(() {
     _data = _load();
   });
+
+  Future<void> _addMarker() async {
+    if (await showAddMarkerSheet(context) == true && mounted) {
+      showToast(context, 'Reading saved');
+      widget.onChanged();
+    }
+  }
+
+  /// Health Connect or Apple Health is on the phone but not connected yet.
+  bool get _canImport => AppScope.of(context).sleepSync?.access == SleepAccess.notConnected;
+
+  /// Connects the health store (sleep and heart data) and imports what's there.
+  Future<void> _importHealth() async {
+    final scope = AppScope.of(context);
+    final sync = scope.sleepSync;
+    if (sync == null) return;
+    final imported = await sync.connect(scope.api);
+    if (!mounted) return;
+    if (imported == null) {
+      showToast(context, "${sync.source.name} didn't give access", ToastTone.info);
+    } else {
+      scope.analytics.track('sleep_connected', {'moment': 'markers'});
+      showToast(context, 'Connected to ${sync.source.name}');
+      widget.onChanged();
+    }
+  }
 
   Future<void> _goal(_BodyData data) async {
     final profile = await AppScope.of(context).api.me().catchError((Object _) => null);
@@ -158,7 +188,7 @@ class _BodyState extends State<_Body> {
     builder: (context, snapshot) => ListView(
       padding: const EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s4, Space.s6),
       children: [
-        const ScreenTitle('Body', detail: 'Weight and Brain speed'),
+        const ScreenTitle('Body', detail: 'Weight, Brain speed and health markers'),
         const SizedBox(height: 14),
         if (!snapshot.hasData)
           const ScreenLoading(label: 'Loading', heights: [180, 180])
@@ -174,6 +204,8 @@ class _BodyState extends State<_Body> {
             ScreenFailed(title: "Couldn't load your weight", detail: 'Check your connection and try again.', onRetry: _reload),
           const BlockTitle('Brain speed'),
           _BrainHistory(snapshot.data!.brain, onCheck: () => widget.onCapture(Capture.brain)),
+          const BlockTitle('Health markers'),
+          MarkersSection(snapshot.data!.markers, onAdd: _addMarker, onImport: _canImport ? _importHealth : null),
         ],
       ],
     ),

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'api.dart';
 import 'mock_foods.dart';
 import 'models.dart';
+import '../markers.dart';
 
 /// In-memory API used when no API_URL is set, seeded like the web app's mock (`web-poc/src/mocks/db.ts`).
 /// The backend is the source of truth for the Focus Score; this only gives the screens believable data.
@@ -861,6 +862,60 @@ class MockNeuroCalApi implements NeuroCalApi {
   int? _lastNightScreens;
 
   static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  final _markers = <MarkerReading>[
+    MarkerReading(id: 'mk1', marker: 'resting_hr', value: 66, measuredAt: DateTime.now().subtract(const Duration(days: 92)), source: 'health_connect'),
+    MarkerReading(id: 'mk2', marker: 'resting_hr', value: 61, measuredAt: DateTime.now().subtract(const Duration(days: 1)), source: 'health_connect'),
+  ];
+
+  /// Summarised like the API (backend domain/markers.ts).
+  @override
+  Future<List<MarkerSummary>> markers() async {
+    await _wait();
+    return [
+      for (final info in markerInfos)
+        if (_markers.where((r) => r.marker == info.id).toList()..sort((a, b) => a.measuredAt.compareTo(b.measuredAt)) case final mine when mine.isNotEmpty)
+          () {
+            final latest = mine.last;
+            final earlier = mine.where((r) => latest.measuredAt.difference(r.measuredAt).inDays >= 30).firstOrNull;
+            final change = earlier == null ? null : ((latest.value - earlier.value) * 10).round() / 10;
+            return MarkerSummary(
+              marker: info.id,
+              label: info.label,
+              unit: info.unit,
+              better: info.better,
+              reference: info.reference,
+              latest: latest,
+              change: change,
+              improving: change == null || change == 0 || info.better == null ? null : (change < 0) == (info.better == 'lower'),
+              points: [for (final r in mine.reversed.take(12).toList().reversed) r.value],
+            );
+          }(),
+    ];
+  }
+
+  @override
+  Future<int> recordMarkers(List<NewMarkerReading> readings) async {
+    await _wait();
+    var added = 0;
+    for (final r in readings) {
+      final info = markerInfo(r.marker);
+      if (info == null || r.value < info.min || r.value > info.max) {
+        throw ApiException(400, '${info?.label ?? 'That marker'} should be between ${info?.min} and ${info?.max} ${info?.unit}.', code: 'invalid_request');
+      }
+      final at = r.measuredAt ?? DateTime.now();
+      if (_markers.any((m) => m.marker == r.marker && m.source == r.source && m.measuredAt == at)) continue;
+      _markers.add(MarkerReading(id: 'mk${_markers.length + 1}', marker: r.marker, value: r.value, measuredAt: at, source: r.source));
+      added++;
+    }
+    return added;
+  }
+
+  @override
+  Future<void> deleteMarker(String id) async {
+    await _wait();
+    _markers.removeWhere((m) => m.id == id);
+  }
 
   /// A part-done week, worked out like the API (backend domain/healthspan.ts).
   @override

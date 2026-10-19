@@ -12,6 +12,32 @@ typedef SleepSegment = ({DateTime start, DateTime end, bool deep});
 /// One night, as the API takes it.
 typedef Night = ({DateTime start, DateTime end, int deepMinutes});
 
+/// A heart reading from the health store: resting_hr, hrv, bp_systolic or bp_diastolic.
+typedef MarkerSample = ({String marker, double value, DateTime at});
+
+/// Samples → one reading per marker per finished day (before [today]), dated at local noon so a day
+/// never changes once sent: resting heart rate and HRV averaged, blood pressure the day's last.
+List<({String marker, double value, DateTime day})> dailyMarkers(List<MarkerSample> samples, DateTime today) {
+  final start = DateTime(today.year, today.month, today.day);
+  final byKey = <String, List<MarkerSample>>{};
+  for (final s in samples) {
+    final local = s.at.toLocal();
+    final day = DateTime(local.year, local.month, local.day);
+    if (!day.isBefore(start)) continue;
+    (byKey['${s.marker}|${day.toIso8601String()}'] ??= []).add(s);
+  }
+  return [
+    for (final entry in byKey.entries)
+      () {
+        final list = entry.value..sort((a, b) => a.at.compareTo(b.at));
+        final local = list.first.at.toLocal();
+        final latest = list.last.marker.startsWith('bp_');
+        final value = latest ? list.last.value : list.fold(0.0, (s, x) => s + x.value) / list.length;
+        return (marker: list.first.marker, value: (value * 10).round() / 10, day: DateTime(local.year, local.month, local.day, 12));
+      }(),
+  ];
+}
+
 /// Sleep pieces → nights: pieces less than an hour apart are one night (waking briefly doesn't split
 /// it), deep minutes are summed, and anything under three hours is a nap and left out.
 List<Night> nightsFrom(List<SleepSegment> segments) {
@@ -63,6 +89,9 @@ abstract class SleepSource {
   /// Asks for read access to sleep; true when granted.
   Future<bool> connect();
   Future<List<SleepSegment>> read(DateTime from, DateTime to);
+
+  /// Heart readings; each kind the person didn't allow is left out rather than failing the rest.
+  Future<List<MarkerSample>> readMarkers(DateTime from, DateTime to);
 }
 
 /// Health Connect on Android, Apple Health on iOS, through the `health` plugin. Read only.
@@ -73,6 +102,13 @@ class HealthSleepSource implements SleepSource {
   static final _types = Platform.isAndroid
       ? [HealthDataType.SLEEP_SESSION, HealthDataType.SLEEP_DEEP]
       : [HealthDataType.SLEEP_ASLEEP, HealthDataType.SLEEP_LIGHT, HealthDataType.SLEEP_DEEP, HealthDataType.SLEEP_REM];
+
+  static final _markerTypes = <HealthDataType, String>{
+    HealthDataType.RESTING_HEART_RATE: 'resting_hr',
+    if (Platform.isAndroid) HealthDataType.HEART_RATE_VARIABILITY_RMSSD: 'hrv' else HealthDataType.HEART_RATE_VARIABILITY_SDNN: 'hrv',
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC: 'bp_systolic',
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC: 'bp_diastolic',
+  };
 
   Future<void> _configure() async {
     if (_configured) return;
@@ -96,7 +132,25 @@ class HealthSleepSource implements SleepSource {
   @override
   Future<bool> connect() async {
     await _configure();
-    return _health.requestAuthorization(_types, permissions: [for (final _ in _types) HealthDataAccess.READ]);
+    // Sleep and heart data in one request; the person can allow any of them.
+    final types = [..._types, ..._markerTypes.keys];
+    return _health.requestAuthorization(types, permissions: [for (final _ in types) HealthDataAccess.READ]);
+  }
+
+  @override
+  Future<List<MarkerSample>> readMarkers(DateTime from, DateTime to) async {
+    await _configure();
+    final out = <MarkerSample>[];
+    for (final MapEntry(key: type, value: marker) in _markerTypes.entries) {
+      try {
+        for (final p in await _health.getHealthDataFromTypes(types: [type], startTime: from, endTime: to)) {
+          if (p.value case NumericHealthValue(:final numericValue)) out.add((marker: marker, value: numericValue.toDouble(), at: p.dateFrom));
+        }
+      } catch (_) {
+        // Not allowed, or not on this phone: the other kinds still come in.
+      }
+    }
+    return out;
   }
 
   @override
@@ -107,7 +161,7 @@ class HealthSleepSource implements SleepSource {
   }
 }
 
-/// Sleep that logs itself: once connected, the last nights are read from the health store and sent to
+/// Sleep and heart data that log themselves: once connected, the last nights are read from the health store and sent to
 /// the API whenever the app opens. The API keeps one copy of each night, so sending twice is harmless.
 class SleepSync extends ChangeNotifier {
   SleepSync(this._prefs, this.source);
@@ -149,31 +203,42 @@ class SleepSync extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The last day and a half; returns how many nights were sent. Never throws: a failed read is retried
-  /// next time the app opens.
+  /// The last day and a half of sleep and the last week of heart readings; returns how many nights and
+  /// new readings were sent. Never throws: a failed read is retried next time the app opens.
   Future<int> sync(NeuroCalApi api, {DateTime? now}) async {
     await start();
     if (access != SleepAccess.connected) return 0;
+    final to = now ?? DateTime.now();
+    var sent = 0;
     try {
-      final to = now ?? DateTime.now();
       final nights = nightsFrom(await source.read(to.subtract(const Duration(hours: 36)), to));
-      if (nights.isEmpty) return 0;
-      await api.importSleep(nights, source.wire);
-      return nights.length;
+      if (nights.isNotEmpty) {
+        await api.importSleep(nights, source.wire);
+        sent += nights.length;
+      }
     } catch (e) {
       debugPrint('Sleep sync failed: $e');
-      return 0;
     }
+    try {
+      final days = dailyMarkers(await source.readMarkers(to.subtract(const Duration(days: 8)), to), to);
+      if (days.isNotEmpty) {
+        sent += await api.recordMarkers([for (final d in days) (marker: d.marker, value: d.value, measuredAt: d.day, source: source.wire)]);
+      }
+    } catch (e) {
+      debugPrint('Heart data sync failed: $e');
+    }
+    return sent;
   }
 }
 
 /// For tests and previews: whatever segments it is given, and access as set.
 class FakeSleepSource implements SleepSource {
-  FakeSleepSource({this.installed = true, this.grants = true, this.segments = const []});
+  FakeSleepSource({this.installed = true, this.grants = true, this.segments = const [], this.markers = const []});
 
   final bool installed;
   bool grants;
   List<SleepSegment> segments;
+  List<MarkerSample> markers;
 
   @override
   String get name => 'Health Connect';
@@ -189,4 +254,7 @@ class FakeSleepSource implements SleepSource {
 
   @override
   Future<List<SleepSegment>> read(DateTime from, DateTime to) async => segments;
+
+  @override
+  Future<List<MarkerSample>> readMarkers(DateTime from, DateTime to) async => markers;
 }

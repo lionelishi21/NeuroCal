@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Sleep from Health Connect (read only), so last night logs itself. -->
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
+    <!-- Heart readings for health markers: resting heart rate, HRV and blood pressure (read only). -->
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY"/>
+    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE"/>
     <application
         android:label="NeuroCal"
         android:name="${applicationName}"

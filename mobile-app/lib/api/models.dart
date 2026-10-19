@@ -1476,3 +1476,70 @@ class HealthspanWeek {
     habits: [for (final h in j['habits'] as List) HealthspanHabit.fromJson(h as Map<String, dynamic>)],
   );
 }
+
+/// One health marker reading (`MarkerReading` in the contracts).
+class MarkerReading {
+  const MarkerReading({required this.id, required this.marker, required this.value, required this.measuredAt, required this.source});
+
+  final String id;
+  final String marker;
+  final double value;
+  final DateTime measuredAt;
+
+  /// manual, health_connect or apple_health.
+  final String source;
+
+  factory MarkerReading.fromJson(Map<String, dynamic> j) => MarkerReading(
+    id: j['id'] as String,
+    marker: j['marker'] as String,
+    value: (j['value'] as num).toDouble(),
+    measuredAt: DateTime.parse(j['measuredAt'] as String).toLocal(),
+    source: j['source'] as String,
+  );
+}
+
+/// A marker with readings (`MarkerSummary` in the contracts).
+class MarkerSummary {
+  const MarkerSummary({
+    required this.marker,
+    required this.label,
+    required this.unit,
+    required this.better,
+    required this.reference,
+    required this.latest,
+    required this.change,
+    required this.improving,
+    required this.points,
+  });
+
+  final String marker;
+  final String label;
+  final String unit;
+
+  /// "lower", "higher" or null.
+  final String? better;
+
+  /// General adult reference in plain words; never a diagnosis.
+  final String reference;
+  final MarkerReading latest;
+
+  /// Against about three months earlier; null without a reading a month or more older.
+  final double? change;
+  final bool? improving;
+  final List<double> points;
+
+  factory MarkerSummary.fromJson(Map<String, dynamic> j) => MarkerSummary(
+    marker: j['marker'] as String,
+    label: j['label'] as String,
+    unit: j['unit'] as String,
+    better: j['better'] as String?,
+    reference: j['reference'] as String,
+    latest: MarkerReading.fromJson(j['latest'] as Map<String, dynamic>),
+    change: (j['change'] as num?)?.toDouble(),
+    improving: j['improving'] as bool?,
+    points: [for (final p in j['points'] as List) ((p as Map<String, dynamic>)['value'] as num).toDouble()],
+  );
+}
+
+/// A reading to send: typed in, or imported from the phone's health store.
+typedef NewMarkerReading = ({String marker, double value, DateTime? measuredAt, String source});

@@ -111,6 +111,14 @@ abstract interface class NeuroCalApi {
   /// This week's healthspan habits, Monday to today.
   Future<HealthspanWeek> healthspan();
 
+  /// Health markers with readings: latest, three-month change and recent points.
+  Future<List<MarkerSummary>> markers();
+
+  /// Readings typed in or imported; the API keeps one per marker, time and source. Returns how many were new.
+  Future<int> recordMarkers(List<NewMarkerReading> readings);
+
+  Future<void> deleteMarker(String id);
+
   /// Weak points of the week with the routines and products matched to them.
   Future<Help> help();
   Future<void> logSleep(DateTime start, DateTime end);
@@ -505,6 +513,34 @@ class HttpNeuroCalApi implements NeuroCalApi {
       {'start': start.toUtc().toIso8601String(), 'end': end.toUtc().toIso8601String(), 'source': 'manual'},
     ],
   });
+
+  @override
+  Future<List<MarkerSummary>> markers() async => [
+    for (final m in (await _get('/markers') as Map<String, dynamic>)['markers'] as List) MarkerSummary.fromJson(m as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<int> recordMarkers(List<NewMarkerReading> readings) async {
+    final res = await _client.post(
+      _uri('/markers'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'readings': [
+          for (final r in readings)
+            {
+              'marker': r.marker,
+              'value': r.value,
+              if (r.measuredAt != null) 'measuredAt': r.measuredAt!.toUtc().toIso8601String(),
+              'source': r.source,
+            },
+        ],
+      }),
+    );
+    return ((_decode(res) as Map<String, dynamic>)['accepted'] as num).toInt();
+  }
+
+  @override
+  Future<void> deleteMarker(String id) async => _decode(await _client.delete(_uri('/markers/${Uri.encodeComponent(id)}'), headers: await _headers()));
 
   @override
   Future<HealthspanWeek> healthspan() async => HealthspanWeek.fromJson(await _get('/healthspan') as Map<String, dynamic>);

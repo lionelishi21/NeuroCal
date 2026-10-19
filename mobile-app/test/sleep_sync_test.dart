@@ -70,4 +70,33 @@ void main() {
     expect(find.text('Connect your sleep'), findsNothing);
     expect(find.text('Log last night’s sleep'), findsNothing);
   });
+
+  test('heart readings become one per marker per finished day: heart rate averaged, blood pressure the last', () {
+    final today = DateTime(2026, 10, 19, 9);
+    MarkerSample at(String marker, double value, DateTime t) => (marker: marker, value: value, at: t);
+    final days = dailyMarkers([
+      at('resting_hr', 60, DateTime(2026, 10, 18, 6)),
+      at('resting_hr', 63, DateTime(2026, 10, 18, 22)),
+      at('bp_systolic', 128, DateTime(2026, 10, 18, 8)),
+      at('bp_systolic', 121, DateTime(2026, 10, 18, 20)),
+      at('resting_hr', 59, DateTime(2026, 10, 19, 6)), // today: not finished, left for tomorrow
+    ], today);
+    expect(days, hasLength(2));
+    expect(days.firstWhere((d) => d.marker == 'resting_hr'), (marker: 'resting_hr', value: 61.5, day: DateTime(2026, 10, 18, 12)));
+    expect(days.firstWhere((d) => d.marker == 'bp_systolic').value, 121);
+  });
+
+  test('sync sends heart readings too, once; a second sync adds nothing new', () async {
+    SharedPreferences.setMockInitialValues({'neurocal.sleepSync.on': true});
+    final api = MockNeuroCalApi(sleepLogged: false)..latency = Duration.zero;
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final source = FakeSleepSource(markers: [(marker: 'resting_hr', value: 58, at: yesterday)]);
+    final sync = SleepSync(await SharedPreferences.getInstance(), source);
+    expect(await sync.sync(api), 1);
+    expect(await sync.sync(api), 0);
+    // In the history next to the sample readings.
+    final hr = (await api.markers()).firstWhere((m) => m.marker == 'resting_hr');
+    expect(hr.points, contains(58));
+  });
 }

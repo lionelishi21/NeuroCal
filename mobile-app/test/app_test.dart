@@ -270,7 +270,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InkWell, 'Body'));
     await tester.pumpAndSettle();
-    expect(find.text('Weight and Brain speed'), findsOneWidget);
+    expect(find.text('Weight, Brain speed and health markers'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(InkWell, 'Level'));
     await tester.pumpAndSettle();
@@ -662,5 +662,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 of 6 this week'), findsOneWidget);
     expect(find.textContaining('Left out for your health'), findsOneWidget);
+  });
+
+  testWidgets('health markers on Progress → Body: the latest with its change, and a reading typed in', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InkWell, 'Body'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Resting heart rate'), 300);
+    expect(find.text('−5 bpm in 3 months'), findsOneWidget);
+    expect(find.textContaining('not a diagnosis'), findsOneWidget);
+
+    await tapCentered(tester, find.text('+ Add a reading'));
+    expect(find.text('Add a reading'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Value'), '42');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reading saved'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('VO2max'), 300);
+    expect(find.text('42 '), findsOneWidget);
   });
 }
