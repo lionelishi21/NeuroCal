@@ -718,4 +718,29 @@ void main() {
     await tester.scrollUntilVisible(find.text('LDL cholesterol'), -300);
     expect(find.text('100.5 '), findsOneWidget);
   });
+
+  testWidgets('a new level is marked once with its card to share, and the level can be shared any time', (tester) async {
+    await pumpApp(tester, saved: {'levelSeen': 1});
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InkWell, 'Level'));
+    await tester.pumpAndSettle();
+    expect(find.text('You reached Fuelled'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Share'));
+    await tester.pumpAndSettle();
+    expect(find.text('My biohacking level'), findsOneWidget);
+    await tester.runAsync(() async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Share'));
+      for (var i = 0; i < 20 && shared.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(shared.single.$2, startsWith("I'm level 2 of 5 on NeuroCal: Fuelled."));
+    // Marked as seen: the banner is gone and the plain share stays.
+    expect(find.text('You reached Fuelled'), findsNothing);
+    expect(find.text('Share your level'), findsOneWidget);
+  });
 }

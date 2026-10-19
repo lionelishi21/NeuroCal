@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
+import '../widgets/share_card.dart';
 import '../widgets/ui.dart';
 
 String _hm(Duration d) {
@@ -184,6 +185,8 @@ class WeightCard extends StatelessWidget {
     }
     final change = h.weeklyChangeKg;
     final losing = change != null && change < 0;
+    // Down since the first weigh-in shown, by the trend: worth sharing from half a kilo.
+    final lostKg = h.entries.length > 1 && h.trendKg != null ? h.entries.first.kg - h.trendKg! : 0.0;
     String months(String iso) {
       final d = DateTime.parse(iso);
       const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -216,6 +219,17 @@ class WeightCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (lostKg >= 0.5)
+                IconButton(
+                  tooltip: 'Share your progress',
+                  icon: Icon(Icons.ios_share_rounded, color: c.inkSoft),
+                  onPressed: () => showShareWeight(
+                    context,
+                    lost: unit.format(lostKg),
+                    since: months(h.entries.first.date),
+                    toGo: h.toGoKg == null ? null : (h.toGoKg == 0 ? 'Goal reached' : '${unit.format(h.toGoKg!)} to go'),
+                  ),
+                ),
               IconButton(tooltip: 'Weight goal', icon: Icon(Icons.flag_outlined, color: c.inkSoft), onPressed: onGoal),
             ],
           ),

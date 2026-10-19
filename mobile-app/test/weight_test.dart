@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
@@ -10,9 +11,10 @@ import 'package:neurocal/screens/weight_sheets.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
 import 'package:neurocal/weight_units.dart';
+import 'package:neurocal/widgets/share_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildContext) body) async {
+Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildContext) body, {Future<void> Function(Uint8List, String)? shareImage}) async {
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -26,6 +28,7 @@ Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildConte
       timeZone: () async => 'Europe/London',
       openLink: (_) async => true,
       billing: MockBilling(active: true),
+      shareImage: shareImage ?? (_, _) async {},
       child: MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(body: Builder(builder: body))),
     ),
   );
@@ -140,5 +143,54 @@ void main() {
     expect(bread.toItem().processing, FoodProcessing.processed);
     expect(bread.toItem().toJson()['processing'], 'processed');
     expect(FoodItem.fromJson({...bread.toItem().toJson(), 'processing': 'ultra_processed'}).processing, FoodProcessing.ultraProcessed);
+  });
+
+  testWidgets('weight progress shares how much is down and since when, never the weight', (tester) async {
+    final shared = <String>[];
+    await pumpWith(
+      tester,
+      (context) => SingleChildScrollView(
+        child: WeightCard(
+          const WeightHistory(
+            entries: [(date: '2026-09-03', kg: 92.4), (date: '2026-10-18', kg: 88.6)],
+            trendKg: 88.9,
+            weeklyChangeKg: -0.4,
+            targetKg: 85,
+            toGoKg: 3.9,
+          ),
+          unit: WeightUnit.kg,
+          onLog: () {},
+          onGoal: () {},
+        ),
+      ),
+      shareImage: (_, text) async => shared.add(text),
+    );
+    await tester.tap(find.byTooltip('Share your progress'));
+    await tester.pumpAndSettle();
+    expect(find.text('Down since 3 Sep'), findsOneWidget);
+    expect(find.text('3.5 kg'), findsOneWidget);
+    expect(find.text('3.9 kg to go'), findsOneWidget);
+    expect(find.descendant(of: find.byType(WeightProgressCard), matching: find.textContaining('88.')), findsNothing);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Share'));
+      for (var i = 0; i < 20 && shared.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+      }
+    });
+    expect(shared.single, startsWith('3.5 kg down since 3 Sep'));
+  });
+
+  testWidgets('no share button until half a kilo is down', (tester) async {
+    await pumpWith(
+      tester,
+      (context) => WeightCard(
+        const WeightHistory(entries: [(date: '2026-10-10', kg: 90), (date: '2026-10-18', kg: 90.2)], trendKg: 90.1, targetKg: 85, toGoKg: 5.1),
+        unit: WeightUnit.kg,
+        onLog: () {},
+        onGoal: () {},
+      ),
+    );
+    expect(find.byTooltip('Share your progress'), findsNothing);
   });
 }

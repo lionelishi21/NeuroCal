@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/share_card.dart';
 import '../widgets/ui.dart';
 
 /// The biohacking level (docs/NCBM.md §8): where you are on the ladder from Aware to Upgraded, what the
@@ -35,12 +37,43 @@ class _LevelViewState extends State<LevelView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _level ??= AppScope.of(context).api.level();
+    _level ??= _load();
   }
 
   void _reload() => setState(() {
-    _level = AppScope.of(context).api.level();
+    _level = _load();
   });
+
+  static const _seenKey = 'levelSeen';
+
+  /// A level higher than the last one seen, until it's shared or dismissed.
+  var _reached = false;
+
+  /// Loads the level and notes a new one, so the view can mark the moment.
+  Future<Level> _load() async {
+    final level = await AppScope.of(context).api.level();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final seen = prefs.getInt(_seenKey);
+      if (seen != null && level.level > seen) {
+        if (mounted) setState(() => _reached = true);
+      } else {
+        await prefs.setInt(_seenKey, level.level);
+      }
+    } catch (_) {
+      // Without storage there's no level-up moment; the level still shows.
+    }
+    return level;
+  }
+
+  Future<void> _seen(Level level) async {
+    setState(() => _reached = false);
+    try {
+      await (await SharedPreferences.getInstance()).setInt(_seenKey, level.level);
+    } catch (_) {
+      // Shown again next time; harmless.
+    }
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder(
@@ -66,7 +99,27 @@ class _LevelViewState extends State<LevelView> {
     final nextHabits = [for (final r in l.requirements) if (r.level == next) r];
     final held = [for (final r in l.requirements) if (r.level <= l.level) r];
     return [
+      if (_reached) ...[
+        _Reached(
+          l,
+          onShare: () {
+            _seen(l);
+            showShareLevel(context, level: l.level, name: l.name, justReached: true);
+          },
+          onDismiss: () => _seen(l),
+        ),
+        const SizedBox(height: Space.s3),
+      ],
       _Ladder(l),
+      if (l.level > 0 && !_reached)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => showShareLevel(context, level: l.level, name: l.name),
+            icon: const Icon(Icons.ios_share_rounded, size: 18),
+            label: const Text('Share your level'),
+          ),
+        ),
       if (next == null)
         Padding(
           padding: const EdgeInsets.only(top: Space.s3),
@@ -94,6 +147,41 @@ class _LevelViewState extends State<LevelView> {
         ),
       ),
     ];
+  }
+}
+
+/// "You reached Fuelled": shown once per new level, with its card to share.
+class _Reached extends StatelessWidget {
+  const _Reached(this.level, {required this.onShare, required this.onDismiss});
+
+  final Level level;
+  final VoidCallback onShare;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s2, Space.s3),
+      child: Row(
+        children: [
+          Icon(Icons.celebration_rounded, color: c.synapseInk),
+          const SizedBox(width: Space.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text('You reached ${level.name}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                Text('Level ${level.level} of 5, from your habits.', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+              ],
+            ),
+          ),
+          TextButton(onPressed: onShare, child: const Text('Share')),
+          IconButton(tooltip: 'Dismiss', icon: Icon(Icons.close_rounded, color: c.inkSoft), onPressed: onDismiss),
+        ],
+      ),
+    );
   }
 }
 

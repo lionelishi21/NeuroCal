@@ -192,7 +192,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] Progress photos alongside the weight trend (kept on the phone)
 
 **E. Users bring users**
-- [x] Share card for the Focus Score: "Share my score" on Today's score card draws a story-sized card (1080 × 1920, dark, with the streak) and hands it to the phone's share sheet. _To do: weight-progress and level-up cards_
+- [x] Share card for the Focus Score: "Share my score" on Today's score card draws a story-sized card (1080 × 1920, dark, with the streak) and hands it to the phone's share sheet. Weight progress (how much is down since when, never the weight itself; from half a kilo) shares from the weight card, and a new level is marked once on the Level view with its card to share.
 - [ ] Referral: "Give a friend a free month, get one", through RevenueCat promotional offers. _(you: the offer in App Store Connect and Play Console)_
 - [x] Rating prompt again after a good week, at most once a quarter (the 7-day streak above)
 
