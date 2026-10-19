@@ -114,6 +114,12 @@ abstract interface class NeuroCalApi {
   /// Health markers with readings: latest, three-month change and recent points.
   Future<List<MarkerSummary>> markers();
 
+  /// The last 14 glucose-sensor days, oldest first.
+  Future<List<GlucoseDay>> glucose();
+
+  /// Daily sensor summaries; a day sent again replaces the earlier one.
+  Future<void> recordGlucose(List<GlucoseDay> days);
+
   /// Readings typed in or imported; the API keeps one per marker, time and source. Returns how many were new.
   Future<int> recordMarkers(List<NewMarkerReading> readings);
 
@@ -513,6 +519,14 @@ class HttpNeuroCalApi implements NeuroCalApi {
       {'start': start.toUtc().toIso8601String(), 'end': end.toUtc().toIso8601String(), 'source': 'manual'},
     ],
   });
+
+  @override
+  Future<List<GlucoseDay>> glucose() async => [
+    for (final d in (await _get('/glucose') as Map<String, dynamic>)['days'] as List) GlucoseDay.fromJson(d as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<void> recordGlucose(List<GlucoseDay> days) => _post('/glucose', {'days': [for (final d in days) d.toJson()]});
 
   @override
   Future<List<MarkerSummary>> markers() async => [

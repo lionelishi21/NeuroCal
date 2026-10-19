@@ -631,7 +631,9 @@ class _FocusCard extends StatelessWidget {
     final signals = [
       ('Sleep', 'Last night', parts.sleep, null as String?),
       ('Evening timing', 'Late food and screens', parts.timing, null),
-      ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
+      focus.glycemicFromSensor
+          ? ('Blood sugar', 'From your glucose sensor', parts.glycemic, null)
+          : ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
       ('Stress', 'Recent check-ins', parts.stress, null),
       ('Movement', "Yesterday's exercise", parts.movement, null),
       ('Environment', 'Air and surroundings', parts.environment, null),

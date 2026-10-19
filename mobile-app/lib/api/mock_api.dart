@@ -182,7 +182,9 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     final sleep = _sleepLogged ? 0.81 : null; // 6.5 hours last night
     const timing = 0.9;
-    const glycemic = 0.85;
+    // Yesterday's glucose sensor replaces the meal estimate, as on the API.
+    final sensor = _glucose[isoDate(day.subtract(const Duration(days: 1)))];
+    final glycemic = sensor == null ? 0.85 : sensor.inRange140Pct / 100;
     const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.wired};
     final stress = (1 - 0.25 * _flags.where(negative.contains).length).clamp(0.0, 1.0);
     const movement = 0.5; // a 15-minute walk yesterday
@@ -196,6 +198,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress, movement: movement, environment: environment),
       explanation:
           'About 6.5 hours of sleep is holding your focus back most. A short walk in daylight before lunch can help.',
+      glycemicFromSensor: sensor != null,
     );
   }
 
@@ -862,6 +865,22 @@ class MockNeuroCalApi implements NeuroCalApi {
   int? _lastNightScreens;
 
   static String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  final _glucose = <String, GlucoseDay>{};
+
+  @override
+  Future<List<GlucoseDay>> glucose() async {
+    await _wait();
+    return _glucose.values.toList()..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  @override
+  Future<void> recordGlucose(List<GlucoseDay> days) async {
+    await _wait();
+    for (final d in days) {
+      _glucose[d.date] = d;
+    }
+  }
 
   final _markers = <MarkerReading>[
     MarkerReading(id: 'mk1', marker: 'resting_hr', value: 66, measuredAt: DateTime.now().subtract(const Duration(days: 92)), source: 'health_connect'),

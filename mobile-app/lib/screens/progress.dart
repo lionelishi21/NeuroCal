@@ -98,7 +98,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, BrainCheckHistory? brain, List<MarkerSummary>? markers});
+typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, BrainCheckHistory? brain, List<MarkerSummary>? markers, List<GlucoseDay> glucose, bool diabetic});
 
 /// Weight trend and Brain speed over the past month.
 class _Body extends StatefulWidget {
@@ -139,7 +139,17 @@ class _BodyState extends State<_Body> {
     final weights = api.weights(days: 60).then<WeightHistory?>((w) => w).catchError((Object _) => null);
     final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
     final markers = api.markers().then<List<MarkerSummary>?>((m) => m).catchError((Object _) => null);
-    return (weights: await weights, unit: await unit, brain: await brain, markers: await markers);
+    final glucose = api.glucose().catchError((Object _) => <GlucoseDay>[]);
+    final profile = api.me().then<Profile?>((p) => p).catchError((Object _) => null);
+    final conditions = (await profile)?.healthConditions ?? const <String>[];
+    return (
+      weights: await weights,
+      unit: await unit,
+      brain: await brain,
+      markers: await markers,
+      glucose: await glucose,
+      diabetic: conditions.contains('type1_diabetes') || conditions.contains('type2_diabetes'),
+    );
   }
 
   void _reload() => setState(() {
@@ -204,6 +214,10 @@ class _BodyState extends State<_Body> {
             ScreenFailed(title: "Couldn't load your weight", detail: 'Check your connection and try again.', onRetry: _reload),
           const BlockTitle('Brain speed'),
           _BrainHistory(snapshot.data!.brain, onCheck: () => widget.onCapture(Capture.brain)),
+          if (snapshot.data!.glucose.isNotEmpty) ...[
+            const BlockTitle('Blood sugar'),
+            GlucoseCard(snapshot.data!.glucose, diabetic: snapshot.data!.diabetic),
+          ],
           const BlockTitle('Health markers'),
           MarkersSection(snapshot.data!.markers, onAdd: _addMarker, onImport: _canImport ? _importHealth : null),
         ],

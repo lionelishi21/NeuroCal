@@ -192,7 +192,7 @@ class FocusComponents {
 }
 
 class FocusScore {
-  const FocusScore({required this.date, required this.score, required this.components, required this.explanation, this.tuned = false});
+  const FocusScore({required this.date, required this.score, required this.components, required this.explanation, this.tuned = false, this.glycemicFromSensor = false});
 
   final String date;
 
@@ -204,12 +204,17 @@ class FocusScore {
   /// The weights are tuned to this person's Brain speed checks.
   final bool tuned;
 
+  /// The blood-sugar input came from yesterday's glucose sensor, not meals.
+  final bool glycemicFromSensor;
+
   factory FocusScore.fromJson(Map<String, dynamic> j) => FocusScore(
     date: j['date'] as String,
     score: (j['score'] as num?)?.toInt(),
     components: FocusComponents.fromJson(j['components'] as Map<String, dynamic>),
     explanation: j['explanation'] as String,
     tuned: j['tuned'] == true,
+  
+    glycemicFromSensor: j['glycemicFromSensor'] == true,
   );
 }
 
@@ -1543,3 +1548,44 @@ class MarkerSummary {
 
 /// A reading to send: typed in, or imported from the phone's health store.
 typedef NewMarkerReading = ({String marker, double value, DateTime? measuredAt, String source});
+
+/// One glucose-sensor day (`GlucoseDay` in the contracts).
+class GlucoseDay {
+  const GlucoseDay({
+    required this.date,
+    required this.meanMgdl,
+    required this.inRange140Pct,
+    required this.inRange180Pct,
+    required this.cvPct,
+    required this.readings,
+    required this.source,
+  });
+
+  final String date;
+  final double meanMgdl;
+  final double inRange140Pct;
+  final double inRange180Pct;
+  final double cvPct;
+  final int readings;
+  final String source;
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'meanMgdl': meanMgdl,
+    'inRange140Pct': inRange140Pct,
+    'inRange180Pct': inRange180Pct,
+    'cvPct': cvPct,
+    'readings': readings,
+    'source': source,
+  };
+
+  factory GlucoseDay.fromJson(Map<String, dynamic> j) => GlucoseDay(
+    date: j['date'] as String,
+    meanMgdl: (j['meanMgdl'] as num).toDouble(),
+    inRange140Pct: (j['inRange140Pct'] as num).toDouble(),
+    inRange180Pct: (j['inRange180Pct'] as num).toDouble(),
+    cvPct: (j['cvPct'] as num).toDouble(),
+    readings: (j['readings'] as num).toInt(),
+    source: j['source'] as String,
+  );
+}

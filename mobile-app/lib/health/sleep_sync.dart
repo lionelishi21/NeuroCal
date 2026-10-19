@@ -1,10 +1,12 @@
 import 'dart:io' show Platform;
+import 'dart:math' show sqrt;
 
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
+import '../api/models.dart';
 
 /// A stretch of sleep from the phone's health store. [deep] marks deep-sleep stages.
 typedef SleepSegment = ({DateTime start, DateTime end, bool deep});
@@ -14,6 +16,42 @@ typedef Night = ({DateTime start, DateTime end, int deepMinutes});
 
 /// A heart reading from the health store: resting_hr, hrv, bp_systolic or bp_diastolic.
 typedef MarkerSample = ({String marker, double value, DateTime at});
+
+/// A blood glucose reading, mg/dL.
+typedef GlucoseSample = ({double mgdl, DateTime at});
+
+/// About 12 hours of a 5-minute sensor: fewer readings (finger-pricks) don't describe a day.
+const minSensorReadings = 144;
+
+/// Finished days (before [today]) with a sensor's worth of readings, summarised as the API takes them
+/// (backend domain/glucose.ts): average, time 70–140 and 70–180 mg/dL, and variability.
+List<GlucoseDay> glucoseDays(List<GlucoseSample> samples, DateTime today, String source) {
+  final start = DateTime(today.year, today.month, today.day);
+  final byDay = <DateTime, List<double>>{};
+  for (final s in samples) {
+    final local = s.at.toLocal();
+    final day = DateTime(local.year, local.month, local.day);
+    if (day.isBefore(start)) (byDay[day] ??= []).add(s.mgdl);
+  }
+  return [
+    for (final MapEntry(key: day, value: values) in byDay.entries)
+      if (values.length >= minSensorReadings)
+        () {
+          final mean = values.reduce((a, b) => a + b) / values.length;
+          final variance = values.fold(0.0, (s, v) => s + (v - mean) * (v - mean)) / values.length;
+          int pct(double lo, double hi) => (100 * values.where((v) => v >= lo && v <= hi).length / values.length).round();
+          return GlucoseDay(
+            date: '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
+            meanMgdl: mean.roundToDouble(),
+            inRange140Pct: pct(70, 140).toDouble(),
+            inRange180Pct: pct(70, 180).toDouble(),
+            cvPct: (100 * sqrt(variance) / mean).roundToDouble(),
+            readings: values.length,
+            source: source,
+          );
+        }(),
+  ];
+}
 
 /// Samples → one reading per marker per finished day (before [today]), dated at local noon so a day
 /// never changes once sent: resting heart rate and HRV averaged, blood pressure the day's last.
@@ -92,6 +130,9 @@ abstract class SleepSource {
 
   /// Heart readings; each kind the person didn't allow is left out rather than failing the rest.
   Future<List<MarkerSample>> readMarkers(DateTime from, DateTime to);
+
+  /// Blood glucose readings (a sensor's, or finger-pricks); empty when not allowed.
+  Future<List<GlucoseSample>> readGlucose(DateTime from, DateTime to);
 }
 
 /// Health Connect on Android, Apple Health on iOS, through the `health` plugin. Read only.
@@ -132,8 +173,8 @@ class HealthSleepSource implements SleepSource {
   @override
   Future<bool> connect() async {
     await _configure();
-    // Sleep and heart data in one request; the person can allow any of them.
-    final types = [..._types, ..._markerTypes.keys];
+    // Sleep, heart and glucose data in one request; the person can allow any of them.
+    final types = [..._types, ..._markerTypes.keys, HealthDataType.BLOOD_GLUCOSE];
     return _health.requestAuthorization(types, permissions: [for (final _ in types) HealthDataAccess.READ]);
   }
 
@@ -151,6 +192,19 @@ class HealthSleepSource implements SleepSource {
       }
     }
     return out;
+  }
+
+  @override
+  Future<List<GlucoseSample>> readGlucose(DateTime from, DateTime to) async {
+    await _configure();
+    try {
+      return [
+        for (final p in await _health.getHealthDataFromTypes(types: [HealthDataType.BLOOD_GLUCOSE], startTime: from, endTime: to))
+          if (p.value case NumericHealthValue(:final numericValue)) (mgdl: numericValue.toDouble(), at: p.dateFrom),
+      ];
+    } catch (_) {
+      return const [];
+    }
   }
 
   @override
@@ -227,18 +281,28 @@ class SleepSync extends ChangeNotifier {
     } catch (e) {
       debugPrint('Heart data sync failed: $e');
     }
+    try {
+      final days = glucoseDays(await source.readGlucose(to.subtract(const Duration(days: 8)), to), to, source.wire);
+      if (days.isNotEmpty) {
+        await api.recordGlucose(days);
+        sent += days.length;
+      }
+    } catch (e) {
+      debugPrint('Glucose sync failed: $e');
+    }
     return sent;
   }
 }
 
 /// For tests and previews: whatever segments it is given, and access as set.
 class FakeSleepSource implements SleepSource {
-  FakeSleepSource({this.installed = true, this.grants = true, this.segments = const [], this.markers = const []});
+  FakeSleepSource({this.installed = true, this.grants = true, this.segments = const [], this.markers = const [], this.glucose = const []});
 
   final bool installed;
   bool grants;
   List<SleepSegment> segments;
   List<MarkerSample> markers;
+  List<GlucoseSample> glucose;
 
   @override
   String get name => 'Health Connect';
@@ -257,4 +321,7 @@ class FakeSleepSource implements SleepSource {
 
   @override
   Future<List<MarkerSample>> readMarkers(DateTime from, DateTime to) async => markers;
+
+  @override
+  Future<List<GlucoseSample>> readGlucose(DateTime from, DateTime to) async => glucose;
 }

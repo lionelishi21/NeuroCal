@@ -202,3 +202,48 @@ class _AddMarkerState extends State<_AddMarker> {
     );
   }
 }
+
+/// Blood sugar from a glucose sensor on Progress → Body: the last week's average and time in range
+/// (70–180 mg/dL with diabetes, else 70–140), and the latest day.
+class GlucoseCard extends StatelessWidget {
+  const GlucoseCard(this.days, {super.key, required this.diabetic});
+
+  final List<GlucoseDay> days;
+  final bool diabetic;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final week = days.length > 7 ? days.sublist(days.length - 7) : days;
+    double avg(double Function(GlucoseDay) f) => week.fold(0.0, (s, d) => s + f(d)) / week.length;
+    final inRange = avg((d) => diabetic ? d.inRange180Pct : d.inRange140Pct).round();
+    final range = diabetic ? '70–180' : '70–140';
+    final mean = avg((d) => d.meanMgdl).round();
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: Space.s2,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text('$inRange% in range', style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
+              ),
+              Text('avg $mean mg/dL', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+            ],
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.pill),
+            child: LinearProgressIndicator(value: inRange / 100, minHeight: 6, backgroundColor: c.track, color: inRange >= 70 ? c.chlorophyll : c.glucose),
+          ),
+          Text(
+            'Time in $range mg/dL over the last ${week.length} ${week.length == 1 ? 'day' : 'days'} from your glucose sensor. It sets the blood-sugar part of your Focus Score.',
+            style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+          ),
+        ],
+      ),
+    );
+  }
+}

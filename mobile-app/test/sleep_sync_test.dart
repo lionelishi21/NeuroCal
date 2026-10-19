@@ -99,4 +99,26 @@ void main() {
     final hr = (await api.markers()).firstWhere((m) => m.marker == 'resting_hr');
     expect(hr.points, contains(58));
   });
+
+  test('glucose: a sensor day is summarised and sent; a day of finger-pricks is not', () async {
+    final today = DateTime(2026, 10, 19, 9);
+    final yesterday = DateTime(2026, 10, 18);
+    final sensor = [for (var i = 0; i < 288; i++) (mgdl: i < 240 ? 100.0 : 160.0, at: yesterday.add(Duration(minutes: 5 * i)))];
+    final pricks = [(mgdl: 95.0, at: DateTime(2026, 10, 17, 8)), (mgdl: 130.0, at: DateTime(2026, 10, 17, 13))];
+    final days = glucoseDays([...sensor, ...pricks], today, 'health_connect');
+    expect(days, hasLength(1));
+    expect(days.single.date, '2026-10-18');
+    expect(days.single.inRange140Pct, 83);
+    expect(days.single.inRange180Pct, 100);
+    expect(days.single.readings, 288);
+
+    SharedPreferences.setMockInitialValues({'neurocal.sleepSync.on': true});
+    final api = MockNeuroCalApi(sleepLogged: false)..latency = Duration.zero;
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+    final source = FakeSleepSource(glucose: [for (var i = 0; i < 200; i++) (mgdl: 110.0, at: start.add(Duration(minutes: 5 * i)))]);
+    await SleepSync(await SharedPreferences.getInstance(), source).sync(api);
+    expect((await api.glucose()).single.inRange140Pct, 100);
+    expect((await api.focusScore(now)).glycemicFromSensor, isTrue);
+  });
 }
