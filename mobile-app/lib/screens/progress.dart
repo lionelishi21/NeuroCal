@@ -9,6 +9,7 @@ import '../weight_units.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'markers_view.dart';
+import 'progress_photos_view.dart';
 import 'capture.dart';
 import 'level.dart';
 import 'sleep.dart';
@@ -159,6 +160,21 @@ class _BodyState extends State<_Body> {
     _data = _load();
   });
 
+  /// The weigh-in nearest [day], within three days, in the person's unit.
+  String? _weightOn(_BodyData data, DateTime day) {
+    final entries = data.weights?.entries ?? const <WeighIn>[];
+    WeighIn? best;
+    var bestGap = 4;
+    for (final e in entries) {
+      final gap = DateTime.parse(e.date).difference(DateTime(day.year, day.month, day.day)).inDays.abs();
+      if (gap < bestGap) {
+        best = e;
+        bestGap = gap;
+      }
+    }
+    return best == null ? null : data.unit.format(best.kg);
+  }
+
   Future<void> _addMarker() async {
     final units = (await _data)!.labUnits;
     if (!mounted) return;
@@ -217,6 +233,10 @@ class _BodyState extends State<_Body> {
             )
           else
             ScreenFailed(title: "Couldn't load your weight", detail: 'Check your connection and try again.', onRetry: _reload),
+          if (AppScope.of(context).photos case final photos?) ...[
+            const BlockTitle('Progress photos', note: 'Only on this phone'),
+            ProgressPhotosSection(store: photos, weightOn: (day) => _weightOn(snapshot.data!, day)),
+          ],
           const BlockTitle('Brain speed'),
           _BrainHistory(snapshot.data!.brain, onCheck: () => widget.onCapture(Capture.brain)),
           if (snapshot.data!.glucose.isNotEmpty) ...[

@@ -189,7 +189,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [x] Morning notification: the morning check-in nudge now says "Your Focus Score is ready", and the first-run guide ends with "Turn on reminders and start" (all three windows, one permission prompt), so new users get nudges without finding the switches in Me. _To do: the score's number in the notification (needs a server push)_
 - [x] Weekly report: a "Your week in NeuroCal" notification every Sunday at 18:00 that opens Progress → This week. _To do: a dedicated report with the best day and why_
 - [ ] Home-screen widget: today's score and the Up next step
-- [ ] Progress photos alongside the weight trend (kept on the phone)
+- [x] Progress photos alongside the weight trend (kept on the phone): under the weight card on Progress → Body, first and latest side by side with the weight on those days, a strip of every photo, camera or library; files in the app's own folder (`lib/progress_photos.dart`), never uploaded, two taps to delete
 
 **E. Users bring users**
 - [x] Share card for the Focus Score: "Share my score" on Today's score card draws a story-sized card (1080 × 1920, dark, with the streak) and hands it to the phone's share sheet. Weight progress (how much is down since when, never the weight itself; from half a kilo) shares from the weight card, and a new level is marked once on the Level view with its card to share.

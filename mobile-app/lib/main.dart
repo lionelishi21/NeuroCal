@@ -19,6 +19,7 @@ import 'billing/billing.dart';
 import 'config.dart';
 import 'health/sleep_sync.dart';
 import 'home_widget/focus_widget.dart';
+import 'progress_photos.dart';
 import 'reminders/reminders.dart';
 import 'review/review_prompt.dart';
 import 'device_time_zone.dart';
@@ -76,6 +77,7 @@ Future<void> main() async {
     analytics: analytics,
     reviewPrompt: reviewPrompt,
     homeWidget: const HomeScreenFocusWidget(),
+    photos: FileProgressPhotoStore(),
   );
   if (AppConfig.sentryDsn.isEmpty) return runApp(app);
   // Crashes and errors only: no personal details, no performance tracing. The Dart SDK, so no native
@@ -126,6 +128,7 @@ class NeuroCalApp extends StatelessWidget {
     this.sleepSync,
     this.reviewPrompt,
     this.homeWidget,
+    this.photos,
   });
 
   final NeuroCalApi api;
@@ -151,6 +154,9 @@ class NeuroCalApp extends StatelessWidget {
   /// The home-screen widget; none when left out.
   final FocusWidgetSink? homeWidget;
 
+  /// Progress photos on the phone; none when left out.
+  final ProgressPhotoStore? photos;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -166,6 +172,7 @@ class NeuroCalApp extends StatelessWidget {
       sleepSync: sleepSync,
       reviewPrompt: reviewPrompt,
       homeWidget: homeWidget,
+      photos: photos,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(

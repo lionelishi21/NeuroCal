@@ -7,9 +7,9 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>NeuroCal doesn't write to Apple Health; this is required alongside reading sleep.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>NeuroCal uses the camera to photograph your meals and scan supplement labels.</string>
+	<string>NeuroCal uses the camera to photograph your meals, scan supplement labels and take progress photos, which stay on your phone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>NeuroCal reads the meal photo you choose so it can estimate what is on the plate.</string>
+	<string>NeuroCal reads the meal photo you choose so it can estimate what is on the plate, and keeps progress photos you pick on your phone only.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
