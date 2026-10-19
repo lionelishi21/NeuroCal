@@ -1,3 +1,4 @@
+import { withHealthNotes } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import {
   MAX_PANTRY_ITEMS,
@@ -63,6 +64,7 @@ export class PantryUseCases {
       },
       dietaryPreference: profile.dietaryPreference,
       cognitiveGoals: profile.cognitiveGoals,
+      ...withHealthNotes(profile),
     });
     return suggested.map((r) => ({ ...r, ingredients: markPantryIngredients(r.ingredients, items) }));
   }

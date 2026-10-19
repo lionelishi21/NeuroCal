@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  withWeight,
   computeFocusComponents,
   fallbackExplanation,
   focusScoreFrom,
@@ -164,3 +165,13 @@ describe("personalWeights (v1)", () => {
   });
 });
 
+
+describe("withWeight", () => {
+  it("sets one input's weight and keeps the total at 1", () => {
+    const base = { sleep: 0.3, timing: 0.2, glycemic: 0.15, stress: 0.15, movement: 0.1, environment: 0.1 };
+    const w = withWeight(base, "glycemic", 0.25);
+    expect(w.glycemic).toBe(0.25);
+    expect(Object.values(w).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
+    expect(w.sleep / w.timing).toBeCloseTo(1.5, 10);
+  });
+});

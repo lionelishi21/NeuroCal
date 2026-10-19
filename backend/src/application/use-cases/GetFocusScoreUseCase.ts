@@ -1,3 +1,4 @@
+import { conditionsOf, glycemicWeightFor } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { FAST_HOURS, fastingProtocolOf } from "../../domain/fasting";
 import {
@@ -6,6 +7,7 @@ import {
   fallbackExplanation,
   focusScoreFrom,
   personalWeights,
+  withWeight,
   type FocusInputs,
   type FocusWeights,
 } from "../../domain/focusScore";
@@ -85,6 +87,13 @@ export class GetFocusScoreUseCase {
    * speed checks taken on the same days (the day's latest check). Standard weights until there are enough.
    */
   private async weightsFor(profile: Profile, date: string): Promise<{ weights: FocusWeights; tuned: boolean }> {
+    const found = await this.personalWeightsFor(profile, date);
+    // Diabetes: blood sugar counts for more, until the person's own Brain speed data says otherwise.
+    const glycemic = glycemicWeightFor(conditionsOf(profile));
+    return found.tuned || glycemic === null ? found : { weights: withWeight(found.weights, "glycemic", glycemic), tuned: false };
+  }
+
+  private async personalWeightsFor(profile: Profile, date: string): Promise<{ weights: FocusWeights; tuned: boolean }> {
     if (!this.brainChecks) return personalWeights([]);
     const since = addDays(date, -56);
     const [scores, checks] = await Promise.all([

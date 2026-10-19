@@ -2422,6 +2422,12 @@
               "longevity",
               "weight_loss"
             ]
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthCondition"
+            }
           }
         },
         "required": [
@@ -3654,6 +3660,22 @@
           "source",
           "processing",
           "flags"
+        ]
+      },
+      "HealthCondition": {
+        "type": "string",
+        "enum": [
+          "type1_diabetes",
+          "type2_diabetes",
+          "glucose_lowering_meds",
+          "sleep_disorder",
+          "joint_pain",
+          "brain_fog",
+          "heart_condition",
+          "mitochondrial",
+          "pregnant",
+          "eating_disorder_history",
+          "blood_thinners"
         ]
       },
       "HistoryDay": {
@@ -5044,7 +5066,8 @@
             "enum": [
               "above_upper_limit",
               "duplicate",
-              "late_caffeine"
+              "late_caffeine",
+              "interaction"
             ]
           },
           "message": {

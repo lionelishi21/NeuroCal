@@ -1,3 +1,4 @@
+import { withHealthNotes } from "../../domain/conditions";
 import { DomainError, InvalidError, NotFoundError, UpstreamError } from "../../domain/errors";
 import { fastingProtocolOf } from "../../domain/fasting";
 import type { Food } from "../../domain/foods";
@@ -39,6 +40,7 @@ export class MealPlanUseCases {
         cognitiveGoals: profile.cognitiveGoals,
         pantry,
         catalog: this.foods.map((f) => ({ id: f.id, name: f.name, serving: f.serving })),
+        ...withHealthNotes(profile),
       });
     } catch (error) {
       if (error instanceof DomainError) throw error;

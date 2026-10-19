@@ -1,3 +1,4 @@
+import { conditionsOf, suits, unsuitable } from "../../domain/conditions";
 import type { IExerciseRepository } from "../interfaces/IExerciseRepository";
 import { frictionNeed } from "../../domain/bioProfile";
 import { NotFoundError } from "../../domain/errors";
@@ -61,9 +62,17 @@ export class GetProtocolsUseCase {
     const needs = [...(friction ? [{ label: friction }] : []), ...points];
     const queries = needs.length ? needs.map((n) => needText([n], profile.cognitiveGoals)) : [needText([], profile.cognitiveGoals)];
     const vectors = await this.embedder.embed(queries);
+    // Health conditions: what doesn't suit them is left out, what does goes first (domain/conditions.ts).
+    const conditions = conditionsOf(profile);
+    const fitting = async <T extends Parameters<typeof unsuitable>[0]>(found: Promise<{ item: T; similarity: number }[]>) => {
+      const ok = (await found).filter((c) => !unsuitable(c.item, conditions));
+      return [...ok.filter((c) => suits(c.item, conditions)), ...ok.filter((c) => !suits(c.item, conditions))];
+    };
+    // Fetch a few extra, to stay full after leaving some out.
+    const extra = conditions.length ? 6 : 0;
     const [protocols, products] = await Promise.all([
-      this.pickPerQuery(vectors, this.limits.protocols, (v, n) => this.catalog.nearestProtocols(v, n)),
-      this.pickPerQuery(vectors, this.limits.products, (v, n) => this.ownSupplementsFirst(v, n)),
+      this.pickPerQuery(vectors, this.limits.protocols, (v, n) => fitting(this.catalog.nearestProtocols(v, n + extra))),
+      this.pickPerQuery(vectors, this.limits.products, (v, n) => fitting(this.ownSupplementsFirst(v, n + extra))),
     ]);
     return { weakPoints: points, protocols, products };
   }

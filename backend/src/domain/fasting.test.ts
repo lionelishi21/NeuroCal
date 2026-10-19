@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { fastingState, fastingStreak } from "./fasting";
+import { fastingState, fastingStreak, fastingProtocolOf } from "./fasting";
 
 const at = (iso: string) => new Date(`${iso}Z`);
 const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -43,5 +43,19 @@ describe("fasting timer", () => {
     // At 12:00 the running fast has passed 16 h, so today counts too.
     expect(fastingStreak(meals, at("2026-10-13T12:00"), 16, day)).toBe(2);
     expect(fastingStreak([], at("2026-10-13T12:00"), 16, day)).toBe(0);
+  });
+});
+
+describe("fastingProtocolOf with health conditions", () => {
+  const profile = (fasting: string, conditions: string[], fastingCaution = false) =>
+    ({ bioProfile: { fasting, conditions }, ...(fastingCaution ? { weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution } } : {}) }) as Parameters<typeof fastingProtocolOf>[0];
+
+  it("drops fasting when pregnant or with an eating-disorder history, and caps it at 12:12 on diabetes medicines", () => {
+    expect(fastingProtocolOf(profile("omad", ["pregnant"]))).toBe("none");
+    expect(fastingProtocolOf(profile("16_8", ["eating_disorder_history"]))).toBe("none");
+    expect(fastingProtocolOf(profile("omad", ["glucose_lowering_meds"]))).toBe("12_12");
+    expect(fastingProtocolOf(profile("16_8", ["type2_diabetes"]))).toBe("16_8");
+    expect(fastingProtocolOf(profile("omad", [], true))).toBe("12_12");
+    expect(fastingProtocolOf(profile("none", ["joint_pain"]))).toBe("none");
   });
 });

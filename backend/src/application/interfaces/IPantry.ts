@@ -22,6 +22,8 @@ export interface PantryRecipeContext {
   macrosLeft: Macros;
   dietaryPreference: DietaryPreference;
   cognitiveGoals: string[];
+  /** Food rules from health conditions (domain/conditions.ts mealNotes); left out when there are none. */
+  healthNotes?: string[];
 }
 
 export type SuggestedRecipe = Omit<PantryRecipe, "ingredients"> & { ingredients: Omit<PantryIngredient, "inPantry">[] };

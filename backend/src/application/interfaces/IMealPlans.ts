@@ -13,6 +13,8 @@ export interface MealPlanContext {
   pantry: string[];
   /** The food catalog's ids and names, so ingredients can be matched to it. */
   catalog: { id: string; name: string; serving: string }[];
+  /** Food rules from health conditions (domain/conditions.ts mealNotes); left out when there are none. */
+  healthNotes?: string[];
 }
 
 /** Proposes meals for the plan (an LLM; its output is schema-checked). */

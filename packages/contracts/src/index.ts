@@ -48,6 +48,25 @@ export type Macros = z.infer<typeof Macros>;
 const Frequency = z.enum(["daily", "weekly", "never"]);
 
 /** Answers from the bio-profile onboarding. They shape suggestions; none of them is a medical record. */
+/**
+ * Health conditions that make the plan safer and point suggestions at what suits them (never treatment).
+ * Mirrors backend/src/domain/conditions.ts.
+ */
+export const HealthCondition = z.enum([
+  "type1_diabetes",
+  "type2_diabetes",
+  "glucose_lowering_meds",
+  "sleep_disorder",
+  "joint_pain",
+  "brain_fog",
+  "heart_condition",
+  "mitochondrial",
+  "pregnant",
+  "eating_disorder_history",
+  "blood_thinners",
+]);
+export type HealthCondition = z.infer<typeof HealthCondition>;
+
 export const BioProfile = z.object({
   /** When the person wakes without an alarm. */
   wake: z.enum(["before_6", "6_to_8", "after_8"]),
@@ -71,6 +90,8 @@ export const BioProfile = z.object({
   /** The daily problem to watch for first. */
   friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
   goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity", "weight_loss"]),
+  /** Absent for profiles made before the question existed; empty for "none of these". */
+  conditions: z.array(HealthCondition).optional(),
 });
 export type BioProfile = z.infer<typeof BioProfile>;
 
@@ -905,7 +926,8 @@ export type StackItem = z.infer<typeof StackItem>;
 
 /** Something about the stack as a whole. Worded by the server; clients show `message` as is. */
 export const StackFlag = z.object({
-  kind: z.enum(["above_upper_limit", "duplicate", "late_caffeine"]),
+  /** interaction: an ingredient that interacts with the medicines behind a health condition. */
+  kind: z.enum(["above_upper_limit", "duplicate", "late_caffeine", "interaction"]),
   message: z.string().min(1),
   itemIds: z.array(Id),
 });

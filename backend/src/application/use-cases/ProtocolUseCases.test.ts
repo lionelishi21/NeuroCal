@@ -37,7 +37,7 @@ describe("SyncCatalogUseCase", () => {
 });
 
 describe("GetProtocolsUseCase", () => {
-  async function setup(nights: number[], bioProfile?: Profile["bioProfile"]) {
+  async function setup(nights: number[], bioProfile?: Profile["bioProfile"], extraProtocols: typeof PROTOCOLS = []) {
     const profiles = new InMemoryProfiles();
     const telemetry = new InMemoryTelemetry();
     const catalog = new InMemoryCatalog();
@@ -48,7 +48,7 @@ describe("GetProtocolsUseCase", () => {
       const end = new Date(Date.UTC(2026, 8, 29 - (nights.length - 1 - i), 6));
       await telemetry.upsertSleep("u1", [{ start: new Date(end.getTime() - hours * 3_600_000), end, source: "manual" }]);
     }
-    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: PROTOCOLS, products: PRODUCTS });
+    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: [...extraProtocols, ...PROTOCOLS], products: PRODUCTS });
     const clock = new FixedClock(new Date("2026-09-29T12:00:00Z"));
     const checkIns = new InMemoryCheckIns();
     return {
@@ -194,5 +194,36 @@ describe("product admin and own-brand priority", () => {
     await profiles.save(profile());
     const useCase = new GetProtocolsUseCase(profiles, new InMemoryMeals(), new InMemoryCheckIns(), new InMemoryTelemetry(), catalog, { embed: async () => [vector!] }, new FixedClock(new Date("2026-09-29T17:00:00Z")));
     expect((await useCase.execute({ userId: "u1" })).products.map((p) => p.item.id)).toEqual(["other-mag"]);
+  });});
+
+describe("GetProtocolsUseCase with health conditions", () => {
+  const coldShower = {
+    id: "cold-shower-for-sleep",
+    title: "A cold shower for short or light sleep",
+    summary: "End the evening with a cold shower to help short or light sleep.",
+    steps: ["Finish your shower with 60 seconds of cold water."],
+    tags: ["sleep", "short sleep", "light sleep"],
+  };
+
+  async function suggested(conditions: string[]) {
+    const profiles = new InMemoryProfiles();
+    const telemetry = new InMemoryTelemetry();
+    const catalog = new InMemoryCatalog();
+    const embedder = new FakeEmbedder();
+    await profiles.save(profile({ timeZone: "UTC", cognitiveGoals: [], bioProfile: { conditions } }));
+    for (let d = 23; d <= 29; d++) {
+      const end = new Date(Date.UTC(2026, 8, d, 6));
+      await telemetry.upsertSleep("u1", [{ start: new Date(end.getTime() - 5 * 3_600_000), end, source: "manual" }]);
+    }
+    await new SyncCatalogUseCase(catalog, embedder).execute({ protocols: [coldShower, ...PROTOCOLS], products: PRODUCTS });
+    const useCase = new GetProtocolsUseCase(profiles, new InMemoryMeals(), new InMemoryCheckIns(), telemetry, catalog, embedder, new FixedClock(new Date("2026-09-29T12:00:00Z")));
+    return (await useCase.execute({ userId: "u1" })).protocols.map((p) => p.item.id);
+  }
+
+  it("leaves out a routine that doesn't suit a condition, and still fills the list", async () => {
+    expect(await suggested([])).toContain("cold-shower-for-sleep");
+    const forHeart = await suggested(["heart_condition"]);
+    expect(forHeart).not.toContain("cold-shower-for-sleep");
+    expect(forHeart).toHaveLength(2);
   });
 });

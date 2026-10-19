@@ -24,6 +24,17 @@ describe("UpdateProfileUseCase", () => {
     await expect(update.execute({ userId: "u1", patch: { timeZone: "Mars/Olympus" } })).rejects.toBeInstanceOf(InvalidError);
   });
 
+  it("refuses a weight-loss goal when pregnant, and drops one set before the condition was added", async () => {
+    const update = new UpdateProfileUseCase(new InMemoryProfiles());
+    const goal = { startKg: 80, targetKg: 72, startedOn: "2026-10-01", pacePctPerWeek: 0.5 as const, fastingCaution: false };
+    await update.execute({ userId: "u1", patch: { ...full, weightGoal: goal } });
+    const pregnant = await update.execute({ userId: "u1", patch: { bioProfile: { conditions: ["pregnant"] } } });
+    expect(pregnant.weightGoal).toBeUndefined();
+    await expect(update.execute({ userId: "u1", patch: { weightGoal: goal } })).rejects.toThrow("talk to your clinician");
+    const joints = await update.execute({ userId: "u1", patch: { bioProfile: { conditions: ["joint_pain"] }, weightGoal: goal } });
+    expect(joints.weightGoal).toEqual(goal);
+  });
+
   it("rejects a zero calorie target", async () => {
     const update = new UpdateProfileUseCase(new InMemoryProfiles());
     await expect(update.execute({ userId: "u1", patch: { ...full, dailyCalorieTarget: 0 } })).rejects.toBeInstanceOf(InvalidError);

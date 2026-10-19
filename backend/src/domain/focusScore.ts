@@ -32,6 +32,15 @@ export const FOCUS_WEIGHTS: FocusWeights = {
 
 export type FocusWeights = Record<keyof FocusComponents, number>;
 
+/** [weights] with one input set to [value], the others scaled so they still add up to 1. */
+export function withWeight(weights: FocusWeights, input: keyof FocusWeights, value: number): FocusWeights {
+  const rest = 1 - weights[input];
+  const scale = rest > 0 ? (1 - value) / rest : 0;
+  const out = { ...weights };
+  for (const k of Object.keys(out) as (keyof FocusWeights)[]) out[k] = k === input ? value : weights[k] * scale;
+  return out;
+}
+
 const TARGET_SLEEP_MIN = 480;
 const TARGET_DEEP_MIN = 90;
 const LATE_EATING_FROM_HOUR = 21;

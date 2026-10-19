@@ -24,10 +24,11 @@ List<Widget> _flagNotes(List<StackFlag> flags) => [
       lead: switch (f.kind) {
         'above_upper_limit' => 'Too much in total.',
         'late_caffeine' => 'Caffeine late in the day.',
+        'interaction' => 'Check with your clinician.',
         _ => 'In more than one.',
       },
       detail: f.message,
-      watch: f.kind != 'above_upper_limit',
+      watch: f.kind != 'above_upper_limit' && f.kind != 'interaction',
     ),
 ];
 

@@ -4,6 +4,7 @@
  * adult upper limits, the same nutrient in several products, caffeine late in the day, and
  * bottles running low.
  */
+import { type HealthCondition, interactionOf } from "./conditions";
 import { type SupplementIngredient, limitedNutrient, roundAmount } from "./supplement";
 
 export type StackTiming = "morning" | "with_food" | "evening" | "any";
@@ -23,7 +24,7 @@ export interface StackItem {
 }
 
 export interface StackFlag {
-  kind: "above_upper_limit" | "duplicate" | "late_caffeine";
+  kind: "above_upper_limit" | "duplicate" | "late_caffeine" | "interaction";
   message: string;
   /** The stack items involved. */
   itemIds: string[];
@@ -34,7 +35,8 @@ const DAY_MS = 86_400_000;
 /** "Running low" from this many days left. */
 export const RUNNING_LOW_DAYS = 7;
 
-export function stackFlags(items: StackItem[]): StackFlag[] {
+/** [conditions]: the person's health conditions, for ingredients that interact with their medicines. */
+export function stackFlags(items: StackItem[], conditions: readonly HealthCondition[] = []): StackFlag[] {
   const flags: StackFlag[] = [];
   const byNutrient = new Map<string, { unit: "mg" | "mcg"; limit: number; total: number; itemIds: Set<string>; names: Set<string> }>();
   for (const item of items) {
@@ -62,6 +64,12 @@ export function stackFlags(items: StackItem[]): StackFlag[] {
         message: `${[...n.names].join(" and ")} both contain ${label}: ${roundAmount(n.total)} ${n.unit} a day together, within the adult upper limit.`,
         itemIds: [...n.itemIds],
       });
+    }
+  }
+  for (const item of items) {
+    for (const ingredient of item.ingredients) {
+      const why = interactionOf(ingredient.name, conditions);
+      if (why) flags.push({ kind: "interaction", message: `${item.name}: ${why}`, itemIds: [item.id] });
     }
   }
   for (const item of items) {

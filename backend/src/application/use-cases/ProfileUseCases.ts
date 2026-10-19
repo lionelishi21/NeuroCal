@@ -1,3 +1,4 @@
+import { conditionsOf, weightLossAllowed } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { COGNITIVE_GOALS, DIETARY_PREFERENCES, type Profile } from "../../domain/types";
 import { MAX_KG, MIN_KG, PACES, type WeightGoal } from "../../domain/weight";
@@ -38,6 +39,16 @@ export class UpdateProfileUseCase {
     } as Profile;
     if (weightGoal === null) delete next.weightGoal;
     else if (weightGoal) next.weightGoal = weightGoal;
+    // No weight-loss goal when pregnant or with an eating-disorder history: a new one is refused, and one
+    // set before the condition was added is removed, so the plan stops aiming for a deficit.
+    if (!weightLossAllowed(conditionsOf(next))) {
+      if (weightGoal) {
+        throw new InvalidError(
+          "A weight-loss goal isn't part of the plan while pregnant or breastfeeding, or with an eating-disorder history. Your calories stay at maintenance; talk to your clinician about weight.",
+        );
+      }
+      delete next.weightGoal;
+    }
     assertValidProfile(next);
     await this.profiles.save(next);
     return next;

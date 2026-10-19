@@ -47,3 +47,12 @@ describe("stack checks", () => {
     expect(daysLeft({ ...bottle, servingsPerContainer: undefined }, "2026-10-25")).toBeNull();
   });
 });
+
+describe("stackFlags with health conditions", () => {
+  it("flags an ingredient that interacts with a condition's medicines", () => {
+    const omega = { id: "o", name: "Omega-3", ingredients: [{ name: "Fish oil", amount: 1000, unit: "mg", inBlend: false }], servingsPerDay: 1, timing: "with_food" as const, startedOn: "2026-10-01" };
+    expect(stackFlags([omega]).some((f) => f.kind === "interaction")).toBe(false);
+    const [flag] = stackFlags([omega], ["blood_thinners"]).filter((f) => f.kind === "interaction");
+    expect(flag).toEqual({ kind: "interaction", message: expect.stringMatching(/^Omega-3: Fish oil can add to the effect of blood thinners/), itemIds: ["o"] });
+  });
+});

@@ -1,3 +1,4 @@
+import { conditionsOf, mealNotes } from "../../domain/conditions";
 import { mealHabits } from "../../domain/bioProfile";
 import { DomainError, NotFoundError, UpstreamError } from "../../domain/errors";
 import { contentHash } from "../../domain/recommendations";
@@ -42,7 +43,8 @@ export class RecommendRecipeUseCase {
 
     const state = await this.bioState.forProfile(profile);
     const caloriesRemaining = state.calorieTarget - state.caloriesEaten;
-    const habits = mealHabits(profile.bioProfile);
+    // Food rules from health conditions go with the habits, so the query respects them too.
+    const habits = [...mealHabits(profile.bioProfile), ...mealNotes(conditionsOf(profile))];
     const context = {
       caloriesRemaining,
       macroFocus: state.macroFocus,

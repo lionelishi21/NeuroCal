@@ -1,3 +1,4 @@
+import { conditionsOf } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { localDateOf } from "../../domain/localDay";
 import { type StackFlag, type StackItem, daysLeft, stackFlags } from "../../domain/stack";
@@ -36,9 +37,9 @@ export class StackUseCases {
   ) {}
 
   async get(userId: string): Promise<StackView> {
-    const { today } = await todayFor(this.profiles, userId, this.clock);
+    const { profile, today } = await todayFor(this.profiles, userId, this.clock);
     const [items, taken] = await Promise.all([this.stack.list(userId), this.stack.takenOn(userId, today)]);
-    return { date: today, items: items.map((i) => view(i, today, taken)), flags: stackFlags(items) };
+    return { date: today, items: items.map((i) => view(i, today, taken)), flags: stackFlags(items, conditionsOf(profile)) };
   }
 
   async add(userId: string, item: Omit<NewStackItem, "startedOn">): Promise<StackItemView> {

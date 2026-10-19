@@ -19,4 +19,16 @@ describe("MealPlanUseCases", () => {
     expect(await useCase.latest("u1")).toBe(plan);
     await expect(useCase.create("u1", 0)).rejects.toThrow("Plan 1 to 3 days");
   });
+
+  it("plans for health conditions: no fasting window when pregnant, and the food rules go to the planner", async () => {
+    const profiles = new InMemoryProfiles();
+    await profiles.save(profile({ bioProfile: { fasting: "omad", conditions: ["pregnant", "type2_diabetes"] } }));
+    const planner = new FakeMealPlanner();
+    const useCase = new MealPlanUseCases(profiles, new InMemoryPantry(), planner, new InMemoryMealPlans(), FOODS, new FixedClock(new Date("2026-10-16T12:00:00Z")));
+    await useCase.create("u1", 1);
+    const asked = planner.calls[0]!;
+    expect(asked.meals.length).toBeGreaterThan(1);
+    expect(asked.healthNotes?.join(" ")).toMatch(/high-mercury fish/);
+    expect(asked.healthNotes?.join(" ")).toMatch(/glycemic load low/);
+  });
 });
