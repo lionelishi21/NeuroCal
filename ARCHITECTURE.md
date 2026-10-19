@@ -1,6 +1,6 @@
 # NeuroCal AI — Architecture
 
-_Last updated: 2026-09-29. Implemented so far: §3 domain types, §4 core tables, §5 ports for the built use cases, §6.1–6.8, §7.1, §7.2, §7.4 adapters, §8 existing endpoints (HTTP routes, Lambda entry point, local dev server), §12 deployment stack (`infra/`, not yet deployed). This is the build spec for `backend/`, `web-poc/` and `mobile-app/`. Anything marked **planned** does not exist in code yet; for API shapes, add it to `packages/contracts` first, then build both sides._
+_Last updated: 2026-10-19. Built and deployed to the `dev` stage: everything in §3–§12 not marked **planned**, including the Phase 5 work (health conditions, healthspan, health markers, glucose sensors, AI allowance, device scout, knowledge pipeline) in §6.13–§6.18. The Flutter app (`mobile-app/`) is the product; the web app is the landing page plus the admin area. For API shapes, add to `packages/contracts` first, then build both sides._
 
 **Sources of truth**
 - API shapes: `packages/contracts/src/index.ts` (Zod). This document refers to those types by name and does not redefine them.
@@ -83,6 +83,10 @@ Names below are domain types in `backend/src/domain/`. Where a contract type has
 | **FocusScore** (planned) | userId, date, score (0–100), components{sleep, timing, glycemic, stress}, explanation, modelVersion | One per user per day; recomputing replaces it |
 | **RecipeRecommendation** | id, title, sourceName, sourceUrl, imageUrl?, minutes, calories, macros, reasoning, searchQuery | `sourceUrl` host must be on the recipe allow-list (§11) |
 | **Protocol** (planned) | id, title, body, tags[], embedding | Content is authored by NeuroCal, not generated |
+| **HealthCondition** (value) | one of `HEALTH_CONDITIONS` (`domain/conditions.ts`): diabetes types 1 and 2, glucose-lowering medicines, sleep disorder, joint pain, brain fog, heart condition, mitochondrial, pregnant, eating-disorder history, blood thinners | Stored on the profile (`profiles.health_conditions`); only ever makes the plan safer (§6.13) |
+| **MarkerReading** | id, userId, marker (`MARKER_IDS`), value, measuredAt, source (manual / health_connect / apple_health) | Value inside the marker's plausible `min`–`max`; stored in US units (mg/dL, %), converted for display by the client (§6.15) |
+| **GlucoseDay** | userId, date, meanMgdl, inRange140Pct, inRange180Pct, cvPct, readings, source | One per user, day and source; ≥ 144 readings (about 12 h of a sensor) |
+| **HealthspanHabit** (derived) | id, title, detail, progress, target, unit, done, skipped? | Computed on read for the week so far (§6.14) |
 | **Product** (planned) | id, name, url, affiliate (bool), ownBrand (bool), supplement (bool), tags[], embedding | Affiliate and own-brand (MitoProof) products must be labelled as such wherever shown (§10) |
 
 `glycemicLoad` (`"low" \| "medium" \| "high"`) is **planned** for `FoodItem` in contracts, so the vision step's high-glycemic flag (README) can reach the UI.
@@ -174,6 +178,24 @@ protocols                                   catalog, synced from backend/src/inf
 products                                    catalog, same source
   id text pk, name, description text, url text, affiliate boolean not null default false, own_brand boolean not null default false, supplement boolean not null default false,
   tags text[], embedding vector(1536) not null, content_hash text, updated_at
+
+health_markers                              §6.15
+  id uuid pk, user_id fk, marker text, value real, measured_at timestamptz, source text, created_at
+  unique (user_id, marker, measured_at, source); index (user_id, marker, measured_at)
+
+glucose_days                                §6.16
+  user_id fk, date date, mean_mgdl, in_range_140_pct, in_range_180_pct, cv_pct real, readings integer, source text
+  primary key (user_id, date, source)
+
+ai_usage                                    §6.17
+  user_id fk, day text (UTC date), feature text ("read" | "generate"), count integer
+  primary key (user_id, day, feature)
+
+device_candidates                           §6.18
+  id uuid pk, tag text, name text, name_key text unique (same device never added twice), maker, url, description text,
+  status text ("pending" | "approved" | "dismissed"), product_id text (set on approval), found_at, reviewed_at
+
+profiles.health_conditions text[]   (migration 0025; null read as none)
 
 user_embeddings                             planned (cache; not needed at current volume)
   user_id fk, kind text, embedding vector(1536), source_text text, computed_at
@@ -378,6 +400,31 @@ Missing inputs drop out and the remaining weights are renormalised; the stored `
 ### 6.11 Product admin — `/admin/products`
 `AdminProductUseCases`. An admin is a signed-in user whose **verified** email is in `ADMIN_EMAILS` (set by the stack from the `adminEmails` CDK context); the transport sets `isAdmin` and everyone else gets `403`. Admins can change a product's link, its affiliate label and whether it is suggested, and can add or remove their own products (embedded on creation). These settings are stored in separate columns (`url_override`, `affiliate_override`, `enabled`, `managed_by`) that catalog sync never writes, so they survive syncs and deploys; sync only removes rows it manages. The web screen is `/admin`, linked from Settings for admins.
 
+### 6.13 Health conditions
+Told in onboarding ("Your health" step) or in Me → Health, saved as `healthConditions` on the profile. A condition never treats anything or advises on medicines; it only makes the plan safer and steers suggestions (`domain/conditions.ts`):
+- **Fasting:** `fastingLimit` allows none when pregnant or with an eating-disorder history and 12:12 at most with type 1 diabetes or glucose-lowering medicines (`fastingProtocolOf`).
+- **Weight:** no weight-loss goal or calorie deficit when pregnant or with an eating-disorder history; `ProfileUseCases` refuses or drops one.
+- **Routines and products:** `GetProtocolsUseCase` leaves out what's `unsuitable` (cold plunges with a heart condition, sprints with joint pain, fish oil with blood thinners) and puts what `suits` first.
+- **Supplements:** `StackUseCases` flags interactions (`interactionOf`) with a "check with your clinician" line.
+- **Meals:** `withHealthNotes` adds plain food rules to every AI meal request (low glycemic load with diabetes, pregnancy food safety, no calorie-cutting language with an eating-disorder history).
+- **Score:** with diabetes the Focus Score's glycemic weight is 0.25 until the person's own Brain speed data tunes it (`glycemicWeightFor`).
+
+### 6.14 Healthspan — `GET /healthspan?date=`
+`GetHealthspanUseCase`: the week so far (Monday to the date) as seven longevity habits from what's already logged: 150 min easy cardio, 2 strength sessions, 1 hard session, protein on 5 days, under 20% ultra-processed calories, a steady wake time on 5 nights, morning daylight on 5 days (`domain/healthspan.ts`). Conditions adapt the wording (joint-friendly cardio) or skip a habit with a reason (no hard session with a heart condition or in pregnancy). Shown as the Healthspan card on Progress.
+
+### 6.15 Health markers — `GET /markers`, `POST /markers`, `DELETE /markers/:id`
+Readings over months: resting heart rate, HRV, VO2max, blood pressure, waist, grip, body fat, HbA1c, LDL, HDL, triglycerides (`domain/markers.ts`). Heart rate, HRV and blood pressure come from Health Connect / Apple Health on each sync; the rest are typed in. `summarize` gives each marker's latest reading, its change over about 90 days, whether that's the healthier way, and up to 12 points. Each marker has a plain-words adult reference, never a diagnosis. The server stores mg/dL and %; the app shows and accepts mmol/L and mmol/mol when the person picks UK-style units (Me → Health) and converts at the edge.
+
+### 6.16 Glucose sensors — `GET /glucose`, `POST /glucose`
+The phone reads a CGM's samples from Health Connect / Apple Health and sends one summary per day (`summarizeGlucose`; fewer than 144 readings is not a sensor day). When yesterday has one, the Focus Score's glycemic input is measured (`glucoseComponent`: time in range 70–140 mg/dL, or 70–180 with diabetes, less a little for swings above 36% CV) instead of estimated from meals, and the score says so (`glycemicFromSensor`).
+
+### 6.17 AI allowance and cost
+`AiAllowanceUseCase.spend(userId, "read" | "generate")` runs in the routes after the subscription gate: 60 photo and label reads and 30 plans or recipes a day (UTC) per person (`domain/aiAllowance.ts`); over it is `429` with code `daily_limit` and a message that says when it resets. Without a subscription, `POST /meals/analyze` allows `FREE_READS` (3) so onboarding can read a first meal. Every model call goes through `logLlmCall`, which logs model, latency, tokens and an estimated `costUsd` (`domain/aiCost.ts`), never content.
+
+### 6.18 Knowledge pipeline and device scout (admin)
+- **Knowledge** (`/admin/knowledge`): admins add a source (video or article) and its transcript; Claude extracts techniques (`ClaudeTechniqueExtractor`), an admin approves or rejects each, and approved ones are embedded into the protocol catalog. A monthly schedule re-checks sources.
+- **Devices** (`/admin/devices`): a monthly scout searches for new wearables and sensors, Claude extracts candidates (`ClaudeDeviceExtractor`), and admins approve (it becomes a product) or dismiss each before anything reaches the app's device list.
+
 ### 6.10 SendDailySummary — planned; EventBridge, morning per user time zone
 Yesterday's intake, Focus Score and one suggestion, sent via `IEmailProvider` (Resend). Opt-in only.
 
@@ -495,6 +542,15 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | DELETE | `/admin/products/:id` | — | 204 | 6.11; only products added by an admin |
 | POST | `/telemetry/sleep` | `IngestSleepRequest` | `IngestResponse` | 6.7 |
 | POST | `/telemetry/screen-time` | `IngestScreenTimeRequest` | `IngestResponse` | 6.7 |
+| GET | `/healthspan?date=` | — | `HealthspanResponse` | 6.14 |
+| GET / POST | `/markers` | — / `RecordMarkersRequest` | `HealthMarkersResponse` / `IngestResponse` | 6.15 |
+| DELETE | `/markers/:id` | — | 204 | 6.15 |
+| GET / POST | `/glucose` | — / `RecordGlucoseRequest` | `GlucoseResponse` / `IngestResponse` | 6.16 |
+| GET / POST / PUT | `/admin/knowledge…` | | | 6.18 |
+| GET / PUT / POST | `/admin/devices`, `/admin/devices/:id`, `/admin/devices/scan` | | | 6.18 |
+| GET | `/admin/waitlist` | — | `AdminWaitlist` | 6.12 |
+
+The table lists the core and Phase 5 routes. The rest (weights, fasting, brain checks, exercise, environment, level, pantry, meal plan, recipe and shopping review, supplement stack, foods and barcodes, subscription, `/today`, `DELETE /me`) are in `endpoints` in contracts and in `openapi.json`, which are the full list.
 
 The same surface is published as OpenAPI 3.1 in `packages/contracts/openapi.json`, generated from the Zod schemas by `packages/contracts/src/openapi.ts` (`npm run openapi -w @neurocal/contracts`). The Flutter client is generated from that file. Rules written with `.refine()` (sleep ends after it starts, screen minutes fit the window) can't be expressed in JSON Schema and are stated in the operation descriptions.
 
@@ -517,6 +573,19 @@ EventBridge
   checkin.recorded, telemetry.ingested → ComputeFocusScore for that user and day
 ```
 
+Built schedules (EventBridge rules in `infra/src/NeuroCalStack.ts`):
+  rate: hourly       → trialRemindersLambda (trial-ending emails)
+  cron: 1st, 09:00   → knowledgeSyncLambda (§6.18)
+  cron: 2nd, 09:00   → deviceScoutLambda (§6.18)
+
+Phone → API (the app, not the server, drives health sync; `mobile-app/lib/health/sleep_sync.dart`)
+  on open and after permissions → read Health Connect / Apple Health since the last sync →
+  POST /telemetry/sleep (sessions + deep minutes), POST /markers (resting HR, HRV, blood pressure),
+  POST /glucose (one summary per sensor day). Re-sends are idempotent.
+
+On the phone only (never sent): reminders and streak nudges (`reminders.dart`), the home-screen
+widget (`home_widget/`), share cards rendered to an image (`widgets/share_card.dart`), progress photos.
+
 Scheduled handlers fan out through SQS so one user's failure doesn't block the rest; failed messages go to a dead-letter queue.
 
 ---
@@ -529,6 +598,9 @@ Scheduled handlers fan out through SQS so one user's failure doesn't block the r
 - **Secrets:** API keys (OpenAI, Anthropic, Tavily, Resend) in one Secrets Manager JSON secret and Aurora's credentials in its generated secret. Lambdas get only the ARNs and read them once per cold start (`infrastructure/aws/secrets.ts`); never in env files or the repo.
 - **LLM safety:** schema-validated outputs (§7); user notes are passed as data, never as instructions; no medical claims in generated text.
 - **Affiliate and own-brand disclosure:** products with `affiliate = true` or `own_brand = true` carry a visible label and a one-line disclosure in every client. When any suggested product has `supplement = true`, clients add a one-line note to check with a doctor or pharmacist first.
+- **Health conditions** are the most sensitive field: never sent to analytics or logs, only to the AI as the plain food rules in §6.13, never as the condition list itself.
+- **Analytics and crash reports** are off unless keys are set: PostHog (`POSTHOG_KEY`, event names and counts only) and Sentry (`SENTRY_DSN`, in the app and in the Lambdas). Neither receives meal content, health values or email addresses.
+- **Progress photos** stay on the phone in the app's own storage; they are not uploaded or backed up by NeuroCal.
 - **Deletion:** account deletion removes rows, S3 objects and embeddings (§4 retention).
 
 ---
