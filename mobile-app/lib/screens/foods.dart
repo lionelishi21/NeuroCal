@@ -385,17 +385,27 @@ class _FoodSheetState extends State<_FoodSheet> {
           ],
         ),
         if (better case final b?) _BetterPick(b, onTap: () => _switchTo(b)),
-        Text(
-          f.eatingOut
-              ? "Nutrition from USDA's analysis of the US menu (FoodData Central). Recipes and portions change, so treat it as close, not exact."
-              : 'Nutrition from USDA FoodData Central.',
-          style: TextStyle(fontSize: TextSize.xxs, height: 1.35, color: c.inkSoft),
-        ),
+        Text(_sourceNote(f), style: TextStyle(fontSize: TextSize.xxs, height: 1.35, color: c.inkSoft)),
+        if (f.sourceUrl case final url?)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => AppScope.of(context).openLink(Uri.parse(url)),
+              child: Text('See it on ${f.chain?.name ?? 'the menu'}'),
+            ),
+          ),
         SheetAction(label: widget.action, onPressed: () => Navigator.of(context).pop((food: f, servings: _servings))),
       ],
     );
   }
 }
+
+String _sourceNote(CatalogFood f) => switch (f.source) {
+  'usda' => "Nutrition from USDA's analysis of the US menu (FoodData Central). Recipes and portions change, so treat it as close, not exact.",
+  'chain' => "Nutrition as ${f.chain?.name ?? 'the chain'} publishes it${f.fiberG == 0 ? '; fibre isn\'t published' : ''}.",
+  'recipe' => 'Estimated from a typical recipe with USDA ingredient data. Portions and recipes vary from place to place.',
+  _ => 'Nutrition from USDA FoodData Central.',
+};
 
 String _glycemicLabel(GlycemicLoad load) => switch (load) {
   GlycemicLoad.low => 'Low glycemic load',

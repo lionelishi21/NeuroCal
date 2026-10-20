@@ -666,6 +666,8 @@ class CatalogFood {
     this.chain,
     this.regions = const [],
     this.betterPick,
+    this.source,
+    this.sourceUrl,
   });
 
   final String id;
@@ -695,10 +697,16 @@ class CatalogFood {
   /// Eating out: the id of a better choice at the same place.
   final String? betterPick;
 
+  /// Eating out: usda (USDA's analysis of the US menu), chain (the chain's published figures, at
+  /// [sourceUrl]) or recipe (estimated from a typical recipe).
+  final String? source;
+  final String? sourceUrl;
+
   bool get eatingOut => category == 'eating_out';
 
-  /// The name with its chain, as a logged meal shows it: "McDonald's Big Mac".
-  String get fullName => chain == null ? name : '${chain!.name} $name';
+  /// The name with its chain, as a logged meal shows it: "McDonald's Big Mac". Dishes estimated from a
+  /// recipe aren't a brand's, so they keep their own name ("Curry goat").
+  String get fullName => chain == null || source == 'recipe' ? name : '${chain!.name} $name';
 
   factory CatalogFood.fromJson(Map<String, dynamic> j) => CatalogFood(
     id: j['id'] as String,
@@ -721,6 +729,8 @@ class CatalogFood {
     chain: j['chain'] == null ? null : (id: j['chain']['id'] as String, name: j['chain']['name'] as String),
     regions: [for (final r in (j['regions'] as List?) ?? const []) r as String],
     betterPick: j['betterPick'] as String?,
+    source: j['source'] as String?,
+    sourceUrl: j['sourceUrl'] as String?,
   );
 
   /// As a meal item, for [servings] servings.

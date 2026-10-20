@@ -462,8 +462,14 @@ export const CatalogFood = z.object({
   why: z.string().min(1),
   /** The diets it fits. */
   diets: z.array(DietaryPreference),
-  /** Source entry in USDA FoodData Central. */
-  fdcId: z.number().int().positive(),
+  /** Source entry in USDA FoodData Central; absent for figures from elsewhere (see `source`). */
+  fdcId: z.number().int().positive().optional(),
+  /**
+   * Eating out: where the numbers come from. usda: USDA's analysis of the US menu (`fdcId`); chain: the
+   * chain's own published figures (`sourceUrl`); recipe: estimated from a typical recipe (no chain publishes them).
+   */
+  source: z.enum(["usda", "chain", "recipe"]).optional(),
+  sourceUrl: z.string().url().optional(),
   /** Eating out (`category: "eating_out"`): the restaurant chain whose menu item this is. */
   chain: z.object({ id: Id, name: z.string().min(1) }).optional(),
   /** Eating out: the countries whose menus have it (ISO codes: US, GB, JM). Clients show the phone's region first. */

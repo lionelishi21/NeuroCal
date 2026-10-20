@@ -23,12 +23,18 @@ export interface Food {
   goals: CognitiveGoal[];
   /** One plain sentence on what it brings. No medical claims. */
   why: string;
-  /** Source entry in USDA FoodData Central. */
-  fdcId: number;
+  /** Source entry in USDA FoodData Central; absent for figures from elsewhere (see `source`). */
+  fdcId?: number;
   /** Eating out: the restaurant chain whose menu item this is. */
   chain?: { id: string; name: string };
   /** Eating out: the countries whose menus have it. */
   regions?: FoodRegion[];
+  /**
+   * Eating out: where the numbers come from. usda: USDA's analysis of the US menu (`fdcId`); chain:
+   * the chain's own published figures (`sourceUrl`); recipe: estimated from a typical recipe.
+   */
+  source?: "usda" | "chain" | "recipe";
+  sourceUrl?: string;
   /** Eating out: a better choice at the same place (more protein for its calories, or fewer calories and carbs), by id. */
   betterPick?: string;
 }

@@ -2818,6 +2818,18 @@
             "type": "integer",
             "exclusiveMinimum": 0
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "usda",
+              "chain",
+              "recipe"
+            ]
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          },
           "chain": {
             "type": "object",
             "properties": {
@@ -2864,8 +2876,7 @@
           "processing",
           "goals",
           "why",
-          "diets",
-          "fdcId"
+          "diets"
         ]
       },
       "CheckIn": {

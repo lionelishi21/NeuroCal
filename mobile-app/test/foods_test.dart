@@ -33,6 +33,12 @@ Future<List<PickedFood>> pumpFoods(WidgetTester tester) async {
   return logged;
 }
 
+/// Scrolls the food list until [finder] is built and on screen, clear of the edges.
+Future<void> scrollTo(WidgetTester tester, Finder finder, {bool up = false}) async {
+  await tester.scrollUntilVisible(finder, up ? -150 : 150, scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('browse: search, filter by goal, then log a food with its servings', (tester) async {
     final logged = await pumpFoods(tester);
@@ -84,11 +90,8 @@ void main() {
     expect(find.text('Almonds'), findsNothing);
     await tester.tap(find.widgetWithText(ChoicePill, 'KFC'));
     await tester.pumpAndSettle();
-    expect(find.text('Original Recipe breast'), findsOneWidget);
+    await scrollTo(tester, find.text('Original Recipe breast'));
     expect(find.text('Big Mac'), findsNothing);
-
-    await tester.ensureVisible(find.text('Original Recipe breast'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Original Recipe breast'));
     await tester.pumpAndSettle();
     expect(find.text('KFC Original Recipe breast'), findsOneWidget);
@@ -106,6 +109,40 @@ void main() {
 
     expect(logged.single.food.id, 'kfc-original-breast-skinless');
     expect(logged.single.food.toItem().name, 'KFC Original Recipe breast, skin and breading taken off');
+  });
+
+  testWidgets('eating out in other countries: Greggs in the UK, Jamaican dishes estimated from recipes', (tester) async {
+    final logged = await pumpFoods(tester);
+    await tester.tap(find.text('Eating out'));
+    await tester.pumpAndSettle();
+    // The phone here is in the US, so US menus first; the other countries are a tap away.
+    expect(find.widgetWithText(ChoicePill, 'KFC'), findsOneWidget);
+    await scrollTo(tester, find.text('United Kingdom'));
+    await tester.tap(find.text('United Kingdom'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ChoicePill, 'KFC'), findsNothing);
+    await scrollTo(tester, find.widgetWithText(ChoicePill, 'Greggs'), up: true);
+    await scrollTo(tester, find.text('Steak bake'));
+    await tester.tap(find.text('Steak bake'));
+    await tester.pumpAndSettle();
+    expect(find.text('Greggs Steak bake'), findsOneWidget);
+    await tester.ensureVisible(find.textContaining('as Greggs publishes it'));
+    expect(find.text('See it on Greggs'), findsOneWidget);
+    Navigator.of(tester.element(find.text('See it on Greggs'))).pop();
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, find.text('Jamaica'), up: true);
+    await tester.tap(find.text('Jamaica'));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('Curry goat'));
+    await tester.tap(find.text('Curry goat'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('Estimated from a typical recipe'));
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Log it'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Log it'));
+    await tester.pumpAndSettle();
+    expect(logged.single.food.toItem().name, 'Curry goat');
   });
 
   testWidgets('a search finds chain items by place or dish', (tester) async {
