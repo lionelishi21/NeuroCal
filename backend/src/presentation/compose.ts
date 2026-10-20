@@ -69,6 +69,8 @@ import { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseC
 import { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
+import { EatingOutAdminUseCases } from "../application/use-cases/EatingOutAdminUseCases";
+import type { IEatingOutRepository } from "../application/interfaces/IEatingOut";
 import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
@@ -92,6 +94,8 @@ export interface Ports {
   foods: readonly Food[];
   /** Chain-restaurant menu items (infrastructure/catalog/eatingOut.ts); listed, never planned. */
   eatingOut?: readonly Food[];
+  /** Eating-out items admins added (DrizzleEatingOutRepository). */
+  eatingOutItems?: IEatingOutRepository;
   labels: ISupplementLabelReader;
   foodLabels: IFoodLabelReader;
   products: IProductDatabase;
@@ -153,7 +157,8 @@ export function buildUseCases(p: Ports): UseCases {
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
-    listFoods: new ListFoodsUseCase(p.foods, p.eatingOut),
+    listFoods: new ListFoodsUseCase(p.foods, p.eatingOut, p.eatingOutItems),
+    eatingOutAdmin: new EatingOutAdminUseCases(p.eatingOutItems ?? new NoEatingOutItems()),
     scanFood: new ScanFoodUseCase(p.foodLabels, p.products, p.storage, p.clock),
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
@@ -196,3 +201,16 @@ export function buildUseCases(p: Ports): UseCases {
 }
 
 export const systemClock: IClock = { now: () => new Date() };
+
+/** Without a database for admin items there are none, and adding one says so. */
+class NoEatingOutItems implements IEatingOutRepository {
+  async list() {
+    return [];
+  }
+  async save(): Promise<void> {
+    throw new Error("Eating-out items need a database.");
+  }
+  async delete() {
+    return false;
+  }
+}

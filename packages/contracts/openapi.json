@@ -1976,6 +1976,84 @@
         }
       }
     },
+    "/admin/eating-out": {
+      "get": {
+        "operationId": "getAdminEatingOut",
+        "summary": "Eating-out items admins added",
+        "description": "Admins only. Chain menu items typed in from each chain's published nutrition, for chains whose sites can't be read automatically. They appear in GET /foods after the built-in ones.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminEatingOutList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "saveEatingOutItem",
+        "summary": "Add or update an eating-out item",
+        "description": "Admins only. The calories must roughly add up from protein, carbs and fat (4/4/9 kcal a gram); glycemic load is estimated from net carbs. The same chain, item and country updates the existing item.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEatingOutItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogFood"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/eating-out/{id}": {
+      "delete": {
+        "operationId": "deleteEatingOutItem",
+        "summary": "Remove an eating-out item an admin added",
+        "description": "Admins only. Built-in items can't be removed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/waitlist": {
       "post": {
         "operationId": "joinWaitlist",
@@ -2175,6 +2253,20 @@
         "required": [
           "devices",
           "canScan"
+        ]
+      },
+      "AdminEatingOutList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogFood"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "AdminKnowledge": {
@@ -5414,6 +5506,94 @@
               "decision"
             ]
           }
+        ]
+      },
+      "SaveEatingOutItemRequest": {
+        "type": "object",
+        "properties": {
+          "chainName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "US",
+              "GB",
+              "JM"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "serving": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "grams": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 3000
+          },
+          "calories": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 5000
+          },
+          "proteinG": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "carbsG": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "fatG": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "fiberG": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fish",
+              "meat",
+              "eggs_dairy",
+              "plant"
+            ]
+          },
+          "why": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "chainName",
+          "region",
+          "name",
+          "serving",
+          "grams",
+          "calories",
+          "proteinG",
+          "carbsG",
+          "fatG",
+          "kind",
+          "sourceUrl"
         ]
       },
       "ScreenTimeSample": {

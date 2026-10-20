@@ -9,6 +9,9 @@ import {
   KnowledgeTechnique,
   type ReviewTechniqueRequest,
   AdminDevices,
+  AdminEatingOutList,
+  CatalogFood,
+  type SaveEatingOutItemRequest,
   DeviceCandidate,
   DeviceScanResponse,
   type ReviewDeviceRequest,
@@ -54,6 +57,7 @@ export const keys = {
   adminWaitlist: ["admin", "waitlist"] as const,
   adminKnowledge: ["admin", "knowledge"] as const,
   adminDevices: ["admin", "devices"] as const,
+  adminEatingOut: ["admin", "eating-out"] as const,
 };
 
 export function useProfile() {
@@ -370,6 +374,26 @@ export function useSyncKnowledge() {
 }
 
 /** Kitchen devices the monthly scout found, for admins. */
+export function useAdminEatingOut() {
+  return useQuery({ queryKey: keys.adminEatingOut, queryFn: () => request("/admin/eating-out", AdminEatingOutList), retry: false });
+}
+
+export function useSaveEatingOutItem() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (item: SaveEatingOutItemRequest) => request("/admin/eating-out", CatalogFood, { method: "POST", body: JSON.stringify(item) }),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.adminEatingOut }),
+  });
+}
+
+export function useDeleteEatingOutItem() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => request(`/admin/eating-out/${encodeURIComponent(id)}`, z.undefined(), { method: "DELETE" }),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.adminEatingOut }),
+  });
+}
+
 export function useAdminDevices() {
   return useQuery({ queryKey: keys.adminDevices, queryFn: () => request("/admin/devices", AdminDevices), retry: false });
 }

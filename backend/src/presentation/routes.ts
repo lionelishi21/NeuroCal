@@ -6,6 +6,9 @@ import {
   AnalyzeMealResponse,
   SupplementLabelResponse,
   FoodCatalog,
+  AdminEatingOutList,
+  CatalogFood,
+  SaveEatingOutItemRequest,
   BrainCheck,
   BrainCheckHistory,
   BrainCheckRequest,
@@ -118,6 +121,8 @@ import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { FoodScan, ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
+import type { EatingOutAdminUseCases } from "../application/use-cases/EatingOutAdminUseCases";
+import { dietsFor, type Food } from "../domain/foods";
 import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
@@ -157,6 +162,7 @@ export interface UseCases {
   createPhotoUpload: CreatePhotoUploadUseCase;
   analyzeMealPhoto: AnalyzeMealPhotoUseCase;
   listFoods: ListFoodsUseCase;
+  eatingOutAdmin: EatingOutAdminUseCases;
   scanFood: ScanFoodUseCase;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
@@ -302,6 +308,10 @@ const toExerciseDay = (d: ExerciseDayResult) => ({ ...d, exercises: d.exercises.
 const toMealPlan = ({ createdAt, ...plan }: MealPlan) => ({ ...plan, createdAt: createdAt.toISOString() });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
+const toCatalogFood = (food: Food) => {
+  const { kind: _, ...rest } = food;
+  return { ...rest, diets: dietsFor(food) };
+};
 const date = (req: ApiRequest) => req.query.get("date") ?? undefined;
 
 type Route = [method: string, pattern: RegExp, handler: (req: ApiRequest, params: string[]) => Promise<ApiResponse>];
@@ -575,7 +585,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return ok(FoodScanResponse, toFoodScan(await uc.scanFood.byBarcode(code!)));
       },
     ],
-    ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: uc.listFoods.execute().map(({ kind: _, ...food }) => food) })],
+    ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: (await uc.listFoods.execute()).map(({ kind: _, ...food }) => food) })],
     [
       "POST",
       /^\/supplements\/analyze$/,
@@ -751,6 +761,16 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
     ["PUT", /^\/admin\/devices\/([^/]+)$/, async (req, [id]) => ok(DeviceCandidateDto, toDevice(await uc.devices.review(admin(req), id!, json(req, ReviewDeviceRequest))))],
     ["POST", /^\/admin\/devices\/scan$/, async (req) => ok(DeviceScanResponse, await uc.devices.scanAsAdmin(admin(req)))],
     ["GET", /^\/admin\/products$/, async (req) => ok(AdminProductList, { products: await uc.adminProducts.list(admin(req)) })],
+    ["GET", /^\/admin\/eating-out$/, async (req) => ok(AdminEatingOutList, { items: (await uc.eatingOutAdmin.list(admin(req))).map(toCatalogFood) })],
+    ["POST", /^\/admin\/eating-out$/, async (req) => ok(CatalogFood, toCatalogFood(await uc.eatingOutAdmin.save(admin(req), json(req, SaveEatingOutItemRequest))), 201)],
+    [
+      "DELETE",
+      /^\/admin\/eating-out\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.eatingOutAdmin.remove(admin(req), decodeURIComponent(id!));
+        return { status: 204 };
+      },
+    ],
     [
       "GET",
       /^\/admin\/waitlist$/,

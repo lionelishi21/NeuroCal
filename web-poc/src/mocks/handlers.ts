@@ -6,6 +6,8 @@ import {
   type KnowledgeTechnique,
   ReviewTechniqueRequest,
   ReviewDeviceRequest,
+  SaveEatingOutItemRequest,
+  type CatalogFood,
   type DeviceCandidate,
   type AdminProduct,
   type AdminWaitlistEntry,
@@ -40,6 +42,8 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   for (const p of adminProducts) catalogUrls.set(p.id, p.url);
   let adminCount = 0;
   // A few sign-ups so the admin dashboard has something to show. Newest first.
+  // Eating-out items an admin typed in; starts empty, like a new deploy.
+  const eatingOut: CatalogFood[] = [];
   // Sample data for the admin Devices screen; links point at no real product page.
   const devices: DeviceCandidate[] = [
     {
@@ -308,6 +312,53 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       };
       adminProducts[index] = next;
       return HttpResponse.json(next);
+    }),
+    http.get(url("/admin/eating-out"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ items: eatingOut });
+    }),
+    http.post(url("/admin/eating-out"), async ({ request }) => {
+      const body = SaveEatingOutItemRequest.safeParse(await request.json());
+      if (!body.success) return invalid("Fill in every field, with the link to the chain's page.");
+      const e = body.data;
+      // The same checks as the API (backend/src/domain/eatingOut.ts), kept short.
+      const fromMacros = 4 * e.proteinG + 4 * e.carbsG + 9 * e.fatG;
+      if (Math.abs(fromMacros - e.calories) > Math.max(15, 0.2 * e.calories)) {
+        return invalid(`The calories don't add up: protein, carbs and fat make about ${Math.round(fromMacros)} kcal, not ${Math.round(e.calories)}. Check the numbers.`);
+      }
+      const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const gl = 0.65 * Math.max(0, e.carbsG - (e.fiberG ?? 0));
+      const item: CatalogFood = {
+        id: `admin-${slug(e.chainName)}-${slug(e.name)}-${e.region.toLowerCase()}`,
+        name: e.name,
+        category: "eating_out",
+        serving: `${e.serving} (${Math.round(e.grams)} g)`,
+        grams: Math.round(e.grams),
+        calories: Math.round(e.calories),
+        macros: { proteinG: e.proteinG, carbsG: e.carbsG, fatG: e.fatG },
+        fiberG: e.fiberG ?? 0,
+        glycemicLoad: gl <= 10 ? "low" : gl < 20 ? "medium" : "high",
+        processing: "ultra_processed",
+        goals: [],
+        why: e.why || `As ${e.chainName} publishes it.`,
+        diets: ["omnivore", "standard"],
+        chain: { id: slug(e.chainName), name: e.chainName },
+        regions: [e.region],
+        source: "chain",
+        sourceUrl: e.sourceUrl,
+      };
+      await delay(latency);
+      const index = eatingOut.findIndex((f) => f.id === item.id);
+      if (index >= 0) eatingOut[index] = item;
+      else eatingOut.push(item);
+      return HttpResponse.json(item, { status: 201 });
+    }),
+    http.delete(url("/admin/eating-out/:id"), async ({ params }) => {
+      const index = eatingOut.findIndex((f) => f.id === params.id);
+      if (index < 0) return HttpResponse.json({ code: "not_found", message: "That item isn't on the list." }, { status: 404 });
+      await delay(latency);
+      eatingOut.splice(index, 1);
+      return new HttpResponse(null, { status: 204 });
     }),
     http.delete(url("/admin/products/:id"), async ({ params }) => {
       const index = adminProducts.findIndex((p) => p.id === params.id && p.managedBy === "admin");

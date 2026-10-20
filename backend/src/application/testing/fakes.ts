@@ -1,4 +1,6 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
+import type { Food } from "../../domain/foods";
+import type { IEatingOutRepository } from "../interfaces/IEatingOut";
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
 import type { SupplementLabelReading } from "../../domain/supplement";
 import type { BrainCheckResult } from "../../domain/brainCheck";
@@ -912,5 +914,23 @@ export class InMemoryGlucose implements IGlucoseRepository {
       .filter((d) => d.userId === userId && d.date >= from && d.date <= to)
       .sort((a, b) => a.date.localeCompare(b.date))
       .map(({ userId: _, ...d }) => d);
+  }
+}
+
+export class InMemoryEatingOut implements IEatingOutRepository {
+  readonly items: Food[] = [];
+  async list() {
+    return [...this.items];
+  }
+  async save(food: Food) {
+    const i = this.items.findIndex((f) => f.id === food.id);
+    if (i >= 0) this.items[i] = food;
+    else this.items.push(food);
+  }
+  async delete(id: string) {
+    const i = this.items.findIndex((f) => f.id === id);
+    if (i < 0) return false;
+    this.items.splice(i, 1);
+    return true;
   }
 }

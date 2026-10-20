@@ -9,6 +9,7 @@ import { MARKER_IDS } from "../../domain/markers";
 import { PILLARS } from "../../domain/knowledge";
 import type { SupplementIngredient } from "../../domain/supplement";
 import type { WeightGoal } from "../../domain/weight";
+import type { Food } from "../../domain/foods";
 import { boolean, check, date, index, integer, jsonb, numeric, pgTable, primaryKey, real, smallint, text, timestamp, unique, uuid, varchar, vector } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -556,3 +557,11 @@ export const products = pgTable(
   },
   (t) => [index("products_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],
 );
+
+/** Eating-out menu items admins typed in from a chain's published figures; each is a whole catalog food. */
+export const eatingOutItems = pgTable("eating_out_items", {
+  id: text("id").primaryKey(),
+  food: jsonb("food").$type<Food>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

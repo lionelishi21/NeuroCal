@@ -55,6 +55,8 @@ import type { MarkerReading } from "../../domain/markers";
 import type { AiFeature } from "../../domain/aiAllowance";
 import { type DeviceCandidate, type DeviceStatus, type DeviceTag, deviceKey } from "../../domain/devices";
 import { NotFoundError } from "../../domain/errors";
+import type { Food } from "../../domain/foods";
+import type { IEatingOutRepository } from "../../application/interfaces/IEatingOut";
 import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
@@ -68,6 +70,7 @@ import {
   mealPlans,
   brainChecks,
   deviceCandidates,
+  eatingOutItems,
   environmentChecks,
   environmentLocations,
   exercises,
@@ -1117,5 +1120,26 @@ export class DrizzleGlucoseRepository implements IGlucoseRepository {
       .where(and(eq(glucoseDays.userId, userId), gte(glucoseDays.date, from), lte(glucoseDays.date, to)))
       .orderBy(asc(glucoseDays.date));
     return rows.map(({ userId: _, ...d }) => d);
+  }
+}
+
+export class DrizzleEatingOutRepository implements IEatingOutRepository {
+  constructor(private readonly db: Database) {}
+
+  async list(): Promise<Food[]> {
+    const rows = await this.db.select().from(eatingOutItems).orderBy(asc(eatingOutItems.createdAt));
+    return rows.map((r) => r.food);
+  }
+
+  async save(food: Food) {
+    await this.db
+      .insert(eatingOutItems)
+      .values({ id: food.id, food })
+      .onConflictDoUpdate({ target: eatingOutItems.id, set: { food, updatedAt: new Date() } });
+  }
+
+  async delete(id: string) {
+    const rows = await this.db.delete(eatingOutItems).where(eq(eatingOutItems.id, id)).returning({ id: eatingOutItems.id });
+    return rows.length > 0;
   }
 }

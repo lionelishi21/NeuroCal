@@ -212,6 +212,20 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Admins only. Send only the fields to change; `url: null` goes back to the catalog's link.",
     params: { id: "The product's id." },
   },
+  getAdminEatingOut: {
+    summary: "Eating-out items admins added",
+    description: "Admins only. Chain menu items typed in from each chain's published nutrition, for chains whose sites can't be read automatically. They appear in GET /foods after the built-in ones.",
+  },
+  saveEatingOutItem: {
+    summary: "Add or update an eating-out item",
+    description: "Admins only. The calories must roughly add up from protein, carbs and fat (4/4/9 kcal a gram); glycemic load is estimated from net carbs. The same chain, item and country updates the existing item.",
+  },
+  deleteEatingOutItem: {
+    summary: "Remove an eating-out item an admin added",
+    description: "Admins only. Built-in items can't be removed.",
+    status: 204,
+    params: { id: "The item's id." },
+  },
   deleteAdminProduct: {
     summary: "Remove a product added from the admin screen",
     description: "Admins only. Catalog products can't be removed, only turned off.",

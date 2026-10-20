@@ -1152,6 +1152,33 @@ export type LeaveWaitlistRequest = z.infer<typeof LeaveWaitlistRequest>;
 export const LeaveWaitlistResponse = z.object({ status: z.literal("unsubscribed") });
 export type LeaveWaitlistResponse = z.infer<typeof LeaveWaitlistResponse>;
 
+/**
+ * An eating-out item an admin types in from a chain's own nutrition page, for chains whose sites can't
+ * be read automatically. Saving the same chain, item and country again updates it.
+ */
+export const SaveEatingOutItemRequest = z.object({
+  chainName: z.string().trim().min(1).max(60),
+  region: z.enum(["US", "GB", "JM"]),
+  name: z.string().trim().min(1).max(80),
+  /** How a portion reads, e.g. "1 burger"; the weight is added. */
+  serving: z.string().trim().min(1).max(60),
+  grams: z.number().positive().max(3000),
+  calories: z.number().positive().max(5000),
+  proteinG: z.number().nonnegative().max(500),
+  carbsG: z.number().nonnegative().max(1000),
+  fatG: z.number().nonnegative().max(500),
+  /** Many chains don't publish fibre. */
+  fiberG: z.number().nonnegative().max(200).optional(),
+  kind: z.enum(["fish", "meat", "eggs_dairy", "plant"]),
+  why: z.string().trim().max(200).optional(),
+  /** The chain's page the figures come from. */
+  sourceUrl: z.string().url(),
+});
+export type SaveEatingOutItemRequest = z.infer<typeof SaveEatingOutItemRequest>;
+
+export const AdminEatingOutList = z.object({ items: z.array(CatalogFood) });
+export type AdminEatingOutList = z.infer<typeof AdminEatingOutList>;
+
 /** One person on the waitlist, as the admin dashboard shows them. */
 export const AdminWaitlistEntry = z.object({
   email: z.string(),
@@ -1323,6 +1350,9 @@ export const endpoints = {
   scanDevices: { method: "POST", path: "/admin/devices/scan", response: DeviceScanResponse },
   /** Admin only (403 otherwise): the waitlist at a glance. */
   getAdminWaitlist: { method: "GET", path: "/admin/waitlist", response: AdminWaitlist },
+  getAdminEatingOut: { method: "GET", path: "/admin/eating-out", response: AdminEatingOutList },
+  saveEatingOutItem: { method: "POST", path: "/admin/eating-out", body: SaveEatingOutItemRequest, response: CatalogFood },
+  deleteEatingOutItem: { method: "DELETE", path: "/admin/eating-out/:id" },
   /** Public (no sign-in): join the list to be emailed when the app is ready. */
   joinWaitlist: { method: "POST", path: "/waitlist", body: JoinWaitlistRequest, response: JoinWaitlistResponse },
   /** Public: leave the list with the token from an email's unsubscribe link. */

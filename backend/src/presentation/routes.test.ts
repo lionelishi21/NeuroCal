@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -37,6 +37,7 @@ import {
   FakeDeviceExtractor,
   FakeWebSearch,
   InMemoryDeviceCandidates,
+  InMemoryEatingOut,
   InMemoryAiUsage,
   InMemoryMarkers,
   InMemoryGlucose,
@@ -66,6 +67,7 @@ let ports: Ports;
 let identity: FakeIdentity;
 let waitlist: InMemoryWaitlist;
 let email: FakeEmail;
+let eatingOutItems: InMemoryEatingOut;
 
 beforeEach(async () => {
   profiles = new InMemoryProfiles();
@@ -99,6 +101,7 @@ beforeEach(async () => {
     storage,
     foods: FOODS,
     eatingOut: EATING_OUT,
+    eatingOutItems: (eatingOutItems = new InMemoryEatingOut()),
     weights: new InMemoryWeights(),
     foodLabels: new FakeFoodLabelReader({
       brand: "Crunchy Co",
@@ -267,6 +270,49 @@ describe("API routes", () => {
     expect(salmon).toMatchObject({ category: "fish", goals: expect.arrayContaining(["focus"]), fdcId: 175168 });
     expect(salmon.diets).toEqual(expect.arrayContaining(["pescatarian", "keto", "paleo"]));
     expect(salmon.diets).not.toContain("vegan");
+  });
+
+  it("admins add eating-out items from a chain's published figures; they show in GET /foods and can be removed", async () => {
+    const kfcUk = {
+      chainName: "KFC",
+      region: "GB",
+      name: "Zinger burger",
+      serving: "1 burger",
+      grams: 205,
+      calories: 450,
+      proteinG: 28,
+      carbsG: 41,
+      fatG: 19,
+      kind: "meat",
+      sourceUrl: "https://www.kfc.co.uk/nutrition",
+    };
+    expect((await call("POST", "/admin/eating-out", kfcUk)).status).toBe(403);
+    const saved = await call("POST", "/admin/eating-out", kfcUk, {}, true);
+    expect(saved.status).toBe(201);
+    expect(saved.body).toMatchObject({
+      id: "admin-kfc-zinger-burger-gb",
+      serving: "1 burger (205 g)",
+      chain: { id: "kfc", name: "KFC" },
+      regions: ["GB"],
+      source: "chain",
+      glycemicLoad: "high",
+      why: "As KFC publishes it.",
+    });
+
+    // A slip in the numbers is caught.
+    const typo = await call("POST", "/admin/eating-out", { ...kfcUk, calories: 4500 }, {}, true);
+    expect(typo.status).toBe(400);
+    expect((typo.body as { message: string }).message).toContain("about 447 kcal");
+
+    // Saving it again updates it rather than adding a second.
+    await call("POST", "/admin/eating-out", { ...kfcUk, calories: 455 }, {}, true);
+    expect(eatingOutItems.items).toHaveLength(1);
+    const { foods } = FoodCatalog.parse((await call("GET", "/foods")).body);
+    expect(foods.find((f) => f.id === "admin-kfc-zinger-burger-gb")).toMatchObject({ calories: 455, diets: expect.any(Array) });
+    expect(AdminEatingOutList.parse((await call("GET", "/admin/eating-out", undefined, {}, true)).body).items).toHaveLength(1);
+
+    expect((await call("DELETE", "/admin/eating-out/admin-kfc-zinger-burger-gb", undefined, {}, true)).status).toBe(204);
+    expect((await call("DELETE", "/admin/eating-out/admin-kfc-zinger-burger-gb", undefined, {}, true)).status).toBe(404);
   });
 
   it("GET /foods ends with eating-out items: chain, region, a better pick, and no whole-food diets", async () => {

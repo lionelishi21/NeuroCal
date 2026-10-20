@@ -9,6 +9,7 @@ import {
   DrizzleTelemetryRepository,
   DrizzleUserRepository,
   DrizzleBrainCheckRepository,
+  DrizzleEatingOutRepository,
   DrizzleExerciseRepository,
   DrizzlePantryRepository,
   DrizzleKnowledgeRepository,
@@ -24,6 +25,7 @@ import {
 } from "./DrizzleRepositories";
 import { eq } from "drizzle-orm";
 import { createPgliteDatabase } from "./pglite";
+import { eatingOutFood } from "../../domain/eatingOut";
 import * as schema from "./schema";
 import { item, profile } from "../../application/testing/fakes";
 
@@ -444,6 +446,19 @@ describe("DrizzleBrainCheckRepository", () => {
     expect((await repo.listSince(alice, new Date("2026-09-01T00:00:00Z"))).map((c) => c.score)).toEqual([80, 90]);
     expect(await repo.listSince(alice, new Date("2026-10-02T00:00:00Z"))).toEqual([later]);
     expect(await repo.listSince(bob, new Date("2026-09-01T00:00:00Z"))).toEqual([]);
+  });
+});
+
+describe("DrizzleEatingOutRepository", () => {
+  it("saves an admin's item, replaces it on a second save, lists it and deletes it", async () => {
+    const repo = new DrizzleEatingOutRepository(db);
+    const item = eatingOutFood({ chainName: "KFC", region: "GB", name: "Zinger burger", serving: "1 burger", grams: 205, calories: 450, proteinG: 28, carbsG: 41, fatG: 19, kind: "meat", sourceUrl: "https://www.kfc.co.uk/nutrition" });
+    await repo.save(item);
+    await repo.save({ ...item, calories: 455 });
+    expect(await repo.list()).toEqual([{ ...item, calories: 455 }]);
+    expect(await repo.delete(item.id)).toBe(true);
+    expect(await repo.delete(item.id)).toBe(false);
+    expect(await repo.list()).toEqual([]);
   });
 });
 
