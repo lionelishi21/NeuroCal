@@ -1,6 +1,6 @@
 # NeuroCal — Execution Plan
 
-_Last updated: 2026-10-01_
+_Last updated: 2026-10-20_
 
 ## 1. Where the project is today
 
@@ -14,11 +14,14 @@ The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal
 
 | Area | State |
 |---|---|
-| `packages/contracts` | Zod schemas for 9 endpoints, 3 Jest tests |
-| `web-poc/` | Next.js app: Today screen, log-meal and check-in flows on a mock API, 7 Vitest tests |
-| `backend/` | Hexagonal skeleton; only `IAiReasoningProvider.ts` has code |
-| `mobile-app/` | Flutter app: sign-in (Cognito or mock), Today, Log a meal, Check in, Settings with Match device / Light / Dark; hand-written Dart models for now |
+| `packages/contracts` | Zod schemas for 73 operations, the generated `openapi.json`, 8 Jest tests |
+| `web-poc/` | Landing page with the waitlist, and the admin dashboard (waitlist, products, devices, knowledge, eating out); the app's own screens kept as a preview on the mock API; 80 Vitest tests |
+| `backend/` | Every use case in this plan, deployed to `NeuroCal-dev`; 368 Jest tests with fakes and PGlite |
+| `mobile-app/` | The product: onboarding to a starting score and paywall, Today, logging (meals, labels, supplements, exercise, sleep, weight), Progress, Me; 103 widget and unit tests. Hand-written Dart models |
+| `infra/` | CDK stack: API, Cognito, Aurora + pgvector, scheduled Lambdas; 13 Jest tests |
 | `ARCHITECTURE.md` | Build spec: layers, domain model, DB schema, ports, use cases, AI prompts, API surface |
+
+**Next (20 October 2026):** run every AI feature on the phone against `dev` once the Claude and OpenAI keys are in (Phase 5 A), then the store and legal steps (Phase 5 F). The code backlog left is small: the Brain speed check in onboarding, the referral, the funnel dashboard.
 
 ## 2. Recommendation: frontend-first, contract-driven
 
@@ -127,7 +130,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 
 ### Phase 3 — Backend on AWS
 - [x] Domain entities (ARCHITECTURE §3); Drizzle schema + first migration for the core tables (§4)
-- [ ] Planned tables incl. `pgvector` HNSW indexes (§4)
+- [x] Planned tables incl. `pgvector` HNSW indexes (§4)
 - [x] Ports for the built use cases (§5); in-memory fakes in `backend/src/application/testing`
 - [x] Drizzle repository adapters + integration tests against Postgres (PGlite)
 - [x] AnalyzeMealPhoto, LogMeal, DeleteMeal, RecordCheckIn, GetBioState use cases (§6.1–6.5)
@@ -143,9 +146,9 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [x] Web sign-in: create account, email code, sign in and out (Cognito via Amplify; local mock without it)
 - [x] First deploy to a `dev` stage (`NeuroCal-dev`, us-east-1)
 - [x] S3 presigned photo upload: `POST /uploads/meal-photo`, then `/meals/analyze` by key; the web app uses it, multipart still works for the mobile app. _To do: move the mobile app to uploads; attach the photo to the saved meal_
-- [ ] EventBridge schedules (nightly Focus Score, daily summary)
+- [ ] EventBridge schedules (nightly Focus Score, daily summary). _Done: trial reminders hourly, knowledge sync and device scout monthly_
 - [x] Local dev server (`npm run dev` in `backend`); web-poc runs against it end to end
-- [ ] Jest use-case tests with fake providers; integration tests against Postgres
+- [x] Jest use-case tests with fake providers; integration tests against Postgres
 
 ### Phase 4 — Mobile, integration and launch
 **Direction (agreed October 2026): the mobile app is the product.** Health data (Apple Health, Oura, Whoop) is only reachable natively, and the app is a daily habit that needs the camera and notifications. The website is the landing page; the web app behind it is for admins only (`auth/AdminOnly.tsx`: the API decides who is an admin). Web sign-up and the intro slides are closed and redirect to the landing page; accounts are made in the mobile app. New features go to Flutter first. The domain root becomes a landing page for signed-out visitors (what NeuroCal does, screens, store buttons or a waitlist, a small "Sign in" link). Order of work:
@@ -177,7 +180,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [ ] One funnel dashboard: install → onboarding done → paywall → trial → paid, by week and by ad
 
 **C. Onboarding that sells**
-- [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product
+- [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product. _Done: the score from the answers ("Your starting point" below). To do: the Brain speed check in onboarding_
 - [x] Snap your first meal inside onboarding (or skip), so people see the AI work before paying: after "Hold to commit", "See it work: snap a meal" reads a photo and offers Log it; an account's first 3 photo reads don't need a subscription (`FREE_READS`). _Needs OpenAI credits to read real photos_
 - [x] A promised result before the paywall: the onboarding ends on "Your starting point" (a starting Focus Score estimated from the answers, a 3-week target drawn as a line, and the three changes worth the most points), and the paywall's plan says "Focus Score from 58 to 80 in 3 weeks". _To do: the weight curve with a date for anyone with a weight goal_
 - [x] Commitment step and social proof: the starting point ends with "Hold to commit to 3 weeks" (fills as it's held; a tap for screen readers) and one line of science on why sleep counts most. _To do: real user quotes once testers give them_
@@ -188,7 +191,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [x] Daily logging streak in the Up next card (a day counts when a meal or a night's sleep is logged), with a "Keep your N-day streak" nudge at 20:00 on a day with nothing logged yet, cancelled once something is
 - [x] Morning notification: the morning check-in nudge now says "Your Focus Score is ready", and the first-run guide ends with "Turn on reminders and start" (all three windows, one permission prompt), so new users get nudges without finding the switches in Me. _To do: the score's number in the notification (needs a server push)_
 - [x] Weekly report: a "Your week in NeuroCal" notification every Sunday at 18:00 that opens Progress → This week. _To do: a dedicated report with the best day and why_
-- [ ] Home-screen widget: today's score and the Up next step
+- [x] Home-screen widget: today's score, the Up next step and the streak (Android, `FocusWidget.kt`). _(you: the iOS WidgetKit extension in Xcode)_
 - [x] Progress photos alongside the weight trend (kept on the phone): under the weight card on Progress → Body, first and latest side by side with the weight on those days, a strip of every photo, camera or library; files in the app's own folder (`lib/progress_photos.dart`), never uploaded, two taps to delete
 - [x] Eating out, US: an "Eating out" choice in Add food with 84 menu items from 10 chains (McDonald's, Burger King, KFC, Wendy's, Taco Bell, Subway, Popeyes, Domino's, Pizza Hut, Chick-fil-A), from USDA's lab analysis of the US menus (`infrastructure/catalog/eatingOut.ts`, generated by `backend/scripts/generate_eating_out.py`); a search finds them too; each has a better pick at the same place (more protein for its calories, or fewer calories and carbs); never used by meal plans. UK: Greggs (13 items, its published figures, each linking to its page). Jamaica: 13 "Jamaican favourites" (beef patty, coco bread, jerk chicken, curry goat, oxtail, rice and peas, festival, fried dumplings, ackee and saltfish, escovitch fish, bammy, fried plantain, callaloo) estimated from typical recipes with USDA ingredients, since no Jamaican chain publishes nutrition. The app opens on the phone's country and can switch. Other UK chains (McDonald's, KFC, Burger King, Nando's), whose sites can't be read automatically, are added on the admin Eating out page (`/admin/eating-out`) from each chain's nutrition page; the API checks the calories add up from protein, carbs and fat. _(you: type in the UK chains' main items)_
 
@@ -217,6 +220,20 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [x] Health markers on Progress → Body (`/markers`, `domain/markers.ts`): resting heart rate, HRV and blood pressure imported daily from Health Connect / Apple Health; VO2max (the `health` package can't read it), waist, grip strength, body fat, HbA1c, LDL, HDL and triglycerides typed in; each with its latest reading, the change over about three months (green the healthier way), and a general adult reference that is never a diagnosis. Lab results and sensor blood sugar show and take mmol/L and mmol/mol (`lib/lab_units.dart`; from the phone's region, switchable on the card and in the add sheet; the API keeps mg/dL and %).
 - [x] Glucose sensors (Dexcom, Libre) through Health Connect / Apple Health: the phone sends a summary per finished sensor day (average, time 70–140 and 70–180 mg/dL, variability; days with ~12 h of readings or more); yesterday's replaces the meal estimate in the Focus Score (time in range, 70–180 with diabetes, less a little for large swings), and Body shows a Blood sugar card
 - [ ] _(you)_ Privacy policy and Google Play health declaration: say health conditions are collected, why, and that they only change the plan
+
+
+**I. From the brainstorm** (`BRAINSTORM.md`; each feeds a pillar in `docs/NCBM.md`)
+- [x] Food package scanner: barcode (Open Food Facts) or label photos; brand, maker, production and best-before dates, lot, ingredients, nutrition, an estimated glycemic load, the NOVA level with the industrial ingredients named, and flags for added sugar, salt and dates
+- [x] A better choice for a processed food from a scan: what a cleaner shop-bought version lists, the same food made at home from the pantry, and a kitchen device only when the recipe uses one
+- [x] Supplement label scanner and the daily stack, with checks across the whole stack
+- [x] Pantry recipes, the recipe calculator and weekly meal plans
+- [x] Shopping list review (keep, swap, limit) with kitchen devices; a monthly device scout whose finds wait for an admin
+- [x] Exercise logging and the calf routine
+- [x] Environment pillar: local air quality and a daily environment check
+- [x] Check-in windows with nudges until you check in
+- [x] Brain speed check: a reaction-time test scored against your usual
+- [x] Knowledge pipeline: transcripts of talks (Dave Asprey's YouTube channel by default) → techniques an admin approves → routines in the app, so new methods arrive as data, not code. _(you: `YOUTUBE_API_KEY` in the app secret)_
+- [x] Biohacking levels 0–5 from the last 28 days (`docs/NCBM.md` §8)
 
 ## 6. First API contract (drives mocks and backend)
 
