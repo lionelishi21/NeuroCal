@@ -1223,6 +1223,26 @@ class PantryRecipe {
   );
 }
 
+/// A better choice for a processed food from a scan (`BetterChoiceResponse` in the contracts).
+class BetterChoice {
+  const BetterChoice({required this.lookFor, this.homemade, this.device});
+
+  /// What a cleaner shop-bought version lists on its label.
+  final String lookFor;
+
+  /// The same food made at home, mostly from the pantry.
+  final PantryRecipe? homemade;
+
+  /// A kitchen device the homemade recipe uses.
+  final SuggestedProduct? device;
+
+  factory BetterChoice.fromJson(Map<String, dynamic> j) => BetterChoice(
+    lookFor: j['lookFor'] as String,
+    homemade: j['homemade'] == null ? null : PantryRecipe.fromJson(j['homemade'] as Map<String, dynamic>),
+    device: j['device'] == null ? null : productFromJson(j['device'] as Map<String, dynamic>),
+  );
+}
+
 /// The biohacking level (`LevelResponse` in the contracts): 0 Getting started … 5 Upgraded.
 class Level {
   const Level({required this.level, required this.name, required this.requirements});

@@ -6,7 +6,7 @@
 export const AI_ALLOWANCE = {
   /** Photo and label reading: meals, food packages, supplements (gpt-4o vision). */
   read: 60,
-  /** Writing: pantry recipes, meal plans, the recipe calculator, the shopping review (Claude). */
+  /** Writing: pantry recipes, meal plans, the recipe calculator, the shopping review, better choices (Claude). */
   generate: 30,
 } as const;
 

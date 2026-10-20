@@ -1023,6 +1023,26 @@ export const FoodScanResponse = z.object({
 });
 export type FoodScanResponse = z.infer<typeof FoodScanResponse>;
 
+/** A processed or ultra-processed food from a scan, sent back to ask for a better choice. */
+export const BetterChoiceRequest = z.object({
+  brand: z.string().max(120).optional(),
+  productName: z.string().max(200).optional(),
+  ingredients: z.array(z.string().min(1).max(200)).min(1).max(60),
+  /** The scan's level; whole foods don't need a better choice. */
+  processing: z.enum(["processed", "ultra_processed"]),
+});
+export type BetterChoiceRequest = z.infer<typeof BetterChoiceRequest>;
+
+export const BetterChoiceResponse = z.object({
+  /** What a cleaner shop-bought version lists on its label, in a sentence or two. */
+  lookFor: z.string(),
+  /** The same food made at home, mostly from the pantry; missing when it isn't something you'd make. */
+  homemade: PantryRecipe.optional(),
+  /** A kitchen device the homemade recipe uses, from enabled catalog products. */
+  device: ProductRecommendation.optional(),
+});
+export type BetterChoiceResponse = z.infer<typeof BetterChoiceResponse>;
+
 export const StackTiming = z.enum(["morning", "with_food", "evening", "any"]);
 export type StackTiming = z.infer<typeof StackTiming>;
 
@@ -1303,6 +1323,8 @@ export const endpoints = {
   scanFood: { method: "POST", path: "/foods/scan", body: AnalyzeSupplementRequest, response: FoodScanResponse },
   /** Looks a barcode up in Open Food Facts and grades it. 404 when it isn't known. */
   lookupBarcode: { method: "GET", path: "/foods/barcode/:code", response: FoodScanResponse },
+  /** For a processed food from a scan: what a cleaner version lists, and a homemade one from the pantry. Paid; nothing is saved. */
+  betterChoice: { method: "POST", path: "/foods/better-choice", body: BetterChoiceRequest, response: BetterChoiceResponse },
   /** Reads 1–4 photos of one supplement bottle as a single label (uploaded photoKeys, or multipart). Nothing is saved. */
   analyzeSupplement: { method: "POST", path: "/supplements/analyze", body: AnalyzeSupplementRequest, response: SupplementLabelResponse },
   createMeal: { method: "POST", path: "/meals", body: CreateMealRequest, response: Meal },

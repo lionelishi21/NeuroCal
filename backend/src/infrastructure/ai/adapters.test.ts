@@ -5,12 +5,13 @@ import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddin
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
 import { ClaudeShoppingListReviewer } from "./ClaudeShoppingListReviewer";
+import { BETTER_CHOICE_MODEL, ClaudeBetterChoiceAdvisor } from "./ClaudeBetterChoiceAdvisor";
 import { ClaudeRecipeParser } from "./ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "./ClaudeMealPlanner";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
-import { DEVICE_EXTRACTION_PROMPT, FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { BETTER_CHOICE_PROMPT, DEVICE_EXTRACTION_PROMPT, FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -281,6 +282,54 @@ describe("ClaudePantryRecipeAssistant", () => {
     ["output outside the schema", { stop_reason: "end_turn", parsed_output: { recipes: [{ ...recipe, steps: [] }] } }],
   ])("rejects %s", async (_, response) => {
     await expect(assistantWith(response).assistant.suggest(pantryContext)).rejects.toThrow();
+  });
+});
+
+describe("ClaudeBetterChoiceAdvisor", () => {
+  const context = {
+    food: "Crunchy Co Honey Granola",
+    ingredients: ["Oats", "sugar", "soy lecithin"],
+    level: "ultra_processed" as const,
+    markers: ["emulsifier"],
+    pantry: ["oats", "almonds", "honey"],
+    dietaryPreference: "omnivore" as const,
+    cognitiveGoals: ["focus"],
+  };
+  const homemade = {
+    title: "Air-fryer honey almond granola",
+    minutes: 15,
+    servings: 8,
+    calories: 210,
+    macros: { proteinG: 5.6, carbsG: 24, fatG: 10.4 },
+    ingredients: [{ name: "oats", quantity: "2 cups" }],
+    steps: ["Toss the oats with honey and oil.", "Air fry at 150°C for 8 minutes."],
+    whyItFits: "No emulsifier and half the sugar.",
+  };
+  const advisorWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 250, output_tokens: 350 }, ...response }));
+    return { parse, advisor: new ClaudeBetterChoiceAdvisor({ messages: { parse } as unknown as ParseMessage }) };
+  };
+
+  it("sends the food and pantry with a JSON schema, rounds the macros, and passes a missing homemade version on", async () => {
+    const { parse, advisor } = advisorWith({ stop_reason: "end_turn", parsed_output: { lookFor: "Look for only oats and nuts.", homemade } });
+    const out = await advisor.suggest(context);
+    expect(out.homemade!.macros).toEqual({ proteinG: 6, carbsG: 24, fatG: 10 });
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(BETTER_CHOICE_MODEL);
+    expect(params.system).toBe(BETTER_CHOICE_PROMPT);
+    expect(JSON.parse(params.messages[0].content)).toEqual(context);
+    expect(params.output_config.format.type).toBe("json_schema");
+
+    const none = advisorWith({ stop_reason: "end_turn", parsed_output: { lookFor: "Look for sparkling water.", homemade: null } });
+    await expect(none.advisor.suggest(context)).resolves.toEqual({ lookFor: "Look for sparkling water.", homemade: null });
+  });
+
+  it.each([
+    ["a refusal", { stop_reason: "refusal", parsed_output: null }],
+    ["a truncated answer", { stop_reason: "max_tokens", parsed_output: null }],
+    ["output outside the schema", { stop_reason: "end_turn", parsed_output: { lookFor: "", homemade } }],
+  ])("rejects %s", async (_, response) => {
+    await expect(advisorWith(response).advisor.suggest(context)).rejects.toThrow();
   });
 });
 

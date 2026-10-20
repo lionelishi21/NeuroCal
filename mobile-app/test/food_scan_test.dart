@@ -93,4 +93,25 @@ void main() {
     expect(find.textContaining('it contains emulsifier, flavouring'), findsOneWidget);
     expect(find.textContaining('Open Food Facts'), findsNothing);
   });
+
+  testWidgets('a processed food offers a better choice: what to buy, a homemade one to log, and the device it uses', (tester) async {
+    final logged = await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0123456789012']));
+    await scanOnce(tester, 'Start scanning');
+
+    await tester.scrollUntilVisible(find.text('Find a better choice'), 200);
+    await tester.tap(find.text('Find a better choice'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A better choice'), findsOneWidget);
+    expect(find.textContaining('Leave ones with soy lecithin'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Air-fryer honey almond granola'), 200);
+    await tester.scrollUntilVisible(find.text('Ninja air fryer'), 200);
+    expect(find.text('Affiliate link'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.bySemanticsLabel('Log Air-fryer honey almond granola'), -200);
+    await tester.tap(find.bySemanticsLabel('Log Air-fryer honey almond granola'));
+    await tester.pumpAndSettle();
+    expect(logged.single?.name, 'Air-fryer honey almond granola');
+    expect(logged.single?.calories, 210);
+  });
 }

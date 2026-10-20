@@ -168,6 +168,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "From Open Food Facts (Open Database License: credit it where the data shows), graded the same way as a label scan. 404 when the barcode isn't in the database: photograph the label instead.",
     params: { code: "The barcode's 8 to 14 digits." },
   },
+  betterChoice: {
+    summary: "A better choice for a processed food",
+    description: "Send the scanned food's name, ingredients and level. NeuroCal finds the industrial ingredients itself, then says what a cleaner shop-bought version lists and gives the same food made at home, built mostly from your pantry, with each ingredient marked if you have it. A kitchen device is shown only when the recipe's steps use one, from enabled catalog products. Nothing is saved.",
+  },
   listFoods: {
     summary: "List the food catalog",
     description: "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits, then chain-restaurant menu items (`category: \"eating_out\"`, with `chain`, `regions` and `betterPick`). Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",

@@ -48,6 +48,8 @@ import {
   ReviewTechniqueRequest,
   ShoppingReviewResponse,
   PantryRecipesResponse,
+  BetterChoiceRequest,
+  BetterChoiceResponse,
   PantryResponse,
   TodayResponse,
   UpdateStackItemRequest,
@@ -120,6 +122,7 @@ import type { SavedBrainCheck } from "../application/interfaces/IBrainCheckRepos
 import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { FoodScan, ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
+import type { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { EatingOutAdminUseCases } from "../application/use-cases/EatingOutAdminUseCases";
 import { dietsFor, type Food } from "../domain/foods";
@@ -164,6 +167,7 @@ export interface UseCases {
   listFoods: ListFoodsUseCase;
   eatingOutAdmin: EatingOutAdminUseCases;
   scanFood: ScanFoodUseCase;
+  betterChoice: BetterChoiceUseCase;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -583,6 +587,16 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       async (req, [code]) => {
         await uc.gate.require(req);
         return ok(FoodScanResponse, toFoodScan(await uc.scanFood.byBarcode(code!)));
+      },
+    ],
+    [
+      "POST",
+      /^\/foods\/better-choice$/,
+      async (req) => {
+        await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
+        const { device, ...choice } = await uc.betterChoice.execute({ userId: req.userId, ...json(req, BetterChoiceRequest) });
+        return ok(BetterChoiceResponse, { ...choice, ...(device ? { device: toProductRecommendation({ item: device, similarity: 1 }) } : {}) });
       },
     ],
     ["GET", /^\/foods$/, async () => ok(FoodCatalog, { foods: (await uc.listFoods.execute()).map(({ kind: _, ...food }) => food) })],

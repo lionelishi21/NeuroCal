@@ -255,7 +255,7 @@ class _Recipes extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const BlockTitle('You could make'),
-            for (final r in list) Padding(padding: const EdgeInsets.only(bottom: Space.s3), child: _RecipeCard(r, onCook: onCook)),
+            for (final r in list) Padding(padding: const EdgeInsets.only(bottom: Space.s3), child: RecipeCard(r, onCook: onCook)),
           ],
         );
       },
@@ -263,17 +263,18 @@ class _Recipes extends StatelessWidget {
   }
 }
 
-class _RecipeCard extends StatefulWidget {
-  const _RecipeCard(this.recipe, {required this.onCook});
+/// A recipe with what to buy, steps on demand, cook mode and Log it. Also the homemade version on a food scan.
+class RecipeCard extends StatefulWidget {
+  const RecipeCard(this.recipe, {super.key, required this.onCook});
 
   final PantryRecipe recipe;
   final Future<void> Function(PantryRecipe) onCook;
 
   @override
-  State<_RecipeCard> createState() => _RecipeCardState();
+  State<RecipeCard> createState() => _RecipeCardState();
 }
 
-class _RecipeCardState extends State<_RecipeCard> {
+class _RecipeCardState extends State<RecipeCard> {
   var _steps = false;
 
   @override

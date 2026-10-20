@@ -1109,6 +1109,38 @@
         }
       }
     },
+    "/foods/better-choice": {
+      "post": {
+        "operationId": "betterChoice",
+        "summary": "A better choice for a processed food",
+        "description": "Send the scanned food's name, ingredients and level. NeuroCal finds the industrial ingredients itself, then says what a cleaner shop-bought version lists and gives the same food made at home, built mostly from your pantry, with each ingredient marked if you have it. A kitchen device is shown only when the recipe's steps use one, from enabled catalog products. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BetterChoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetterChoiceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/supplements/analyze": {
       "post": {
         "operationId": "analyzeSupplement",
@@ -2519,6 +2551,57 @@
         "required": [
           "code",
           "message"
+        ]
+      },
+      "BetterChoiceRequest": {
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "productName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "ingredients": {
+            "minItems": 1,
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "processing": {
+            "type": "string",
+            "enum": [
+              "processed",
+              "ultra_processed"
+            ]
+          }
+        },
+        "required": [
+          "ingredients",
+          "processing"
+        ]
+      },
+      "BetterChoiceResponse": {
+        "type": "object",
+        "properties": {
+          "lookFor": {
+            "type": "string"
+          },
+          "homemade": {
+            "$ref": "#/components/schemas/PantryRecipe"
+          },
+          "device": {
+            "$ref": "#/components/schemas/ProductRecommendation"
+          }
+        },
+        "required": [
+          "lookFor"
         ]
       },
       "BioProfile": {

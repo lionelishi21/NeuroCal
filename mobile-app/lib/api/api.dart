@@ -77,6 +77,9 @@ abstract interface class NeuroCalApi {
   /// Reads 1–4 photos of a food package.
   Future<FoodScan> scanFoodLabel(List<Uint8List> photos);
 
+  /// A cleaner version and a homemade one for a processed food from a scan.
+  Future<BetterChoice> betterChoice(FoodScan scan);
+
   /// The supplements someone takes, today's ticks and the checks across them.
   Future<SupplementStack> stack();
   Future<StackItem> addToStack({
@@ -381,6 +384,21 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FoodScan> scanBarcode(String code) async => FoodScan.fromJson(await _get('/foods/barcode/$code') as Map<String, dynamic>);
+
+  @override
+  Future<BetterChoice> betterChoice(FoodScan scan) async {
+    final res = await _client.post(
+      _uri('/foods/better-choice'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'brand': ?scan.brand,
+        'productName': ?scan.productName,
+        'ingredients': [for (final i in scan.ingredients.take(60)) i.length > 200 ? i.substring(0, 200) : i],
+        'processing': scan.processing.wire,
+      }),
+    );
+    return BetterChoice.fromJson(_decode(res) as Map<String, dynamic>);
+  }
 
   @override
   Future<FoodScan> scanFoodLabel(List<Uint8List> photos) async {

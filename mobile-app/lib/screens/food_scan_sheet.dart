@@ -8,14 +8,17 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../scan/label_camera.dart';
 import '../theme/tokens.dart';
+import '../widgets/product_card.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'live_scan.dart';
 import 'log_meal_sheet.dart' show maxPhotoBytes;
+import 'pantry.dart' show RecipeCard;
 
 /// Scan a packaged food: the barcode first (a product database lookup), else the label (the AI reads
-/// it). Shows how processed it is and what's worth knowing. Returns one serving to log, or null.
+/// it). Shows how processed it is and what's worth knowing, and for a processed food, a better choice:
+/// a cleaner one to buy and a homemade one from the pantry. Returns one serving to log, or null.
 Future<FoodItem?> showFoodScanSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) => showAppSheet<FoodItem>(
   context,
   title: 'Scan a food package',
@@ -48,6 +51,9 @@ class _FoodScanState extends State<_FoodScan> {
   /// The last barcode wasn't in the database: the next scan looks at the label only.
   var _labelOnly = false;
 
+  /// Null until asked for; then loading, the better choice, or why there isn't one.
+  Future<BetterChoice>? _better;
+
   Future<void> _liveScan() async {
     final result = await showLiveScan(context, widget.camera(), findBarcode: !_labelOnly);
     if (result == null || !mounted) return;
@@ -67,6 +73,13 @@ class _FoodScanState extends State<_FoodScan> {
     }
   }
 
+  void _findBetter(FoodScan scan) {
+    final better = AppScope.of(context).api.betterChoice(scan);
+    setState(() {
+      _better = better;
+    });
+  }
+
   Future<void> _choose() async {
     final file = await widget.picker.pickImage(source: ImageSource.gallery, maxWidth: 2000, imageQuality: 90);
     if (file == null || !mounted) return;
@@ -84,6 +97,7 @@ class _FoodScanState extends State<_FoodScan> {
       _reading = true;
       _problem = null;
       _scan = null;
+      _better = null;
     });
     try {
       final result = await scan();
@@ -210,6 +224,19 @@ class _FoodScanState extends State<_FoodScan> {
           SheetNote(lead: _flagLeads[f.kind] ?? 'Worth knowing.', detail: f.message, watch: f.kind != 'expired'),
         if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty)
           Text('A whole food: nothing industrial in the ingredients.', style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll)),
+        if (scan.processing != FoodProcessing.whole && scan.ingredients.isNotEmpty)
+          _better == null
+              ? OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+                  onPressed: () => _findBetter(scan),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+                  label: const Text('Find a better choice'),
+                )
+              : _BetterChoice(
+                  _better!,
+                  onRetry: () => _findBetter(scan),
+                  onCook: (recipe) async => Navigator.of(context).pop(recipe.toItem()),
+                ),
         if (scan.ingredients.isNotEmpty) ...[
           const GroupLabel('Ingredients', top: 4),
           Text(scan.ingredients.join(', '), style: TextStyle(fontSize: TextSize.xs, height: 1.5, color: c.inkSoft)),
@@ -233,10 +260,81 @@ class _FoodScanState extends State<_FoodScan> {
             _scan = null;
             _problem = null;
             _labelOnly = false;
+            _better = null;
           }),
           child: const Text('Scan another'),
         ),
       ],
+    );
+  }
+}
+
+/// What to buy instead, the same food made at home, and a kitchen device when the recipe uses one.
+class _BetterChoice extends StatelessWidget {
+  const _BetterChoice(this.choice, {required this.onRetry, required this.onCook});
+
+  final Future<BetterChoice> choice;
+  final VoidCallback onRetry;
+  final Future<void> Function(PantryRecipe) onCook;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return FutureBuilder(
+      future: choice,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: Space.s3),
+            child: Column(
+              spacing: Space.s3,
+              children: [
+                const CircularProgressIndicator(),
+                Text('Finding a better choice…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+              ],
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return ScreenFailed(
+            title: "Couldn't find a better choice",
+            detail: switch (snapshot.error) {
+              ApiException(status: 402) => 'Better choices are part of your subscription.',
+              ApiException(status: 429, :final message) => message,
+              // The server answered but the recipe service didn't: not the phone's connection.
+              ApiException(status: >= 500) => 'Better choices aren’t available right now. Try again in a few minutes.',
+              _ => 'Check your connection and try again.',
+            },
+            onRetry: onRetry,
+          );
+        }
+        final b = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s2,
+          children: [
+            const BlockTitle('A better choice'),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: Space.s1,
+                children: [
+                  const Text('To buy instead', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800)),
+                  Text(b.lookFor, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+                ],
+              ),
+            ),
+            if (b.homemade != null) ...[
+              const GroupLabel('Or make it at home', top: Space.s2),
+              RecipeCard(b.homemade!, onCook: onCook),
+            ],
+            if (b.device != null) ...[
+              const GroupLabel('Makes the homemade one easy', top: Space.s2),
+              ProductCard(b.device!),
+            ],
+          ],
+        );
+      },
     );
   }
 }

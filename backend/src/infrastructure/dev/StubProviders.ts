@@ -13,7 +13,7 @@ import type { IAiVisionProvider } from "../../application/interfaces/IAiVisionPr
 import type { ISearchEngineAdapter } from "../../application/interfaces/ISearchEngineAdapter";
 import type { IFocusExplainer } from "../../application/interfaces/IFocusExplainer";
 import type { ISupplementLabelReader } from "../../application/interfaces/ISupplementLabelReader";
-import type { IFoodLabelReader } from "../../application/interfaces/IFoodLabels";
+import type { IBetterChoiceAdvisor, IFoodLabelReader } from "../../application/interfaces/IFoodLabels";
 
 export const stubVision: IAiVisionProvider = {
   async analyzeMealPhoto() {
@@ -129,6 +129,29 @@ export const stubPantryRecipes: IPantryRecipeAssistant = {
         whyItFits: "Stub recipe: set ANTHROPIC_API_KEY for real suggestions.",
       },
     ];
+  },
+};
+
+/** A better choice without Claude: oven granola from the pantry, whatever was scanned. */
+export const stubBetterChoice: IBetterChoiceAdvisor = {
+  async suggest(context) {
+    return {
+      lookFor: "Stub advice: set ANTHROPIC_API_KEY for a real one. Look for a short list of foods you'd have in a kitchen.",
+      homemade: {
+        title: "Oven granola",
+        minutes: 25,
+        servings: 8,
+        calories: 220,
+        macros: { proteinG: 6, carbsG: 26, fatG: 10 },
+        ingredients: [
+          { name: context.pantry[0] ?? "rolled oats", quantity: "2 cups" },
+          { name: "honey", quantity: "3 tbsp" },
+          { name: "coconut oil", quantity: "2 tbsp" },
+        ],
+        steps: ["Heat the oven to 160°C.", "Toss everything together on a tray.", "Bake for 20 minutes, stirring halfway, and cool."],
+        whyItFits: "Stub recipe: nothing industrial in it.",
+      },
+    };
   },
 };
 

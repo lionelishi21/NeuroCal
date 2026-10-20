@@ -623,6 +623,42 @@ class MockNeuroCalApi implements NeuroCalApi {
     );
   }
 
+  /// Air-fryer granola from the pantry for anything scanned, with the sample air fryer.
+  @override
+  Future<BetterChoice> betterChoice(FoodScan scan) async {
+    await Future.delayed(latency * 3);
+    final has = _pantry.map((p) => _key(p.name)).toSet();
+    ({String name, String quantity, bool inPantry}) i(String name, String quantity) =>
+        (name: name, quantity: quantity, inPantry: has.any((k) => _key(name).contains(k) || k.contains(_key(name))));
+    return BetterChoice(
+      lookFor:
+          'Look for one with only oats, nuts, seeds, honey or maple syrup and a plain fat like butter or coconut oil. '
+          'Leave ones with soy lecithin or natural flavor.',
+      homemade: PantryRecipe(
+        title: 'Air-fryer honey almond granola',
+        minutes: 15,
+        servings: 8,
+        calories: 210,
+        macros: const Macros(proteinG: 6, carbsG: 24, fatG: 11),
+        ingredients: [i('Oats', '2 cups'), i('Almonds', '1/2 cup'), i('Honey', '3 tbsp'), i('Coconut oil', '2 tbsp')],
+        steps: const [
+          'Toss the oats and roughly chopped almonds with the honey and melted coconut oil.',
+          'Air fry at 150°C for 8 to 10 minutes, shaking the basket halfway.',
+          'Let it cool flat: it crisps as it cools.',
+        ],
+        whyItFits: 'No emulsifier or flavouring, and about half the added sugar.',
+      ),
+      device: (
+        name: 'Ninja air fryer',
+        description: 'A countertop air fryer that crisps fresh potatoes, vegetables and chicken with a spoon of oil.',
+        url: 'https://www.ninjakitchen.com/',
+        affiliate: true,
+        ownBrand: false,
+        supplement: false,
+      ),
+    );
+  }
+
   @override
   Future<FoodScan> scanFoodLabel(List<Uint8List> photos) async {
     await Future.delayed(latency * 4);

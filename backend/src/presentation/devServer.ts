@@ -9,6 +9,7 @@ import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer"
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
+import { ClaudeBetterChoiceAdvisor } from "../infrastructure/ai/ClaudeBetterChoiceAdvisor";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
@@ -53,7 +54,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubBetterChoice, stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -196,6 +197,7 @@ async function main() {
       exercises: new DrizzleExerciseRepository(db),
       pantry: new DrizzlePantryRepository(db),
       pantryRecipes: config.anthropicApiKey ? new ClaudePantryRecipeAssistant({ apiKey: config.anthropicApiKey }) : stubPantryRecipes,
+      betterChoice: config.anthropicApiKey ? new ClaudeBetterChoiceAdvisor({ apiKey: config.anthropicApiKey }) : stubBetterChoice,
       shoppingReviewer: config.anthropicApiKey ? new ClaudeShoppingListReviewer({ apiKey: config.anthropicApiKey }) : stubShoppingReviewer,
       recipeParser: config.anthropicApiKey ? new ClaudeRecipeParser({ apiKey: config.anthropicApiKey }) : stubRecipeParser,
       mealPlanner: config.anthropicApiKey ? new ClaudeMealPlanner({ apiKey: config.anthropicApiKey }) : stubMealPlanner,

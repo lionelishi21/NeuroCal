@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -26,6 +26,7 @@ import {
   InMemoryExercises,
   InMemoryPantry,
   FakePantryRecipes,
+  FakeBetterChoice,
   FakeShoppingReviewer,
   FakeRecipeParser,
   FakeMealPlanner,
@@ -152,6 +153,7 @@ beforeEach(async () => {
     exercises: new InMemoryExercises(),
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
+    betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
     mealPlanner: new FakeMealPlanner(),
@@ -455,9 +457,18 @@ describe("API routes", () => {
       item: { name: "Crunchy Co Granola", processing: "ultra_processed" },
     });
 
+    // A better choice for it: the homemade granola air-fries, so the catalog's enabled air fryer comes with it.
+    const better = await call("POST", "/foods/better-choice", { brand: "Crunchy Co", productName: "Granola", ingredients: ["Oats", "sugar", "soy lecithin"], processing: "ultra_processed" });
+    expect(better.status).toBe(200);
+    const choice = BetterChoiceResponse.parse(better.body);
+    expect(choice.homemade!.title).toBe("Air-fryer granola");
+    expect(choice.device?.name).toMatch(/air fryer/i);
+    expect((await call("POST", "/foods/better-choice", { ingredients: ["Apples"], processing: "whole" })).status).toBe(400);
+
     // A paid feature, like photo reading.
     api = createApi(buildUseCases({ ...ports, paywall: true }));
     expect((await call("GET", "/foods/barcode/0123456789012")).status).toBe(402);
+    expect((await call("POST", "/foods/better-choice", { ingredients: ["Oats"], processing: "processed" })).status).toBe(402);
   });
 
   it("scores Brain speed checks from raw reaction times and keeps a usual score", async () => {

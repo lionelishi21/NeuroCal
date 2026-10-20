@@ -21,11 +21,12 @@ import type {
   IWeightRepository,
 } from "../application/interfaces/IRepositories";
 import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
-import type { IFoodLabelReader, IProductDatabase } from "../application/interfaces/IFoodLabels";
+import type { IBetterChoiceAdvisor, IFoodLabelReader, IProductDatabase } from "../application/interfaces/IFoodLabels";
 import type { IStackRepository } from "../application/interfaces/IStackRepository";
 import type { IBrainCheckRepository } from "../application/interfaces/IBrainCheckRepository";
 import type { IExerciseRepository } from "../application/interfaces/IExerciseRepository";
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
+import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
@@ -113,6 +114,7 @@ export interface Ports {
   exercises: IExerciseRepository;
   pantry: IPantryRepository;
   pantryRecipes: IPantryRecipeAssistant;
+  betterChoice: IBetterChoiceAdvisor;
   shoppingReviewer: IShoppingListReviewer;
   recipeParser: IRecipeParser;
   mealPlanner: IMealPlanner;
@@ -160,6 +162,7 @@ export function buildUseCases(p: Ports): UseCases {
     listFoods: new ListFoodsUseCase(p.foods, p.eatingOut, p.eatingOutItems),
     eatingOutAdmin: new EatingOutAdminUseCases(p.eatingOutItems ?? new NoEatingOutItems()),
     scanFood: new ScanFoodUseCase(p.foodLabels, p.products, p.storage, p.clock),
+    betterChoice: new BetterChoiceUseCase(p.profiles, p.pantry, p.betterChoice, p.catalog),
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),

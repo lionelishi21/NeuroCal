@@ -563,7 +563,7 @@ Existing — defined in `endpoints` in `packages/contracts/src/index.ts`, served
 | GET / POST | `/admin/eating-out` | — / `SaveEatingOutItemRequest` | `AdminEatingOutList` / `CatalogFood` | 6.19 |
 | DELETE | `/admin/eating-out/:id` | — | 204 | 6.19 |
 
-The table lists the core and Phase 5 routes. The rest (weights, fasting, brain checks, exercise, environment, level, pantry, meal plan, recipe and shopping review, supplement stack, foods and barcodes, subscription, `/today`, `DELETE /me`) are in `endpoints` in contracts and in `openapi.json`, which are the full list.
+The table lists the core and Phase 5 routes. The rest (weights, fasting, brain checks, exercise, environment, level, pantry, meal plan, recipe and shopping review, supplement stack, foods, barcodes and better choices, subscription, `/today`, `DELETE /me`) are in `endpoints` in contracts and in `openapi.json`, which are the full list.
 
 The same surface is published as OpenAPI 3.1 in `packages/contracts/openapi.json`, generated from the Zod schemas by `packages/contracts/src/openapi.ts` (`npm run openapi -w @neurocal/contracts`). The Flutter client is generated from that file. Rules written with `.refine()` (sleep ends after it starts, screen minutes fit the window) can't be expressed in JSON Schema and are stated in the operation descriptions.
 

@@ -3,6 +3,7 @@ import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer"
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
+import { ClaudeBetterChoiceAdvisor } from "../infrastructure/ai/ClaudeBetterChoiceAdvisor";
 import { ClaudeShoppingListReviewer } from "../infrastructure/ai/ClaudeShoppingListReviewer";
 import { ClaudeRecipeParser } from "../infrastructure/ai/ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "../infrastructure/ai/ClaudeMealPlanner";
@@ -92,6 +93,7 @@ const api = createApi(
     exercises: new DrizzleExerciseRepository(db),
     pantry: new DrizzlePantryRepository(db),
     pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    betterChoice: new ClaudeBetterChoiceAdvisor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     recipeParser: new ClaudeRecipeParser({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     mealPlanner: new ClaudeMealPlanner({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),

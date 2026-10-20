@@ -26,7 +26,7 @@ import type { IShoppingListReviewer, ShoppingReviewContext } from "../interfaces
 import type { IPantryRecipeAssistant, IPantryRepository, PantryItem, PantryRecipeContext, SuggestedRecipe } from "../interfaces/IPantry";
 import { pantryKey } from "../../domain/pantry";
 import type { StackItem } from "../../domain/stack";
-import type { IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
+import type { BetterChoiceContext, IBetterChoiceAdvisor, IFoodLabelReader, IProductDatabase } from "../interfaces/IFoodLabels";
 import type { Subscription } from "../../domain/subscription";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../interfaces/IStackRepository";
 import type { WeightEntry } from "../../domain/weight";
@@ -646,6 +646,32 @@ export class FakePantryRecipes implements IPantryRecipeAssistant {
         whyItFits: "Protein for the afternoon.",
       },
     ];
+  }
+}
+
+/** Air-fried granola from the first pantry item, or no homemade version for anything with "soda" in it. */
+export class FakeBetterChoice implements IBetterChoiceAdvisor {
+  readonly calls: BetterChoiceContext[] = [];
+  async suggest(context: BetterChoiceContext) {
+    this.calls.push(context);
+    const lookFor = "Look for only oats, nuts and honey.";
+    if (/soda/i.test(context.food)) return { lookFor, homemade: null };
+    return {
+      lookFor,
+      homemade: {
+        title: "Air-fryer granola",
+        minutes: 15,
+        servings: 8,
+        calories: 210,
+        macros: { proteinG: 6, carbsG: 24, fatG: 10 },
+        ingredients: [
+          { name: context.pantry[0] ?? "rolled oats", quantity: "2 cups" },
+          { name: "coconut oil", quantity: "2 tbsp" },
+        ],
+        steps: ["Toss everything together.", "Air fry at 150°C for 8 minutes, shaking halfway."],
+        whyItFits: "No emulsifier or flavouring.",
+      },
+    };
   }
 }
 

@@ -167,7 +167,7 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 **A. The core action works, fast** (blocked on keys)
 - [ ] _(you)_ Workspace-scoped `ANTHROPIC_API_KEY` and OpenAI credits in the dev secret
 - [ ] Meal photo → result in about 3 seconds: measure it, and if gpt-4o is too slow, try a faster model or a smaller image
-- [ ] Run every AI feature on the phone end to end: meal photo, label, supplement, meal plan, pantry, shopping review, recipe, device scout
+- [ ] Run every AI feature on the phone end to end: meal photo, label, better choice, supplement, meal plan, pantry, shopping review, recipe, device scout
 - [x] AI cost per user: every `llm_call` log line carries `costUsd`, and each person has a daily allowance (UTC) of 60 photo and label reads and 30 plans and recipes, after which the API answers 429 "resets tomorrow" (`domain/aiAllowance.ts`). _To do: watch real spend per user once there are users; consider Claude Haiku 5.5 ($0.10/$0.50 per MTok vs $1/$5) for the Claude features after an eval_
 
 **B. See what users do**
