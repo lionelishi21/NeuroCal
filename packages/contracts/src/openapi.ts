@@ -170,7 +170,7 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   listFoods: {
     summary: "List the food catalog",
-    description: "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits. Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",
+    description: "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits, then chain-restaurant menu items (`category: \"eating_out\"`, with `chain`, `regions` and `betterPick`). Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",
   },
   analyzeSupplement: {
     summary: "Read a supplement label from 1–4 photos",

@@ -58,6 +58,7 @@ import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailS
 import { buildUseCases, systemClock } from "./compose";
 import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
+import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
 import { createApi } from "./routes";
 
 const PORT = Number(process.env.PORT ?? 4000);
@@ -185,6 +186,7 @@ async function main() {
       // Real lookups even locally: Open Food Facts needs no key.
       products: new OpenFoodFactsDatabase(),
       foods: FOODS,
+      eatingOut: EATING_OUT,
       weights: new DrizzleWeightRepository(db),
       subscriptions: new DrizzleSubscriptionRepository(db),
       stack: new DrizzleStackRepository(db),

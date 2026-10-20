@@ -87,6 +87,7 @@ Names below are domain types in `backend/src/domain/`. Where a contract type has
 | **MarkerReading** | id, userId, marker (`MARKER_IDS`), value, measuredAt, source (manual / health_connect / apple_health) | Value inside the marker's plausible `min`–`max`; stored in US units (mg/dL, %), converted for display by the client (§6.15) |
 | **GlucoseDay** | userId, date, meanMgdl, inRange140Pct, inRange180Pct, cvPct, readings, source | One per user, day and source; ≥ 144 readings (about 12 h of a sensor) |
 | **HealthspanHabit** (derived) | id, title, detail, progress, target, unit, done, skipped? | Computed on read for the week so far (§6.14) |
+| **Eating-out item** | a `Food` with `category: "eating_out"`, `chain`, `regions` (US, GB, JM) and `betterPick` | Listed by `GET /foods` after the catalog, never used by meal plans or recipe matching; never paleo, low-toxin, Mediterranean or carnivore |
 | **Product** (planned) | id, name, url, affiliate (bool), ownBrand (bool), supplement (bool), tags[], embedding | Affiliate and own-brand (MitoProof) products must be labelled as such wherever shown (§10) |
 
 `glycemicLoad` (`"low" \| "medium" \| "high"`) is **planned** for `FoodItem` in contracts, so the vision step's high-glycemic flag (README) can reach the UI.

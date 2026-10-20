@@ -1026,7 +1026,7 @@
       "get": {
         "operationId": "listFoods",
         "summary": "List the food catalog",
-        "description": "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits. Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",
+        "description": "About 100 everyday and brain-friendly foods, per serving, with the goals and diets each suits, then chain-restaurant menu items (`category: \"eating_out\"`, with `chain`, `regions` and `betterPick`). Nutrition comes from USDA FoodData Central (`fdcId`). Small enough to fetch once and search on the device.",
         "responses": {
           "200": {
             "description": "OK",
@@ -2817,6 +2817,38 @@
           "fdcId": {
             "type": "integer",
             "exclusiveMinimum": 0
+          },
+          "chain": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "US",
+                "GB",
+                "JM"
+              ]
+            }
+          },
+          "betterPick": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
@@ -3605,7 +3637,8 @@
           "nuts_seeds",
           "fats",
           "drinks",
-          "extras"
+          "extras",
+          "eating_out"
         ]
       },
       "FoodItem": {

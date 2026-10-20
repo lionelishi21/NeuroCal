@@ -46,6 +46,7 @@ import { CognitoIdentityProvider } from "../infrastructure/aws/CognitoIdentityPr
 import { S3ObjectStorage } from "../infrastructure/aws/S3ObjectStorage";
 import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
+import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { errorReporterFor, routeOf } from "../infrastructure/monitoring/SentryErrorReporter";
@@ -81,6 +82,7 @@ const api = createApi(
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     foods: FOODS,
+    eatingOut: EATING_OUT,
     weights: new DrizzleWeightRepository(db),
     subscriptions: new DrizzleSubscriptionRepository(db),
     stack: new DrizzleStackRepository(db),

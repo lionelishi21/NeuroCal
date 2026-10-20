@@ -663,6 +663,9 @@ class CatalogFood {
     this.goals = const [],
     required this.why,
     this.diets = const [],
+    this.chain,
+    this.regions = const [],
+    this.betterPick,
   });
 
   final String id;
@@ -683,6 +686,20 @@ class CatalogFood {
   /// The contract's `DietaryPreference` values it fits.
   final List<String> diets;
 
+  /// Eating out: the restaurant chain whose menu item this is.
+  final ({String id, String name})? chain;
+
+  /// Eating out: the countries whose menus have it (US, GB, JM).
+  final List<String> regions;
+
+  /// Eating out: the id of a better choice at the same place.
+  final String? betterPick;
+
+  bool get eatingOut => category == 'eating_out';
+
+  /// The name with its chain, as a logged meal shows it: "McDonald's Big Mac".
+  String get fullName => chain == null ? name : '${chain!.name} $name';
+
   factory CatalogFood.fromJson(Map<String, dynamic> j) => CatalogFood(
     id: j['id'] as String,
     name: j['name'] as String,
@@ -701,13 +718,16 @@ class CatalogFood {
     goals: [for (final g in j['goals'] as List) g as String],
     why: j['why'] as String,
     diets: [for (final d in j['diets'] as List) d as String],
+    chain: j['chain'] == null ? null : (id: j['chain']['id'] as String, name: j['chain']['name'] as String),
+    regions: [for (final r in (j['regions'] as List?) ?? const []) r as String],
+    betterPick: j['betterPick'] as String?,
   );
 
   /// As a meal item, for [servings] servings.
   FoodItem toItem([double servings = 1]) {
     String n(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toString();
     return FoodItem(
-      name: name,
+      name: fullName,
       portion: servings == 1 ? serving : '${n(servings)} × $serving',
       calories: (calories * servings).roundToDouble(),
       macros: Macros(

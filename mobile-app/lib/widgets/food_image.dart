@@ -79,4 +79,22 @@ const _categoryEmoji = <String, String>{
   'fruit': '🍎', 'nuts_seeds': '🌰', 'fats': '🫒', 'drinks': '☕', 'extras': '🍽️',
 };
 
-String foodEmoji(String id, String category) => _emoji[id] ?? _categoryEmoji[category] ?? '🍽️';
+/// Eating-out items have no photos (they'd be other companies' food); the emoji comes from what the item is.
+const _eatingOutEmoji = <(String, String)>[
+  ('mcflurry', '🍦'), ('frosty', '🍦'), ('shake', '🥤'), ('parfait', '🥣'), ('hotcakes', '🥞'), ('fries', '🍟'),
+  ('hash-brown', '🍟'), ('onion-rings', '🧅'), ('coleslaw', '🥗'), ('salad', '🥗'), ('biscuit', '🥐'),
+  ('croissanwich', '🥐'), ('mcmuffin', '🍳'), ('breadstick', '🥖'), ('pizza', '🍕'), ('dominos', '🍕'),
+  ('burrito', '🌯'), ('wrap', '🌯'), ('taco', '🌮'), ('nachos', '🌮'), ('filet-o-fish', '🐟'), ('subway', '🥖'),
+  ('sandwich', '🥪'), ('chicken', '🍗'), ('mcchicken', '🍗'), ('nuggets', '🍗'), ('strips', '🍗'), ('tenders', '🍗'),
+  ('breast', '🍗'), ('thigh', '🍗'), ('drumstick', '🍗'), ('wing', '🍗'),
+];
+
+String foodEmoji(String id, String category) {
+  if (category == 'eating_out') {
+    for (final (word, emoji) in _eatingOutEmoji) {
+      if (id.contains(word)) return emoji;
+    }
+    return '🍔';
+  }
+  return _emoji[id] ?? _categoryEmoji[category] ?? '🍽️';
+}

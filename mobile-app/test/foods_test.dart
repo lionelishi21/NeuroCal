@@ -7,6 +7,7 @@ import 'package:neurocal/billing/billing.dart';
 import 'package:neurocal/screens/foods.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
+import 'package:neurocal/widgets/sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_test.dart' show pumpApp;
@@ -71,6 +72,51 @@ void main() {
     final item = logged.single.food.toItem(logged.single.servings);
     expect(item.portion, '2 × 1 fillet (120 g)');
     expect(item.macros.proteinG, 53);
+  });
+
+  testWidgets('eating out: pick a chain, open an item, switch to the better pick and log it with the chain name', (tester) async {
+    final logged = await pumpFoods(tester);
+    // Browsing stays on whole foods: chain items only show for Eating out or a search.
+    expect(find.text('Big Mac'), findsNothing);
+
+    await tester.tap(find.text('Eating out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Almonds'), findsNothing);
+    await tester.tap(find.widgetWithText(ChoicePill, 'KFC'));
+    await tester.pumpAndSettle();
+    expect(find.text('Original Recipe breast'), findsOneWidget);
+    expect(find.text('Big Mac'), findsNothing);
+
+    await tester.ensureVisible(find.text('Original Recipe breast'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Original Recipe breast'));
+    await tester.pumpAndSettle();
+    expect(find.text('KFC Original Recipe breast'), findsOneWidget);
+    expect(find.text('404'), findsOneWidget);
+    await tester.ensureVisible(find.text('Better pick here'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Better pick here'));
+    await tester.pumpAndSettle();
+    expect(find.text('KFC Original Recipe breast, skin and breading taken off'), findsOneWidget);
+    expect(find.text('171'), findsOneWidget);
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Log it'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Log it'));
+    await tester.pumpAndSettle();
+
+    expect(logged.single.food.id, 'kfc-original-breast-skinless');
+    expect(logged.single.food.toItem().name, 'KFC Original Recipe breast, skin and breading taken off');
+  });
+
+  testWidgets('a search finds chain items by place or dish', (tester) async {
+    await pumpFoods(tester);
+    await tester.enterText(find.byType(TextField), 'big mac');
+    await tester.pumpAndSettle();
+    expect(find.text('Big Mac'), findsOneWidget);
+    expect(find.text("McDonald's · 563 kcal"), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'wendy');
+    await tester.pumpAndSettle();
+    expect(find.text('Dave\'s Single'), findsOneWidget);
   });
 
   testWidgets('Log a meal can add a food from the catalog', (tester) async {

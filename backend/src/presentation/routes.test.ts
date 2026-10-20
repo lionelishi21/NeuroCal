@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "@jest/globals";
 import { BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
+import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
 import {
   FakeEmail,
@@ -97,6 +98,7 @@ beforeEach(async () => {
     explainer: new FakeExplainer("Short sleep is holding you back."),
     storage,
     foods: FOODS,
+    eatingOut: EATING_OUT,
     weights: new InMemoryWeights(),
     foodLabels: new FakeFoodLabelReader({
       brand: "Crunchy Co",
@@ -260,11 +262,22 @@ describe("API routes", () => {
     const res = await call("GET", "/foods");
     expect(res.status).toBe(200);
     const { foods } = FoodCatalog.parse(res.body);
-    expect(foods.length).toBe(FOODS.length);
+    expect(foods.length).toBe(FOODS.length + EATING_OUT.length);
     const salmon = foods.find((f) => f.id === "salmon")!;
     expect(salmon).toMatchObject({ category: "fish", goals: expect.arrayContaining(["focus"]), fdcId: 175168 });
     expect(salmon.diets).toEqual(expect.arrayContaining(["pescatarian", "keto", "paleo"]));
     expect(salmon.diets).not.toContain("vegan");
+  });
+
+  it("GET /foods ends with eating-out items: chain, region, a better pick, and no whole-food diets", async () => {
+    const { foods } = FoodCatalog.parse((await call("GET", "/foods")).body);
+    const bigMac = foods.find((f) => f.id === "mcd-big-mac")!;
+    expect(bigMac).toMatchObject({ category: "eating_out", chain: { id: "mcdonalds", name: "McDonald's" }, regions: ["US"], betterPick: "mcd-snack-wrap-grilled", fdcId: 170720 });
+    expect(foods.at(-1)!.category).toBe("eating_out");
+    const skinless = foods.find((f) => f.id === "kfc-original-breast-skinless")!;
+    expect(skinless.diets).toContain("keto");
+    expect(skinless.diets).not.toEqual(expect.arrayContaining(["paleo"]));
+    expect(skinless.diets).not.toContain("carnivore");
   });
 
   it("logs weigh-ins, sets a weight goal and reports the trend and progress", async () => {

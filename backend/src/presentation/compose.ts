@@ -90,6 +90,8 @@ export interface Ports {
   vision: IAiVisionProvider;
   /** The food catalog (infrastructure/catalog/foods.ts). */
   foods: readonly Food[];
+  /** Chain-restaurant menu items (infrastructure/catalog/eatingOut.ts); listed, never planned. */
+  eatingOut?: readonly Food[];
   labels: ISupplementLabelReader;
   foodLabels: IFoodLabelReader;
   products: IProductDatabase;
@@ -151,7 +153,7 @@ export function buildUseCases(p: Ports): UseCases {
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),
     analyzeMealPhoto: new AnalyzeMealPhotoUseCase(p.vision, p.storage),
-    listFoods: new ListFoodsUseCase(p.foods),
+    listFoods: new ListFoodsUseCase(p.foods, p.eatingOut),
     scanFood: new ScanFoodUseCase(p.foodLabels, p.products, p.storage, p.clock),
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),

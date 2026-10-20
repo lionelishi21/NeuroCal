@@ -440,7 +440,7 @@ export const FastingStatus = z.object({
 });
 export type FastingStatus = z.infer<typeof FastingStatus>;
 
-export const FoodCategory = z.enum(["fish", "meat", "eggs_dairy", "plant_protein", "grains", "vegetables", "fruit", "nuts_seeds", "fats", "drinks", "extras"]);
+export const FoodCategory = z.enum(["fish", "meat", "eggs_dairy", "plant_protein", "grains", "vegetables", "fruit", "nuts_seeds", "fats", "drinks", "extras", "eating_out"]);
 export type FoodCategory = z.infer<typeof FoodCategory>;
 
 /** A food in the catalog, per serving. Clients show its photo by `id`. */
@@ -464,6 +464,12 @@ export const CatalogFood = z.object({
   diets: z.array(DietaryPreference),
   /** Source entry in USDA FoodData Central. */
   fdcId: z.number().int().positive(),
+  /** Eating out (`category: "eating_out"`): the restaurant chain whose menu item this is. */
+  chain: z.object({ id: Id, name: z.string().min(1) }).optional(),
+  /** Eating out: the countries whose menus have it (ISO codes: US, GB, JM). Clients show the phone's region first. */
+  regions: z.array(z.enum(["US", "GB", "JM"])).optional(),
+  /** Eating out: the id of a better choice at the same place (more protein for its calories, or fewer calories and carbs). */
+  betterPick: Id.optional(),
 });
 export type CatalogFood = z.infer<typeof CatalogFood>;
 

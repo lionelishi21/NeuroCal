@@ -1,6 +1,6 @@
 import type { CognitiveGoal, DietaryPreference, FoodProcessing, GlycemicLoad, Macros } from "./types";
 
-export type FoodCategory = "fish" | "meat" | "eggs_dairy" | "plant_protein" | "grains" | "vegetables" | "fruit" | "nuts_seeds" | "fats" | "drinks" | "extras";
+export type FoodCategory = "fish" | "meat" | "eggs_dairy" | "plant_protein" | "grains" | "vegetables" | "fruit" | "nuts_seeds" | "fats" | "drinks" | "extras" | "eating_out";
 
 /** What a food comes from, which decides most diets it fits. */
 export type FoodKind = "fish" | "meat" | "eggs_dairy" | "plant";
@@ -25,7 +25,16 @@ export interface Food {
   why: string;
   /** Source entry in USDA FoodData Central. */
   fdcId: number;
+  /** Eating out: the restaurant chain whose menu item this is. */
+  chain?: { id: string; name: string };
+  /** Eating out: the countries whose menus have it. */
+  regions?: FoodRegion[];
+  /** Eating out: a better choice at the same place (more protein for its calories, or fewer calories and carbs), by id. */
+  betterPick?: string;
 }
+
+/** ISO country codes for eating-out menus. */
+export type FoodRegion = "US" | "GB" | "JM";
 
 /** Net carbs per serving at or under this fit keto. */
 const KETO_NET_CARBS = 6;
@@ -38,6 +47,9 @@ const RED_MEAT = new Set(["ground-beef", "sirloin-steak", "beef-liver", "pork-te
 export function dietsFor(food: Food): DietaryPreference[] {
   const netCarbs = food.macros.carbsG - food.fiberG;
   const dairyOnlyButter = food.kind !== "eggs_dairy" || food.id === "eggs" || food.id === "butter";
+  // Restaurant food is cooked in seed oils with breading, buns and sauces: never paleo, low-toxin,
+  // Mediterranean or carnivore, whatever its numbers say.
+  const wholeFoodDiet = food.category !== "eating_out";
   const fits: Record<DietaryPreference, boolean> = {
     omnivore: true,
     standard: true,
@@ -46,10 +58,10 @@ export function dietsFor(food: Food): DietaryPreference[] {
     vegan: food.kind === "plant",
     keto: netCarbs <= KETO_NET_CARBS,
     cyclical_keto: netCarbs <= KETO_NET_CARBS,
-    mediterranean: !RED_MEAT.has(food.id) && food.id !== "coconut-oil" && food.id !== "butter",
-    paleo: food.category !== "plant_protein" && !NOT_PALEO.has(food.id) && dairyOnlyButter,
-    low_toxin: food.category !== "plant_protein" && !NOT_LOW_TOXIN.has(food.id) && dairyOnlyButter,
-    carnivore: food.kind !== "plant" && food.macros.carbsG <= 2,
+    mediterranean: wholeFoodDiet && !RED_MEAT.has(food.id) && food.id !== "coconut-oil" && food.id !== "butter",
+    paleo: wholeFoodDiet && food.category !== "plant_protein" && !NOT_PALEO.has(food.id) && dairyOnlyButter,
+    low_toxin: wholeFoodDiet && food.category !== "plant_protein" && !NOT_LOW_TOXIN.has(food.id) && dairyOnlyButter,
+    carnivore: wholeFoodDiet && food.kind !== "plant" && food.macros.carbsG <= 2,
   };
   return (Object.keys(fits) as DietaryPreference[]).filter((diet) => fits[diet]);
 }

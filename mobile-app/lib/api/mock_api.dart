@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'api.dart';
+import 'mock_eating_out.dart';
 import 'mock_foods.dart';
 import 'models.dart';
 import '../markers.dart';
@@ -743,7 +744,7 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<List<CatalogFood>> foods() async {
     await _wait();
-    return mockFoods;
+    return [...mockFoods, ...mockEatingOut];
   }
 
   /// A typical label: one blend and no testing mark, so the flags show. A name with "dark" in it reads as too dark.
