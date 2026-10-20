@@ -21,7 +21,7 @@ The product direction comes from `README.md` and `CLAUDE.md` on `main`. NeuroCal
 | `infra/` | CDK stack: API, Cognito, Aurora + pgvector, scheduled Lambdas; 13 Jest tests |
 | `ARCHITECTURE.md` | Build spec: layers, domain model, DB schema, ports, use cases, AI prompts, API surface |
 
-**Next (20 October 2026):** run every AI feature on the phone against `dev` once the Claude and OpenAI keys are in (Phase 5 A), then the store and legal steps (Phase 5 F). The code backlog left is small: the Brain speed check in onboarding, the referral, the funnel dashboard.
+**Next (20 October 2026):** run every AI feature on the phone against `dev` once the Claude and OpenAI keys are in (Phase 5 A), then the store and legal steps (Phase 5 F). The code backlog left is small: the referral and the funnel dashboard.
 
 ## 2. Recommendation: frontend-first, contract-driven
 
@@ -174,13 +174,13 @@ The rest of the app follows the second Claude Design file (Today, This week, Sle
 - [x] AI cost per user: every `llm_call` log line carries `costUsd`, and each person has a daily allowance (UTC) of 60 photo and label reads and 30 plans and recipes, after which the API answers 429 "resets tomorrow" (`domain/aiAllowance.ts`). _To do: watch real spend per user once there are users; consider Claude Haiku 5.5 ($0.10/$0.50 per MTok vs $1/$5) for the Claude features after an eval_
 
 **B. See what users do**
-- [x] Product analytics behind a port, sent to PostHog over its HTTP batch API (no native SDK): app opened, onboarding steps, starting point seen, paywall viewed, trial started, each kind of log, Up next taps, score shared, sleep connected, guide opened; no health values. Day 1/7/30 return comes from `app_opened` in PostHog. _(you: create the PostHog project and add `POSTHOG_KEY` to `env/*.json`; mention analytics in the privacy policy)_
+- [x] Product analytics behind a port, sent to PostHog over its HTTP batch API (no native SDK): app opened, onboarding steps, the starting Brain speed check taken or skipped, starting point seen, paywall viewed, trial started, each kind of log, Up next taps, score shared, sleep connected, guide opened; no health values. Day 1/7/30 return comes from `app_opened` in PostHog. _(you: create the PostHog project and add `POSTHOG_KEY` to `env/*.json`; mention analytics in the privacy policy)_
 - [x] Crash and error reporting in the app (Sentry's Dart SDK, when `SENTRY_DSN` is set; Flutter and Dart errors, no personal details; the Flutter SDK's native code doesn't build with this Kotlin version). The API and scheduled Lambdas report too, when `SENTRY_DSN` is in the app secret (`infrastructure/monitoring/SentryErrorReporter.ts`, straight to Sentry's envelope endpoint, no SDK). _(you: create the Sentry projects, then add the DSN to `env/*.json` and the app secret)_
 - [ ] Ad attribution: SKAdNetwork and Meta/TikTok SDKs or AppsFlyer, wired to RevenueCat so each subscriber's ad is known. _(you: the ad accounts)_
 - [ ] One funnel dashboard: install → onboarding done → paywall → trial → paid, by week and by ad
 
 **C. Onboarding that sells**
-- [ ] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product. _Done: the score from the answers ("Your starting point" below). To do: the Brain speed check in onboarding_
+- [x] A starting Focus Score at the end of onboarding, from the quiz answers plus a 30-second Brain speed check, so day one shows the product: after "Save bio-profile" the check runs with shorter waits (or is skipped), it is saved as the first check, and its score moves the estimate's sleep input (`lib/onboarding/starting_score.dart`)
 - [x] Snap your first meal inside onboarding (or skip), so people see the AI work before paying: after "Hold to commit", "See it work: snap a meal" reads a photo and offers Log it; an account's first 3 photo reads don't need a subscription (`FREE_READS`). _Needs OpenAI credits to read real photos_
 - [x] A promised result before the paywall: the onboarding ends on "Your starting point" (a starting Focus Score estimated from the answers, a 3-week target drawn as a line, and the three changes worth the most points), and the paywall's plan says "Focus Score from 58 to 80 in 3 weeks". _To do: the weight curve with a date for anyone with a weight goal_
 - [x] Commitment step and social proof: the starting point ends with "Hold to commit to 3 weeks" (fills as it's held; a tap for screen readers) and one line of science on why sleep counts most. _To do: real user quotes once testers give them_

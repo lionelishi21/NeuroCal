@@ -159,6 +159,11 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Save bio-profile'));
     await tester.pumpAndSettle();
+    // A 30-second Brain speed check for the starting point; skipping leaves it to the answers.
+    expect(find.text('Brain speed check'), findsOneWidget);
+    expect(find.textContaining('goes into your starting point'), findsOneWidget);
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
     // The starting point: an estimate from the answers, a three-week target and where it comes from.
     expect(find.text('Your starting point, Sam'), findsOneWidget);
     expect(find.text('Your 3-week target'), findsOneWidget);
@@ -215,6 +220,7 @@ void main() {
     // The funnel, in order: each step, the starting point, onboarding done; no health values in events.
     final names = analytics.names.toList();
     expect(names.where((n) => n == 'onboarding_step'), hasLength(12));
+    expect(names.indexOf('starting_brain_check_skipped'), lessThan(names.indexOf('starting_point_seen')));
     expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('committed')));
     expect(names.indexOf('committed'), lessThan(names.indexOf('onboarding_completed')));
     expect(names, contains('guide_opened'));

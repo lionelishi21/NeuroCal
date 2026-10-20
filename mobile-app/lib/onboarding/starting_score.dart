@@ -5,8 +5,9 @@ typedef Gain = ({String change, int points});
 
 /// A starting Focus Score estimated from the onboarding answers, with a three-week target and the
 /// changes that get there. Same six inputs and weights as the real score (backend domain/focusScore.ts,
-/// model v1.1); each input starts from a typical value and the answers move it. An estimate, said so
-/// wherever it shows: the real score starts from logged sleep, food and check-ins.
+/// model v1.1); each input starts from a typical value and the answers move it. A Brain speed check
+/// taken in onboarding moves the sleep input too. An estimate, said so wherever it shows: the real
+/// score starts from logged sleep, food and check-ins.
 typedef StartingScore = ({int score, int target, List<Gain> gains});
 
 const _weights = (sleep: 0.30, timing: 0.20, glycemic: 0.15, stress: 0.15, movement: 0.10, environment: 0.10);
@@ -16,7 +17,10 @@ const _closedInThreeWeeks = 0.6;
 
 double _clamp(double v) => v.clamp(0.2, 1.0);
 
-StartingScore startingScore(Answers a) {
+/// A typical rested Brain speed score; each 10 points either side moves the sleep input by 0.05.
+const _restedBrainScore = 80;
+
+StartingScore startingScore(Answers a, {int? brainScore}) {
   final screens = a['eveningScreens'];
   final phone = a['phoneAtNight'];
   final friction = a['friction'];
@@ -24,13 +28,16 @@ StartingScore startingScore(Answers a) {
   final movement = a['movement'];
   final water = a['water'];
 
-  final sleep = _clamp(
+  var sleep = _clamp(
     0.75 -
         (screens == '3_plus' ? 0.2 : screens == '1_2' ? 0.1 : 0) -
         (phone == 'next_to_head' ? 0.1 : phone == 'nightstand' ? 0.05 : 0) -
         (friction == 'night_waking' ? 0.15 : 0) -
         (a['coffeeTime'] == 'afternoon' ? 0.1 : 0),
   );
+  // Slow reactions and lapses track sleep loss more closely than anything else the check sees
+  // (Lim & Dinges, 2010), so the check moves sleep, by more for a slow result than a quick one.
+  if (brainScore != null) sleep = _clamp(sleep + ((brainScore - _restedBrainScore) / 200).clamp(-0.15, 0.1));
   final timing = _clamp(0.65 + (fasting == '16_8' || fasting == 'omad' ? 0.15 : fasting == '12_12' ? 0.1 : 0) - (screens == '3_plus' ? 0.05 : 0));
   final glycemic = _clamp(0.75 - (friction == 'post_meal_fog' ? 0.2 : friction == 'afternoon_crash' ? 0.15 : 0));
   final stress = _clamp(0.65 + (a['coldTherapy'] == 'daily' ? 0.1 : a['coldTherapy'] == 'weekly' ? 0.05 : 0) - (friction == 'slow_recovery' ? 0.05 : 0));

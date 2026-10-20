@@ -67,4 +67,41 @@ void main() {
     expect(saved.falseStarts, 1);
     expect(saved.score, 94); // 100 - (260-250)/3 - 1 false start × 3
   });
+
+  testWidgets('in onboarding it says where the score goes, and can be skipped', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final results = <Object?>[];
+    await tester.pumpWidget(
+      AppScope(
+        api: MockNeuroCalApi()..latency = Duration.zero,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        timeZone: () async => 'Europe/London',
+        openLink: (_) async => true,
+        billing: MockBilling(active: true),
+        child: MaterialApp(
+          theme: buildTheme(Brightness.light),
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => results.add(
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const BrainCheckScreen(duration: Duration(seconds: 30), note: 'Your score goes into your starting point.', skipLabel: 'Skip for now'),
+                  ),
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your score goes into your starting point.'), findsOneWidget);
+    expect(find.textContaining('under a minute'), findsOneWidget);
+    await tester.tap(find.text('Skip for now'));
+    await tester.pumpAndSettle();
+    expect(results, [null]);
+  });
 }

@@ -10,6 +10,7 @@ import '../onboarding/starting_score.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
+import 'brain_check.dart';
 import 'first_meal.dart';
 
 /// Devices that will feed sleep and activity in automatically. Not connected yet: shown so people know it is coming.
@@ -42,6 +43,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   var _saving = false;
   String? _error;
   Profile? _saved;
+
+  /// The Brain speed check taken after saving; null when skipped.
+  BrainCheck? _brain;
 
   /// Committed on the starting point: the first meal comes next.
   var _committed = false;
@@ -99,9 +103,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ...toProfileFields(_answers),
       });
       if (!mounted) return;
+      // A first Brain speed check, so the starting point has something measured in it, not only answers.
+      final brain = await Navigator.of(context).push<BrainCheck>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => const BrainCheckScreen(
+            // Short waits, so the 10 reactions the API needs fit in about 30 seconds.
+            duration: Duration(seconds: 30),
+            minWaitMs: 1000,
+            maxWaitMs: 3000,
+            note: 'One last step: see how sharp you are right now. Your score goes into your starting point. '
+                "It's a self-check, not a medical test.",
+            skipLabel: 'Skip for now',
+            doneLabel: 'See my starting point',
+          ),
+        ),
+      );
+      if (!mounted) return;
+      scope.analytics.track(brain == null ? 'starting_brain_check_skipped' : 'starting_brain_check_taken');
       // No toast: the closing screen says "Profile saved", and a toast would cover its button.
       scope.analytics.track('starting_point_seen');
-      setState(() => _saved = profile);
+      setState(() {
+        _saved = profile;
+        _brain = brain;
+      });
       // Once the score has drawn in: the high point of onboarding, before the paywall.
       Future<void>.delayed(const Duration(milliseconds: 1800), () async {
         if (mounted && await scope.reviewPrompt?.maybeAsk() == true) scope.analytics.track('review_prompted', {'moment': 'starting_point'});
@@ -119,7 +144,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final saved = _saved;
     if (saved != null && _committed) return FirstMealScreen(picker: widget.picker ?? ImagePicker(), onDone: () => widget.onDone(saved));
-    if (saved != null) return _StartingPoint(name: saved.displayName, start: startingScore(_answers), onContinue: () => setState(() => _committed = true));
+    if (saved != null) {
+      return _StartingPoint(
+        name: saved.displayName,
+        start: startingScore(_answers, brainScore: _brain?.score),
+        brainScore: _brain?.score,
+        onContinue: () => setState(() => _committed = true),
+      );
+    }
 
     final c = context.colors;
     final text = Theme.of(context).textTheme;
@@ -811,10 +843,13 @@ class _ErrorPanel extends StatelessWidget {
 /// as a line, and the changes worth the most points. Said to be an estimate; the real score starts from
 /// what gets logged.
 class _StartingPoint extends StatelessWidget {
-  const _StartingPoint({required this.name, required this.start, required this.onContinue});
+  const _StartingPoint({required this.name, required this.start, required this.brainScore, required this.onContinue});
 
   final String name;
   final StartingScore start;
+
+  /// From the Brain speed check just taken; null when it was skipped.
+  final int? brainScore;
   final VoidCallback onContinue;
 
   @override
@@ -855,7 +890,9 @@ class _StartingPoint extends StatelessWidget {
                       ),
                       const SizedBox(height: Space.s3),
                       Text(
-                        'Estimated from your answers. Your real score starts tomorrow, from your sleep, food and check-ins.',
+                        brainScore == null
+                            ? 'Estimated from your answers. Your real score starts tomorrow, from your sleep, food and check-ins.'
+                            : 'Estimated from your answers and a Brain speed of $brainScore. Your real score starts tomorrow, from your sleep, food and check-ins.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
                       ),

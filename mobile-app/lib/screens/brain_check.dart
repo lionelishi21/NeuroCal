@@ -26,7 +26,17 @@ class BrainCheckScreen extends StatefulWidget {
     this.minTrials = 10,
     this.random,
     this.now,
+    this.note,
+    this.skipLabel,
+    this.doneLabel = 'Done',
   });
+
+  /// Replaces the intro's second paragraph (when to do it and what the score is compared with).
+  final String? note;
+
+  /// Shown under Start when the check can be left for later (onboarding); leaving returns null.
+  final String? skipLabel;
+  final String doneLabel;
 
   /// How long the check runs; it also needs [minTrials] reactions before it ends.
   final Duration duration;
@@ -176,12 +186,14 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
             style: TextStyle(fontSize: TextSize.md, height: 1.45, color: c.inkSoft),
           ),
           Text(
-            'Do it at about the same time each day, sitting down, with notifications off. Your score is compared with your own usual, '
-            "so you can see which days you're sharper. It's a self-check, not a medical test.",
+            widget.note ??
+                'Do it at about the same time each day, sitting down, with notifications off. Your score is compared with your own usual, '
+                    "so you can see which days you're sharper. It's a self-check, not a medical test.",
             style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
           ),
           const Spacer(),
           SheetAction(label: 'Start', onPressed: _start),
+          if (widget.skipLabel != null) TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel!)),
         ],
       ),
     );
@@ -260,7 +272,7 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
             style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
           ),
           const Spacer(),
-          SheetAction(label: 'Done', onPressed: () => Navigator.of(context).pop(r)),
+          SheetAction(label: widget.doneLabel, onPressed: () => Navigator.of(context).pop(r)),
         ],
       ),
     );
@@ -276,7 +288,7 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
         const Text("Couldn't save your check", style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
         const Text('Your reactions are still here. Check your connection and try again.'),
         FilledButton(onPressed: _save, child: const Text('Try again')),
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close without saving')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel ?? 'Close without saving')),
       ],
     ),
   );
