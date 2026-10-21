@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/move_figure.dart';
 import '../widgets/sheet.dart';
 import 'calf_routine.dart';
 
@@ -98,13 +99,19 @@ class _LogExerciseState extends State<_LogExercise> {
           ),
         ),
         Text('What did you do?', style: label),
-        Wrap(
-          spacing: Space.s2,
-          runSpacing: Space.s2,
-          children: [
-            for (final kind in ExerciseKind.values)
-              ChoicePill(label: kind.label, selected: _kind == kind, onTap: () => setState(() => _kind = kind)),
-          ],
+        // Five across: each kind as a figure doing it; the one picked plays a few reps.
+        LayoutBuilder(
+          builder: (context, box) => Wrap(
+            spacing: Space.s2,
+            runSpacing: Space.s2,
+            children: [
+              for (final kind in ExerciseKind.values)
+                SizedBox(
+                  width: (box.maxWidth - 4 * Space.s2) / 5,
+                  child: _KindCard(kind, selected: _kind == kind, onTap: () => setState(() => _kind = kind)),
+                ),
+            ],
+          ),
         ),
         Row(
           children: [
@@ -115,12 +122,19 @@ class _LogExerciseState extends State<_LogExercise> {
             ),
           ],
         ),
-        Wrap(
-          spacing: Space.s2,
-          runSpacing: Space.s2,
-          children: [
-            for (final m in _presets) ChoicePill(label: '$m min', selected: _minutes == m, onTap: () => setState(() => _minutes = m)),
-          ],
+        // Three across, not a stack of full-width buttons.
+        LayoutBuilder(
+          builder: (context, box) => Wrap(
+            spacing: Space.s2,
+            runSpacing: Space.s2,
+            children: [
+              for (final m in _presets)
+                SizedBox(
+                  width: (box.maxWidth - 2 * Space.s2) / 3,
+                  child: ChoicePill(label: '$m min', selected: _minutes == m, onTap: () => setState(() => _minutes = m)),
+                ),
+            ],
+          ),
         ),
         Slider(
           value: _minutes.toDouble(),
@@ -151,6 +165,72 @@ class _LogExerciseState extends State<_LogExercise> {
         if (_failed) const SheetNote(lead: "Couldn't log your exercise.", detail: 'Check your connection and try again.'),
         SheetAction(label: _busy ? 'Logging…' : 'Log exercise', onPressed: _busy || _kind == null ? null : _save),
       ],
+    );
+  }
+}
+
+/// The figure for each kind of exercise.
+MoveKind moveFor(ExerciseKind kind) => switch (kind) {
+  ExerciseKind.walk => MoveKind.walk,
+  ExerciseKind.run => MoveKind.run,
+  ExerciseKind.cycle => MoveKind.cycle,
+  ExerciseKind.strength => MoveKind.squat,
+  ExerciseKind.hiit => MoveKind.jumpingJack,
+  ExerciseKind.yoga => MoveKind.tree,
+  ExerciseKind.swim => MoveKind.swim,
+  ExerciseKind.sport => MoveKind.tennis,
+  ExerciseKind.calf => MoveKind.calfRaise,
+  ExerciseKind.other => MoveKind.reach,
+};
+
+/// One kind of exercise to pick: its figure over its name. Picked, it fills in and the figure moves.
+class _KindCard extends StatelessWidget {
+  const _KindCard(this.kind, {required this.selected, required this.onTap});
+
+  final ExerciseKind kind;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(Radii.option),
+      side: BorderSide(color: selected ? c.synapse : c.rule, width: selected ? 2 : 1.5),
+    );
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: kind.label,
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? c.synapseSoft : c.paper,
+        shape: shape,
+        child: InkWell(
+          customBorder: shape,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(2, Space.s2, 2, Space.s1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 2,
+              children: [
+                // A new key each time it's picked, so the reps play again.
+                SizedBox(height: 52, child: MoveFigure(moveFor(kind), key: ValueKey((kind, selected)), animate: selected, reps: 3)),
+                SizedBox(
+                  height: 30,
+                  child: Text(
+                    kind.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(fontSize: TextSize.xxs, height: 1.2, fontWeight: FontWeight.w700, color: selected ? c.synapseInk : c.ink),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

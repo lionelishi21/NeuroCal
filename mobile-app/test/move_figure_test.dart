@@ -32,4 +32,13 @@ void main() {
     expect(tester.hasRunningAnimations, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('a figure answering a tap plays its reps and then holds still', (tester) async {
+    await tester.pumpWidget(_host(const MoveFigure(MoveKind.walk, reps: 3)));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.hasRunningAnimations, isTrue);
+    // Three strides there and back at 550 ms each way.
+    await tester.pump(const Duration(seconds: 4));
+    expect(tester.hasRunningAnimations, isFalse);
+  });
 }
