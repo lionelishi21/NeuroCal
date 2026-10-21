@@ -7,23 +7,34 @@ import 'package:flutter/services.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/move_figure.dart';
 import '../widgets/sheet.dart';
 
-/// One move in the routine, or a rest when [how] is empty.
-typedef CalfMove = ({String name, String how, int seconds});
+/// One move in the routine, or a rest when [how] is empty. [figure] demonstrates it.
+typedef CalfMove = ({String name, String how, int seconds, MoveKind figure});
 
 /// Five minutes, mostly doable at a desk. Soleus push-ups are the seated move from Hamilton et al.
 /// (iScience, 2022).
 const calfRoutine = <CalfMove>[
-  (name: 'Standing calf raises', how: 'Rise onto your toes, then lower your heels slowly. Hold a wall or chair if you need to.', seconds: 45),
-  (name: 'Rest', how: '', seconds: 15),
-  (name: 'Seated soleus push-ups', how: 'Sit with your feet flat and knees bent. Lift your heels while your toes stay down, then let them drop.', seconds: 60),
-  (name: 'Rest', how: '', seconds: 15),
-  (name: 'Single-leg raises, left', how: 'Stand on your left foot, rise and lower. Hold on for balance.', seconds: 30),
-  (name: 'Single-leg raises, right', how: 'Now the right foot.', seconds: 30),
-  (name: 'Rest', how: '', seconds: 15),
-  (name: 'Seated soleus push-ups', how: 'Back in the chair: heels up, heels down, steady.', seconds: 60),
-  (name: 'Ankle pumps', how: 'Legs out, point your toes away, then pull them back toward you.', seconds: 30),
+  (
+    name: 'Standing calf raises',
+    how: 'Rise onto your toes, then lower your heels slowly. Hold a wall or chair if you need to.',
+    seconds: 45,
+    figure: MoveKind.calfRaise,
+  ),
+  (name: 'Rest', how: '', seconds: 15, figure: MoveKind.rest),
+  (
+    name: 'Seated soleus push-ups',
+    how: 'Sit with your feet flat and knees bent. Lift your heels while your toes stay down, then let them drop.',
+    seconds: 60,
+    figure: MoveKind.soleusPushUp,
+  ),
+  (name: 'Rest', how: '', seconds: 15, figure: MoveKind.rest),
+  (name: 'Single-leg raises, left', how: 'Stand on your left foot, rise and lower. Hold on for balance.', seconds: 30, figure: MoveKind.singleLegLeft),
+  (name: 'Single-leg raises, right', how: 'Now the right foot.', seconds: 30, figure: MoveKind.singleLegRight),
+  (name: 'Rest', how: '', seconds: 15, figure: MoveKind.rest),
+  (name: 'Seated soleus push-ups', how: 'Back in the chair: heels up, heels down, steady.', seconds: 60, figure: MoveKind.soleusPushUp),
+  (name: 'Ankle pumps', how: 'Legs out, point your toes away, then pull them back toward you.', seconds: 30, figure: MoveKind.anklePump),
 ];
 
 /// Runs the routine full screen and logs it. Returns what was logged, or null when left early.
@@ -141,9 +152,9 @@ class _CalfRoutineScreenState extends State<CalfRoutineScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: Space.s2),
                   child: Row(
-                    spacing: Space.s2,
+                    spacing: Space.s3,
                     children: [
-                      Icon(Icons.check_circle_outline_rounded, size: 18, color: c.chlorophyll),
+                      SizedBox(width: 44, height: 52, child: MoveFigure(m.figure, animate: false)),
                       Expanded(child: Text(m.name, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700))),
                       Text('${m.seconds} s', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
                     ],
@@ -170,35 +181,34 @@ class _CalfRoutineScreenState extends State<CalfRoutineScreen> {
         Text('${_move + 1} of ${calfRoutine.length}', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
         Text(m.name, style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, height: 1.2)),
         Text(rest ? 'Shake your legs out.' : m.how, style: TextStyle(fontSize: TextSize.md, height: 1.4, color: c.inkSoft)),
-        Expanded(
-          child: Center(
-            child: Semantics(
-              liveRegion: true,
-              label: '$_left seconds left',
-              excludeSemantics: true,
-              child: SizedBox.square(
-                dimension: 220,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox.expand(
-                      child: CircularProgressIndicator(
-                        value: _left / m.seconds,
-                        strokeWidth: 10,
-                        strokeCap: StrokeCap.round,
-                        backgroundColor: c.track,
-                        color: ink,
-                      ),
+        Expanded(child: MoveFigure(m.figure, animate: !_paused, accent: ink)),
+        Center(
+          child: Semantics(
+            liveRegion: true,
+            label: '$_left seconds left',
+            excludeSemantics: true,
+            child: SizedBox.square(
+              dimension: 120,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox.expand(
+                    child: CircularProgressIndicator(
+                      value: _left / m.seconds,
+                      strokeWidth: 8,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: c.track,
+                      color: ink,
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('$_left', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1)),
-                        if (!rest && !_paused) _Pace(color: ink),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('$_left', style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w800, height: 1)),
+                      if (!rest) Text('Up 1 s, down 1 s', style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -246,56 +256,6 @@ class _CalfRoutineScreenState extends State<CalfRoutineScreen> {
         SheetAction(label: _busy ? 'Logging…' : 'Log exercise', onPressed: _busy ? null : _log),
         TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(), child: const Text('Close without logging')),
       ],
-    );
-  }
-}
-
-/// A dot that rises and falls at rep pace (one second up, one down). Under reduced motion it holds
-/// still and says the pace.
-class _Pace extends StatefulWidget {
-  const _Pace({required this.color});
-
-  final Color color;
-
-  @override
-  State<_Pace> createState() => _PaceState();
-}
-
-class _PaceState extends State<_Pace> with SingleTickerProviderStateMixin {
-  late final _controller = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _controller.stop();
-    } else if (!_controller.isAnimating) {
-      _controller.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    if (MediaQuery.disableAnimationsOf(context)) {
-      return Text('Up 1 s, down 1 s', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft));
-    }
-    return SizedBox(
-      height: 36,
-      width: 24,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) => Align(
-          alignment: Alignment(0, 1 - 2 * Curves.easeInOut.transform(_controller.value)),
-          child: Container(width: 14, height: 14, decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle)),
-        ),
-      ),
     );
   }
 }
