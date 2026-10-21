@@ -54,4 +54,21 @@ void main() {
     await tester.scrollUntilVisible(find.text('Focus Score'), 200);
     expect(find.text('Focus Score'), findsOneWidget);
   });
+
+  test('test mode keeps a started trial on the phone for that account, across launches', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final first = MockBilling(prefs: prefs);
+    await first.signIn('u1');
+    expect(await first.isActive(), isFalse);
+    await first.buy((await first.plans()).first);
+
+    // The next launch: a new billing object, the same phone.
+    final next = MockBilling(prefs: prefs);
+    await next.signIn('u1');
+    expect(await next.isActive(), isTrue);
+    await next.signOut();
+    await next.signIn('u2');
+    expect(await next.isActive(), isFalse);
+  });
 }

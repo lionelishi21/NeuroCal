@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A plan someone can buy, as the store prices it in their currency.
 class Plan {
@@ -119,17 +120,29 @@ class RevenueCatBilling implements Billing {
   Uri get manageUrl => _storeSubscriptions();
 }
 
-/// Test mode: plans priced like the real ones, and buying always works. Nothing is charged.
+/// Test mode: plans priced like the real ones, and buying always works. Nothing is charged. With
+/// [prefs], a "purchase" is kept on the phone for that account, so the paywall doesn't return at
+/// every launch.
 class MockBilling implements Billing {
-  MockBilling({this.active = false});
+  MockBilling({this.active = false, this.prefs});
 
   bool active;
+  final SharedPreferences? prefs;
+  String? _userId;
+
+  String get _key => 'billing.test.active.$_userId';
 
   @override
-  Future<void> signIn(String userId) async {}
+  Future<void> signIn(String userId) async {
+    _userId = userId;
+    if (prefs?.getBool(_key) == true) active = true;
+  }
 
   @override
-  Future<void> signOut() async {}
+  Future<void> signOut() async {
+    _userId = null;
+    if (prefs != null) active = false;
+  }
 
   @override
   Future<bool> isActive() async => active;
@@ -141,7 +154,11 @@ class MockBilling implements Billing {
   ];
 
   @override
-  Future<bool> buy(Plan plan) async => active = true;
+  Future<bool> buy(Plan plan) async {
+    active = true;
+    if (_userId != null) await prefs?.setBool(_key, true);
+    return true;
+  }
 
   @override
   Future<bool> restore() async => active;

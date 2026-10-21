@@ -49,8 +49,8 @@ Future<void> main() async {
       ? MockNeuroCalApi(newUser: AppConfig.mockNewUser)
       : HttpNeuroCalApi(baseUrl: AppConfig.apiUrl, token: auth.idToken);
   final revenueCatKey = Platform.isIOS ? AppConfig.revenueCatIosKey : AppConfig.revenueCatAndroidKey;
-  // Test mode starts locked, so the paywall shows; its "purchase" is free and instant.
-  final Billing billing = revenueCatKey.isEmpty ? MockBilling() : RevenueCatBilling(revenueCatKey);
+  // Test mode starts locked, so the paywall shows; its "purchase" is free, instant and kept on the phone.
+  final Billing billing = revenueCatKey.isEmpty ? MockBilling(prefs: prefs) : RevenueCatBilling(revenueCatKey);
   final device = DeviceReminders();
   final reminders = ReminderSettings(prefs, device);
   // Ready before the first frame, so a tapped reminder that started the app opens the check-in.
