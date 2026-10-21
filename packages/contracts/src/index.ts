@@ -441,6 +441,8 @@ export const FastingStatus = z.object({
   plan: z.object({ startedAt: IsoDateTime, until: IsoDateTime }).optional(),
   /** The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out. */
   planLimitHours: z.number().int().nonnegative(),
+  /** The last meal in the past month (drinks under 10 kcal don't count); planned fasts are counted from it. */
+  lastMealAt: IsoDateTime.optional(),
 });
 export type FastingStatus = z.infer<typeof FastingStatus>;
 

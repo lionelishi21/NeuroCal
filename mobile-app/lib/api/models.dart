@@ -1002,7 +1002,8 @@ class FastingStatus {
     this.closesAt,
     this.streakDays = 0,
     this.planUntil,
-    this.planLimitHours = 36,
+    this.planLimitHours = 48,
+    this.lastMealAt,
   });
 
   /// 16_8, omad, 12_12 or none.
@@ -1025,6 +1026,9 @@ class FastingStatus {
   /// The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out.
   final int planLimitHours;
 
+  /// The last meal in the past month (drinks under 10 kcal don't count); planned fasts count from it.
+  final DateTime? lastMealAt;
+
   bool get planned => planUntil != null;
 
   factory FastingStatus.fromJson(Map<String, dynamic> j) {
@@ -1042,6 +1046,7 @@ class FastingStatus {
       streakDays: (j['streakDays'] as num).toInt(),
       planUntil: plan == null ? null : DateTime.parse(plan['until'] as String).toLocal(),
       planLimitHours: (j['planLimitHours'] as num?)?.toInt() ?? 0,
+      lastMealAt: j['lastMealAt'] == null ? null : DateTime.parse(j['lastMealAt'] as String).toLocal(),
     );
   }
 }

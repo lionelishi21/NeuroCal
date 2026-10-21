@@ -34,6 +34,7 @@ export const toFasting = (f: FastingStatus): C.FastingStatus => ({
   streakDays: f.streakDays,
   ...(f.plan ? { plan: { startedAt: f.plan.startedAt.toISOString(), until: f.plan.until.toISOString() } } : {}),
   planLimitHours: f.planLimitHours,
+  ...(f.lastMealAt ? { lastMealAt: f.lastMealAt.toISOString() } : {}),
 });
 
 export const toFoodItem = (i: FoodItem): C.FoodItem => ({

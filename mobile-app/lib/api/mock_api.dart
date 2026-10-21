@@ -149,15 +149,15 @@ class MockNeuroCalApi implements NeuroCalApi {
   /// Times the fast from the sample meals, like the API (backend/src/domain/fasting.ts).
   ({DateTime startedAt, DateTime until})? _fastPlan;
 
-  /// Up to 36 hours from the last meal, like the API.
+  /// Up to 48 hours from the last meal, like the API.
   @override
   Future<FastingStatus> planFast(DateTime until) async {
     await _wait();
     final now = DateTime.now();
     if (until.difference(now).inMinutes < 30) throw ApiException(400, 'Pick an end at least half an hour from now.');
     final last = [for (final m in _meals) if (m.calories >= 10 && !m.eatenAt.isAfter(now)) m.eatenAt].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
-    final from = last != null && now.difference(last).inHours < 36 ? last : now;
-    if (until.difference(from).inMinutes > 36 * 60) throw ApiException(400, 'A planned fast can last up to 36 hours from your last meal. Pick an earlier time.');
+    final from = last != null && now.difference(last).inHours < 48 ? last : now;
+    if (until.difference(from).inMinutes > 48 * 60) throw ApiException(400, 'A planned fast can last up to 48 hours from your last meal. Pick an earlier time.');
     _fastPlan = (startedAt: now, until: until);
     return fasting();
   }
@@ -180,9 +180,9 @@ class MockNeuroCalApi implements NeuroCalApi {
     final plan = _fastPlan;
     if (plan != null && now.isBefore(plan.until) && !eaten.any((t) => t.isAfter(plan.startedAt) && !t.isAfter(now))) {
       final last = eaten.where((t) => !t.isAfter(now)).lastOrNull;
-      return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.fasting, since: last ?? plan.startedAt, goalAt: plan.until, planUntil: plan.until);
+      return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.fasting, since: last ?? plan.startedAt, goalAt: plan.until, planUntil: plan.until, lastMealAt: last);
     }
-    if (hours == null) return const FastingStatus(protocol: 'none', kind: FastingKind.off);
+    if (hours == null) return FastingStatus(protocol: 'none', kind: FastingKind.off, lastMealAt: eaten.where((t) => !t.isAfter(now)).lastOrNull);
     final past = eaten.where((t) => !t.isAfter(now)).toList();
     if (past.isEmpty) return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.unknown);
     var opened = past.last;

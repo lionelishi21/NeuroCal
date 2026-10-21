@@ -33,6 +33,7 @@ class _Day {
     this.recipes,
     this.fasting,
     this.planLimitHours = 0,
+    this.fastingAll,
     this.stack,
     this.brain,
     this.exercise,
@@ -54,6 +55,9 @@ class _Day {
 
   /// The longest fast that can be planned; 0 when none can (or fasting didn't load).
   final int planLimitHours;
+
+  /// The status as loaded, off included: planning a fast counts from its last meal.
+  final FastingStatus? fastingAll;
 
   /// A planned fast is running: Today shows the fast instead of calories left.
   bool get fastPlanned => isToday && fasting?.planned == true;
@@ -228,6 +232,7 @@ class _TodayScreenState extends State<TodayScreen> {
       recipes: d.recipes,
       fasting: d.fasting?.kind == FastingKind.off ? null : d.fasting,
       planLimitHours: d.fasting?.planLimitHours ?? 0,
+      fastingAll: d.fasting,
       stack: d.stack == null || d.stack!.items.isEmpty ? null : d.stack,
       brain: d.brain,
       exercise: d.exercise,
@@ -414,7 +419,7 @@ class _TodayScreenState extends State<TodayScreen> {
                       onCalfPump: _calfPump,
                       onStack: _manageStack,
                       onHowItWorks: () => showGuide(context),
-                      onPlanFast: day.planLimitHours > 0 ? () => _planFast(day.fasting) : null,
+                      onPlanFast: day.planLimitHours > 0 ? () => _planFast(day.fastingAll) : null,
                     ),
                   ],
                   BlockTitle(
@@ -430,7 +435,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
                           style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
-                          onPressed: () => _planFast(day.fasting),
+                          onPressed: () => _planFast(day.fastingAll),
                           icon: const Icon(Icons.timelapse_rounded, size: 18),
                           label: const Text('Fasting today? Plan a fast'),
                         ),

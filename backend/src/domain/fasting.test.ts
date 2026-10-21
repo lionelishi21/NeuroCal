@@ -61,8 +61,8 @@ describe("fastingProtocolOf with health conditions", () => {
 });
 
 describe("planned fasts", () => {
-  it("allow up to 36 hours, 12 at the cautious protocol, and none when a condition rules fasting out", () => {
-    expect(plannedFastLimit({})).toBe(36);
+  it("allow up to 48 hours, 12 at the cautious protocol, and none when a condition rules fasting out", () => {
+    expect(plannedFastLimit({})).toBe(48);
     expect(plannedFastLimit({ healthConditions: ["glucose_lowering_meds"] })).toBe(12);
     expect(plannedFastLimit({ weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution: true } })).toBe(12);
     expect(plannedFastLimit({ healthConditions: ["eating_disorder_history"] })).toBe(0);

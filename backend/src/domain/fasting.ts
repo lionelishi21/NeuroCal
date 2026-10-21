@@ -19,7 +19,7 @@ export const CAUTIOUS_PROTOCOL = "12_12";
 export const FAST_SAFE_KCAL = 10;
 
 /** The longest fast the app lets anyone plan; longer ones are for a clinician to plan. */
-export const MAX_PLANNED_FAST_HOURS = 36;
+export const MAX_PLANNED_FAST_HOURS = 48;
 
 /** A fast someone chose to run until a time. `startedAt` is when they planned it. */
 export interface FastPlan {

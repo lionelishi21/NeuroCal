@@ -354,7 +354,7 @@ describe("API routes", () => {
   });
 
   it("GET /fasting times the fast from logged meals, capped at 12 hours after the safety answer", async () => {
-    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0, planLimitHours: 36 });
+    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0, planLimitHours: 48, lastMealAt: "2026-09-29T13:10:00.000Z" });
 
     // The day's only meal was at 13:10Z; the 8-hour window closed at 21:10Z and it's 22:00Z now.
     await profiles.save(profile({ bioProfile: { fasting: "16_8" } }));
@@ -363,7 +363,8 @@ describe("API routes", () => {
       fastHours: 16,
       state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T05:10:00.000Z" },
       streakDays: 0,
-      planLimitHours: 36,
+      planLimitHours: 48,
+      lastMealAt: "2026-09-29T13:10:00.000Z",
     });
 
     await profiles.save(
@@ -384,7 +385,7 @@ describe("API routes", () => {
       state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T17:00:00.000Z" },
       plan: { startedAt: "2026-09-29T22:00:00.000Z", until: "2026-09-30T17:00:00.000Z" },
     });
-    expect((await call("PUT", "/fasting/plan", { until: "2026-10-01T02:00:00.000Z" })).status).toBe(400); // 36h50m
+    expect((await call("PUT", "/fasting/plan", { until: "2026-10-01T14:00:00.000Z" })).status).toBe(400); // 48h50m
     expect((await call("PUT", "/fasting/plan", { until: "2026-09-29T22:10:00.000Z" })).status).toBe(400); // too soon
 
     // Black coffee isn't a meal: the fast still runs from 13:10. Ending the plan removes it.

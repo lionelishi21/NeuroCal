@@ -30,6 +30,8 @@ export interface FastingStatus {
   plan?: FastPlan;
   /** The longest fast that can be planned, in hours from the last meal; 0 when none can. */
   planLimitHours: number;
+  /** The last meal (of FAST_SAFE_KCAL or more) in the last month; planned fasts count from it. */
+  lastMealAt?: Date;
 }
 
 /**
@@ -54,14 +56,16 @@ export class GetFastingUseCase {
     const protocol: FastingProtocol = fastingProtocolOf(profile);
     const fastHours = protocol === "none" ? undefined : FAST_HOURS[protocol];
     const streakDays = fastHours ? fastingStreak(eaten, now, fastHours, (d) => localDateOf(d, profile.timeZone)) : 0;
+    const lastMealAt = eaten.filter((m) => m <= now).at(-1);
+    const common = { planLimitHours, ...(lastMealAt ? { lastMealAt } : {}) };
 
     const plan = planLimitHours > 0 ? activePlan(await this.plans.get(input.userId), eaten, now) : null;
     if (plan) {
-      const since = eaten.filter((m) => m <= now).at(-1) ?? plan.startedAt;
-      return { protocol, ...(fastHours ? { fastHours } : {}), state: { kind: "fasting", since, goalAt: plan.until }, streakDays, plan, planLimitHours };
+      const since = lastMealAt ?? plan.startedAt;
+      return { protocol, ...(fastHours ? { fastHours } : {}), state: { kind: "fasting", since, goalAt: plan.until }, streakDays, plan, ...common };
     }
-    if (!fastHours) return { protocol, state: { kind: "off" }, streakDays: 0, planLimitHours };
-    return { protocol, fastHours, state: fastingState(eaten, now, fastHours), streakDays, planLimitHours };
+    if (!fastHours) return { protocol, state: { kind: "off" }, streakDays: 0, ...common };
+    return { protocol, fastHours, state: fastingState(eaten, now, fastHours), streakDays, ...common };
   }
 
   /** Fast until [until], counted from the last meal; replaces a plan already running. */

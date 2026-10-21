@@ -161,7 +161,7 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   planFast: {
     summary: "Plan a fast",
-    description: "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (36, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
+    description: "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (48, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
   },
   endFast: { summary: "End a planned fast", description: "The timer goes back to counting from meals and the protocol." },
   scanFood: {

@@ -38,9 +38,14 @@ class _PlanFastState extends State<_PlanFast> {
   var _busy = false;
   String? _problem;
 
-  /// What the fast counts from: the last meal while fasting, otherwise now.
-  DateTime get _from => widget.status?.since ?? DateTime.now();
-  int get _limit => widget.status?.planLimitHours ?? 36;
+  /// What the fast counts from, like the API: the last meal while it's within the limit, otherwise now.
+  DateTime get _from {
+    final now = DateTime.now();
+    final last = widget.status?.lastMealAt;
+    return last != null && now.difference(last).inMinutes < _limit * 60 ? last : now;
+  }
+
+  int get _limit => widget.status?.planLimitHours ?? 48;
 
   bool _fits(DateTime until, DateTime now) =>
       until.difference(now).inMinutes >= 30 && until.difference(_from).inMinutes <= _limit * 60;
@@ -105,7 +110,10 @@ class _PlanFastState extends State<_PlanFast> {
       spacing: 14,
       children: [
         Text(
-          'Today and the timer switch to your fast until it ends. Logging a meal ends it early.',
+          [
+            'Today and the timer switch to your fast until it ends. Logging a meal ends it early.',
+            if (widget.status?.lastMealAt case final last? when _from == last) 'It counts from your last meal, at ${fastEnd(last, now)}.',
+          ].join(' '),
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
         for (final choice in choices)
@@ -129,6 +137,12 @@ class _PlanFastState extends State<_PlanFast> {
           'Water, black coffee and plain tea don’t break your fast. Up to $_limit hours from your last meal; check with your clinician before longer fasts.',
           style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
         ),
+        if (until != null && until.difference(_from) > const Duration(hours: 24))
+          const SheetNote(
+            lead: 'Over 24 hours.',
+            detail: 'Check with your clinician first, keep drinking water, and stop if you feel dizzy, faint or unwell.',
+            watch: true,
+          ),
         if (_problem != null) SheetNote(lead: 'Can’t plan that.', detail: _problem!),
         SheetAction(label: _busy ? 'Starting…' : 'Start fasting', onPressed: _busy || until == null || !_fits(until, now) ? null : _start),
       ],
