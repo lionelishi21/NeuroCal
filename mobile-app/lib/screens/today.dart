@@ -4,6 +4,7 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/feeling_face.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/share_card.dart';
 import '../widgets/sheet.dart';
@@ -1030,13 +1031,18 @@ class _Feeling extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            margin: const EdgeInsets.only(right: Space.s3),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
-            child: Icon(Icons.mood_rounded, size: 22, color: c.synapseInk),
+          // The face of the first feeling picked, or a plain smile before the first check-in.
+          Padding(
+            padding: const EdgeInsets.only(right: Space.s3),
+            child: flags.isEmpty
+                ? Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+                    child: Icon(Icons.mood_rounded, size: 22, color: c.synapseInk),
+                  )
+                : FeelingFace(flags.first, size: 44),
           ),
           Expanded(
             child: Column(
