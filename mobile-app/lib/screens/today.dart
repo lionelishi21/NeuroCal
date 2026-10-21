@@ -6,6 +6,7 @@ import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/share_card.dart';
+import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import '../health/sleep_sync.dart';
@@ -107,8 +108,9 @@ String _hm(Duration d) => d.inHours > 0 ? '${d.inHours}h ${d.inMinutes % 60}m' :
 /// "SR" for "Sam Rivera".
 String initials(String name) => name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
 
-/// Today: a top bar with the week to look back on, the Focus Score and Brain speed, calories and how
-/// processed the food was, how you feel, your supplements, what to eat next and the day's meals.
+/// Today, in four parts that read top to bottom: the Focus Score with its six inputs, the one next
+/// step, food (calories, meals, what to eat next) and the day's habits (Brain speed, exercise, how you
+/// feel, supplements, surroundings). A week strip looks back at earlier days.
 class TodayScreen extends StatefulWidget {
   const TodayScreen({
     super.key,
@@ -282,6 +284,17 @@ class _TodayScreenState extends State<TodayScreen> {
     widget.onChanged();
   }
 
+  /// The rows of the habits card: Brain speed, exercise, how you feel, supplements and surroundings
+  /// today; a past day shows only the exercise logged on it.
+  List<Widget> _habits(_Day day) => [
+    if (day.isToday) _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
+    if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday)
+      _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
+    if (day.isToday) _Feeling(day.bio.flags, reminders: AppScope.of(context).reminders, onCheckIn: () => widget.onCapture(Capture.checkIn)),
+    if (day.isToday && day.stack != null) StackCard(day.stack!, onManage: _manageStack, framed: false),
+    if (day.isToday && day.environment != null) EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -322,19 +335,6 @@ class _TodayScreenState extends State<TodayScreen> {
                 else if (day == null || snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
                   const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
                 else ...[
-                  if (day.isToday) ...[
-                    _UpNext(
-                      day,
-                      sleepSync: AppScope.of(context).sleepSync,
-                      onConnectSleep: _connectSleep,
-                      onCapture: widget.onCapture,
-                      onDaylight: _daylight,
-                      onCalfPump: _calfPump,
-                      onStack: _manageStack,
-                      onHowItWorks: () => showGuide(context),
-                    ),
-                    const SizedBox(height: Space.s3),
-                  ],
                   _FocusCard(
                     day.focus,
                     onCheckIn: () => widget.onCapture(Capture.checkIn),
@@ -350,45 +350,20 @@ class _TodayScreenState extends State<TodayScreen> {
                   ),
                   if (day.isToday) ...[
                     const SizedBox(height: Space.s3),
-                    _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
-                  ],
-                  const SizedBox(height: Space.s3),
-                  _Calories(day.bio),
-                  if (day.bio.wholeKcal + day.bio.processedKcal + day.bio.ultraProcessedKcal > 0) ...[
-                    const SizedBox(height: Space.s3),
-                    _Processing(day.bio),
-                  ],
-                  if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday) ...[
-                    const SizedBox(height: Space.s3),
-                    _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
-                  ],
-                  if (day.isToday && day.environment != null) ...[
-                    const SizedBox(height: Space.s3),
-                    EnvironmentCard(day.environment!, onChanged: widget.onChanged),
-                  ],
-                  if (day.isToday) ...[
-                    const SizedBox(height: Space.s3),
-                    _Feeling(day.bio.flags, reminders: AppScope.of(context).reminders, onCheckIn: () => widget.onCapture(Capture.checkIn)),
-                    if (day.stack != null) ...[
-                      const SizedBox(height: Space.s3),
-                      StackCard(day.stack!, onManage: _manageStack),
-                    ],
-                    const BlockTitle('What to eat next'),
-                    _Suggestions(day.recipes),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
-                        onPressed: widget.onOpenPantry,
-                        icon: const Icon(Icons.kitchen_rounded, size: 18),
-                        label: const Text('Cook from your pantry'),
-                      ),
+                    _UpNext(
+                      day,
+                      sleepSync: AppScope.of(context).sleepSync,
+                      onConnectSleep: _connectSleep,
+                      onCapture: widget.onCapture,
+                      onDaylight: _daylight,
+                      onCalfPump: _calfPump,
+                      onStack: _manageStack,
+                      onHowItWorks: () => showGuide(context),
                     ),
                   ],
-                  BlockTitle(
-                    day.isToday ? 'Meals today' : 'Meals',
-                    note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
-                  ),
+                  BlockTitle('Food', note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal'),
+                  _Calories(day.bio),
+                  const SizedBox(height: Space.s3),
                   if (day.meals.isEmpty)
                     day.isToday
                         ? EmptyCard(
@@ -406,6 +381,34 @@ class _TodayScreenState extends State<TodayScreen> {
                         ],
                       ),
                     ),
+                  if (day.isToday) ...[
+                    const BlockTitle('What to eat next'),
+                    _Suggestions(day.recipes),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
+                        onPressed: widget.onOpenPantry,
+                        icon: const Icon(Icons.kitchen_rounded, size: 18),
+                        label: const Text('Cook from your pantry'),
+                      ),
+                    ),
+                  ],
+                  if (_habits(day) case final rows when rows.isNotEmpty) ...[
+                    BlockTitle(day.isToday ? 'Today’s habits' : 'Habits'),
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final (i, row) in rows.indexed) ...[
+                            if (i > 0) Divider(height: 1, color: c.rule),
+                            row,
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                   if (!day.isToday)
                     Padding(
                       padding: const EdgeInsets.only(top: Space.s3),
@@ -557,9 +560,6 @@ class _WeekStrip extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _sameDay(d, selected) ? c.synapse : c.paper,
                   borderRadius: BorderRadius.circular(Radii.option),
-                  boxShadow: [
-                    if (_sameDay(d, selected)) BoxShadow(color: c.synapse.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
-                  ],
                 ),
                 child: Material(
                   type: MaterialType.transparency,
@@ -567,7 +567,7 @@ class _WeekStrip extends StatelessWidget {
                     borderRadius: BorderRadius.circular(Radii.option),
                     onTap: () => onPick(d),
                     child: SizedBox(
-                      height: 56,
+                      height: 48,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         spacing: 2,
@@ -601,7 +601,8 @@ class _WeekStrip extends StatelessWidget {
   }
 }
 
-/// The hero: the ring, a word for the score, the explanation, and the four signals behind it.
+/// The hero: the ring, a word for the score, the explanation, and the six inputs behind it as one row
+/// of small rings. Tapping an input says what it measures and offers the way to log it.
 class _FocusCard extends StatelessWidget {
   const _FocusCard(
     this.focus, {
@@ -629,14 +630,14 @@ class _FocusCard extends StatelessWidget {
     final score = focus.score;
     final parts = focus.components;
     final signals = [
-      ('Sleep', 'Last night', parts.sleep, null as String?),
-      ('Evening timing', 'Late food and screens', parts.timing, null),
+      ('Sleep', 'Sleep', 'Last night', parts.sleep, null as String?),
+      ('Evening timing', 'Evening', 'Late food and screens', parts.timing, null),
       focus.glycemicFromSensor
-          ? ('Blood sugar', 'From your glucose sensor', parts.glycemic, null)
-          : ('Glycemic load', "Yesterday's food", parts.glycemic, 'Builds from meals'),
-      ('Stress', 'Recent check-ins', parts.stress, null),
-      ('Movement', "Yesterday's exercise", parts.movement, null),
-      ('Environment', 'Air and surroundings', parts.environment, null),
+          ? ('Blood sugar', 'Sugar', 'From your glucose sensor', parts.glycemic, null)
+          : ('Glycemic load', 'Food', "Yesterday's food", parts.glycemic, 'Builds from meals'),
+      ('Stress', 'Stress', 'Recent check-ins', parts.stress, null),
+      ('Movement', 'Move', "Yesterday's exercise", parts.movement, null),
+      ('Environment', 'Air', 'Air and surroundings', parts.environment, null),
     ];
     // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card.
     return Container(
@@ -743,124 +744,152 @@ class _FocusCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Space.s4),
-          for (var row = 0; row < (signals.length + 1) ~/ 2; row++) ...[
-            if (row > 0) const SizedBox(height: Space.s2),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: Space.s2,
-                children: [
-                  for (final (name, detail, value, waiting) in signals.skip(row * 2).take(2))
-                    Expanded(
-                      child: _Signal(
-                        name: name,
-                        detail: detail,
-                        value: value,
-                        waiting: waiting,
-                        action: switch (name) {
-                          'Sleep' => (label: 'Log', name: 'Log sleep', empty: 'Last night', run: onLogSleep),
-                          'Evening timing' => (
-                            label: 'Log',
-                            name: 'Log screen time',
-                            empty: 'Late food and screens',
-                            run: onLogScreens,
-                          ),
-                          'Stress' => (label: 'Check in', name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
-                          'Movement' => (label: 'Log', name: 'Log exercise', empty: 'Counts once you log exercise', run: onLogExercise),
-                          'Environment' => (label: 'Set up', name: 'Set up environment', empty: 'Your town’s air, or the check below', run: onSetUpEnvironment),
-                          _ => null,
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final (name, short, detail, value, waiting) in signals)
+                Expanded(
+                  child: _Input(
+                    name: name,
+                    short: short,
+                    detail: detail,
+                    value: value,
+                    waiting: waiting,
+                    action: switch (name) {
+                      'Sleep' => (name: 'Log sleep', empty: 'Last night', run: onLogSleep),
+                      'Evening timing' => (name: 'Log screen time', empty: 'Late food and screens', run: onLogScreens),
+                      'Stress' => (name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
+                      'Movement' => (name: 'Log exercise', empty: 'Counts once you log exercise', run: onLogExercise),
+                      'Environment' => (name: 'Set up environment', empty: 'Your town’s air, or the check in your habits', run: onSetUpEnvironment),
+                      _ => null,
+                    },
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-/// One of the four inputs: good from 0.75, otherwise "watch this"; without data it says what fills it.
-class _Signal extends StatelessWidget {
-  const _Signal({required this.name, required this.detail, required this.value, this.waiting, this.action});
+/// What each input measures, said once in its sheet.
+const _inputWhy = {
+  'Sleep': 'Sleep counts most: one short night slows attention and reaction time the next day.',
+  'Evening timing': 'Late meals and screens after 10 pm push your body clock back and cut deep sleep.',
+  'Glycemic load': 'Meals that spike blood sugar bring a slump a couple of hours later.',
+  'Blood sugar': 'Steady blood sugar means steady energy; big swings bring slumps.',
+  'Stress': 'How you said you feel in your recent check-ins.',
+  'Movement': 'Moving lifts focus for the next couple of hours, and helps you sleep.',
+  'Environment': 'Morning daylight, a dark and quiet bedroom, clean water and the air where you live.',
+};
+
+/// One of the six inputs as a small ring in its body system's colour: full and green from 0.75,
+/// amber below; a "+" when there's nothing yet and it can be logged.
+class _Input extends StatelessWidget {
+  const _Input({required this.name, required this.short, required this.detail, required this.value, this.waiting, this.action});
 
   final String name;
+
+  /// Fits under the ring, six across a phone.
+  final String short;
   final String detail;
   final double? value;
   final String? waiting;
 
-  /// What fills the signal when it has no data yet.
-  final ({String label, String name, String empty, VoidCallback run})? action;
+  /// The way to fill or update the input.
+  final ({String name, String empty, VoidCallback run})? action;
+
+  String get _word {
+    final v = value;
+    return v == null ? 'No data' : (v >= 0.75 ? 'Good' : (v >= 0.4 ? 'Moderate' : 'Low'));
+  }
+
+  (IconData, Color) _look(NeuroCalColors c) => switch (name) {
+    'Sleep' => (Icons.bedtime_rounded, c.sleep),
+    'Evening timing' => (Icons.nights_stay_rounded, c.ionInk),
+    'Glycemic load' || 'Blood sugar' => (Icons.water_drop_rounded, c.glucoseInk),
+    'Movement' => (Icons.directions_run_rounded, c.chlorophyll),
+    'Environment' => (Icons.air_rounded, c.ionInk),
+    _ => (Icons.spa_rounded, c.synapseInk),
+  };
+
+  void _open(BuildContext context) {
+    final c = context.colors;
+    final v = value;
+    final good = v != null && v >= 0.75;
+    final act = action;
+    showAppSheet<void>(
+      context,
+      title: name,
+      builder: (sheet) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 14,
+        children: [
+          Text(
+            _word,
+            style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: v == null ? c.inkFaint : (good ? c.chlorophyll : c.glucoseInk)),
+          ),
+          if (v != null) Meter(value: v, color: good ? c.chlorophyllBar : c.glucose, height: 8),
+          Text(v != null ? detail : (waiting ?? act?.empty ?? 'Nothing logged yet'), style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+          if (_inputWhy[name] case final why?) Text(why, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+          if (act != null)
+            SheetAction(
+              label: act.name,
+              onPressed: () {
+                Navigator.of(sheet).pop();
+                act.run();
+              },
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final v = value;
     final good = v != null && v >= 0.75;
-    final word = v == null ? 'No data' : (good ? 'Good' : (v >= 0.4 ? 'Moderate' : 'Low'));
-    final small = TextStyle(fontSize: TextSize.xxs, color: c.inkFaint);
-    // Each signal wears its body system's colour.
-    final (icon, ink, fill) = switch (name) {
-      'Sleep' => (Icons.bedtime_rounded, c.sleep, c.sleepSoft),
-      'Evening timing' => (Icons.nights_stay_rounded, c.ionInk, c.ionSoft),
-      'Glycemic load' => (Icons.water_drop_rounded, c.glucoseInk, c.glucoseSoft),
-      'Movement' => (Icons.directions_run_rounded, c.chlorophyll, c.chlorophyllSoft),
-      'Environment' => (Icons.air_rounded, c.ionInk, c.ionSoft),
-      _ => (Icons.spa_rounded, c.synapseInk, c.synapseSoft),
-    };
+    final (icon, ink) = _look(c);
+    final add = v == null && action != null;
     return Semantics(
-      container: true,
-      label: '$name: $word',
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 74),
-        padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: 10),
-        decoration: BoxDecoration(color: fill.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(Radii.option)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: Space.s1,
-          children: [
-            ExcludeSemantics(
-              child: Row(
-                spacing: 5,
-                children: [
-                  Icon(icon, size: 14, color: ink),
-                  Flexible(
-                    child: Text(
-                      name,
-                      style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink),
+      button: true,
+      label: '$name: $_word',
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Radii.option),
+        onTap: () => _open(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            spacing: 6,
+            children: [
+              SizedBox.square(
+                dimension: 42,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: v ?? 0,
+                        strokeWidth: 3.5,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: c.track,
+                        color: good ? c.chlorophyllBar : c.glucose,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (v != null) ...[
-              ExcludeSemantics(
-                child: Text(
-                  word,
-                  style: TextStyle(
-                    fontSize: TextSize.md,
-                    fontWeight: FontWeight.w700,
-                    color: good ? c.chlorophyll : c.glucoseInk,
-                  ),
+                    Icon(add ? Icons.add_rounded : icon, size: 20, color: v == null ? (add ? c.synapseInk : c.inkFaint) : ink),
+                  ],
                 ),
               ),
-              Meter(value: v, color: good ? c.chlorophyllBar : c.glucose),
-              Text(detail, style: small),
-            ] else if (action != null) ...[
-              SoftButton(label: '+ ${action!.label}', semanticLabel: action!.name, height: 32, onPressed: action!.run),
-              Text(action!.empty, style: small),
-            ] else ...[
-              ExcludeSemantics(
-                child: Text(
-                  '–',
-                  style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700, color: c.inkFaint),
-                ),
+              Text(
+                short,
+                maxLines: 1,
+                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: v == null ? c.inkSoft : c.ink),
               ),
-              Text(waiting ?? 'Nothing logged yet', style: small),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -963,6 +992,12 @@ class _Calories extends StatelessWidget {
                 ),
             ],
           ),
+          if (bio.wholeKcal + bio.processedKcal + bio.ultraProcessedKcal > 0) ...[
+            const SizedBox(height: 14),
+            Divider(height: 1, color: c.rule),
+            const SizedBox(height: Space.s3),
+            _Processing(bio),
+          ],
         ],
       ),
     );
@@ -981,20 +1016,28 @@ class _Feeling extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = reminders;
-    if (r == null) return _card(context, null);
-    return ListenableBuilder(listenable: r, builder: (context, _) => _card(context, r));
+    if (r == null) return _row(context, null);
+    return ListenableBuilder(listenable: r, builder: (context, _) => _row(context, r));
   }
 
-  Widget _card(BuildContext context, ReminderSettings? r) {
+  Widget _row(BuildContext context, ReminderSettings? r) {
     final c = context.colors;
     final words = [for (final (i, flag) in flags.indexed) i == 0 ? flag.label : flag.label.toLowerCase()].join(', ');
     final now = DateTime.now();
     final window = r?.openAt(now);
     final done = window != null && r!.doneOn(now).contains(window);
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s3, Space.s3),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
       child: Row(
         children: [
+          Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: Space.s3),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+            child: Icon(Icons.mood_rounded, size: 22, color: c.synapseInk),
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1268,8 +1311,8 @@ class _MealRow extends StatelessWidget {
   }
 }
 
-/// How processed today's food was: a bar of whole, processed and ultra-processed calories, and the
-/// ultra-processed share in words. Items typed in by hand aren't counted.
+/// How processed today's food was, inside the calories card: a bar of whole, processed and
+/// ultra-processed calories, and the ultra-processed share in words. Items typed in by hand aren't counted.
 class _Processing extends StatelessWidget {
   const _Processing(this.bio);
 
@@ -1285,9 +1328,7 @@ class _Processing extends StatelessWidget {
       (bio.processedKcal, c.glucose, 'Processed'),
       (bio.ultraProcessedKcal, c.beet, 'Ultra-processed'),
     ];
-    return AppCard(
-      padding: const EdgeInsets.all(Space.s4),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s2,
         children: [
@@ -1296,7 +1337,7 @@ class _Processing extends StatelessWidget {
             spacing: Space.s2,
             children: [
               const Expanded(
-                child: Text('How processed', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                child: Text('How processed', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800)),
               ),
               // Both sides may wrap: with large text the label alone can be wider than the card.
               Flexible(
@@ -1332,8 +1373,7 @@ class _Processing extends StatelessWidget {
             style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 
@@ -1352,14 +1392,14 @@ class _BrainSpeed extends StatelessWidget {
     final today = latest != null && latest.takenAt.year == now.year && latest.takenAt.month == now.month && latest.takenAt.day == now.day ? latest : null;
     final usual = history?.baselineScore;
     final diff = today != null && usual != null ? today.score - usual : null;
-    return AppCard(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
       child: Row(
         spacing: Space.s3,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 40,
+            height: 40,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
@@ -1371,7 +1411,7 @@ class _BrainSpeed extends StatelessWidget {
             ),
             child: today == null
                 ? const Icon(Icons.bolt_rounded, color: NeuroCalColors.onSignal)
-                : Text('${today.score}', style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, color: NeuroCalColors.onSignal)),
+                : Text('${today.score}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, color: NeuroCalColors.onSignal)),
           ),
           Expanded(
             child: Column(
@@ -1411,7 +1451,7 @@ class _ExerciseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final empty = day.exercises.isEmpty;
-    return AppCard(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, Space.s2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

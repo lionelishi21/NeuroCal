@@ -34,10 +34,13 @@ List<Widget> _flagNotes(List<StackFlag> flags) => [
 
 /// Today's supplements as a checklist, with stack-wide warnings and bottles running low.
 class StackCard extends StatefulWidget {
-  const StackCard(this.stack, {super.key, required this.onManage});
+  const StackCard(this.stack, {super.key, required this.onManage, this.framed = true});
 
   final SupplementStack stack;
   final VoidCallback onManage;
+
+  /// False draws it as a row of Today's habits card, without its own card.
+  final bool framed;
 
   @override
   State<StackCard> createState() => _StackCardState();
@@ -69,14 +72,21 @@ class _StackCardState extends State<StackCard> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final taken = _items.where((i) => i.takenToday).length;
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s3, Space.s2),
-      child: Column(
+    const padding = EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s3, Space.s2);
+    final body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s2,
         children: [
           Row(
+            spacing: Space.s3,
             children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+                child: Icon(Icons.medication_rounded, size: 22, color: c.synapseInk),
+              ),
               const Expanded(
                 child: Text('Supplements today', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
               ),
@@ -144,8 +154,8 @@ class _StackCardState extends State<StackCard> {
           ..._flagNotes(widget.stack.flags),
           Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onManage, child: const Text('Manage stack'))),
         ],
-      ),
-    );
+      );
+    return widget.framed ? AppCard(padding: padding, child: body) : Padding(padding: padding, child: body);
   }
 }
 

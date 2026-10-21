@@ -396,6 +396,30 @@ void main() {
     expect(find.textContaining('1 of 2 servings'), findsWidgets);
   });
 
+  testWidgets('Today reads top to bottom: score, next step, food, then habits; an input opens what it measures', (tester) async {
+    await pumpApp(tester);
+    // Tall enough to lay out the whole day at once, so positions can be compared.
+    tester.view.physicalSize = const Size(360, 4000);
+    await signIn(tester);
+    // The last match: "Food" is also the label under one of the score's rings.
+    double top(String text) => tester.getTopLeft(find.text(text).last).dy;
+    expect(top('Focus Score'), lessThan(top('Up next')));
+    expect(top('Up next'), lessThan(top('Food')));
+    expect(top('Food'), lessThan(top('Today’s habits')));
+
+    // The six inputs are one row of small rings; each says what it measures and how to log it.
+    for (final name in ['Sleep', 'Evening timing', 'Glycemic load', 'Stress', 'Movement', 'Environment']) {
+      expect(find.bySemanticsLabel(RegExp('^$name: ')), findsOneWidget, reason: name);
+    }
+    await tester.tap(find.bySemanticsLabel(RegExp(r'^Environment: ')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('a dark and quiet bedroom'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Set up environment'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(FilledButton, 'Set up environment'), findsNothing);
+  });
+
   testWidgets('environment: set the town for air quality and tick the day’s check', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
@@ -410,8 +434,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Air quality on for Austin, sample region'), findsOneWidget);
 
+    expect(tester.getSemantics(find.bySemanticsLabel('Morning daylight')), isSemantics(isChecked: false));
     await tapCentered(tester, find.text('Morning daylight'));
-    expect(find.text('✓ Morning daylight'), findsOneWidget);
+    expect(tester.getSemantics(find.bySemanticsLabel('Morning daylight')), isSemantics(isChecked: true));
   });
 
   testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (tester) async {
@@ -541,20 +566,17 @@ void main() {
     // The sample day has sleep and a check-in, so morning light is next (or movement after 5 pm).
     if (DateTime.now().hour < 17) {
       expect(find.text('Get 10 minutes of daylight'), findsOneWidget);
-      await tester.tap(find.text('I’ve been outside'));
-      await tester.pumpAndSettle();
+      await tapCentered(tester, find.text('I’ve been outside'));
       expect(find.text('Daylight ticked'), findsOneWidget);
       expect(find.text('Get 10 minutes of daylight'), findsNothing);
     }
     expect(find.text('Move for 5 minutes'), findsOneWidget);
-    await tester.tap(find.text('Start the calf pump'));
-    await tester.pumpAndSettle();
+    await tapCentered(tester, find.text('Start the calf pump'));
     expect(find.text('Calf pump'), findsWidgets);
     await tester.tap(find.byTooltip('Back').evaluate().isNotEmpty ? find.byTooltip('Back') : find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('See the whole day'));
-    await tester.pumpAndSettle();
+    await tapCentered(tester, find.text('See the whole day'));
     expect(find.bySemanticsLabel('Log last night’s sleep, done'), findsOneWidget);
     expect(find.bySemanticsLabel('Move, not done yet'), findsOneWidget);
   });
@@ -565,7 +587,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Add'));
     await tester.pumpAndSettle();
     for (final section in ['Food', 'Body', 'Mind']) {
-      expect(find.text(section), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(section)), findsOneWidget);
     }
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();

@@ -11,9 +11,12 @@ import '../widgets/ui.dart';
 /// Today's environment (docs/NCBM.md §3): the air where you live, and four taps for the daily check
 /// (morning daylight, a dark and a quiet bedroom, filtered water). Answers save as they're tapped.
 class EnvironmentCard extends StatefulWidget {
-  const EnvironmentCard(this.day, {super.key, required this.onChanged});
+  const EnvironmentCard(this.day, {super.key, required this.onChanged, this.framed = true});
 
   final EnvironmentDay day;
+
+  /// False draws it as a row of Today's habits card, without its own card.
+  final bool framed;
 
   /// Something was saved: the score and Today reload.
   final VoidCallback onChanged;
@@ -65,9 +68,8 @@ class _EnvironmentCardState extends State<EnvironmentCard> {
       null => (c.mist, c.inkSoft),
       _ => (c.beetSoft, c.beet),
     };
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
-      child: Column(
+    const padding = EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14);
+    final body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s3,
         children: [
@@ -108,22 +110,65 @@ class _EnvironmentCardState extends State<EnvironmentCard> {
                 child: Text('Air in ${d.place} · change', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
               ),
             ),
-          Text('Today', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
-          Wrap(
-            spacing: Space.s2,
-            runSpacing: Space.s2,
-            children: [
-              for (final item in EnvironmentItem.values)
-                ChoicePill(
-                  label: d.check[item] == true ? '✓ ${item.label}' : item.label,
-                  semanticLabel: item.label,
-                  height: 40,
-                  selected: d.check[item] == true,
-                  onTap: () => _answer(item, d.check[item] != true),
-                ),
-            ],
+          // Two ticks a row, like the supplements above them.
+          LayoutBuilder(
+            builder: (context, box) => Wrap(
+              children: [
+                for (final item in EnvironmentItem.values)
+                  SizedBox(
+                    width: box.maxWidth / 2,
+                    child: _Tick(label: item.label, done: d.check[item] == true, onTap: () => _answer(item, d.check[item] != true)),
+                  ),
+              ],
+            ),
           ),
         ],
+      );
+    return widget.framed ? AppCard(padding: padding, child: body) : Padding(padding: padding, child: body);
+  }
+}
+
+/// One answer of the daily check: a round tick and its label, ticked when kept today.
+class _Tick extends StatelessWidget {
+  const _Tick({required this.label, required this.done, required this.onTap});
+
+  final String label;
+  final bool done;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      checked: done,
+      label: label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Radii.option),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            spacing: Space.s2,
+            children: [
+              AnimatedContainer(
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 150),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done ? c.chlorophyll : null,
+                  border: Border.all(color: done ? c.chlorophyll : c.ruleStrong, width: 2),
+                ),
+                child: done ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
+              ),
+              Expanded(
+                child: Text(label, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, color: done ? c.inkSoft : c.ink)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
