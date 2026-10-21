@@ -50,24 +50,44 @@ class _HealthspanCardState extends State<HealthspanCard> {
       final week = snapshot.data;
       if (week == null) return const SizedBox.shrink();
       final c = context.colors;
-      final counted = week.habits.where((h) => h.skipped == null).toList();
-      final done = counted.where((h) => h.done).length;
       final card = AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              spacing: Space.s3,
               children: [
+                if (week.score case final score?) HealthspanRing(score, size: 56),
                 Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Semantics(
+                              header: true,
+                              child: const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                            ),
+                          ),
+                          Text(
+                            '${week.done} of ${week.counted} this week',
+                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        week.score == null
+                            ? 'The weekly habits behind a long, healthy life.'
+                            : 'Your longevity score: the weekly habits behind a long, healthy life, against where they should be by today.',
+                        style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                      ),
+                    ],
                   ),
                 ),
-                Text('$done of ${counted.length} this week', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
               ],
             ),
-            Text('The weekly habits behind a long, healthy life.', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
             const SizedBox(height: Space.s2),
             for (final h in week.habits) _Habit(h),
           ],
@@ -133,6 +153,41 @@ class _Habit extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The healthspan score, 0–100, in a green ring.
+class HealthspanRing extends StatelessWidget {
+  const HealthspanRing(this.score, {super.key, this.size = 40});
+
+  final int score;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      label: 'Healthspan score $score out of 100',
+      excludeSemantics: true,
+      child: SizedBox.square(
+        dimension: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox.expand(
+              child: CircularProgressIndicator(
+                value: score / 100,
+                strokeWidth: size / 12,
+                strokeCap: StrokeCap.round,
+                backgroundColor: c.track,
+                color: c.chlorophyllBar,
+              ),
+            ),
+            Text('$score', style: TextStyle(fontSize: size * 0.36, fontWeight: FontWeight.w800, color: c.ink)),
           ],
         ),
       ),

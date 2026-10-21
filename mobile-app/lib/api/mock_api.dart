@@ -1011,6 +1011,7 @@ class MockNeuroCalApi implements NeuroCalApi {
     return HealthspanWeek(
       weekStart: isoDate(monday),
       days: now.weekday,
+      score: 68,
       habits: [
         HealthspanHabit(
           id: 'zone2',

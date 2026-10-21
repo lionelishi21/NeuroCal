@@ -1532,16 +1532,24 @@ class HealthspanHabit {
 
 /// This week's healthspan habits (`HealthspanResponse` in the contracts).
 class HealthspanWeek {
-  const HealthspanWeek({required this.weekStart, required this.days, required this.habits});
+  const HealthspanWeek({required this.weekStart, required this.days, required this.habits, this.score});
 
   final String weekStart;
   final int days;
   final List<HealthspanHabit> habits;
 
+  /// The week in one number, 0–100; null until something counts.
+  final int? score;
+
+  /// Habits a health condition leaves out don't count.
+  int get counted => habits.where((h) => h.skipped == null).length;
+  int get done => habits.where((h) => h.skipped == null && h.done).length;
+
   factory HealthspanWeek.fromJson(Map<String, dynamic> j) => HealthspanWeek(
     weekStart: j['weekStart'] as String,
     days: (j['days'] as num).toInt(),
     habits: [for (final h in j['habits'] as List) HealthspanHabit.fromJson(h as Map<String, dynamic>)],
+    score: (j['score'] as num?)?.toInt(),
   );
 }
 

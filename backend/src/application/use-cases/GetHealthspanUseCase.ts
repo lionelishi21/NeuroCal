@@ -1,6 +1,6 @@
 import { conditionsOf } from "../../domain/conditions";
 import { NotFoundError } from "../../domain/errors";
-import { type HealthspanHabit, healthspanWeek, weekSoFar } from "../../domain/healthspan";
+import { healthspanScore, type HealthspanHabit, healthspanWeek, weekSoFar } from "../../domain/healthspan";
 import { localDateOf, localTimeOf } from "../../domain/localDay";
 import type { IClock } from "../interfaces/IClock";
 import type { IEnvironmentRepository } from "../interfaces/IEnvironment";
@@ -77,6 +77,7 @@ export class GetHealthspanUseCase {
       daylightDays: perDay.filter((d) => d.daylight).length,
       conditions: conditionsOf(profile),
     });
-    return { weekStart: days[0]!, days: days.length, habits };
+    const score = healthspanScore(habits, days.length);
+    return { weekStart: days[0]!, days: days.length, habits, ...(score === null ? {} : { score }) };
   }
 }

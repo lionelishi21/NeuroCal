@@ -4275,6 +4275,11 @@
             "items": {
               "$ref": "#/components/schemas/HealthspanHabit"
             }
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [

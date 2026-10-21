@@ -418,6 +418,14 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Set up environment'), findsNothing);
+
+    // The week's healthspan score heads the habits, and opens the habits behind it.
+    final healthspan = find.bySemanticsLabel(RegExp(r'^Healthspan 68 out of 100'));
+    expect(healthspan, findsOneWidget);
+    await tester.tap(healthspan);
+    await tester.pumpAndSettle();
+    expect(find.text('Easy cardio'), findsOneWidget);
+    expect(find.textContaining('Your longevity score'), findsOneWidget);
   });
 
   testWidgets('a fasting day: plan a fast from Today, count water instead of logging it, and end it', (tester) async {

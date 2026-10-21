@@ -17,6 +17,7 @@ import 'capture.dart';
 import 'environment_card.dart';
 import 'exercise_sheet.dart';
 import 'guide.dart';
+import 'healthspan_card.dart';
 import 'next_step.dart';
 import 'plan_fast_sheet.dart';
 import 'streak.dart';
@@ -37,6 +38,7 @@ class _Day {
     this.exercise,
     this.environment,
     this.streak,
+    this.healthspan,
   });
 
   final DateTime date;
@@ -70,6 +72,9 @@ class _Day {
 
   /// Today only; null when history didn't load.
   final Streak? streak;
+
+  /// This week's healthspan; today only, null when it didn't load.
+  final HealthspanWeek? healthspan;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -195,6 +200,9 @@ class _TodayScreenState extends State<TodayScreen> {
     final reminders = scope.reminders;
     // The API keeps 31 days, so a longer streak shows as 31 until history goes further back.
     final history = _date == null ? _api.history(31).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
+    final healthspan = _date == null
+        ? _api.healthspan().then<HealthspanWeek?>((h) => h).catchError((Object _) => null)
+        : Future<HealthspanWeek?>.value(null);
     final d = await _api.today(_date);
     final days = await history;
     final streak = days == null ? null : streakFrom(days, date);
@@ -225,6 +233,7 @@ class _TodayScreenState extends State<TodayScreen> {
       exercise: d.exercise,
       environment: d.environment,
       streak: streak,
+      healthspan: await healthspan,
     );
   }
 
@@ -328,6 +337,11 @@ class _TodayScreenState extends State<TodayScreen> {
   /// The rows of the habits card: Brain speed, exercise, how you feel, supplements and surroundings
   /// today; a past day shows only the exercise logged on it.
   List<Widget> _habits(_Day day) => [
+    if (day.healthspan case final week? when day.isToday)
+      _HealthspanRow(
+        week,
+        onOpen: () => showAppSheet<void>(context, title: 'This week', builder: (_) => HealthspanCard(changes: widget.changes)),
+      ),
     if (day.isToday) _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
     if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday)
       _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
@@ -1450,6 +1464,60 @@ class _Processing extends StatelessWidget {
           ),
         ],
       );
+  }
+}
+
+/// The week's healthspan score in the habits card; opens the habits behind it.
+class _HealthspanRow extends StatelessWidget {
+  const _HealthspanRow(this.week, {required this.onOpen});
+
+  final HealthspanWeek week;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final score = week.score;
+    return Semantics(
+      button: true,
+      label: 'Healthspan${score == null ? '' : ' $score out of 100'}, ${week.done} of ${week.counted} habits this week',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+          child: Row(
+            spacing: Space.s3,
+            children: [
+              if (score != null)
+                HealthspanRing(score)
+              else
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: c.chlorophyllSoft, shape: BoxShape.circle),
+                  child: Icon(Icons.favorite_rounded, size: 22, color: c.chlorophyll),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
+                  children: [
+                    const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                    Text(
+                      '${week.done} of ${week.counted} longevity habits this week',
+                      style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

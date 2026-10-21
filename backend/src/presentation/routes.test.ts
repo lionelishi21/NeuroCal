@@ -810,6 +810,9 @@ describe("API routes", () => {
     expect(byId.strength).toMatchObject({ progress: 1, target: 2, done: false });
     expect(byId.zone2).toMatchObject({ progress: 50, target: 150 });
     expect(byId.whole_food!.progress).toBe(100);
+    // Strength is done for a Tuesday (1 of 2 by day 2) and so is the walking; the cola sinks the food score.
+    expect(week.score).toBeGreaterThan(0);
+    expect(week.score).toBeLessThan(100);
   });
 
   it("POST /exercises logs exercise with calories from the latest weigh-in, and GET /exercises totals the day", async () => {

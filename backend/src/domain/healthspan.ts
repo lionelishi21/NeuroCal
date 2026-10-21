@@ -144,6 +144,22 @@ export function healthspanWeek(w: HealthspanInputs): HealthspanHabit[] {
   ];
 }
 
+/**
+ * One number for the week, 0–100: how close each habit is to where it should be by now. Weekly targets
+ * are scaled to the days so far (Wednesday expects 3/7 of them), so a Monday isn't a zero. The
+ * ultra-processed share scores full under its limit and falls to 0 at twice it. Habits a health
+ * condition leaves out don't count, nor the share before any meal is graded; null when nothing counts.
+ */
+export function healthspanScore(habits: HealthspanHabit[], days: number): number | null {
+  const parts = habits.flatMap((h) => {
+    if (h.skipped) return [];
+    if (h.done) return [1];
+    if (h.unit === "%") return h.progress === 0 ? [] : [Math.max(0, 1 - (h.progress - h.target) / h.target)];
+    return [Math.min(1, h.progress / ((h.target * Math.max(1, days)) / 7))];
+  });
+  return parts.length ? Math.round((100 * parts.reduce((s, p) => s + p, 0)) / parts.length) : null;
+}
+
 /** Monday of the week [date] (YYYY-MM-DD) falls in, and the days from Monday to [date]. */
 export function weekSoFar(date: string): string[] {
   const d = new Date(`${date}T12:00:00Z`);

@@ -810,6 +810,11 @@ export const HealthspanResponse = z.object({
   /** Days of the week so far, today included. */
   days: z.number().int().min(1).max(7),
   habits: z.array(HealthspanHabit),
+  /**
+   * The week in one number, 0–100: each habit against where it should be by now (weekly targets scaled
+   * to the days so far). Absent until something counts.
+   */
+  score: z.number().int().min(0).max(100).optional(),
 });
 export type HealthspanResponse = z.infer<typeof HealthspanResponse>;
 
