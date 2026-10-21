@@ -32,6 +32,8 @@ export const toFasting = (f: FastingStatus): C.FastingStatus => ({
         ? { kind: "eating", openedAt: f.state.openedAt.toISOString(), closesAt: f.state.closesAt.toISOString() }
         : { kind: f.state.kind },
   streakDays: f.streakDays,
+  ...(f.plan ? { plan: { startedAt: f.plan.startedAt.toISOString(), until: f.plan.until.toISOString() } } : {}),
+  planLimitHours: f.planLimitHours,
 });
 
 export const toFoodItem = (i: FoodItem): C.FoodItem => ({

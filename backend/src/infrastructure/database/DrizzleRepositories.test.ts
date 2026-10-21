@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
 import type { Database } from "./client";
 import {
+  DrizzleFastPlanRepository,
   DrizzleCheckInRepository,
   DrizzleFocusScoreRepository,
   DrizzleMealRepository,
@@ -109,6 +110,19 @@ describe("DrizzleMealRepository", () => {
     expect(await repo().softDelete(alice, meal.id)).toBe(true);
     expect(await repo().get(alice, meal.id)).toBeNull();
     expect(await repo().softDelete(alice, meal.id)).toBe(false);
+  });
+});
+
+describe("DrizzleFastPlanRepository", () => {
+  it("keeps one planned fast per person, replaced or removed", async () => {
+    const plans = new DrizzleFastPlanRepository(db);
+    const plan = { startedAt: new Date("2026-10-20T20:00:00Z"), until: new Date("2026-10-21T17:00:00Z") };
+    expect(await plans.get(alice)).toBeNull();
+    await plans.set(alice, plan);
+    await plans.set(alice, { ...plan, until: new Date("2026-10-21T18:00:00Z") });
+    expect(await plans.get(alice)).toEqual({ ...plan, until: new Date("2026-10-21T18:00:00Z") });
+    await plans.set(alice, null);
+    expect(await plans.get(alice)).toBeNull();
   });
 });
 
@@ -268,6 +282,13 @@ describe("DrizzleWeightRepository", () => {
     expect(times.length).toBeGreaterThan(0);
     expect(times.every((t) => t >= new Date("2026-09-29T00:00:00Z"))).toBe(true);
     expect([...times].sort((a, b) => a.getTime() - b.getTime())).toEqual(times);
+
+    // A mug of black coffee doesn't count as a meal for the timer.
+    const meals = new DrizzleMealRepository(db);
+    const coffee = new Date("2026-09-30T07:00:00Z");
+    await meals.create(alice, { kind: "snack", eatenAt: coffee, items: [{ name: "Black coffee", portion: "1 mug", calories: 2, macros: { proteinG: 0.3, carbsG: 0, fatG: 0 } }] });
+    expect(await meals.eatenSince(alice, new Date("2026-09-30T00:00:00Z"))).toContainEqual(coffee);
+    expect(await meals.eatenSince(alice, new Date("2026-09-30T00:00:00Z"), 10)).not.toContainEqual(coffee);
   });
 });
 

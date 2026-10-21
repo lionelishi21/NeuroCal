@@ -204,6 +204,13 @@
       "when": 1792459485935,
       "tag": "0028_closed_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792606070668,
+      "tag": "0029_odd_colonel_america",
+      "breakpoints": true
     }
   ]
 }

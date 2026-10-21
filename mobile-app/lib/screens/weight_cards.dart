@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
 import '../widgets/share_card.dart';
 import '../widgets/ui.dart';
+import 'plan_fast_sheet.dart' show fastEnd;
 
 String _hm(Duration d) {
   final m = d.inMinutes.clamp(0, 1 << 30);
@@ -16,15 +18,22 @@ String _hm(Duration d) {
 
 String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-/// The fasting timer: how long since the last meal against the goal, or how long the eating window
-/// has left. Ticks every minute and asks for fresh numbers when a boundary passes.
+/// The fasting timer: how long since the last meal against the goal (the protocol's, or a planned
+/// fast's end), or how long the eating window has left. While fasting it counts glasses of water.
+/// Ticks every minute and asks for fresh numbers when a boundary passes.
 class FastingCard extends StatefulWidget {
-  const FastingCard(this.status, {super.key, required this.onBoundary});
+  const FastingCard(this.status, {super.key, required this.onBoundary, this.onPlan, this.onEnd});
 
   final FastingStatus status;
 
   /// The goal or the window's end has passed: reload.
   final VoidCallback onBoundary;
+
+  /// Offers "Plan a fast" when there's no plan running.
+  final VoidCallback? onPlan;
+
+  /// Offers "End my fast" while a planned fast runs.
+  final VoidCallback? onEnd;
 
   @override
   State<FastingCard> createState() => _FastingCardState();
@@ -57,7 +66,7 @@ class _FastingCardState extends State<FastingCard> {
     final c = context.colors;
     final s = widget.status;
     final now = DateTime.now();
-    final label = fastingLabels[s.protocol] ?? s.protocol;
+    final label = s.planned ? 'Planned' : (fastingLabels[s.protocol] ?? s.protocol);
     final boundary = switch (s.kind) {
       FastingKind.fasting => s.goalAt,
       FastingKind.eating => s.closesAt,
@@ -69,6 +78,11 @@ class _FastingCardState extends State<FastingCard> {
     }
 
     final (title, detail, progress) = switch (s.kind) {
+      FastingKind.fasting when s.planned => (
+        'Fasting · ${_hm(now.difference(s.since!))}',
+        'Until ${fastEnd(s.planUntil!, now)}. ${_hm(s.planUntil!.difference(now))} to go.',
+        now.difference(s.since!).inMinutes / s.planUntil!.difference(s.since!).inMinutes.clamp(1, 1 << 30),
+      ),
       FastingKind.fasting => (
         'Fasting · ${_hm(now.difference(s.since!))}',
         'Goal ${s.fastHours} h at ${_clock(s.goalAt!)}. ${_hm(s.goalAt!.difference(now))} to go.',
@@ -146,8 +160,74 @@ class _FastingCardState extends State<FastingCard> {
               ].join(' '),
               style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkSoft),
             ),
+          if (s.kind == FastingKind.fasting || s.kind == FastingKind.fasted) const WaterCount(),
+          if (s.planned && widget.onEnd != null)
+            Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onEnd, child: const Text('End my fast')))
+          else if (!s.planned && widget.onPlan != null && s.planLimitHours > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(onPressed: widget.onPlan, icon: const Icon(Icons.timelapse_rounded, size: 18), label: const Text('Plan a fast')),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// Glasses of water today, kept on the phone: one tap each. Water doesn't break a fast, so it isn't a meal.
+class WaterCount extends StatefulWidget {
+  const WaterCount({super.key});
+
+  @override
+  State<WaterCount> createState() => _WaterCountState();
+}
+
+class _WaterCountState extends State<WaterCount> {
+  var _glasses = 0;
+
+  String get _key {
+    final d = DateTime.now();
+    return 'water.${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((p) {
+      if (mounted) setState(() => _glasses = p.getInt(_key) ?? 0);
+    }).catchError((Object _) {});
+  }
+
+  Future<void> _add(int by) async {
+    final next = (_glasses + by).clamp(0, 30);
+    setState(() => _glasses = next);
+    try {
+      await (await SharedPreferences.getInstance()).setInt(_key, next);
+    } catch (_) {
+      // Kept for this session only.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Row(
+      spacing: Space.s2,
+      children: [
+        Icon(Icons.water_drop_rounded, size: 20, color: c.ionInk),
+        Expanded(
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              _glasses == 0 ? 'No water logged today' : '$_glasses ${_glasses == 1 ? 'glass' : 'glasses'} of water today',
+              style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        if (_glasses > 0)
+          IconButton(tooltip: 'One glass less', onPressed: () => _add(-1), icon: Icon(Icons.remove_rounded, color: c.inkSoft)),
+        SoftButton(label: '+ Glass', semanticLabel: 'Add a glass of water', height: 36, onPressed: () => _add(1)),
+      ],
     );
   }
 }

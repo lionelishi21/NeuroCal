@@ -67,6 +67,12 @@ abstract interface class NeuroCalApi {
   Future<void> deleteWeight(String date);
   Future<FastingStatus> fasting();
 
+  /// Fast until [until], counted from the last meal; replaces a plan already running.
+  Future<FastingStatus> planFast(DateTime until);
+
+  /// Ends a planned fast early.
+  Future<FastingStatus> endFast();
+
   /// Saves a Brain speed check from its raw reaction times; the API scores it.
   Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts);
   Future<BrainCheckHistory> brainChecks({int days = 30});
@@ -367,6 +373,16 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
+
+  @override
+  Future<FastingStatus> planFast(DateTime until) async {
+    final res = await _client.put(_uri('/fasting/plan'), headers: await _headers(json: true), body: jsonEncode({'until': isoWithOffset(until)}));
+    return FastingStatus.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<FastingStatus> endFast() async =>
+      FastingStatus.fromJson(_decode(await _client.delete(_uri('/fasting/plan'), headers: await _headers())) as Map<String, dynamic>);
 
   @override
   Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts) async {

@@ -437,8 +437,18 @@ export const FastingStatus = z.object({
   ]),
   /** Days in a row with a completed fast. */
   streakDays: z.number().int().nonnegative(),
+  /** A planned fast still running ("until noon tomorrow"); the state is then fasting until `until`. */
+  plan: z.object({ startedAt: IsoDateTime, until: IsoDateTime }).optional(),
+  /** The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out. */
+  planLimitHours: z.number().int().nonnegative(),
 });
 export type FastingStatus = z.infer<typeof FastingStatus>;
+
+export const PlanFastRequest = z.object({
+  /** When the fast ends: at least half an hour ahead, within planLimitHours of the last meal. */
+  until: IsoDateTime,
+});
+export type PlanFastRequest = z.infer<typeof PlanFastRequest>;
 
 export const FoodCategory = z.enum(["fish", "meat", "eggs_dairy", "plant_protein", "grains", "vegetables", "fruit", "nuts_seeds", "fats", "drinks", "extras", "eating_out"]);
 export type FoodCategory = z.infer<typeof FoodCategory>;
@@ -1279,6 +1289,10 @@ export const endpoints = {
   getWeights: { method: "GET", path: "/weights", response: WeightHistory },
   deleteWeight: { method: "DELETE", path: "/weights/:date" },
   getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
+  /** Fast until a time, counted from the last meal; replaces a plan already running. */
+  planFast: { method: "PUT", path: "/fasting/plan", body: PlanFastRequest, response: FastingStatus },
+  /** End a planned fast early. */
+  endFast: { method: "DELETE", path: "/fasting/plan", response: FastingStatus },
   /** Saves a Brain speed check from its raw reaction times; the API scores it. */
   addBrainCheck: { method: "POST", path: "/brain-checks", body: BrainCheckRequest, response: BrainCheck },
   /** Checks from the last `days` days (default 30) with your usual score. */

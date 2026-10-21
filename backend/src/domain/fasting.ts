@@ -1,6 +1,8 @@
 /**
  * The fasting timer, worked out from logged meals: a fast runs from the last meal, and the eating
  * window runs from the first meal after a full fast. No separate "start fast" button to forget.
+ * Drinks under FAST_SAFE_KCAL don't count as meals. A longer fast can be planned to end at a time
+ * ("until noon tomorrow"); it ends early when a meal is logged.
  */
 import { conditionsOf, fastingLimit } from "./conditions";
 import type { Profile } from "./types";
@@ -12,6 +14,34 @@ export const FAST_HOURS: Record<Exclude<FastingProtocol, "none">, number> = { "1
 
 /** People who answered the safety question only get the gentlest protocol. */
 export const CAUTIOUS_PROTOCOL = "12_12";
+
+/** Water, black coffee, plain tea: anything under this many kcal doesn't break a fast. */
+export const FAST_SAFE_KCAL = 10;
+
+/** The longest fast the app lets anyone plan; longer ones are for a clinician to plan. */
+export const MAX_PLANNED_FAST_HOURS = 36;
+
+/** A fast someone chose to run until a time. `startedAt` is when they planned it. */
+export interface FastPlan {
+  startedAt: Date;
+  until: Date;
+}
+
+/**
+ * The longest fast someone may plan, in hours from their last meal: none when a health condition
+ * rules fasting out, 12 at the cautious protocol, otherwise MAX_PLANNED_FAST_HOURS.
+ */
+export function plannedFastLimit(profile: Pick<Profile, "weightGoal" | "healthConditions">): number {
+  const limit = fastingLimit(conditionsOf(profile));
+  if (limit === "none") return 0;
+  return limit === CAUTIOUS_PROTOCOL || profile.weightGoal?.fastingCaution ? FAST_HOURS[CAUTIOUS_PROTOCOL] : MAX_PLANNED_FAST_HOURS;
+}
+
+/** The plan while it still runs: before its end, with no meal eaten since it was made. */
+export function activePlan(plan: FastPlan | null, meals: Date[], now: Date): FastPlan | null {
+  if (!plan || now >= plan.until) return null;
+  return meals.some((m) => m > plan.startedAt && m <= now) ? null : plan;
+}
 
 /**
  * The fasting protocol in force: the onboarding choice, capped by health conditions (none when pregnant

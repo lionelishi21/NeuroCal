@@ -1,7 +1,9 @@
+import type { FastPlan } from "../../domain/fasting";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
+  IFastPlanRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -73,6 +75,7 @@ import {
   eatingOutItems,
   environmentChecks,
   environmentLocations,
+  fastPlans,
   exercises,
   knowledgeSources,
   knowledgeTechniques,
@@ -131,6 +134,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(pantryItems).where(eq(pantryItems.userId, userId));
       await tx.delete(environmentChecks).where(eq(environmentChecks.userId, userId));
       await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
+      await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
       await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
@@ -183,11 +187,14 @@ export class DrizzleProfileRepository implements IProfileRepository {
 export class DrizzleMealRepository implements IMealRepository {
   constructor(private readonly db: Database) {}
 
-  async eatenSince(userId: string, since: Date): Promise<Date[]> {
+  async eatenSince(userId: string, since: Date, minKcal = 0): Promise<Date[]> {
     const rows = await this.db
       .select({ eatenAt: meals.eatenAt })
       .from(meals)
+      .innerJoin(mealItems, eq(mealItems.mealId, meals.id))
       .where(and(eq(meals.userId, userId), isNull(meals.deletedAt), gte(meals.eatenAt, since)))
+      .groupBy(meals.id, meals.eatenAt)
+      .having(sql`sum(${mealItems.calories}) >= ${minKcal}`)
       .orderBy(asc(meals.eatenAt));
     return rows.map((r) => r.eatenAt);
   }
@@ -1141,5 +1148,22 @@ export class DrizzleEatingOutRepository implements IEatingOutRepository {
   async delete(id: string) {
     const rows = await this.db.delete(eatingOutItems).where(eq(eatingOutItems.id, id)).returning({ id: eatingOutItems.id });
     return rows.length > 0;
+  }
+}
+
+export class DrizzleFastPlanRepository implements IFastPlanRepository {
+  constructor(private readonly db: Database) {}
+
+  async get(userId: string): Promise<FastPlan | null> {
+    const [row] = await this.db.select().from(fastPlans).where(eq(fastPlans.userId, userId));
+    return row ? { startedAt: row.startedAt, until: row.until } : null;
+  }
+
+  async set(userId: string, plan: FastPlan | null) {
+    if (!plan) {
+      await this.db.delete(fastPlans).where(eq(fastPlans.userId, userId));
+      return;
+    }
+    await this.db.insert(fastPlans).values({ userId, ...plan }).onConflictDoUpdate({ target: fastPlans.userId, set: plan });
   }
 }

@@ -420,6 +420,32 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Set up environment'), findsNothing);
   });
 
+  testWidgets('a fasting day: plan a fast from Today, count water instead of logging it, and end it', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tapCentered(tester, find.text('Fasting today? Plan a fast'));
+    expect(find.textContaining('don’t break your fast'), findsOneWidget);
+    final start = find.widgetWithText(FilledButton, 'Start fasting');
+    expect(tester.widget<FilledButton>(start).onPressed, isNull);
+    await tester.tap(find.textContaining('16 hours'));
+    await tester.pumpAndSettle();
+    await tester.tap(start);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Fasting until'), findsOneWidget);
+
+    // Today shows the fast instead of calories left, and water is counted, not logged as a meal.
+    await tester.scrollUntilVisible(find.text('Focus Score'), -300);
+    await tester.scrollUntilVisible(find.text('End my fast'), 300);
+    expect(find.text('Planned fast'), findsOneWidget);
+    expect(find.textContaining('kcal left'), findsNothing);
+    await tapCentered(tester, find.text('+ Glass'));
+    expect(find.text('1 glass of water today'), findsOneWidget);
+
+    await tapCentered(tester, find.text('End my fast'));
+    expect(find.text('Fast ended'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('kcal left'), -300);
+  });
+
   testWidgets('environment: set the town for air quality and tick the day’s check', (tester) async {
     await pumpApp(tester);
     await signIn(tester);

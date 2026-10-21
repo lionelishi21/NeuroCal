@@ -26,6 +26,7 @@ import {
   InMemoryExercises,
   InMemoryPantry,
   FakePantryRecipes,
+  InMemoryFastPlans,
   FakeBetterChoice,
   FakeShoppingReviewer,
   FakeRecipeParser,
@@ -153,6 +154,7 @@ beforeEach(async () => {
     exercises: new InMemoryExercises(),
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
+    fastPlans: new InMemoryFastPlans(),
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
@@ -352,7 +354,7 @@ describe("API routes", () => {
   });
 
   it("GET /fasting times the fast from logged meals, capped at 12 hours after the safety answer", async () => {
-    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0 });
+    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0, planLimitHours: 36 });
 
     // The day's only meal was at 13:10Z; the 8-hour window closed at 21:10Z and it's 22:00Z now.
     await profiles.save(profile({ bioProfile: { fasting: "16_8" } }));
@@ -361,6 +363,7 @@ describe("API routes", () => {
       fastHours: 16,
       state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T05:10:00.000Z" },
       streakDays: 0,
+      planLimitHours: 36,
     });
 
     await profiles.save(
@@ -369,7 +372,34 @@ describe("API routes", () => {
         weightGoal: { startKg: 95, targetKg: 85, startedOn: "2026-09-01", pacePctPerWeek: 0.5, fastingCaution: true },
       }),
     );
-    expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12 });
+    expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12, planLimitHours: 12 });
+  });
+
+  it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {
+    // It's 22:00Z; the last meal was at 13:10Z. Noon tomorrow in Chicago is 17:00Z: 27h50m from that meal.
+    const planned = await call("PUT", "/fasting/plan", { until: "2026-09-30T17:00:00.000Z" });
+    expect(planned.status).toBe(200);
+    expect(planned.body).toMatchObject({
+      protocol: "none",
+      state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T17:00:00.000Z" },
+      plan: { startedAt: "2026-09-29T22:00:00.000Z", until: "2026-09-30T17:00:00.000Z" },
+    });
+    expect((await call("PUT", "/fasting/plan", { until: "2026-10-01T02:00:00.000Z" })).status).toBe(400); // 36h50m
+    expect((await call("PUT", "/fasting/plan", { until: "2026-09-29T22:10:00.000Z" })).status).toBe(400); // too soon
+
+    // Black coffee isn't a meal: the fast still runs from 13:10. Ending the plan removes it.
+    const coffee = { kind: "snack", eatenAt: "2026-09-29T21:30:00.000Z", items: [item("Black coffee", 2, 0.3, 0, 0)] };
+    expect((await call("POST", "/meals", coffee)).status).toBe(201);
+    expect((await call("GET", "/fasting")).body).toMatchObject({
+      state: { since: "2026-09-29T13:10:00.000Z" },
+      plan: { until: "2026-09-30T17:00:00.000Z" },
+    });
+    expect((await call("DELETE", "/fasting/plan")).body).not.toHaveProperty("plan");
+
+    // Pregnancy rules planned fasts out.
+    await profiles.save(profile({ healthConditions: ["pregnant"] }));
+    expect((await call("GET", "/fasting")).body).toMatchObject({ planLimitHours: 0 });
+    expect((await call("PUT", "/fasting/plan", { until: "2026-09-30T12:00:00.000Z" })).status).toBe(400);
   });
 
   it("takes RevenueCat's webhook only with its secret, and reports the subscription", async () => {

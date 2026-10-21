@@ -6,6 +6,8 @@ import '../theme/tokens.dart';
 import '../widgets/food_image.dart';
 import '../widgets/ui.dart';
 import 'weight_cards.dart';
+import '../widgets/toast.dart';
+import 'plan_fast_sheet.dart';
 
 /// The Kitchen tab: everything about food that isn't logging it. The fasting timer when fasting is on,
 /// then planning and cooking, shopping, and the food catalog.
@@ -63,6 +65,23 @@ class _KitchenScreenState extends State<KitchenScreen> {
     });
   }
 
+  Future<void> _plan(FastingStatus status) async {
+    final planned = await showPlanFastSheet(context, status);
+    if (planned == null || !mounted) return;
+    showToast(context, 'Fasting until ${fastEnd(planned.planUntil!, DateTime.now())}');
+    _reload();
+  }
+
+  Future<void> _end() async {
+    try {
+      await AppScope.of(context).api.endFast();
+      if (mounted) showToast(context, 'Fast ended', ToastTone.info);
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't end the fast. Try again.", ToastTone.problem);
+    }
+    if (mounted) _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -75,7 +94,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
             const ScreenTitle('Kitchen', detail: 'Plan, cook and shop for steady energy'),
             if (snapshot.data case final fasting?) ...[
               const BlockTitle('Fasting'),
-              FastingCard(fasting, onBoundary: _reload),
+              FastingCard(fasting, onBoundary: _reload, onPlan: () => _plan(fasting), onEnd: _end),
             ],
             const BlockTitle('Plan and cook'),
             _LinkCard(

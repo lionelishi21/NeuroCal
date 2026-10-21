@@ -159,6 +159,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
   },
+  planFast: {
+    summary: "Plan a fast",
+    description: "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (36, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
+  },
+  endFast: { summary: "End a planned fast", description: "The timer goes back to counting from meals and the protocol." },
   scanFood: {
     summary: "Read a food package's label",
     description: "1–4 photos of the same package (nutrition panel, ingredients, dates), as uploaded photoKeys or multipart `photo` fields. NeuroCal grades the ingredient list (NOVA: whole, processed, ultra-processed, naming the industrial ingredients) and flags added sugar, sodium and best-before dates. Nothing is saved.",

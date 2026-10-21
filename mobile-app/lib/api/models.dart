@@ -1001,6 +1001,8 @@ class FastingStatus {
     this.openedAt,
     this.closesAt,
     this.streakDays = 0,
+    this.planUntil,
+    this.planLimitHours = 36,
   });
 
   /// 16_8, omad, 12_12 or none.
@@ -1017,9 +1019,18 @@ class FastingStatus {
   final DateTime? closesAt;
   final int streakDays;
 
+  /// The end of a planned fast still running ("until noon tomorrow").
+  final DateTime? planUntil;
+
+  /// The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out.
+  final int planLimitHours;
+
+  bool get planned => planUntil != null;
+
   factory FastingStatus.fromJson(Map<String, dynamic> j) {
     final s = j['state'] as Map<String, dynamic>;
     DateTime? t(String key) => s[key] == null ? null : DateTime.parse(s[key] as String).toLocal();
+    final plan = j['plan'] as Map<String, dynamic>?;
     return FastingStatus(
       protocol: j['protocol'] as String,
       fastHours: (j['fastHours'] as num?)?.toInt(),
@@ -1029,6 +1040,8 @@ class FastingStatus {
       openedAt: t('openedAt'),
       closesAt: t('closesAt'),
       streakDays: (j['streakDays'] as num).toInt(),
+      planUntil: plan == null ? null : DateTime.parse(plan['until'] as String).toLocal(),
+      planLimitHours: (j['planLimitHours'] as num?)?.toInt() ?? 0,
     );
   }
 }

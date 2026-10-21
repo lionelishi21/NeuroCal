@@ -292,6 +292,15 @@ export const environmentChecks = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.date] })],
 );
 
+/** A fast someone planned to run until a time; one at a time, removed when it's ended. */
+export const fastPlans = pgTable("fast_plans", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  until: timestamp("until", { withTimezone: true }).notNull(),
+});
+
 /** A day's mean US AQI per rounded place, fetched once and shared by everyone in that town. */
 export const airQualityDays = pgTable(
   "air_quality_days",

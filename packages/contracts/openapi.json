@@ -339,6 +339,58 @@
         }
       }
     },
+    "/fasting/plan": {
+      "put": {
+        "operationId": "planFast",
+        "summary": "Plan a fast",
+        "description": "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (36, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanFastRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FastingStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "endFast",
+        "summary": "End a planned fast",
+        "description": "The timer goes back to counting from meals and the protocol.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FastingStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/brain-checks": {
       "post": {
         "operationId": "addBrainCheck",
@@ -3658,12 +3710,34 @@
           "streakDays": {
             "type": "integer",
             "minimum": 0
+          },
+          "plan": {
+            "type": "object",
+            "properties": {
+              "startedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "until": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "startedAt",
+              "until"
+            ]
+          },
+          "planLimitHours": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
           "protocol",
           "state",
-          "streakDays"
+          "streakDays",
+          "planLimitHours"
         ]
       },
       "FocusComponentName": {
@@ -5136,6 +5210,18 @@
           "movement",
           "environment",
           "supplements"
+        ]
+      },
+      "PlanFastRequest": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "until"
         ]
       },
       "ProductRecommendation": {

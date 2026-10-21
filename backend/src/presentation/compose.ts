@@ -9,7 +9,7 @@ import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingPro
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
-import type {
+import type { IFastPlanRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -120,6 +120,7 @@ export interface Ports {
   mealPlanner: IMealPlanner;
   mealPlans: IMealPlanRepository;
   environment: IEnvironmentRepository;
+  fastPlans: IFastPlanRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
   knowledge: IKnowledgeRepository;
@@ -166,7 +167,7 @@ export function buildUseCases(p: Ports): UseCases {
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),
-    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock),
+    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans),
     getSubscription,
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),

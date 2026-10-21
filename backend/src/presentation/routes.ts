@@ -48,6 +48,7 @@ import {
   ReviewTechniqueRequest,
   ShoppingReviewResponse,
   PantryRecipesResponse,
+  PlanFastRequest,
   BetterChoiceRequest,
   BetterChoiceResponse,
   PantryResponse,
@@ -569,6 +570,12 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       },
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
+    [
+      "PUT",
+      /^\/fasting\/plan$/,
+      async (req) => ok(FastingStatus, toFasting(await uc.getFasting.plan(req.userId, new Date(json(req, PlanFastRequest).until)))),
+    ],
+    ["DELETE", /^\/fasting\/plan$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.endPlan(req.userId)))],
     [
       "POST",
       /^\/foods\/scan$/,

@@ -18,11 +18,26 @@ import 'environment_card.dart';
 import 'exercise_sheet.dart';
 import 'guide.dart';
 import 'next_step.dart';
+import 'plan_fast_sheet.dart';
 import 'streak.dart';
 import 'stack.dart';
+import 'weight_cards.dart' show FastingCard;
 
 class _Day {
-  const _Day(this.date, this.focus, this.bio, this.meals, {this.recipes, this.fasting, this.stack, this.brain, this.exercise, this.environment, this.streak});
+  const _Day(
+    this.date,
+    this.focus,
+    this.bio,
+    this.meals, {
+    this.recipes,
+    this.fasting,
+    this.planLimitHours = 0,
+    this.stack,
+    this.brain,
+    this.exercise,
+    this.environment,
+    this.streak,
+  });
 
   final DateTime date;
   final FocusScore focus;
@@ -34,6 +49,12 @@ class _Day {
 
   /// Null when fasting is off or didn't load.
   final FastingStatus? fasting;
+
+  /// The longest fast that can be planned; 0 when none can (or fasting didn't load).
+  final int planLimitHours;
+
+  /// A planned fast is running: Today shows the fast instead of calories left.
+  bool get fastPlanned => isToday && fasting?.planned == true;
 
   /// Null when the stack is empty or didn't load.
   final SupplementStack? stack;
@@ -198,6 +219,7 @@ class _TodayScreenState extends State<TodayScreen> {
       d.meals,
       recipes: d.recipes,
       fasting: d.fasting?.kind == FastingKind.off ? null : d.fasting,
+      planLimitHours: d.fasting?.planLimitHours ?? 0,
       stack: d.stack == null || d.stack!.items.isEmpty ? null : d.stack,
       brain: d.brain,
       exercise: d.exercise,
@@ -262,6 +284,24 @@ class _TodayScreenState extends State<TodayScreen> {
     final logged = await showCalfRoutine(context);
     if (logged == null || !mounted) return;
     showToast(context, 'Exercise logged · ${logged.kcal} kcal burned');
+    widget.onChanged();
+  }
+
+  /// "Plan a fast": a day without meals, or a longer fast.
+  Future<void> _planFast(FastingStatus? status) async {
+    final planned = await showPlanFastSheet(context, status);
+    if (planned == null || !mounted) return;
+    showToast(context, 'Fasting until ${fastEnd(planned.planUntil!, DateTime.now())}');
+    widget.onChanged();
+  }
+
+  Future<void> _endFast() async {
+    try {
+      await _api.endFast();
+      if (mounted) showToast(context, 'Fast ended', ToastTone.info);
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't end the fast. Try again.", ToastTone.problem);
+    }
     widget.onChanged();
   }
 
@@ -360,12 +400,33 @@ class _TodayScreenState extends State<TodayScreen> {
                       onCalfPump: _calfPump,
                       onStack: _manageStack,
                       onHowItWorks: () => showGuide(context),
+                      onPlanFast: day.planLimitHours > 0 ? () => _planFast(day.fasting) : null,
                     ),
                   ],
-                  BlockTitle('Food', note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal'),
-                  _Calories(day.bio),
+                  BlockTitle(
+                    day.fastPlanned ? 'Fasting' : 'Food',
+                    note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
+                  ),
+                  if (day.fastPlanned)
+                    FastingCard(day.fasting!, onBoundary: _refresh, onEnd: _endFast)
+                  else ...[
+                    _Calories(day.bio),
+                    if (day.isToday && day.planLimitHours > 0)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(foregroundColor: c.synapseInk, minimumSize: const Size(0, 44)),
+                          onPressed: () => _planFast(day.fasting),
+                          icon: const Icon(Icons.timelapse_rounded, size: 18),
+                          label: const Text('Fasting today? Plan a fast'),
+                        ),
+                      ),
+                  ],
                   const SizedBox(height: Space.s3),
-                  if (day.meals.isEmpty)
+                  // While fasting, an empty day has nothing to log.
+                  if (day.meals.isEmpty && day.fastPlanned)
+                    const SizedBox.shrink()
+                  else if (day.meals.isEmpty)
                     day.isToday
                         ? EmptyCard(
                             title: 'No meals yet today',
@@ -382,8 +443,17 @@ class _TodayScreenState extends State<TodayScreen> {
                         ],
                       ),
                     ),
-                  if (day.isToday) ...[
-                    const BlockTitle('What to eat next'),
+                  // Suggestions wait until the last two hours of a planned fast, to break it well.
+                  if (day.isToday && (!day.fastPlanned || day.fasting!.planUntil!.difference(DateTime.now()) <= const Duration(hours: 2))) ...[
+                    BlockTitle(day.fastPlanned ? 'Break your fast' : 'What to eat next'),
+                    if (day.fastPlanned)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Space.s2),
+                        child: Text(
+                          'Start with protein and vegetables, and keep the first meal moderate.',
+                          style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                        ),
+                      ),
                     _Suggestions(day.recipes),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -1546,6 +1616,7 @@ class _UpNext extends StatefulWidget {
     required this.onCalfPump,
     required this.onStack,
     required this.onHowItWorks,
+    this.onPlanFast,
   });
 
   final _Day day;
@@ -1558,6 +1629,9 @@ class _UpNext extends StatefulWidget {
   final VoidCallback onCalfPump;
   final VoidCallback onStack;
   final VoidCallback onHowItWorks;
+
+  /// Null when a fast can't be planned.
+  final VoidCallback? onPlanFast;
 
   @override
   State<_UpNext> createState() => _UpNextState();
@@ -1648,7 +1722,9 @@ class _UpNextState extends State<_UpNext> {
       DayStep.allDone => (
         Icons.check_circle_rounded,
         stepTitle(DayStep.allDone),
-        status.fastingNow && day.meals.isEmpty
+        day.fastPlanned
+            ? 'You’re fasting until ${fastEnd(day.fasting!.planUntil!, DateTime.now())}. Water, black coffee and plain tea don’t break it.'
+            : status.fastingNow && day.meals.isEmpty
             ? 'You’re fasting. Log your first meal when your eating window opens.'
             : 'Tomorrow’s score has what it needs. Log meals as you eat them.',
         'Log a meal',
@@ -1656,6 +1732,7 @@ class _UpNextState extends State<_UpNext> {
       ),
     };
     final secondary = switch (step) {
+      DayStep.meal when widget.onPlanFast != null => ('I’m fasting today', widget.onPlanFast!),
       DayStep.move => ('Log other exercise', () => widget.onCapture(Capture.exercise)),
       DayStep.sleep when access == SleepAccess.notConnected => ('Log it by hand', () => widget.onCapture(Capture.sleep)),
       _ => null,

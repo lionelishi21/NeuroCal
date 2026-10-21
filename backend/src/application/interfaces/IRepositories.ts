@@ -1,3 +1,4 @@
+import type { FastPlan } from "../../domain/fasting";
 import type {
   CheckIn,
   FocusScore,
@@ -41,7 +42,8 @@ export interface IMealRepository {
   /** False when the meal doesn't exist or isn't this user's. */
   softDelete(userId: string, mealId: string): Promise<boolean>;
   /** When each non-deleted meal since `since` was eaten, oldest first (for the fasting timer). */
-  eatenSince(userId: string, since: Date): Promise<Date[]>;
+  /** When meals were eaten, oldest first; with [minKcal], only meals of at least that many kcal. */
+  eatenSince(userId: string, since: Date, minKcal?: number): Promise<Date[]>;
 }
 
 export interface IWeightRepository {
@@ -94,4 +96,11 @@ export interface IRecommendationRepository {
   saveRecipes(userId: string, recipes: NewRecipeRecommendation[], contextKey?: string): Promise<RecipeRecommendation[]>;
   /** The newest batch saved with this key, or an empty list. */
   latestRecipes(userId: string, contextKey: string): Promise<RecipeRecommendation[]>;
+}
+
+/** The fast someone planned, one at a time; scoped to one user. */
+export interface IFastPlanRepository {
+  get(userId: string): Promise<FastPlan | null>;
+  /** Null removes it. */
+  set(userId: string, plan: FastPlan | null): Promise<void>;
 }

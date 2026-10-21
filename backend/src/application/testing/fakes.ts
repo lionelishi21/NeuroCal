@@ -1,4 +1,5 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
+import type { FastPlan } from "../../domain/fasting";
 import type { Food } from "../../domain/foods";
 import type { IEatingOutRepository } from "../interfaces/IEatingOut";
 import { isOnLocalDay, localDateOf } from "../../domain/localDay";
@@ -66,6 +67,7 @@ import type { IObjectStorage } from "../interfaces/IObjectStorage";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
+  IFastPlanRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -106,9 +108,9 @@ export class InMemoryMeals implements IMealRepository {
   async get(userId: string, mealId: string) {
     return this.rows.find((m) => m.userId === userId && m.id === mealId && !m.deleted) ?? null;
   }
-  async eatenSince(userId: string, since: Date) {
+  async eatenSince(userId: string, since: Date, minKcal = 0) {
     return this.rows
-      .filter((m) => m.userId === userId && !m.deleted && m.eatenAt >= since)
+      .filter((m) => m.userId === userId && !m.deleted && m.eatenAt >= since && m.items.reduce((s, i) => s + i.calories, 0) >= minKcal)
       .map((m) => m.eatenAt)
       .sort((a, b) => a.getTime() - b.getTime());
   }
@@ -958,5 +960,16 @@ export class InMemoryEatingOut implements IEatingOutRepository {
     if (i < 0) return false;
     this.items.splice(i, 1);
     return true;
+  }
+}
+
+export class InMemoryFastPlans implements IFastPlanRepository {
+  readonly plans = new Map<string, FastPlan>();
+  async get(userId: string) {
+    return this.plans.get(userId) ?? null;
+  }
+  async set(userId: string, plan: FastPlan | null) {
+    if (plan) this.plans.set(userId, plan);
+    else this.plans.delete(userId);
   }
 }

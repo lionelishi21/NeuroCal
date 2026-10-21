@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { fastingState, fastingStreak, fastingProtocolOf } from "./fasting";
+import { activePlan, fastingState, fastingStreak, fastingProtocolOf, plannedFastLimit } from "./fasting";
 
 const at = (iso: string) => new Date(`${iso}Z`);
 const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -57,5 +57,22 @@ describe("fastingProtocolOf with health conditions", () => {
     expect(fastingProtocolOf(profile("16_8", ["type2_diabetes"]))).toBe("16_8");
     expect(fastingProtocolOf(profile("omad", [], true))).toBe("12_12");
     expect(fastingProtocolOf(profile("none", ["joint_pain"]))).toBe("none");
+  });
+});
+
+describe("planned fasts", () => {
+  it("allow up to 36 hours, 12 at the cautious protocol, and none when a condition rules fasting out", () => {
+    expect(plannedFastLimit({})).toBe(36);
+    expect(plannedFastLimit({ healthConditions: ["glucose_lowering_meds"] })).toBe(12);
+    expect(plannedFastLimit({ weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution: true } })).toBe(12);
+    expect(plannedFastLimit({ healthConditions: ["eating_disorder_history"] })).toBe(0);
+  });
+
+  it("run until their end, or until a meal is eaten after they were made", () => {
+    const plan = { startedAt: at("2026-10-20T20:00"), until: at("2026-10-21T12:00") };
+    expect(activePlan(plan, [at("2026-10-20T18:00")], at("2026-10-21T08:00"))).toBe(plan);
+    expect(activePlan(plan, [at("2026-10-21T07:00")], at("2026-10-21T08:00"))).toBeNull();
+    expect(activePlan(plan, [], at("2026-10-21T12:00"))).toBeNull();
+    expect(activePlan(null, [], at("2026-10-21T08:00"))).toBeNull();
   });
 });
