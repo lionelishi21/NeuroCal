@@ -32,9 +32,15 @@ const median = (xs: number[]) => {
 };
 
 /**
- * Scores a check: 100 for a typical rested median (about 250 ms), losing points as the median
- * slows, and more for each lapse and false start. The weights favour lapses, which track sleep
- * loss most closely.
+ * A rested median on a phone. Lab rigs give about 250 ms; a touchscreen and its display add 50 to
+ * 100 ms of their own, so a phone check is scored against 300.
+ */
+export const RESTED_MS = 300;
+
+/**
+ * Scores a check: 100 up to a rested median, a point off for every 4 ms slower, up to 50 off as the
+ * share of lapses rises (they track sleep loss most closely), and 2 for each false start, at most 20.
+ * Kept in step with drizzle/0030_rescore_brain_checks.sql, which re-scored the checks saved before.
  */
 export function scoreCheck(reactionTimesMs: number[], falseStarts: number): BrainCheckResult {
   const rts = reactionTimesMs.map((x) => Math.round(x));
@@ -43,7 +49,7 @@ export function scoreCheck(reactionTimesMs: number[], falseStarts: number): Brai
   const fastest = sorted.slice(0, Math.max(1, Math.round(sorted.length / 10)));
   const lapses = rts.filter((x) => x >= LAPSE_MS).length;
   const lapseRate = lapses / rts.length;
-  const raw = 100 - Math.max(0, med - 250) / 3 - lapseRate * 100 - falseStarts * 3;
+  const raw = 100 - Math.max(0, med - RESTED_MS) / 4 - lapseRate * 50 - Math.min(falseStarts * 2, 20);
   return {
     trials: rts.length,
     medianMs: Math.round(med),

@@ -65,7 +65,7 @@ void main() {
     final saved = (await tester.runAsync(api.brainChecks))!.checks.single;
     expect(saved.trials, 10);
     expect(saved.falseStarts, 1);
-    expect(saved.score, 94); // 100 - (260-250)/3 - 1 false start × 3
+    expect(saved.score, 98); // 260 ms is under the 300 ms rested median; 1 false start × 2
   });
 
   testWidgets('in onboarding it says where the score goes, and can be skipped', (tester) async {

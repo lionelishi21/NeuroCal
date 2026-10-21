@@ -597,7 +597,8 @@ class MockNeuroCalApi implements NeuroCalApi {
     final median = sorted.length.isOdd ? sorted[mid].toDouble() : (sorted[mid - 1] + sorted[mid]) / 2;
     final fastest = sorted.take((sorted.length / 10).round().clamp(1, sorted.length)).toList();
     final lapses = reactionTimesMs.where((x) => x >= 500).length;
-    final raw = 100 - (median - 250).clamp(0, double.infinity) / 3 - lapses / reactionTimesMs.length * 100 - falseStarts * 3;
+    // As the API scores it, calibrated for a phone (backend domain/brainCheck.ts).
+    final raw = 100 - (median - 300).clamp(0, double.infinity) / 4 - lapses / reactionTimesMs.length * 50 - (falseStarts * 2).clamp(0, 20);
     final check = BrainCheck(
       takenAt: DateTime.now(),
       score: raw.round().clamp(0, 100),

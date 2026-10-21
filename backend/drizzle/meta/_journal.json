@@ -211,6 +211,13 @@
       "when": 1792606070668,
       "tag": "0029_odd_colonel_america",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792622964839,
+      "tag": "0030_rescore_brain_checks",
+      "breakpoints": true
     }
   ]
 }
