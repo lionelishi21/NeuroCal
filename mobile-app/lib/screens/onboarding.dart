@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../onboarding/bio_profile.dart';
 import '../onboarding/starting_score.dart';
+import '../plan/three_weeks.dart' show challengeKey;
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
@@ -149,7 +151,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         name: saved.displayName,
         start: startingScore(_answers, brainScore: _brain?.score),
         brainScore: _brain?.score,
-        onContinue: () => setState(() => _committed = true),
+        onContinue: () {
+          // The 3-week challenge starts now; Today follows it (lib/plan/three_weeks.dart).
+          if (saved.id case final id?) {
+            final now = DateTime.now();
+            SharedPreferences.getInstance()
+                .then((p) => p.setString(challengeKey(id), DateTime(now.year, now.month, now.day).toIso8601String().substring(0, 10)))
+                .catchError((Object _) => false);
+          }
+          setState(() => _committed = true);
+        },
       );
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
 import '../api/models.dart';
@@ -11,6 +12,8 @@ import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import '../health/sleep_sync.dart';
+import '../plan/three_weeks.dart';
+import '../weight_units.dart';
 import '../reminders/reminders.dart';
 import 'calf_routine.dart';
 import 'capture.dart';
@@ -40,6 +43,11 @@ class _Day {
     this.environment,
     this.streak,
     this.healthspan,
+    this.weights,
+    this.unit = WeightUnit.kg,
+    this.plan,
+    this.weightGoal,
+    this.weighInDue = false,
   });
 
   final DateTime date;
@@ -80,6 +88,17 @@ class _Day {
   /// This week's healthspan; today only, null when it didn't load.
   final HealthspanWeek? healthspan;
 
+  /// Today only, with a weight goal; null when it didn't load.
+  final WeightHistory? weights;
+  final WeightUnit unit;
+
+  /// Where the 3-week challenge from onboarding stands; today only.
+  final ThreeWeeks? plan;
+  final WeightGoal? weightGoal;
+
+  /// A weight goal and no weigh-in for a week: Up next asks for one.
+  final bool weighInDue;
+
   bool get isToday => _sameDay(date, DateTime.now());
 }
 
@@ -94,6 +113,7 @@ DayStatus _statusOf(_Day day) {
     movedMinutes: day.exercise?.totalMinutes ?? 0,
     supplementsLeft: stack.where((i) => !i.takenToday).length,
     fastingNow: day.fasting?.kind == FastingKind.fasting,
+    weighInDue: day.weighInDue,
   );
 }
 
@@ -207,16 +227,35 @@ class _TodayScreenState extends State<TodayScreen> {
     final healthspan = _date == null
         ? _api.healthspan().then<HealthspanWeek?>((h) => h).catchError((Object _) => null)
         : Future<HealthspanWeek?>.value(null);
+    final goal = widget.profile.weightGoal;
+    final weightsLoad = _date == null && goal != null
+        ? _api.weights(days: 120).then<WeightHistory?>((w) => w).catchError((Object _) => null)
+        : Future<WeightHistory?>.value(null);
+    final unitLoad = WeightUnit.load(Localizations.localeOf(context));
+    final prefsLoad = SharedPreferences.getInstance().then<SharedPreferences?>((p) => p).catchError((Object _) => null);
     final d = await _api.today(_date);
     final days = await history;
+    final weights = await weightsLoad;
+    final lastWeighIn = weights?.entries.lastOrNull?.date;
+    final weighInDue = goal != null && weights != null && (lastWeighIn == null || DateTime.now().difference(DateTime.parse(lastWeighIn)).inDays >= 7);
+    // The challenge counts from "Hold to commit"; accounts from before that use the weight goal's start.
+    ThreeWeeks? plan;
+    final starting = startingFromProfile(widget.profile);
+    if (_date == null && days != null && starting != null) {
+      final id = widget.profile.id;
+      final startedOn = (id == null ? null : (await prefsLoad)?.getString(challengeKey(id))) ?? goal?.startedOn;
+      if (startedOn != null) plan = threeWeeks(started: DateTime.parse(startedOn), starting: starting, days: days, today: DateTime.now());
+    }
     final streak = days == null ? null : streakFrom(days, date);
     // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
     if (streak != null) reminders?.streak(days: streak.days, todayDone: streak.todayDone).catchError((Object _) {});
-    final widget = scope.homeWidget;
-    if (widget != null && _date == null) {
-      final status = _statusOf(_Day(date, d.focus, d.bio, d.meals, stack: d.stack, exercise: d.exercise, environment: d.environment, fasting: d.fasting));
+    final homeWidget = scope.homeWidget;
+    if (homeWidget != null && _date == null) {
+      final status = _statusOf(
+        _Day(date, d.focus, d.bio, d.meals, stack: d.stack, exercise: d.exercise, environment: d.environment, fasting: d.fasting, weighInDue: weighInDue),
+      );
       final score = d.focus.score;
-      widget
+      homeWidget
           .show((score: score, word: score == null ? 'No score yet' : scoreWord(score), next: stepTitle(nextStep(status, DateTime.now())), streakDays: streak?.days ?? 0))
           .catchError((Object _) {});
     }
@@ -239,6 +278,11 @@ class _TodayScreenState extends State<TodayScreen> {
       environment: d.environment,
       streak: streak,
       healthspan: await healthspan,
+      weights: weights,
+      unit: await unitLoad,
+      plan: plan,
+      weightGoal: goal,
+      weighInDue: weighInDue,
     );
   }
 
@@ -421,6 +465,10 @@ class _TodayScreenState extends State<TodayScreen> {
                       onHowItWorks: () => showGuide(context),
                       onPlanFast: day.planLimitHours > 0 ? () => _planFast(day.fastingAll) : null,
                     ),
+                    if (day.plan != null || day.weightGoal != null) ...[
+                      const SizedBox(height: Space.s3),
+                      _PlanCard(day, onLogWeight: () => widget.onCapture(Capture.weight)),
+                    ],
                   ],
                   BlockTitle(
                     day.fastPlanned ? 'Fasting' : 'Food',
@@ -1472,6 +1520,127 @@ class _Processing extends StatelessWidget {
   }
 }
 
+/// "Your plan": the two halves of the promise side by side. The 3-week challenge (Focus Score from the
+/// starting estimate towards its target, day by day) and the weight goal (the trend, what's gone, the
+/// pace). Tapping the weight logs a weigh-in.
+class _PlanCard extends StatelessWidget {
+  const _PlanCard(this.day, {required this.onLogWeight});
+
+  final _Day day;
+  final VoidCallback onLogWeight;
+
+  String _month(String iso) {
+    final d = DateTime.parse(iso);
+    return '${_months[d.month - 1]} ${d.year}';
+  }
+
+  String _since(String iso) {
+    final d = DateTime.parse(iso);
+    return '${d.day} ${_months[d.month - 1]}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final plan = day.plan;
+    final goal = day.weightGoal;
+    final w = day.weights;
+    final unit = day.unit;
+    Widget pill(String text, bool good) =>
+        Tag(text, fill: good ? c.chlorophyllSoft : c.glucoseSoft, ink: good ? c.chlorophyll : c.glucoseInk);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: Space.s3,
+        children: [
+          Semantics(
+            header: true,
+            child: Text('Your plan', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk)),
+          ),
+          if (plan != null)
+            MergeSemantics(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: Space.s1,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          plan.day > challengeDays ? '3 weeks done' : '3-week challenge · day ${plan.day} of $challengeDays',
+                          style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      if (plan.now != null && plan.day <= challengeDays) pill(plan.onTrack ? 'On track' : 'Behind', plan.onTrack),
+                    ],
+                  ),
+                  Text(
+                    plan.now == null
+                        ? 'Focus Score started at about ${plan.start}; aiming for ${plan.target}. Your first scores will show here.'
+                        : plan.day > challengeDays
+                        ? 'Focus Score from about ${plan.start} to ${plan.now} (aim was ${plan.target}). Keep the habits that got you here.'
+                        : 'Focus Score ${plan.start} at the start, ${plan.now} this week, aiming for ${plan.target}.',
+                    style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                  ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(Radii.pill),
+                    child: LinearProgressIndicator(
+                      value: (plan.day / challengeDays).clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: c.track,
+                      color: c.synapse,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (goal != null)
+            Semantics(
+              button: true,
+              label: 'Log weight',
+              child: InkWell(
+                onTap: onLogWeight,
+                borderRadius: BorderRadius.circular(Radii.option),
+                child: Row(
+                  spacing: Space.s3,
+                  children: [
+                    Icon(Icons.monitor_weight_outlined, size: 22, color: c.ionInk),
+                    Expanded(
+                      child: w?.trendKg == null
+                          ? Text('Weigh in to see your pace to ${unit.format(goal.targetKg)}.', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700))
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: 2,
+                              children: [
+                                Text(
+                                  [
+                                    unit.format(w!.trendKg!),
+                                    if (goal.startKg - w.trendKg! >= 0.05) '${unit.format(goal.startKg - w.trendKg!)} down since ${_since(goal.startedOn)}',
+                                  ].join(' · '),
+                                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  w.toGoKg == null || w.toGoKg! <= 0
+                                      ? 'At your target. Keep it there.'
+                                      : w.projectedOn != null
+                                      ? '${unit.format(w.toGoKg!)} to go · on pace for ${_month(w.projectedOn!)}'
+                                      : '${unit.format(w.toGoKg!)} to go · not heading down yet. Protein first and a daily walk help most.',
+                                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                                ),
+                              ],
+                            ),
+                    ),
+                    Icon(Icons.add_rounded, color: c.synapseInk),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The week's healthspan score in the habits card; opens the habits behind it.
 class _HealthspanRow extends StatelessWidget {
   const _HealthspanRow(this.week, {required this.onOpen});
@@ -1764,6 +1933,13 @@ class _UpNextState extends State<_UpNext> {
         () => widget.onCapture(Capture.sleep),
       ),
       DayStep.checkIn => (Icons.mood_rounded, stepTitle(DayStep.checkIn), 'Tap how you feel right now. It takes ten seconds.', 'Check in', () => widget.onCapture(Capture.checkIn)),
+      DayStep.weigh => (
+        Icons.monitor_weight_outlined,
+        stepTitle(DayStep.weigh),
+        'Once a week, first thing in the morning before you eat. Your trend smooths out water swings.',
+        'Log weight',
+        () => widget.onCapture(Capture.weight),
+      ),
       DayStep.daylight => (
         Icons.wb_sunny_rounded,
         stepTitle(DayStep.daylight),
@@ -1814,6 +1990,7 @@ class _UpNextState extends State<_UpNext> {
     final items = <({String title, bool done})>[
       (title: 'Log last night’s sleep', done: status.sleepLogged),
       (title: 'Check in', done: status.checkedIn),
+      if (day.weightGoal != null) (title: 'Weigh in this week', done: !status.weighInDue),
       if (status.daylight != null) (title: 'Get morning daylight', done: status.daylight!),
       (title: 'Log your meals', done: status.meals > 0),
       (title: 'Move', done: status.movedMinutes > 0),

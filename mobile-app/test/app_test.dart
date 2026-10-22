@@ -428,6 +428,33 @@ void main() {
     expect(find.textContaining('Your longevity score'), findsOneWidget);
   });
 
+  testWidgets('Your plan: the 3-week challenge and the weight goal on Today, and the weekly weigh-in in Up next', (tester) async {
+    tester.view.physicalSize = const Size(360, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final started = DateTime.now().subtract(const Duration(days: 5));
+    final startedOn = '${started.year}-${started.month.toString().padLeft(2, '0')}-${started.day.toString().padLeft(2, '0')}';
+    SharedPreferences.setMockInitialValues({'weightUnit': 'kg'});
+    final api = MockNeuroCalApi()..latency = Duration.zero;
+    // Outside the test's fake clock: the mock's calls wait on real timers.
+    await tester.runAsync(() async {
+      await api.saveProfile({
+        'bioProfile': {'eveningScreens': '1_2', 'phoneAtNight': 'nightstand', 'movement': 'none', 'fasting': 'none'},
+        'weightGoal': {'startKg': 95, 'targetKg': 85, 'startedOn': startedOn, 'pacePctPerWeek': 0.5, 'fastingCaution': false},
+      });
+      await api.logWeight(94.2, date: isoDate(DateTime.now().subtract(const Duration(days: 9))));
+    });
+    await tester.pumpWidget(NeuroCalApp(api: api, auth: MockAuthClient(), theme: ThemeController(await SharedPreferences.getInstance()), openLink: (_) async => true));
+    await signIn(tester);
+
+    expect(find.text('Your plan'), findsOneWidget);
+    expect(find.text('3-week challenge · day 6 of 21'), findsOneWidget);
+    expect(find.textContaining('down since'), findsOneWidget);
+    // The last weigh-in was 9 days ago: Up next asks for this week's.
+    expect(find.text('Weigh in'), findsOneWidget);
+    expect(find.text('Log weight'), findsWidgets);
+  });
+
   testWidgets('a fasting day: plan a fast from Today, count water instead of logging it, and end it', (tester) async {
     await pumpApp(tester);
     await signIn(tester);

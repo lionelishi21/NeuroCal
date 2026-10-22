@@ -8,6 +8,7 @@ class DayStatus {
     required this.movedMinutes,
     this.supplementsLeft = 0,
     this.fastingNow = false,
+    this.weighInDue = false,
   });
 
   final bool sleepLogged;
@@ -21,16 +22,21 @@ class DayStatus {
 
   /// Inside a fast: no nudge to eat.
   final bool fastingNow;
+
+  /// A weight goal and no weigh-in for a week.
+  final bool weighInDue;
 }
 
 /// The one thing Today asks for next, in the order that gives tomorrow's Focus Score the most.
-enum DayStep { sleep, checkIn, daylight, meal, move, supplements, allDone }
+enum DayStep { sleep, checkIn, weigh, daylight, meal, move, supplements, allDone }
 
-/// Sleep first (the biggest input), then how you feel, morning light while there is any, food, movement
-/// and supplements. Done when nothing is left; meals are still logged as they happen.
+/// Sleep first (the biggest input), then how you feel, the weekly weigh-in when it's due, morning light
+/// while there is any, food, movement and supplements. Done when nothing is left; meals are still
+/// logged as they happen.
 DayStep nextStep(DayStatus s, DateTime now) {
   if (!s.sleepLogged) return DayStep.sleep;
   if (!s.checkedIn) return DayStep.checkIn;
+  if (s.weighInDue) return DayStep.weigh;
   if (s.daylight == false && now.hour < 17) return DayStep.daylight;
   if (s.meals == 0 && !s.fastingNow) return DayStep.meal;
   if (s.movedMinutes == 0) return DayStep.move;
@@ -42,6 +48,7 @@ DayStep nextStep(DayStatus s, DateTime now) {
 String stepTitle(DayStep step) => switch (step) {
   DayStep.sleep => 'Log last night’s sleep',
   DayStep.checkIn => 'Check in',
+  DayStep.weigh => 'Weigh in',
   DayStep.daylight => 'Get 10 minutes of daylight',
   DayStep.meal => 'Log your next meal',
   DayStep.move => 'Move for 5 minutes',
