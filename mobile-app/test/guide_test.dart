@@ -32,7 +32,7 @@ Future<(FakeReminders, FakeAnalytics)> pumpGuide(WidgetTester tester, {bool allo
       child: MaterialApp(theme: buildTheme(Brightness.light), home: const GuideScreen(offerReminders: true)),
     ),
   );
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 4; i++) {
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
   }

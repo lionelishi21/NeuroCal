@@ -1727,9 +1727,7 @@ class _BrainSpeed extends StatelessWidget {
                 colors: [NeuroCalColors.ringFrom, NeuroCalColors.ringTo],
               ),
             ),
-            child: today == null
-                ? const Icon(Icons.bolt_rounded, color: NeuroCalColors.onSignal)
-                : Text('${today.score}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, color: NeuroCalColors.onSignal)),
+            child: const Icon(Icons.bolt_rounded, color: NeuroCalColors.onSignal),
           ),
           Expanded(
             child: Column(
@@ -1738,13 +1736,14 @@ class _BrainSpeed extends StatelessWidget {
               children: [
                 const Text('Brain speed', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
                 Text(
+                  // Against your own usual, not a second 0-100 number beside the Focus Score.
                   today == null
                       ? 'A 2-minute reaction check. Do it daily to see what sharpens you.'
                       : diff == null
-                      ? '${today.medianMs} ms typical reaction. A few more days and you\'ll have your usual.'
+                      ? '${today.medianMs} ms typical reaction. A few more checks set your usual.'
                       : diff >= 0
-                      ? '$diff above your usual (${usual!}).'
-                      : '${-diff} below your usual (${usual!}). Sleep and daylight help most.',
+                      ? '${today.medianMs} ms: as sharp as your usual or sharper.'
+                      : '${today.medianMs} ms: slower than your usual. Sleep and daylight help most.',
                   style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
                 ),
               ],

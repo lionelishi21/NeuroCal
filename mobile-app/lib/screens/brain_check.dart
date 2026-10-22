@@ -262,8 +262,10 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
         children: [
           const Spacer(),
           Text('Brain speed', textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
-          Text('${r.score}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w800, height: 1)),
-          Row(children: [stat('${r.medianMs} ms', 'typical reaction'), stat('${r.lapses}', 'slow responses'), stat('${r.falseStarts}', 'too soon')]),
+          // The reaction time leads; the score stays behind the scenes for your usual and your level.
+          Text('${r.medianMs} ms', textAlign: TextAlign.center, style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1)),
+          Text('typical reaction', textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+          Row(children: [stat('${r.lapses}', 'slow responses'), stat('${r.falseStarts}', 'too soon')]),
           Text(
             r.lapses > 2
                 ? 'Several slow responses: a sign of a tired brain. Sleep, daylight and a walk help more than coffee.'

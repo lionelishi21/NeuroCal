@@ -38,7 +38,7 @@ class _GuideScreenState extends State<GuideScreen> {
   final _pages = PageController();
   var _page = 0;
 
-  static const _count = 4;
+  static const _count = 5;
 
   @override
   void didChangeDependencies() {
@@ -104,7 +104,7 @@ class _GuideScreenState extends State<GuideScreen> {
               child: PageView(
                 controller: _pages,
                 onPageChanged: (p) => setState(() => _page = p),
-                children: const [_Score(), _WhatMovesIt(), _YourDay(), _WhereThingsAre()],
+                children: const [_Score(), _WhatMovesIt(), _YourNumbers(), _YourDay(), _WhereThingsAre()],
               ),
             ),
             Semantics(
@@ -229,6 +229,52 @@ class _WhatMovesIt extends StatelessWidget {
   }
 }
 
+/// The numbers in the app, each with its own time scale, so none is mistaken for another.
+class _YourNumbers extends StatelessWidget {
+  const _YourNumbers();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    Widget number(IconData icon, String name, String when, String what) => Padding(
+      padding: const EdgeInsets.only(bottom: Space.s3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: Space.s3,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+            child: Icon(icon, size: 20, color: c.synapseInk),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$name · $when', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                Text(what, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return _Page(
+      title: 'Your numbers',
+      lead: 'One number for today, and the others show how the days add up.',
+      children: [
+        number(Icons.blur_circular_rounded, 'Focus Score', 'today', 'How ready your brain is today. The one to watch.'),
+        number(Icons.flag_rounded, 'Your plan', '3 weeks', 'Your Focus Score heading for its target, and your weight heading for yours.'),
+        number(Icons.favorite_rounded, 'Healthspan', 'this week', 'The weekly habits behind a long, healthy life.'),
+        number(Icons.bolt_rounded, 'Brain speed', 'against your usual', 'A quick reaction check: sharper or slower than you normally are.'),
+        number(Icons.military_tech_rounded, 'Level', 'over months', 'Habits that have stuck, from Getting started to Upgraded.'),
+      ],
+    );
+  }
+}
+
 class _YourDay extends StatelessWidget {
   const _YourDay();
 
@@ -247,10 +293,11 @@ class _YourDay extends StatelessWidget {
     );
     return _Page(
       title: 'Always know what’s next',
-      lead: 'The top of Today shows one thing to do now, with a button that does it. When it’s done, the next one appears by itself.',
+      lead: 'Under your score, Up next shows one thing to do now, with a button that does it. When it’s done, the next one appears by itself.',
       children: [
         step('Log last night’s sleep'),
         step('Check in'),
+        step('Weigh in, once a week'),
         step('Get morning daylight'),
         step('Log your meals'),
         step('Move for 5 minutes'),
@@ -293,7 +340,7 @@ class _WhereThingsAre extends StatelessWidget {
       title: 'Where things are',
       lead: 'Five places along the bottom.',
       children: [
-        place(Icons.home_rounded, 'Today', 'What to do next, your score, meals and what to eat.'),
+        place(Icons.home_rounded, 'Today', 'Your score, what to do next, your plan, food and the day’s habits.'),
         place(Icons.soup_kitchen_rounded, 'Kitchen', 'Fasting, meal plans, your pantry, recipes and shopping.'),
         place(Icons.add_circle_rounded, '+', 'Log a meal, sleep, exercise, a check-in, and more.'),
         place(Icons.bar_chart_rounded, 'Progress', 'Your week and healthspan habits, sleep, body and your level.'),

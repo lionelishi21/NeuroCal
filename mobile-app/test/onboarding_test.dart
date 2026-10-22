@@ -210,7 +210,7 @@ void main() {
     await tester.pumpAndSettle();
     // A new account gets "How NeuroCal works" once, then lands on Today.
     expect(find.text('One number for your brain'), findsOneWidget);
-    for (final title in ['Six things move it', 'Always know what’s next', 'Where things are']) {
+    for (final title in ['Six things move it', 'Your numbers', 'Always know what’s next', 'Where things are']) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
       expect(find.text(title), findsOneWidget);
