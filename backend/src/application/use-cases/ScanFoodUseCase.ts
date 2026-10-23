@@ -1,3 +1,4 @@
+import { type CoffeeCheck, coffeeCheck } from "../../domain/coffee";
 import { DomainError, InvalidError, NotFoundError, UpstreamError } from "../../domain/errors";
 import { type FoodFlag, type FoodLabelReading, type ProcessingVerdict, foodFlags, foodItemOf, processingOf } from "../../domain/foodLabel";
 import { MAX_PHOTO_BYTES, ownsPhotoKey } from "../../domain/photo";
@@ -14,6 +15,8 @@ export interface FoodScan {
   flags: FoodFlag[];
   /** One serving, ready to log; missing when there was no nutrition to read. */
   item?: FoodItem;
+  /** For coffee: whether it's stated to be tested for mould toxins. */
+  coffee?: CoffeeCheck;
 }
 
 /**
@@ -73,6 +76,7 @@ export class ScanFoodUseCase {
   private grade(reading: FoodLabelReading): FoodScan {
     const processing = processingOf(reading.ingredients, reading.sourceNovaGroup);
     const item = reading.problem ? null : foodItemOf(reading, processing);
-    return { reading, processing, flags: foodFlags(reading, processing, this.clock.now()), ...(item ? { item } : {}) };
+    const coffee = reading.problem ? null : coffeeCheck(reading);
+    return { reading, processing, flags: foodFlags(reading, processing, this.clock.now()), ...(item ? { item } : {}), ...(coffee ? { coffee } : {}) };
   }
 }

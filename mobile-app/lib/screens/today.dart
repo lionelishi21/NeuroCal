@@ -853,7 +853,8 @@ class _FocusCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      score == null ? 'No score yet' : scoreWord(score),
+                      // Without sleep the score is only part of the day: no "Great" until it's in.
+                      score == null ? 'No score yet' : (parts.sleep == null ? 'So far' : scoreWord(score)),
                       style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, height: 1.15),
                     ),
                     Text(

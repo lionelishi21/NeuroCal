@@ -455,6 +455,21 @@ void main() {
     expect(find.text('Log weight'), findsWidgets);
   });
 
+  testWidgets('Your coffee: the mould check, Bulletproof coffee into Log a meal, and the caffeine curfew', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
+    await tester.pumpAndSettle();
+    await tapCentered(tester, find.text('Your coffee'));
+    expect(find.text('Mould-tested coffee'), findsOneWidget);
+    expect(find.text('Scan your coffee bag'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Last cup by'), 200);
+    await tapCentered(tester, find.text('Log a Bulletproof coffee'));
+    // Log a meal opens with the three parts, to adjust before saving.
+    expect(find.text('MCT oil (C8)'), findsWidgets);
+    expect(find.text('Grass-fed butter or ghee'), findsWidgets);
+  });
+
   testWidgets('a fasting day: plan a fast from Today, count water instead of logging it, and end it', (tester) async {
     await pumpApp(tester);
     await signIn(tester);

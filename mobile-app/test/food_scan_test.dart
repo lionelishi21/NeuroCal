@@ -114,4 +114,13 @@ void main() {
     expect(logged.single?.name, 'Air-fryer honey almond granola');
     expect(logged.single?.calories, 210);
   });
+
+  testWidgets('a bag of coffee says whether it is tested for mould toxins', (tester) async {
+    await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0850000000017']));
+    await scanOnce(tester, 'Start scanning');
+    expect(find.text('Morning Roast Medium Roast Ground Coffee'), findsOneWidget);
+    final note = find.textContaining('Mould testing not stated.', findRichText: true);
+    await tester.scrollUntilVisible(note, 200);
+    expect(find.textContaining('mycotoxin-tested', findRichText: true), findsOneWidget);
+  });
 }

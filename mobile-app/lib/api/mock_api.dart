@@ -627,6 +627,25 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<FoodScan> scanBarcode(String code) async {
     await Future.delayed(latency * 2);
+    if (code == '0850000000017') {
+      return const FoodScan(
+        brand: 'Morning Roast',
+        productName: 'Medium Roast Ground Coffee',
+        servingSize: '1 mug (240 ml)',
+        calories: 2,
+        proteinG: 0.3,
+        carbsG: 0,
+        fatG: 0,
+        ingredients: ['100% Arabica coffee'],
+        fromDatabase: true,
+        processing: FoodProcessing.whole,
+        coffee: (
+          moldTested: false,
+          detail:
+              "The label doesn't say it's tested for mould toxins. Look for 'mycotoxin-tested' or a named lab test; washed, single-origin beans roasted recently are a safer bet than old, cheap blends.",
+        ),
+      );
+    }
     if (code != '0123456789012') throw ApiException(404, "We don't know that barcode yet. Photograph the label instead.");
     return const FoodScan(
       brand: 'Member’s Selection',

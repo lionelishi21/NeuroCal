@@ -21,6 +21,7 @@ class KitchenScreen extends StatefulWidget {
     required this.onOpenShopping,
     required this.onScanPackage,
     required this.onBrowseFoods,
+    required this.onOpenCoffee,
   });
 
   final Listenable changes;
@@ -30,6 +31,7 @@ class KitchenScreen extends StatefulWidget {
   final VoidCallback onOpenShopping;
   final VoidCallback onScanPackage;
   final VoidCallback onBrowseFoods;
+  final VoidCallback onOpenCoffee;
 
   @override
   State<KitchenScreen> createState() => _KitchenScreenState();
@@ -111,6 +113,14 @@ class _KitchenScreenState extends State<KitchenScreen> {
               detail: 'What can I make from it?',
               tone: _Tone.amber,
               onTap: widget.onOpenPantry,
+            ),
+            const SizedBox(height: Space.s3),
+            _LinkCard(
+              icon: Icons.coffee_rounded,
+              title: 'Your coffee',
+              detail: 'Mould check, Bulletproof coffee and your caffeine curfew',
+              tone: _Tone.amber,
+              onTap: widget.onOpenCoffee,
             ),
             const SizedBox(height: Space.s3),
             _LinkCard(

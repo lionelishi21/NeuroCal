@@ -246,9 +246,16 @@ const PHRASES: Record<keyof FocusComponents, string> = {
   environment: "Yesterday's air and surroundings",
 };
 
+/**
+ * Said instead of any other explanation while sleep, the biggest input, is missing: the score then
+ * comes from the other inputs alone and can read higher than the day really is.
+ */
+export const SLEEP_MISSING = "Sleep isn't in yet, so this score is from your other inputs so far. Log last night's sleep to complete it.";
+
 /** Plain explanation used when the AI explanation is unavailable. */
 export function fallbackExplanation(score: number | null, components: FocusComponents): string {
   if (score === null) return "Log last night's sleep or a check-in to get today's Focus Score.";
+  if (components.sleep === null) return SLEEP_MISSING;
   const known = (Object.keys(components) as (keyof FocusComponents)[]).filter((k) => components[k] !== null);
   const weakest = known.reduce((a, b) => (components[b]! < components[a]! ? b : a));
   if (components[weakest]! >= 0.8) return "Every input looks good today. Keep the same rhythm.";

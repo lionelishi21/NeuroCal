@@ -120,7 +120,8 @@ export class GetFocusScoreUseCase {
   }
 
   private async explain(score: number | null, components: FocusComponents): Promise<string> {
-    if (score === null) return fallbackExplanation(score, components);
+    // Without sleep the AI would explain an incomplete score as if it were the whole day.
+    if (score === null || components.sleep === null) return fallbackExplanation(score, components);
     try {
       return await this.explainer.explain({ score, components });
     } catch {

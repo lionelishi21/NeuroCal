@@ -1037,6 +1037,8 @@ export const FoodScanResponse = z.object({
   flags: z.array(z.object({ kind: z.enum(["ultra_processed", "high_added_sugar", "high_sodium", "expired", "expires_soon"]), message: z.string() })),
   /** One serving ready to log; its glycemic load is an estimate. Missing without nutrition. */
   item: FoodItem.optional(),
+  /** For coffee only: whether the label or its maker says it's tested for mould toxins (mycotoxins). */
+  coffee: z.object({ moldTested: z.boolean(), detail: z.string() }).optional(),
 });
 export type FoodScanResponse = z.infer<typeof FoodScanResponse>;
 

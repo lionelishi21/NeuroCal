@@ -11,6 +11,7 @@ import 'progress.dart';
 import 'settings.dart';
 import 'stack.dart';
 import 'today.dart';
+import 'coffee.dart';
 
 /// The signed-in app: Today, Kitchen, Progress and Stack under a bottom tab bar, with the add button
 /// in the middle for everything that can be logged. Me opens from the initials on Today. Each tab keeps
@@ -164,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onOpenShopping: () => openShopping(context),
           onScanPackage: () => _capture(Capture.foodPackage),
           onBrowseFoods: () => openFoods(context, onChanged: _changed),
+          onOpenCoffee: () => openCoffee(context, widget.profile, onChanged: _changed),
         ),
       ),
       (

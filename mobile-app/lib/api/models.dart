@@ -476,6 +476,7 @@ class FoodScan {
     this.markers = const [],
     this.flags = const [],
     this.item,
+    this.coffee,
   });
 
   /// not_a_label, blurry, too_dark or cut_off.
@@ -511,6 +512,9 @@ class FoodScan {
   /// One serving, ready to log.
   final FoodItem? item;
 
+  /// For coffee: whether the label or its maker says it's tested for mould toxins.
+  final ({bool moldTested, String detail})? coffee;
+
   String get name {
     if (brand != null && productName != null && productName!.toLowerCase().contains(brand!.toLowerCase())) return productName!;
     final joined = [brand, productName].whereType<String>().join(' ');
@@ -543,6 +547,7 @@ class FoodScan {
       markers: [for (final m in p['markers'] as List) m as String],
       flags: [for (final f in j['flags'] as List) (kind: f['kind'] as String, message: f['message'] as String)],
       item: j['item'] == null ? null : FoodItem.fromJson(j['item'] as Map<String, dynamic>),
+      coffee: j['coffee'] == null ? null : (moldTested: j['coffee']['moldTested'] as bool, detail: j['coffee']['detail'] as String),
     );
   }
 }

@@ -108,6 +108,12 @@ describe("computeFocusComponents + fallbackExplanation", () => {
     );
   });
 
+  it("says the score is incomplete while sleep is missing, however good the rest looks", () => {
+    const components = { sleep: null, timing: 1, glycemic: 1, stress: 1, movement: null, environment: null };
+    expect(focusScoreFrom(components)).toBe(100);
+    expect(fallbackExplanation(100, components)).toMatch(/^Sleep isn't in yet/);
+  });
+
   it("asks for data when there is none", () => {
     expect(fallbackExplanation(null, { sleep: null, timing: null, glycemic: null, stress: null, movement: null })).toMatch(/Log last night's sleep/);
   });

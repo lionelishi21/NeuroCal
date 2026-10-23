@@ -222,6 +222,17 @@ class _FoodScanState extends State<_FoodScan> {
           ),
         for (final f in scan.flags)
           SheetNote(lead: _flagLeads[f.kind] ?? 'Worth knowing.', detail: f.message, watch: f.kind != 'expired'),
+        if (scan.coffee case final coffee?)
+          coffee.moldTested
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: Space.s2,
+                  children: [
+                    Icon(Icons.verified_rounded, size: 20, color: c.chlorophyll),
+                    Expanded(child: Text('Mould-tested. ${coffee.detail}', style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.chlorophyll))),
+                  ],
+                )
+              : SheetNote(lead: 'Mould testing not stated.', detail: coffee.detail, watch: true),
         if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty)
           Text('A whole food: nothing industrial in the ingredients.', style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll)),
         if (scan.processing != FoodProcessing.whole && scan.ingredients.isNotEmpty)

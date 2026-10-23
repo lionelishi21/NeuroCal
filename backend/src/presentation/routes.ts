@@ -269,11 +269,12 @@ async function photosFrom(req: ApiRequest, max: number) {
 }
 
 /** A food scan over the wire: the label as read, NeuroCal's grading, and a serving to log. */
-const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, flags, item }: FoodScan) => ({
+const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, flags, item, coffee }: FoodScan) => ({
   ...reading,
   processing,
   flags,
   ...(item ? { item: toFoodItem(item) } : {}),
+  ...(coffee ? { coffee } : {}),
 });
 
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });

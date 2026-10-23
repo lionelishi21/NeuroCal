@@ -4098,6 +4098,21 @@
           },
           "item": {
             "$ref": "#/components/schemas/FoodItem"
+          },
+          "coffee": {
+            "type": "object",
+            "properties": {
+              "moldTested": {
+                "type": "boolean"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "moldTested",
+              "detail"
+            ]
           }
         },
         "required": [
