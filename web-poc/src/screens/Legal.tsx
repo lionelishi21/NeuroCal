@@ -74,7 +74,25 @@ export function Privacy() {
             <ul>
               <li>Your email address and sign-in details, to run your account.</li>
               <li>Your profile and onboarding answers: name, time zone, diet, goals, sleep and caffeine habits, supplements, and a weight goal if you set one.</li>
-              <li>What you log: meals and their nutrition, meal and supplement-label photos, check-ins about how you feel, sleep, screen time and weigh-ins.</li>
+              <li>
+                Health conditions you choose to tell us about (for example diabetes, a heart condition or pregnancy). We use them only to make your plan more
+                cautious: gentler fasting, no weight-loss goal where it isn&rsquo;t right, and suggestions that suit you. You can change or remove them in the
+                app at any time.
+              </li>
+              <li>
+                What you log: meals and their nutrition; photos of meals, food packages, supplement labels and shopping lists; barcodes you scan; check-ins about
+                how you feel; sleep, screen time, weigh-ins, exercise, planned fasts, Brain speed reaction times, your supplement stack, your pantry, and
+                readings you type in such as blood pressure or lab results.
+              </li>
+              <li>
+                With your permission, data from Apple Health or Health Connect: sleep, resting heart rate, heart rate variability, blood pressure and, if you use
+                one, a daily summary from your glucose sensor. You can turn this off in your phone&rsquo;s settings.
+              </li>
+              <li>If you set your town for air quality: the town, rounded to about 10 km.</li>
+              <li>
+                How the app is used (which screens and buttons, for example &ldquo;onboarding finished&rdquo; or &ldquo;meal logged&rdquo;), tied to an
+                account number, never to your health values; and crash reports with no personal details. Both only when they&rsquo;re switched on.
+              </li>
               <li>Your subscription status (trial, active or ended), from the app store, through RevenueCat.</li>
               <li>If you join the waitlist on our website: your email address and which phone you use.</li>
             </ul>
@@ -85,8 +103,10 @@ export function Privacy() {
           body: (
             <ul>
               <li>We don't sell your personal information or share it for advertising.</li>
-              <li>We don't use advertising trackers or third-party analytics in the app or on the website.</li>
+              <li>We don&rsquo;t use advertising trackers, and our usage analytics never include your health information.</li>
+              <li>We never use your health conditions or health data for anything but running your plan.</li>
               <li>We don&rsquo;t see your payment details: Apple or Google handle payment.</li>
+              <li>Progress photos stay on your phone: they&rsquo;re never uploaded to us.</li>
             </ul>
           ),
         },
@@ -107,9 +127,17 @@ export function Privacy() {
               <p className="m-0">Only the services we need to run NeuroCal, each under a contract that limits them to doing that work for us:</p>
               <ul>
                 <li>Amazon Web Services: hosting, sign-in and storage, in the United States.</li>
-                <li>OpenAI: reads meal and supplement-label photos to identify foods and label contents.</li>
-                <li>Anthropic: writes the short explanation of your Focus Score and the search phrase for recipes, from your day&rsquo;s numbers and onboarding answers. They receive no name or email.</li>
+                <li>OpenAI: reads photos of meals, food packages, supplement labels and shopping lists to identify what&rsquo;s in them.</li>
+                <li>
+                  Anthropic: writes your Focus Score explanation, recipes, meal plans, shopping list reviews and better food choices, from your day&rsquo;s
+                  numbers, your pantry, your food preferences and any food rules that follow from health conditions you&rsquo;ve told us about. They receive no
+                  name or email.
+                </li>
                 <li>A recipe search service (Tavily): receives only the search phrase, never anything about you.</li>
+                <li>Open Food Facts: receives the barcodes you scan, to look up the product.</li>
+                <li>Open-Meteo: receives the town you set, to find its air quality.</li>
+                <li>PostHog: records how the app is used, as described above, if analytics is switched on.</li>
+                <li>Sentry: records app and server crashes, without personal details, if crash reporting is switched on.</li>
                 <li>RevenueCat, Apple and Google: process and record your subscription.</li>
                 <li>Resend: sends waitlist and account emails.</li>
               </ul>
@@ -123,6 +151,7 @@ export function Privacy() {
           body: (
             <ul>
               <li>Meal and label photos: deleted automatically 30 days after upload. The foods read from them stay with your meals.</li>
+              <li>Progress photos, glasses of water and other things kept on your phone: until you delete them or the app.</li>
               <li>Everything else in your account: until you delete it or your account.</li>
               <li>Database backups, kept in case of a failure, roll over after 14 days, so deleted information is gone from them within 14 days.</li>
               <li>Waitlist entries: until you unsubscribe or join the app.</li>
@@ -134,7 +163,7 @@ export function Privacy() {
           body: (
             <>
               <ul>
-                <li>Delete a meal, check-in or weigh-in at any time in the app.</li>
+                <li>Delete a meal, check-in, weigh-in, exercise or reading at any time in the app, and change or remove your health conditions in Me.</li>
                 <li>
                   Delete your whole account in the app (Settings, Delete account), or see <A href="/delete-account">how to delete your account</A>.
                 </li>
@@ -200,8 +229,12 @@ export function Terms() {
                 unwell.
               </p>
               <p className="m-0">
-                Nutrition figures, photo readings and supplement-label readings are estimates and can be wrong. A label reading reports what the label says; it
-                isn&rsquo;t a test of what&rsquo;s in the product.
+                Planned fasts are limited to 48 hours from your last meal, less with some health conditions. Fasts over 24 hours are for healthy adults only;
+                drink water throughout and stop if you feel dizzy, faint or unwell.
+              </p>
+              <p className="m-0">
+                Nutrition figures, photo readings and label readings are estimates and can be wrong. A label reading, including whether a coffee says it&rsquo;s
+                tested for mould toxins, reports what the label says; it isn&rsquo;t a test of what&rsquo;s in the product.
               </p>
             </>
           ),
