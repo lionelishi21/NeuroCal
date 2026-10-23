@@ -49,6 +49,7 @@ class _Day {
     this.plan,
     this.weightGoal,
     this.weighInDue = false,
+    this.coffee,
   });
 
   final DateTime date;
@@ -99,6 +100,9 @@ class _Day {
 
   /// A weight goal and no weigh-in for a week: Up next asks for one.
   final bool weighInDue;
+
+  /// Today's coffee; null when it didn't load or for a past day.
+  final CoffeeDay? coffee;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -237,6 +241,9 @@ class _TodayScreenState extends State<TodayScreen> {
         ? _api.weights(days: 120).then<WeightHistory?>((w) => w).catchError((Object _) => null)
         : Future<WeightHistory?>.value(null);
     final unitLoad = WeightUnit.load(Localizations.localeOf(context));
+    final coffeeLoad = _date == null
+        ? _api.coffee().then<CoffeeDay?>((c) => c).catchError((Object _) => null)
+        : Future<CoffeeDay?>.value(null);
     final prefsLoad = SharedPreferences.getInstance().then<SharedPreferences?>((p) => p).catchError((Object _) => null);
     final d = await _api.today(_date);
     final days = await history;
@@ -310,6 +317,7 @@ class _TodayScreenState extends State<TodayScreen> {
       plan: plan,
       weightGoal: goal,
       weighInDue: weighInDue,
+      coffee: await coffeeLoad,
     );
   }
 
@@ -431,6 +439,8 @@ class _TodayScreenState extends State<TodayScreen> {
         reminders: AppScope.of(context).reminders,
         onCheckIn: () => widget.onCapture(Capture.checkIn),
       ),
+    if (day.coffee case final coffee? when day.isToday)
+      _CoffeeRow(coffee, onLog: () => widget.onCapture(Capture.coffee)),
     if (day.isToday && day.stack != null) StackCard(day.stack!, onManage: _manageStack, framed: false),
     if (day.isToday && day.environment != null)
       EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
@@ -1811,6 +1821,66 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Today's coffee in the habits card: cups, caffeine, the last one and the curfew; "+ Cup" logs one.
+class _CoffeeRow extends StatelessWidget {
+  const _CoffeeRow(this.day, {required this.onLog});
+
+  final CoffeeDay day;
+  final VoidCallback onLog;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final cups = day.cups;
+    final late = cups.any((cup) => cup.afterCurfew);
+    final last = cups.isEmpty ? null : cups.last.takenAt;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+      child: Row(
+        spacing: Space.s3,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.glucoseSoft, shape: BoxShape.circle),
+            child: Icon(Icons.coffee_rounded, size: 22, color: c.oil),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                const Text(
+                  'Coffee',
+                  style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  cups.isEmpty
+                      ? 'Log each cup as you drink it. Black or Bulletproof keeps your fast. Last cup by ${day.curfew}.'
+                      : '${cups.length} ${cups.length == 1 ? 'cup' : 'cups'} · ${day.caffeineMg} mg caffeine · last at ${_clock(last!)} · curfew ${day.curfew}',
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                ),
+                if (late)
+                  Text(
+                    'A cup after ${day.curfew} can cost tonight’s deep sleep.',
+                    style: TextStyle(
+                      fontSize: TextSize.xs,
+                      height: 1.35,
+                      fontWeight: FontWeight.w700,
+                      color: c.glucoseInk,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SoftButton(label: '+ Cup', semanticLabel: 'Log a cup of coffee', onPressed: onLog),
         ],
       ),
     );

@@ -249,7 +249,13 @@ class MockNeuroCalApi implements NeuroCalApi {
     final sensor = _glucose[isoDate(day.subtract(const Duration(days: 1)))];
     final glycemic = sensor == null ? 0.85 : sensor.inRange140Pct / 100;
     // As the API (backend domain/focusScore.ts): everything but sharp and calm.
-    const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.lowEnergy, CognitiveFlag.wired};
+    const negative = {
+      CognitiveFlag.stressed,
+      CognitiveFlag.brainFog,
+      CognitiveFlag.lowFocus,
+      CognitiveFlag.lowEnergy,
+      CognitiveFlag.wired,
+    };
     final stress = (1 - 0.25 * _flags.where(negative.contains).length).clamp(0.0, 1.0);
     const movement = 0.5; // a 15-minute walk yesterday
     final environment = _environmentSignal();
@@ -550,6 +556,56 @@ class MockNeuroCalApi implements NeuroCalApi {
     check: Map.of(_check),
     signal: _environmentSignal(),
   );
+
+  final _cups = <CoffeeCup>[];
+
+  /// Cups as the API names and marks them (backend domain/coffee.ts), with a 15:00 curfew.
+  @override
+  Future<CoffeeDay> coffee() async {
+    await _wait();
+    final now = DateTime.now();
+    final today = [
+      for (final c in _cups)
+        if (c.takenAt.year == now.year && c.takenAt.month == now.month && c.takenAt.day == now.day) c,
+    ];
+    return CoffeeDay(
+      date: isoDate(now),
+      cups: today,
+      caffeineMg: today.fold(0, (s, c) => s + c.caffeineMg),
+      kcal: today.fold(0, (s, c) => s + c.kcal),
+      curfew: '15:00',
+    );
+  }
+
+  @override
+  Future<CoffeeDay> logCoffee(CoffeeKind kind, List<CoffeeAddIn> addIns, {DateTime? at}) async {
+    final takenAt = at ?? DateTime.now();
+    final labels = [
+      for (final a in addIns)
+        RegExp(r'^[A-Z0-9]{2}').hasMatch(a.label) ? a.label : a.label[0].toLowerCase() + a.label.substring(1),
+    ];
+    final list = labels.length <= 1
+        ? labels.join()
+        : '${labels.sublist(0, labels.length - 1).join(', ')} and ${labels.last}';
+    _cups.add((
+      id: 'cup${_cups.length + 1}',
+      takenAt: takenAt,
+      kind: kind,
+      addIns: addIns,
+      name: labels.isEmpty ? kind.label : '${kind.label} with $list',
+      kcal: addIns.fold(kind == CoffeeKind.espresso ? 1 : 2, (s, a) => s + a.kcal),
+      caffeineMg: kind.caffeineMg,
+      afterCurfew: takenAt.hour * 60 + takenAt.minute > 15 * 60,
+      breaksFast: addIns.any((a) => a.breaksFast),
+    ));
+    return coffee();
+  }
+
+  @override
+  Future<void> deleteCoffee(String id) async {
+    await _wait();
+    _cups.removeWhere((c) => c.id == id);
+  }
 
   @override
   Future<EnvironmentDay> environment() async {

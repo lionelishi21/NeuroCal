@@ -499,11 +499,38 @@ void main() {
     expect(find.text('Mould-tested coffee'), findsOneWidget);
     expect(find.text('Scan your coffee bag'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Last cup by'), 200);
+    // A cup, not a meal: it doesn't open Log a meal.
     await tapCentered(tester, find.text('Log a Bulletproof coffee'));
-    // Log a meal opens with the three parts, to adjust before saving.
-    expect(find.text('MCT oil (C8)'), findsWidgets);
-    expect(find.text('Grass-fed butter or ghee'), findsWidgets);
+    expect(find.text('Cup logged'), findsOneWidget);
   });
+
+  testWidgets(
+    'coffee from the add menu: a Bulletproof cup keeps the fast, milk would end it, and Today counts the cups',
+    (tester) async {
+      await pumpApp(tester);
+      await signIn(tester);
+      await add(tester, 'Log coffee');
+      expect(find.text('2 kcal, 95 mg caffeine. Keeps your fast going.'), findsOneWidget);
+      Future<void> tapIn(Finder f) async {
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.tap(f);
+        await tester.pumpAndSettle();
+      }
+
+      await tapIn(find.text('Milk'));
+      expect(find.textContaining('The milk ends a fast'), findsOneWidget);
+      await tapIn(find.text('Bulletproof'));
+      expect(find.text('234 kcal, 95 mg caffeine. Keeps your fast going.'), findsOneWidget);
+      await tapIn(find.widgetWithText(FilledButton, 'Log cup'));
+      // Marked "after curfew" too when the test runs after 15:00.
+      expect(find.textContaining('Coffee with C8 MCT oil and grass-fed butter'), findsWidgets);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.textContaining('1 cup · 95 mg caffeine'), 300);
+    },
+  );
 
   testWidgets('a fasting day: plan a fast from Today, count water instead of logging it, and end it', (tester) async {
     await pumpApp(tester);
@@ -702,7 +729,8 @@ void main() {
     for (final section in ['Food', 'Body', 'Mind']) {
       expect(find.descendant(of: find.byType(BottomSheet), matching: find.text(section)), findsOneWidget);
     }
-    await tester.tapAt(const Offset(10, 10));
+    // The menu is tall enough to reach the top corner on a small phone: close it with back.
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
     await tester.tap(find.bySemanticsLabel('Me'));

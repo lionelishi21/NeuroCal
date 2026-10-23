@@ -5,7 +5,7 @@ import { localDateOf, localTimeOf, previousDate } from "../../domain/localDay";
 import { mealCalories, sumMacros } from "../../domain/meal";
 import type { CognitiveFlag } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
-import type { ICheckInRepository, IMealRepository, IProfileRepository, ITelemetryRepository } from "../interfaces/IRepositories";
+import type { ICheckInRepository, ICoffeeRepository, IMealRepository, IProfileRepository, ITelemetryRepository } from "../interfaces/IRepositories";
 import { type EnvironmentInputs, loadFocusInputs } from "./GetFocusScoreUseCase";
 
 export const MAX_HISTORY_DAYS = 31;
@@ -38,6 +38,7 @@ export class GetHistoryUseCase {
     private readonly clock: IClock,
     private readonly exercises?: IExerciseRepository,
     private readonly environment?: EnvironmentInputs,
+    private readonly coffee?: ICoffeeRepository,
   ) {}
 
   async execute(input: { userId: string; days?: number }): Promise<HistoryDay[]> {
@@ -52,7 +53,7 @@ export class GetHistoryUseCase {
     const dates: string[] = [localDateOf(this.clock.now(), timeZone)];
     while (dates.length < days) dates.unshift(previousDate(dates[0]!));
 
-    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment };
+    const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, coffee: this.coffee };
     return Promise.all(
       dates.map(async (date): Promise<HistoryDay> => {
         const [meals, checkIns, focusInputs] = await Promise.all([

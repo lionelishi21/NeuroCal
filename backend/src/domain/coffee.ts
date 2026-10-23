@@ -47,3 +47,89 @@ export function coffeeCheck(reading: Pick<FoodLabelReading, "productName" | "bra
       "The label doesn't say it's tested for mould toxins. Look for 'mycotoxin-tested' or a named lab test; washed, single-origin beans roasted recently are a safer bet than old, cheap blends.",
   };
 }
+
+/**
+ * The coffee log: each cup with its time and add-ins, separate from meals. Coffee and pure fat keep a
+ * fast going (Bulletproof coffee as a "fat fast"); milk, sugar or collagen end it. The add-ins'
+ * calories still count toward the day. Cups after the caffeine curfew (eight hours after waking) are
+ * flagged and cost the next day's evening timing, since late caffeine cuts deep sleep.
+ */
+export const COFFEE_KINDS = ["brewed", "espresso", "double_espresso", "decaf"] as const;
+export type CoffeeKind = (typeof COFFEE_KINDS)[number];
+
+export const COFFEE_ADD_INS = ["mct_c8", "mct_c8_c10", "butter_grass_fed", "butter", "ghee_grass_fed", "ghee", "creatine", "collagen", "milk", "sugar"] as const;
+export type CoffeeAddIn = (typeof COFFEE_ADD_INS)[number];
+
+/** Caffeine and calories in the coffee itself (USDA for brewed and espresso). */
+export const KIND: Record<CoffeeKind, { label: string; caffeineMg: number; kcal: number }> = {
+  brewed: { label: "Coffee", caffeineMg: 95, kcal: 2 },
+  espresso: { label: "Espresso", caffeineMg: 63, kcal: 1 },
+  double_espresso: { label: "Double espresso", caffeineMg: 126, kcal: 2 },
+  decaf: { label: "Decaf", caffeineMg: 3, kcal: 2 },
+};
+
+/** Per usual serving. Milk, sugar and collagen (protein or sugar) end a fast; fat and creatine don't. */
+export const ADD_IN: Record<CoffeeAddIn, { label: string; portion: string; kcal: number; proteinG: number; carbsG: number; fatG: number; breaksFast: boolean }> = {
+  mct_c8: { label: "C8 MCT oil", portion: "1 tbsp", kcal: 130, proteinG: 0, carbsG: 0, fatG: 14, breaksFast: false },
+  mct_c8_c10: { label: "MCT oil (C8/C10)", portion: "1 tbsp", kcal: 130, proteinG: 0, carbsG: 0, fatG: 14, breaksFast: false },
+  butter_grass_fed: { label: "Grass-fed butter", portion: "1 tbsp", kcal: 102, proteinG: 0.1, carbsG: 0, fatG: 11.5, breaksFast: false },
+  butter: { label: "Butter", portion: "1 tbsp", kcal: 102, proteinG: 0.1, carbsG: 0, fatG: 11.5, breaksFast: false },
+  ghee_grass_fed: { label: "Grass-fed ghee", portion: "1 tbsp", kcal: 120, proteinG: 0, carbsG: 0, fatG: 13.6, breaksFast: false },
+  ghee: { label: "Ghee", portion: "1 tbsp", kcal: 120, proteinG: 0, carbsG: 0, fatG: 13.6, breaksFast: false },
+  creatine: { label: "Creatine", portion: "5 g", kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, breaksFast: false },
+  collagen: { label: "Collagen", portion: "10 g", kcal: 36, proteinG: 9, carbsG: 0, fatG: 0, breaksFast: true },
+  milk: { label: "Milk", portion: "a splash (60 ml)", kcal: 37, proteinG: 1.9, carbsG: 2.9, fatG: 2, breaksFast: true },
+  sugar: { label: "Sugar", portion: "1 tsp", kcal: 16, proteinG: 0, carbsG: 4.2, fatG: 0, breaksFast: true },
+};
+
+export interface CoffeeCup {
+  id: string;
+  takenAt: Date;
+  kind: CoffeeKind;
+  addIns: CoffeeAddIn[];
+}
+
+export const MAX_CUPS_A_DAY = 20;
+
+/** A cup's name as a meal item would read: "Coffee with C8 MCT oil and grass-fed butter". */
+export function cupName(cup: Pick<CoffeeCup, "kind" | "addIns">): string {
+  // Lower case in a sentence, except names that start with an abbreviation (C8, MCT).
+  const parts = cup.addIns.map((a) => ADD_IN[a].label).map((l) => (/^[A-Z0-9]{2}/.test(l) ? l : l[0]!.toLowerCase() + l.slice(1)));
+  if (parts.length === 0) return KIND[cup.kind].label;
+  const list = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+  return `${KIND[cup.kind].label} with ${list}`;
+}
+
+export function cupNutrition(cup: Pick<CoffeeCup, "kind" | "addIns">) {
+  const base = KIND[cup.kind];
+  return cup.addIns.reduce(
+    (n, a) => ({
+      kcal: n.kcal + ADD_IN[a].kcal,
+      proteinG: n.proteinG + ADD_IN[a].proteinG,
+      carbsG: n.carbsG + ADD_IN[a].carbsG,
+      fatG: n.fatG + ADD_IN[a].fatG,
+      caffeineMg: n.caffeineMg,
+    }),
+    { kcal: base.kcal, proteinG: 0, carbsG: 0, fatG: 0, caffeineMg: base.caffeineMg },
+  );
+}
+
+/** Milk, sugar or collagen end a fast; black coffee, pure fat and creatine keep it going. */
+export const breaksFast = (cup: Pick<CoffeeCup, "addIns">) => cup.addIns.some((a) => ADD_IN[a].breaksFast);
+
+/** Caffeine's half-life is five or six hours, so the last cup is eight hours after waking. */
+export const CURFEW_AFTER_WAKE_HOURS = 8;
+
+/** The wake-time answer in onboarding, as an hour of the day. */
+const WAKE_HOURS: Record<string, number> = { before_6: 5.5, "6_to_8": 7, after_8: 8.5 };
+export const wakeHourOf = (bioProfile: Record<string, unknown> | undefined) => WAKE_HOURS[String(bioProfile?.wake)] ?? 7;
+
+/** The caffeine curfew as local "HH:MM". */
+export function curfewClock(wakeHour: number): string {
+  const minutes = Math.round((wakeHour + CURFEW_AFTER_WAKE_HOURS) * 60);
+  return `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+/** True when a cup at local "HH:MM" `time` comes after the curfew. */
+export const afterCurfew = (time: { hour: number; minute: number }, wakeHour: number) =>
+  time.hour * 60 + time.minute > Math.round((wakeHour + CURFEW_AFTER_WAKE_HOURS) * 60);

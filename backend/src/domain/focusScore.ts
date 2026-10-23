@@ -58,6 +58,8 @@ export interface FocusInputs {
   previousDayMeals: Meal[];
   /** Samples starting on the previous day or on `date`; filtered to the late evening here. */
   screenTime: ScreenTimeSample[];
+  /** Caffeine after the curfew on the previous day; absent when no coffee was logged that day. */
+  previousDayLateCaffeineMg?: number;
   /** Check-ins on the previous day and on `date`. */
   checkIns: CheckIn[];
   /** Exercise on the previous day. */
@@ -125,14 +127,17 @@ export function timingComponent(inputs: FocusInputs): number | null {
   // Only that evening's samples count as data: daytime screen time says nothing about timing.
   const hasScreen = recorded !== null;
   const hasMeals = inputs.previousDayMeals.length > 0;
-  if (!hasScreen && !hasMeals) return null;
+  const lateCaffeine = inputs.previousDayLateCaffeineMg;
+  if (!hasScreen && !hasMeals && lateCaffeine === undefined) return null;
 
   let lateEating = 0;
   for (const meal of inputs.previousDayMeals) {
     const { hour, minute } = localTimeOf(meal.eatenAt, inputs.timeZone);
     lateEating = Math.max(lateEating, (hour - LATE_EATING_FROM_HOUR) * 60 + minute);
   }
-  return clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(lateScreen / 120) + (keptFast(inputs) ? FAST_KEPT_BONUS : 0));
+  // A cup of coffee after the curfew costs as much as an hour of late screens.
+  const caffeine = 0.3 * clamp01((lateCaffeine ?? 0) / 95);
+  return clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(lateScreen / 120) - caffeine + (keptFast(inputs) ? FAST_KEPT_BONUS : 0));
 }
 
 /** The overnight fast from the last meal of D−1 to the first meal of D reached the protocol's hours. */
@@ -240,7 +245,7 @@ export function personalWeights(days: { components: FocusComponents; brainScore:
 
 const PHRASES: Record<keyof FocusComponents, string> = {
   sleep: "Last night's sleep",
-  timing: "Late eating or screen time last night",
+  timing: "Late eating, screens or caffeine last night",
   glycemic: "Yesterday's high-glycemic food",
   stress: "How you've been feeling",
   movement: "Too little movement yesterday",

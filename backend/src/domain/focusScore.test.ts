@@ -121,6 +121,13 @@ describe("computeFocusComponents + fallbackExplanation", () => {
     expect(at2(["low_energy", "brain_fog"])).toBe(0.5);
   });
 
+  it("takes evening timing down for coffee after the curfew the day before", () => {
+    const base = { ...empty, previousDayMeals: [] };
+    expect(timingComponent({ ...base, previousDayLateCaffeineMg: 0 })).toBe(1);
+    expect(timingComponent({ ...base, previousDayLateCaffeineMg: 95 })).toBeCloseTo(0.7);
+    expect(timingComponent(base)).toBeNull();
+  });
+
   it("asks for data when there is none", () => {
     expect(fallbackExplanation(null, { sleep: null, timing: null, glycemic: null, stress: null, movement: null })).toMatch(/Log last night's sleep/);
   });

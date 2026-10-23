@@ -1,3 +1,4 @@
+import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import type {
   CheckIn,
@@ -103,4 +104,13 @@ export interface IFastPlanRepository {
   get(userId: string): Promise<FastPlan | null>;
   /** Null removes it. */
   set(userId: string, plan: FastPlan | null): Promise<void>;
+}
+
+/** The coffee log; scoped to one user. */
+export interface ICoffeeRepository {
+  add(userId: string, cup: Omit<CoffeeCup, "id">): Promise<CoffeeCup>;
+  /** Cups taken in [from, to), oldest first. */
+  listBetween(userId: string, from: Date, to: Date): Promise<CoffeeCup[]>;
+  /** False when there was no such cup for this user. */
+  delete(userId: string, id: string): Promise<boolean>;
 }

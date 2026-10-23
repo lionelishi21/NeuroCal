@@ -1741,3 +1741,89 @@ class GlucoseDay {
     source: j['source'] as String,
   );
 }
+
+/// The coffee itself (`CoffeeKind` in the contracts), with its caffeine.
+enum CoffeeKind {
+  brewed('Coffee', 95),
+  espresso('Espresso', 63),
+  doubleEspresso('Double espresso', 126),
+  decaf('Decaf', 3);
+
+  const CoffeeKind(this.label, this.caffeineMg);
+  final String label;
+  final int caffeineMg;
+
+  String get wire => name == 'doubleEspresso' ? 'double_espresso' : name;
+  static CoffeeKind fromWire(String w) => values.firstWhere((k) => k.wire == w, orElse: () => brewed);
+}
+
+/// What's stirred in (`CoffeeAddIn` in the contracts). Milk, sugar and collagen end a fast.
+enum CoffeeAddIn {
+  mctC8('mct_c8', 'C8 MCT oil', 130, false),
+  mctC8C10('mct_c8_c10', 'MCT oil (C8/C10)', 130, false),
+  butterGrassFed('butter_grass_fed', 'Grass-fed butter', 102, false),
+  butter('butter', 'Butter', 102, false),
+  gheeGrassFed('ghee_grass_fed', 'Grass-fed ghee', 120, false),
+  ghee('ghee', 'Ghee', 120, false),
+  creatine('creatine', 'Creatine', 0, false),
+  collagen('collagen', 'Collagen', 36, true),
+  milk('milk', 'Milk', 37, true),
+  sugar('sugar', 'Sugar', 16, true);
+
+  const CoffeeAddIn(this.wire, this.label, this.kcal, this.breaksFast);
+  final String wire;
+  final String label;
+  final int kcal;
+  final bool breaksFast;
+
+  static CoffeeAddIn? fromWire(String w) => values.where((a) => a.wire == w).firstOrNull;
+}
+
+/// One cup (`CoffeeCup` in the contracts).
+typedef CoffeeCup = ({
+  String id,
+  DateTime takenAt,
+  CoffeeKind kind,
+  List<CoffeeAddIn> addIns,
+  String name,
+  int kcal,
+  int caffeineMg,
+  bool afterCurfew,
+  bool breaksFast,
+});
+
+/// A day's coffee (`CoffeeDay` in the contracts).
+class CoffeeDay {
+  const CoffeeDay({required this.date, this.cups = const [], this.caffeineMg = 0, this.kcal = 0, required this.curfew});
+
+  final String date;
+
+  /// Oldest first.
+  final List<CoffeeCup> cups;
+  final int caffeineMg;
+  final int kcal;
+
+  /// Local "HH:MM".
+  final String curfew;
+
+  factory CoffeeDay.fromJson(Map<String, dynamic> j) => CoffeeDay(
+    date: j['date'] as String,
+    cups: [
+      for (final c in j['cups'] as List)
+        (
+          id: c['id'] as String,
+          takenAt: DateTime.parse(c['takenAt'] as String).toLocal(),
+          kind: CoffeeKind.fromWire(c['kind'] as String),
+          addIns: [for (final a in c['addIns'] as List) ?CoffeeAddIn.fromWire(a as String)],
+          name: c['name'] as String,
+          kcal: (c['kcal'] as num).toInt(),
+          caffeineMg: (c['caffeineMg'] as num).toInt(),
+          afterCurfew: c['afterCurfew'] as bool,
+          breaksFast: c['breaksFast'] as bool,
+        ),
+    ],
+    caffeineMg: (j['caffeineMg'] as num).toInt(),
+    kcal: (j['kcal'] as num).toInt(),
+    curfew: j['curfew'] as String,
+  );
+}

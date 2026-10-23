@@ -64,11 +64,16 @@ class CoffeeScreen extends StatelessWidget {
     }
   }
 
+  /// A cup, not a meal: it keeps a fast going, and its calories still count toward the day.
   Future<void> _logBulletproof(BuildContext context) async {
-    final logged = await showLogMealSheet(context, initialItems: bulletproofItems());
-    if (logged == true && context.mounted) {
-      showToast(context, 'Meal logged');
+    try {
+      await AppScope.of(context).api
+          .logCoffee(CoffeeKind.brewed, const [CoffeeAddIn.mctC8, CoffeeAddIn.butterGrassFed]);
+      if (!context.mounted) return;
+      showToast(context, 'Cup logged');
       onChanged();
+    } catch (_) {
+      if (context.mounted) showToast(context, "Couldn't log the cup. Try again.", ToastTone.problem);
     }
   }
 
@@ -176,7 +181,7 @@ class CoffeeScreen extends StatelessWidget {
                 const SizedBox(height: Space.s1),
                 Text(
                   'Start with 1 teaspoon of MCT oil and build up over a week: a full tablespoon at once can upset your stomach. '
-                  'At about $kcal kcal it ends a fast, so have it as breakfast. Check with your doctor first if you’ve been told to watch saturated fat or cholesterol.',
+                  'It’s fat with no sugar or protein, so it keeps a fast going; its $kcal kcal still count toward your day. Check with your doctor first if you’ve been told to watch saturated fat or cholesterol.',
                   style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
                 ),
                 SoftButton(label: 'Log a Bulletproof coffee', onPressed: () => _logBulletproof(context)),

@@ -18,6 +18,7 @@ import 'shopping.dart';
 import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
 import 'weight_sheets.dart';
+import 'coffee_sheet.dart';
 
 /// The add menu's sections, in the order they show.
 enum CaptureGroup {
@@ -34,6 +35,7 @@ enum CaptureGroup {
 enum Capture {
   meal('Log a meal', 'Photo or a few words', Icons.photo_camera_outlined, CaptureGroup.food),
   foodPackage('Scan a food package', 'Barcode or label', Icons.qr_code_scanner_rounded, CaptureGroup.food),
+  coffee('Log coffee', 'A cup, with what’s in it', Icons.coffee_rounded, CaptureGroup.food),
   recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined, CaptureGroup.food),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined, CaptureGroup.food),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined, CaptureGroup.body),
@@ -53,6 +55,7 @@ enum Capture {
   /// The body system's colour: (icon, tile behind it).
   (Color, Color) tint(NeuroCalColors c) => switch (this) {
     meal || foodPackage || recipe => (c.glucoseInk, c.glucoseSoft),
+    coffee => (c.oil, c.glucoseSoft),
     supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
     checkIn || brain => (c.synapseInk, c.synapseSoft),
     sleep => (c.sleep, c.sleepSoft),
@@ -224,6 +227,8 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       final chosen = await unit;
       if (!context.mounted) return;
       await done(await showLogWeightSheet(context, unit: chosen, lastKg: last), 'Weight logged');
+    case Capture.coffee:
+      await showCoffeeSheet(context, onChanged: onChanged);
     case Capture.brain:
       if (await showBrainCheck(context) != null && context.mounted) onChanged();
   }

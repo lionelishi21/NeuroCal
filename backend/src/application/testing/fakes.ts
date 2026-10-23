@@ -1,4 +1,5 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
+import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import type { Food } from "../../domain/foods";
 import type { IEatingOutRepository } from "../interfaces/IEatingOut";
@@ -68,6 +69,7 @@ import type {
   ICheckInRepository,
   IFocusScoreRepository,
   IFastPlanRepository,
+  ICoffeeRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -971,5 +973,27 @@ export class InMemoryFastPlans implements IFastPlanRepository {
   async set(userId: string, plan: FastPlan | null) {
     if (plan) this.plans.set(userId, plan);
     else this.plans.delete(userId);
+  }
+}
+
+export class InMemoryCoffee implements ICoffeeRepository {
+  readonly rows: (CoffeeCup & { userId: string })[] = [];
+  async add(userId: string, cup: Omit<CoffeeCup, "id">) {
+    const row = { ...cup, id: `cup-${this.rows.length + 1}`, userId };
+    this.rows.push(row);
+    const { userId: _, ...saved } = row;
+    return saved;
+  }
+  async listBetween(userId: string, from: Date, to: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && r.takenAt >= from && r.takenAt < to)
+      .sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime())
+      .map(({ userId: _, ...cup }) => cup);
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
   }
 }

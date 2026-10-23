@@ -49,6 +49,8 @@ import {
   ShoppingReviewResponse,
   PantryRecipesResponse,
   PlanFastRequest,
+  CoffeeDay,
+  LogCoffeeRequest,
   BetterChoiceRequest,
   BetterChoiceResponse,
   PantryResponse,
@@ -124,6 +126,8 @@ import type { StackUseCases } from "../application/use-cases/StackUseCases";
 import type { GetFastingUseCase } from "../application/use-cases/GetFastingUseCase";
 import type { FoodScan, ScanFoodUseCase } from "../application/use-cases/ScanFoodUseCase";
 import type { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
+import type { CoffeeDay as CoffeeDayRecord, CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
+import { breaksFast, cupName, cupNutrition } from "../domain/coffee";
 import type { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import type { EatingOutAdminUseCases } from "../application/use-cases/EatingOutAdminUseCases";
 import { dietsFor, type Food } from "../domain/foods";
@@ -169,6 +173,7 @@ export interface UseCases {
   eatingOutAdmin: EatingOutAdminUseCases;
   scanFood: ScanFoodUseCase;
   betterChoice: BetterChoiceUseCase;
+  coffee: CoffeeUseCases;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -275,6 +280,14 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
   flags,
   ...(item ? { item: toFoodItem(item) } : {}),
   ...(coffee ? { coffee } : {}),
+});
+
+const toCoffeeDay = (d: CoffeeDayRecord) => ({
+  ...d,
+  cups: d.cups.map((c) => {
+    const n = cupNutrition(c);
+    return { ...c, takenAt: c.takenAt.toISOString(), name: cupName(c), kcal: Math.round(n.kcal), caffeineMg: n.caffeineMg, breaksFast: breaksFast(c) };
+  }),
 });
 
 const toBrainCheck = ({ takenAt, ...c }: SavedBrainCheck) => ({ ...c, takenAt: takenAt.toISOString() });
@@ -571,6 +584,24 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       },
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
+    ["GET", /^\/coffee$/, async (req) => ok(CoffeeDay, toCoffeeDay(await uc.coffee.day(req.userId, date(req))))],
+    [
+      "POST",
+      /^\/coffee$/,
+      async (req) => {
+        const body = json(req, LogCoffeeRequest);
+        const day = await uc.coffee.log(req.userId, { kind: body.kind, addIns: body.addIns, ...(body.takenAt ? { takenAt: new Date(body.takenAt) } : {}) });
+        return ok(CoffeeDay, toCoffeeDay(day), 201);
+      },
+    ],
+    [
+      "DELETE",
+      /^\/coffee\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.coffee.remove(req.userId, id!);
+        return { status: 204 };
+      },
+    ],
     [
       "PUT",
       /^\/fasting\/plan$/,

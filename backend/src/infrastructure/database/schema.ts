@@ -292,6 +292,21 @@ export const environmentChecks = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.date] })],
 );
 
+/** Cups of coffee, each with its add-ins (domain/coffee.ts), apart from meals. */
+export const coffeeCups = pgTable(
+  "coffee_cups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
+    kind: text("kind").notNull(),
+    addIns: text("add_ins").array().notNull(),
+  },
+  (t) => [index("coffee_cups_user_taken_at_idx").on(t.userId, t.takenAt)],
+);
+
 /** A fast someone planned to run until a time; one at a time, removed when it's ended. */
 export const fastPlans = pgTable("fast_plans", {
   userId: uuid("user_id")

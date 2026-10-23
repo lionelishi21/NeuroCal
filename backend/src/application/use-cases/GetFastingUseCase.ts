@@ -13,7 +13,8 @@ import {
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { localDateOf } from "../../domain/localDay";
 import type { IClock } from "../interfaces/IClock";
-import type { IFastPlanRepository, IMealRepository, IProfileRepository } from "../interfaces/IRepositories";
+import type { ICoffeeRepository, IFastPlanRepository, IMealRepository, IProfileRepository } from "../interfaces/IRepositories";
+import { breaksFast } from "../../domain/coffee";
 
 /** Enough history for the streak shown (a month) plus the fast running into it. */
 const LOOKBACK_DAYS = 32;
@@ -44,6 +45,7 @@ export class GetFastingUseCase {
     private readonly meals: IMealRepository,
     private readonly clock: IClock,
     private readonly plans: IFastPlanRepository,
+    private readonly coffee?: ICoffeeRepository,
   ) {}
 
   async execute(input: { userId: string }): Promise<FastingStatus> {
@@ -92,7 +94,13 @@ export class GetFastingUseCase {
     return this.execute({ userId });
   }
 
-  private eaten(userId: string, now: Date) {
-    return this.meals.eatenSince(userId, new Date(now.getTime() - LOOKBACK_DAYS * 86_400_000), FAST_SAFE_KCAL);
+  /** Meals, and cups of coffee with milk, sugar or collagen: black and fat-only coffee keep a fast. */
+  private async eaten(userId: string, now: Date) {
+    const since = new Date(now.getTime() - LOOKBACK_DAYS * 86_400_000);
+    const [meals, cups] = await Promise.all([
+      this.meals.eatenSince(userId, since, FAST_SAFE_KCAL),
+      this.coffee?.listBetween(userId, since, new Date(now.getTime() + 60_000)) ?? Promise.resolve([]),
+    ]);
+    return [...meals, ...cups.filter(breaksFast).map((c) => c.takenAt)].sort((a, b) => a.getTime() - b.getTime());
   }
 }

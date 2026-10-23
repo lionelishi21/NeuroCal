@@ -9,7 +9,7 @@ import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingPro
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
-import type { IFastPlanRepository,
+import type { ICoffeeRepository, IFastPlanRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -27,6 +27,7 @@ import type { IBrainCheckRepository } from "../application/interfaces/IBrainChec
 import type { IExerciseRepository } from "../application/interfaces/IExerciseRepository";
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
 import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
+import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
@@ -121,6 +122,7 @@ export interface Ports {
   mealPlans: IMealPlanRepository;
   environment: IEnvironmentRepository;
   fastPlans: IFastPlanRepository;
+  coffee: ICoffeeRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
   knowledge: IKnowledgeRepository;
@@ -150,7 +152,7 @@ export interface Ports {
 export function buildUseCases(p: Ports): UseCases {
   const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock);
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
-  const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock);
+  const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock, p.coffee);
   const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
   return {
     getProfile: new GetProfileUseCase(p.profiles),
@@ -167,7 +169,8 @@ export function buildUseCases(p: Ports): UseCases {
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),
-    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans),
+    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee),
+    coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock),
     getSubscription,
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
@@ -189,8 +192,8 @@ export function buildUseCases(p: Ports): UseCases {
       allowedDomains: p.recipeDomains,
     }),
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
-    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose),
-    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment),
+    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose, p.coffee),
+    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment, p.coffee),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),
     markers: new MarkerUseCases(p.markers, p.clock),

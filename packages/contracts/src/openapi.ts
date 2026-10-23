@@ -159,6 +159,16 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
   },
+  getCoffee: {
+    summary: "Your coffee for a day",
+    description: "Each cup with its time, add-ins, caffeine and calories, whether it came after the caffeine curfew (eight hours after waking) and whether it ended a fast; the day's caffeine and the add-ins' calories, which count toward the day.",
+    query: { date: { description: "A date like 2026-10-23; today in your time zone when left out.", schema: { type: "string", format: "date" } } },
+  },
+  logCoffee: {
+    summary: "Log a cup of coffee",
+    description: "Not a meal. Black coffee, espresso, fat (MCT oil, butter, ghee) and creatine keep a fast going, as a 'fat fast'; milk, sugar or collagen end it. The add-ins' calories count toward the day. Caffeine after the curfew lowers the next day's evening timing in the Focus Score.",
+  },
+  deleteCoffee: { summary: "Remove a cup", status: 204, params: { id: "The cup's id." } },
   planFast: {
     summary: "Plan a fast",
     description: "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (48, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",

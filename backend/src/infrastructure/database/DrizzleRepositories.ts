@@ -1,9 +1,11 @@
+import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
   IFastPlanRepository,
+  ICoffeeRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -76,6 +78,7 @@ import {
   environmentChecks,
   environmentLocations,
   fastPlans,
+  coffeeCups,
   exercises,
   knowledgeSources,
   knowledgeTechniques,
@@ -135,6 +138,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(environmentChecks).where(eq(environmentChecks.userId, userId));
       await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
       await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
+      await tx.delete(coffeeCups).where(eq(coffeeCups.userId, userId));
       await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
@@ -1165,5 +1169,32 @@ export class DrizzleFastPlanRepository implements IFastPlanRepository {
       return;
     }
     await this.db.insert(fastPlans).values({ userId, ...plan }).onConflictDoUpdate({ target: fastPlans.userId, set: plan });
+  }
+}
+
+export class DrizzleCoffeeRepository implements ICoffeeRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toCup(r: typeof coffeeCups.$inferSelect): CoffeeCup {
+    return { id: r.id, takenAt: r.takenAt, kind: r.kind as CoffeeKind, addIns: r.addIns as CoffeeAddIn[] };
+  }
+
+  async add(userId: string, cup: Omit<CoffeeCup, "id">) {
+    const [row] = await this.db.insert(coffeeCups).values({ userId, ...cup }).returning();
+    return DrizzleCoffeeRepository.toCup(row!);
+  }
+
+  async listBetween(userId: string, from: Date, to: Date) {
+    const rows = await this.db
+      .select()
+      .from(coffeeCups)
+      .where(and(eq(coffeeCups.userId, userId), gte(coffeeCups.takenAt, from), lt(coffeeCups.takenAt, to)))
+      .orderBy(asc(coffeeCups.takenAt));
+    return rows.map(DrizzleCoffeeRepository.toCup);
+  }
+
+  async delete(userId: string, id: string) {
+    const gone = await this.db.delete(coffeeCups).where(and(eq(coffeeCups.userId, userId), eq(coffeeCups.id, id))).returning({ id: coffeeCups.id });
+    return gone.length > 0;
   }
 }

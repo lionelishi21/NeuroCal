@@ -37,6 +37,14 @@ abstract interface class NeuroCalApi {
   /// Today's environment: air where you live and the daily check.
   Future<EnvironmentDay> environment();
 
+  /// Today's coffee.
+  Future<CoffeeDay> coffee();
+
+  /// Logs a cup; returns its day with it.
+  Future<CoffeeDay> logCoffee(CoffeeKind kind, List<CoffeeAddIn> addIns, {DateTime? at});
+
+  Future<void> deleteCoffee(String id);
+
   /// Sets the town for air quality (null clears it). Throws [ApiException] 400 when it can't be found.
   Future<EnvironmentDay> setEnvironmentPlace(String? place);
 
@@ -308,6 +316,28 @@ class HttpNeuroCalApi implements NeuroCalApi {
       body: jsonEncode({'text': text, 'servings': ?servings}),
     );
     return RecipeAnalysis.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<CoffeeDay> coffee() async => CoffeeDay.fromJson(await _get('/coffee') as Map<String, dynamic>);
+
+  @override
+  Future<CoffeeDay> logCoffee(CoffeeKind kind, List<CoffeeAddIn> addIns, {DateTime? at}) async {
+    final res = await _client.post(
+      _uri('/coffee'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'kind': kind.wire,
+        'addIns': [for (final a in addIns) a.wire],
+        'takenAt': ?(at == null ? null : isoWithOffset(at)),
+      }),
+    );
+    return CoffeeDay.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteCoffee(String id) async {
+    _decode(await _client.delete(_uri('/coffee/$id'), headers: await _headers()));
   }
 
   @override

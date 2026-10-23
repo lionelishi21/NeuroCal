@@ -446,6 +446,48 @@ export const FastingStatus = z.object({
 });
 export type FastingStatus = z.infer<typeof FastingStatus>;
 
+export const CoffeeKind = z.enum(["brewed", "espresso", "double_espresso", "decaf"]);
+export type CoffeeKind = z.infer<typeof CoffeeKind>;
+
+/** What's stirred in. Milk, sugar and collagen end a fast; coffee, fat and creatine don't. */
+export const CoffeeAddIn = z.enum(["mct_c8", "mct_c8_c10", "butter_grass_fed", "butter", "ghee_grass_fed", "ghee", "creatine", "collagen", "milk", "sugar"]);
+export type CoffeeAddIn = z.infer<typeof CoffeeAddIn>;
+
+export const LogCoffeeRequest = z.object({
+  kind: CoffeeKind,
+  addIns: z.array(CoffeeAddIn).max(10),
+  /** When it was drunk; now when left out. Within the last two days. */
+  takenAt: IsoDateTime.optional(),
+});
+export type LogCoffeeRequest = z.infer<typeof LogCoffeeRequest>;
+
+export const CoffeeCup = z.object({
+  id: z.string(),
+  takenAt: IsoDateTime,
+  kind: CoffeeKind,
+  addIns: z.array(CoffeeAddIn),
+  /** "Coffee with C8 MCT oil and grass-fed butter". */
+  name: z.string(),
+  kcal: z.number().int().nonnegative(),
+  caffeineMg: z.number().int().nonnegative(),
+  /** Drunk after the caffeine curfew, eight hours after waking. */
+  afterCurfew: z.boolean(),
+  /** Milk, sugar or collagen in it ended a fast. */
+  breaksFast: z.boolean(),
+});
+export type CoffeeCup = z.infer<typeof CoffeeCup>;
+
+/** A day's coffee: the cups (oldest first), caffeine, the add-ins' calories and the curfew. */
+export const CoffeeDay = z.object({
+  date: IsoDate,
+  cups: z.array(CoffeeCup),
+  caffeineMg: z.number().int().nonnegative(),
+  kcal: z.number().int().nonnegative(),
+  /** Local "HH:MM". */
+  curfew: z.string(),
+});
+export type CoffeeDay = z.infer<typeof CoffeeDay>;
+
 export const PlanFastRequest = z.object({
   /** When the fast ends: at least half an hour ahead, within planLimitHours of the last meal. */
   until: IsoDateTime,
@@ -1298,6 +1340,11 @@ export const endpoints = {
   getWeights: { method: "GET", path: "/weights", response: WeightHistory },
   deleteWeight: { method: "DELETE", path: "/weights/:date" },
   getFasting: { method: "GET", path: "/fasting", response: FastingStatus },
+  /** A day's coffee; today when no date is given. */
+  getCoffee: { method: "GET", path: "/coffee", response: CoffeeDay },
+  /** Log a cup; returns the day with it. Not a meal: black and fat-only coffee keep a fast. */
+  logCoffee: { method: "POST", path: "/coffee", body: LogCoffeeRequest, response: CoffeeDay },
+  deleteCoffee: { method: "DELETE", path: "/coffee/:id" },
   /** Fast until a time, counted from the last meal; replaces a plan already running. */
   planFast: { method: "PUT", path: "/fasting/plan", body: PlanFastRequest, response: FastingStatus },
   /** End a planned fast early. */

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -27,6 +27,7 @@ import {
   InMemoryPantry,
   FakePantryRecipes,
   InMemoryFastPlans,
+  InMemoryCoffee,
   FakeBetterChoice,
   FakeShoppingReviewer,
   FakeRecipeParser,
@@ -155,6 +156,7 @@ beforeEach(async () => {
     pantry: new InMemoryPantry(),
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     fastPlans: new InMemoryFastPlans(),
+    coffee: new InMemoryCoffee(),
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
@@ -374,6 +376,31 @@ describe("API routes", () => {
       }),
     );
     expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12, planLimitHours: 12 });
+  });
+
+  it("logs coffee apart from meals: a Bulletproof cup keeps the fast but counts its calories; milk ends it; the curfew is marked", async () => {
+    await profiles.save(profile({ bioProfile: { fasting: "16_8", wake: "6_to_8" } }));
+    const fastBefore = (await call("GET", "/fasting")).body as { state: { since?: string } };
+    const kcalBefore = ((await call("GET", "/bio-state")).body as { caloriesEaten: number }).caloriesEaten;
+
+    // 21:30Z is 16:30 in Chicago: after a 15:00 curfew for someone who wakes at 07:00.
+    const logged = await call("POST", "/coffee", { kind: "brewed", addIns: ["mct_c8", "butter_grass_fed"], takenAt: "2026-09-29T21:30:00.000Z" });
+    expect(logged.status).toBe(201);
+    const day = CoffeeDay.parse(logged.body);
+    expect(day).toMatchObject({ curfew: "15:00", caffeineMg: 95, kcal: 234 });
+    expect(day.cups[0]).toMatchObject({ name: "Coffee with C8 MCT oil and grass-fed butter", afterCurfew: true, breaksFast: false });
+
+    // A fat fast: the timer still runs from the last meal, and the calories count toward the day.
+    expect(((await call("GET", "/fasting")).body as { state: { since?: string } }).state.since).toBe(fastBefore.state.since);
+    expect(((await call("GET", "/bio-state")).body as { caloriesEaten: number }).caloriesEaten).toBe(kcalBefore + 234);
+
+    // Milk counts as eating: the fast now runs from that cup.
+    await call("POST", "/coffee", { kind: "espresso", addIns: ["milk"], takenAt: "2026-09-29T21:45:00.000Z" });
+    expect(((await call("GET", "/fasting")).body as { state: { since?: string } }).state.since).toBe("2026-09-29T21:45:00.000Z");
+
+    expect((await call("POST", "/coffee", { kind: "tea", addIns: [] })).status).toBe(400);
+    expect((await call("DELETE", `/coffee/${day.cups[0]!.id}`)).status).toBe(204);
+    expect(CoffeeDay.parse((await call("GET", "/coffee")).body).cups).toHaveLength(1);
   });
 
   it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {
