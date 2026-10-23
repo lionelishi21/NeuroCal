@@ -5,6 +5,7 @@ import '../app_scope.dart';
 import '../theme/tokens.dart';
 import 'toast.dart';
 import 'ui.dart';
+import '../theme/theme.dart' show fontFamily;
 
 /// A suggested product: its labels (own brand, affiliate, supplement), what it is, a doctor note for
 /// supplements and a link out. Wherever a product shows, these labels show with it.
@@ -77,7 +78,7 @@ class _SeeProduct extends StatelessWidget {
           foregroundColor: c.synapseInk,
           backgroundColor: Colors.transparent,
           side: BorderSide(color: c.ruleStrong, width: 1.5),
-          textStyle: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.xs, fontWeight: FontWeight.w700),
         ),
         iconAlignment: IconAlignment.end,
         icon: const Icon(Icons.north_east_rounded, size: 14),

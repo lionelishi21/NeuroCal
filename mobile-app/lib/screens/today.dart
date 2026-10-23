@@ -26,6 +26,7 @@ import 'plan_fast_sheet.dart';
 import 'streak.dart';
 import 'stack.dart';
 import 'weight_cards.dart' show FastingCard;
+import '../theme/theme.dart' show fontFamily;
 
 class _Day {
   const _Day(
@@ -1324,7 +1325,7 @@ class _SuggestionsState extends State<_Suggestions> {
                 TextButton(
                   style: TextButton.styleFrom(
                     minimumSize: const Size(0, 44),
-                    textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                    textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
                   ),
                   onPressed: () => setState(() => _more = !_more),
                   child: Text(_more ? 'Fewer ideas' : 'More ideas'),
@@ -1580,6 +1581,8 @@ class _PlanCard extends StatelessWidget {
                         ? 'Focus Score started at about ${plan.start}; aiming for ${plan.target}. Your first scores will show here.'
                         : plan.day > challengeDays
                         ? 'Focus Score from about ${plan.start} to ${plan.now} (aim was ${plan.target}). Keep the habits that got you here.'
+                        : plan.now! >= plan.target
+                        ? 'Focus Score ${plan.start} at the start, ${plan.now} this week: past your target of ${plan.target}.'
                         : 'Focus Score ${plan.start} at the start, ${plan.now} this week, aiming for ${plan.target}.',
                     style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
                   ),

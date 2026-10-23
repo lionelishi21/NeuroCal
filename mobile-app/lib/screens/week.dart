@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/product_card.dart';
 import '../widgets/ui.dart';
 import 'healthspan_card.dart';
+import '../theme/theme.dart' show fontFamily;
 
 const _fullWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const _fullMonths = [
@@ -625,7 +626,7 @@ class _WhatHelps extends StatelessWidget {
                                       padding: EdgeInsets.zero,
                                       minimumSize: const Size(0, 36),
                                       foregroundColor: c.synapseInk,
-                                      textStyle: const TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+                                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.xs, fontWeight: FontWeight.w700),
                                     ),
                                     onPressed: () => AppScope.of(context).openLink(Uri.parse(source.url)),
                                     icon: const Icon(Icons.play_circle_outline_rounded, size: 18),

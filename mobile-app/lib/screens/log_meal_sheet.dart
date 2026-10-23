@@ -9,6 +9,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
 import 'foods.dart';
+import '../theme/theme.dart' show fontFamily;
 
 /// Log a meal in three steps: take or choose a photo, wait while it is read, then check the items
 /// before logging. Items can also be typed in, with or without a photo. Returns true when logged.
@@ -256,7 +257,7 @@ class _LogMealState extends State<_LogMeal> {
             minimumSize: const Size.fromHeight(48),
             foregroundColor: c.synapseInk,
             side: BorderSide(color: c.ruleStrong, width: 1.5),
-            textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
           ),
           onPressed: _addFromCatalog,
           icon: const Icon(Icons.search_rounded, size: 18),
@@ -265,7 +266,7 @@ class _LogMealState extends State<_LogMeal> {
         TextButton(
           style: TextButton.styleFrom(
             minimumSize: const Size.fromHeight(44),
-            textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
           ),
           onPressed: () => setState(() {
             _picking = false;
@@ -278,7 +279,7 @@ class _LogMealState extends State<_LogMeal> {
           TextButton.icon(
             style: TextButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
-              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+              textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
             ),
             onPressed: () {
               Navigator.of(context).pop();
@@ -291,7 +292,7 @@ class _LogMealState extends State<_LogMeal> {
           TextButton.icon(
             style: TextButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
-              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+              textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
             ),
             onPressed: () {
               Navigator.of(context).pop();
@@ -444,7 +445,7 @@ class _LogMealState extends State<_LogMeal> {
               backgroundColor: Colors.transparent,
               side: BorderSide(color: c.ruleStrong, width: 1.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.option)),
-              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+              textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
             ),
             onPressed: () => setState(() => _formOpen = true),
             child: const Text('+ Add an item by hand'),
@@ -453,7 +454,7 @@ class _LogMealState extends State<_LogMeal> {
           TextButton.icon(
             style: TextButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
-              textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+              textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
             ),
             onPressed: _addFromCatalog,
             icon: const Icon(Icons.search_rounded, size: 18),
@@ -824,7 +825,7 @@ class _ManualFormState extends State<_ManualForm> {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
                     ),
                     onPressed: _add,
                     child: const Text('Add item'),
@@ -834,7 +835,7 @@ class _ManualFormState extends State<_ManualForm> {
                   style: TextButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     foregroundColor: c.inkSoft,
-                    textStyle: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                    textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
                   ),
                   onPressed: widget.onCancel,
                   child: const Text('Cancel'),

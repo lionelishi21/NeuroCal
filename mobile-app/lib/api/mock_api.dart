@@ -136,13 +136,17 @@ class MockNeuroCalApi implements NeuroCalApi {
     final weekAgo = byDay[isoDate(last.subtract(const Duration(days: 7)))];
     double r(double v) => (v * 10).roundToDouble() / 10;
     final goal = _profile?.weightGoal;
+    final weekly = weekAgo == null ? null : ((trend - weekAgo) * 100).roundToDouble() / 100;
+    final toGo = goal == null ? null : r((trend - goal.targetKg).clamp(0, 999));
     return WeightHistory(
       entries: entries,
       trendKg: r(trend),
-      weeklyChangeKg: weekAgo == null ? null : ((trend - weekAgo) * 100).roundToDouble() / 100,
+      weeklyChangeKg: weekly,
       targetKg: goal?.targetKg,
-      toGoKg: goal == null ? null : r((trend - goal.targetKg).clamp(0, 999)),
+      toGoKg: toGo,
       plannedWeeklyLossKg: goal == null ? null : (goal.startKg * goal.pacePctPerWeek).roundToDouble() / 100,
+      // When the trend reaches the target at its current rate, as the API projects it.
+      projectedOn: toGo != null && toGo > 0 && weekly != null && weekly < 0 ? isoDate(last.add(Duration(days: (toGo / -weekly * 7).round()))) : null,
     );
   }
 

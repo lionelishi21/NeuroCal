@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'sleep_sheets.dart';
+import '../theme/theme.dart' show fontFamily;
 
 const _nights = 7;
 
@@ -146,7 +147,7 @@ class _SleepScreenState extends State<SleepScreen> {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(56),
                       padding: const EdgeInsets.symmetric(horizontal: Space.s2),
-                      textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.base, fontWeight: FontWeight.w700),
                     ),
                     onPressed: _logSleep,
                     child: const Text('Log sleep'),
@@ -159,7 +160,7 @@ class _SleepScreenState extends State<SleepScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: Space.s2),
                       foregroundColor: c.synapseInk,
                       side: BorderSide(color: c.ruleStrong, width: 1.5),
-                      textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.base, fontWeight: FontWeight.w700),
                     ),
                     onPressed: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
                     child: const FittedBox(fit: BoxFit.scaleDown, child: Text('Log screen time')),

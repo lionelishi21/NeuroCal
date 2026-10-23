@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import '../theme/theme.dart' show fontFamily;
 
 /// Opens a bottom sheet in the app's style: a title with a close button, then [builder]'s content.
 /// The sheet rises above the keyboard and scrolls when it is taller than the screen.
@@ -104,7 +105,7 @@ class SheetAction extends StatelessWidget {
   Widget build(BuildContext context) => FilledButton(
     style: FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(56),
-      textStyle: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.base, fontWeight: FontWeight.w700),
       backgroundColor: destructive ? context.colors.beet : null,
       foregroundColor: destructive ? context.colors.onAccent : null,
     ),
