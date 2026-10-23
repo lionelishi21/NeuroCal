@@ -114,6 +114,13 @@ describe("computeFocusComponents + fallbackExplanation", () => {
     expect(fallbackExplanation(100, components)).toMatch(/^Sleep isn't in yet/);
   });
 
+  it("lowers the feeling input for low energy, like the other hard feelings, but not for sharp or calm", () => {
+    const at2 = (flags: Parameters<typeof checkIn>[0]) => stressComponent([checkIn(flags)]);
+    expect(at2(["sharp", "calm"])).toBe(1);
+    expect(at2(["low_energy"])).toBe(0.75);
+    expect(at2(["low_energy", "brain_fog"])).toBe(0.5);
+  });
+
   it("asks for data when there is none", () => {
     expect(fallbackExplanation(null, { sleep: null, timing: null, glycemic: null, stress: null, movement: null })).toMatch(/Log last night's sleep/);
   });

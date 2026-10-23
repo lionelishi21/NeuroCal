@@ -12,7 +12,7 @@ const WEIGHT_SUM = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
 export type Part = keyof typeof WEIGHTS;
 
 /** Feelings that lower the stress input; each one named takes a quarter off it. */
-export const NEGATIVE_FLAGS = ["stressed", "brain_fog", "low_focus", "wired"] as const;
+export const NEGATIVE_FLAGS = ["stressed", "brain_fog", "low_focus", "low_energy", "wired"] as const;
 
 export interface Evening {
   /** Clock hours, 24-hour, e.g. 21.75 for 21:45. Dinner is between 18:00 and midnight. */

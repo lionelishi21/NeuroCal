@@ -248,7 +248,8 @@ class MockNeuroCalApi implements NeuroCalApi {
     // Yesterday's glucose sensor replaces the meal estimate, as on the API.
     final sensor = _glucose[isoDate(day.subtract(const Duration(days: 1)))];
     final glycemic = sensor == null ? 0.85 : sensor.inRange140Pct / 100;
-    const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.wired};
+    // As the API (backend domain/focusScore.ts): everything but sharp and calm.
+    const negative = {CognitiveFlag.stressed, CognitiveFlag.brainFog, CognitiveFlag.lowFocus, CognitiveFlag.lowEnergy, CognitiveFlag.wired};
     final stress = (1 - 0.25 * _flags.where(negative.contains).length).clamp(0.0, 1.0);
     const movement = 0.5; // a 15-minute walk yesterday
     final environment = _environmentSignal();

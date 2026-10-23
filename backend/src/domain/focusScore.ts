@@ -46,7 +46,8 @@ const TARGET_DEEP_MIN = 90;
 const LATE_EATING_FROM_HOUR = 21;
 const LATE_SCREEN_FROM_HOUR = 22;
 const LATE_SCREEN_UNTIL_HOUR = 4;
-const NEGATIVE_FLAGS: CognitiveFlag[] = ["stressed", "brain_fog", "low_focus", "wired"];
+/** The feelings that lower the score: everything but sharp and calm. Low energy is the slump it exists to catch. */
+const NEGATIVE_FLAGS: CognitiveFlag[] = ["stressed", "brain_fog", "low_focus", "low_energy", "wired"];
 
 export interface FocusInputs {
   date: string;
