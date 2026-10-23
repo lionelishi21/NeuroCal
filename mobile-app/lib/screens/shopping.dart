@@ -65,7 +65,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Scaffold(
-      appBar: AppBar(title: const Text('Review my shopping list'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
+      appBar: AppBar(
+        title: const Text('Review my shopping list'),
+        backgroundColor: c.mist,
+        surfaceTintColor: Colors.transparent,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
         children: [
@@ -79,7 +83,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             minLines: 4,
             maxLines: 10,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Your list', hintText: 'One item per line, e.g.\nGranola\nChicken nuggets\nSpinach', alignLabelWithHint: true),
+            decoration: const InputDecoration(
+              labelText: 'Your list',
+              hintText: 'One item per line, e.g.\nGranola\nChicken nuggets\nSpinach',
+              alignLabelWithHint: true,
+            ),
           ),
           const SizedBox(height: Space.s3),
           FilledButton.icon(
@@ -94,7 +102,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: c.synapseInk,
+                    side: BorderSide(color: c.ruleStrong, width: 1.5),
+                  ),
                   onPressed: () => _reviewPhoto(ImageSource.camera),
                   icon: const Icon(Icons.photo_camera_outlined, size: 18),
                   label: const Text('Take a photo'),
@@ -102,7 +114,11 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
               ),
               Expanded(
                 child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: c.synapseInk,
+                    side: BorderSide(color: c.ruleStrong, width: 1.5),
+                  ),
                   onPressed: () => _reviewPhoto(ImageSource.gallery),
                   icon: const Icon(Icons.image_outlined, size: 18),
                   label: const Text('Choose a photo'),
@@ -140,7 +156,10 @@ class _Result extends StatelessWidget {
               spacing: Space.s3,
               children: [
                 const CircularProgressIndicator(),
-                Text('Reading your list…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+                Text(
+                  'Reading your list…',
+                  style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                ),
               ],
             ),
           );
@@ -150,14 +169,24 @@ class _Result extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(top: Space.s4),
             child: switch (e) {
-              _TooBig() => const SheetNote(lead: 'That photo is too large.', detail: 'Choose one under 8 MB, or take a new one.'),
-              ApiException(status: 402) => const SheetNote(lead: 'Part of your subscription.', detail: 'List reviews come with NeuroCal Pro.'),
+              _TooBig() => const SheetNote(
+                lead: 'That photo is too large.',
+                detail: 'Choose one under 8 MB, or take a new one.',
+              ),
+              ApiException(status: 402) => const SheetNote(
+                lead: 'Part of your subscription.',
+                detail: 'List reviews come with NeuroCal Pro.',
+              ),
               ApiException(status: >= 500) => ScreenFailed(
                 title: "Couldn't review your list",
                 detail: 'The review service isn’t answering right now. Try again in a few minutes.',
                 onRetry: onRetry,
               ),
-              _ => ScreenFailed(title: "Couldn't review your list", detail: 'Check your connection and try again.', onRetry: onRetry),
+              _ => ScreenFailed(
+                title: "Couldn't review your list",
+                detail: 'Check your connection and try again.',
+                onRetry: onRetry,
+              ),
             },
           );
         }
@@ -171,24 +200,42 @@ class _Result extends StatelessWidget {
             ),
           );
         }
-        final swaps = [for (final i in r.items) if (i.verdict == ShoppingVerdict.swap) i];
-        final limits = [for (final i in r.items) if (i.verdict == ShoppingVerdict.limit) i];
-        final keeps = [for (final i in r.items) if (i.verdict == ShoppingVerdict.keep) i];
+        final swaps = [
+          for (final i in r.items)
+            if (i.verdict == ShoppingVerdict.swap) i,
+        ];
+        final limits = [
+          for (final i in r.items)
+            if (i.verdict == ShoppingVerdict.limit) i,
+        ];
+        final keeps = [
+          for (final i in r.items)
+            if (i.verdict == ShoppingVerdict.keep) i,
+        ];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BlockTitle('Your list', note: '${r.items.length} items · ${swaps.length} to swap'),
             if (swaps.isNotEmpty) ...[
               const _Heading('Swap'),
-              AppCard(padding: EdgeInsets.zero, child: Column(children: [for (final (n, i) in swaps.indexed) _ItemRow(i, divider: n > 0)])),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(children: [for (final (n, i) in swaps.indexed) _ItemRow(i, divider: n > 0)]),
+              ),
             ],
             if (limits.isNotEmpty) ...[
               const _Heading('Now and then'),
-              AppCard(padding: EdgeInsets.zero, child: Column(children: [for (final (n, i) in limits.indexed) _ItemRow(i, divider: n > 0)])),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(children: [for (final (n, i) in limits.indexed) _ItemRow(i, divider: n > 0)]),
+              ),
             ],
             if (keeps.isNotEmpty) ...[
               const _Heading('Keep'),
-              AppCard(padding: EdgeInsets.zero, child: Column(children: [for (final (n, i) in keeps.indexed) _ItemRow(i, divider: n > 0)])),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(children: [for (final (n, i) in keeps.indexed) _ItemRow(i, divider: n > 0)]),
+              ),
             ],
             if (r.devices.isNotEmpty) ...[
               const BlockTitle('Gadgets that make the swaps easy'),
@@ -199,7 +246,10 @@ class _Result extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: Space.s1,
                     children: [
-                      Text('For ${d.because.join(', ')}', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+                      Text(
+                        'For ${d.because.join(', ')}',
+                        style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                      ),
                       ProductCard(d.product),
                     ],
                   ),
@@ -227,7 +277,10 @@ class _Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(Space.s1, Space.s3, Space.s1, Space.s2),
-    child: Text(text, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: context.colors.inkSoft)),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: context.colors.inkSoft),
+    ),
   );
 }
 
@@ -248,7 +301,9 @@ class _ItemRow extends StatelessWidget {
     return MergeSemantics(
       child: Container(
         padding: const EdgeInsets.all(Space.s4),
-        decoration: BoxDecoration(border: divider ? Border(top: BorderSide(color: c.rule)) : null),
+        decoration: BoxDecoration(
+          border: divider ? Border(top: BorderSide(color: c.rule)) : null,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s1,
@@ -256,11 +311,19 @@ class _ItemRow extends StatelessWidget {
             Row(
               spacing: Space.s2,
               children: [
-                Expanded(child: Text(item.name, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700))),
+                Expanded(
+                  child: Text(
+                    item.name,
+                    style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                  ),
+                ),
                 Tag(item.processing.label, fill: fill, ink: ink),
               ],
             ),
-            Text(item.reason, style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft)),
+            Text(
+              item.reason,
+              style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+            ),
             if (item.swapFor != null)
               Row(
                 spacing: 6,

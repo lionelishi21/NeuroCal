@@ -42,7 +42,12 @@ void main() {
         child: MaterialApp(
           theme: buildTheme(Brightness.light),
           home: Builder(
-            builder: (context) => Scaffold(body: TextButton(onPressed: () async => saved.add(await showCheckInSheet(context)), child: const Text('Open'))),
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () async => saved.add(await showCheckInSheet(context)),
+                child: const Text('Open'),
+              ),
+            ),
           ),
         ),
       ),

@@ -146,7 +146,12 @@ class Meter extends StatelessWidget {
       curve: Motion.settle,
       builder: (context, v, _) => ClipRRect(
         borderRadius: BorderRadius.circular(Radii.pill),
-        child: LinearProgressIndicator(value: v, minHeight: height, backgroundColor: context.colors.track, color: color),
+        child: LinearProgressIndicator(
+          value: v,
+          minHeight: height,
+          backgroundColor: context.colors.track,
+          color: color,
+        ),
       ),
     ),
   );

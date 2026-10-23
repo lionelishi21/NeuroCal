@@ -87,8 +87,14 @@ class _LogExerciseState extends State<_LogExercise> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Do a calf pump', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.chlorophyll)),
-                        Text('5 minutes, guided, mostly at your desk', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                        Text(
+                          'Do a calf pump',
+                          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.chlorophyll),
+                        ),
+                        Text(
+                          '5 minutes, guided, mostly at your desk',
+                          style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                        ),
                       ],
                     ),
                   ),
@@ -118,7 +124,10 @@ class _LogExerciseState extends State<_LogExercise> {
             Expanded(child: Text('How long?', style: label)),
             Semantics(
               liveRegion: true,
-              child: Text('$_minutes min', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+              child: Text(
+                '$_minutes min',
+                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+              ),
             ),
           ],
         ),
@@ -131,7 +140,11 @@ class _LogExerciseState extends State<_LogExercise> {
               for (final m in _presets)
                 SizedBox(
                   width: (box.maxWidth - 2 * Space.s2) / 3,
-                  child: ChoicePill(label: '$m min', selected: _minutes == m, onTap: () => setState(() => _minutes = m)),
+                  child: ChoicePill(
+                    label: '$m min',
+                    selected: _minutes == m,
+                    onTap: () => setState(() => _minutes = m),
+                  ),
                 ),
             ],
           ),
@@ -150,19 +163,21 @@ class _LogExerciseState extends State<_LogExercise> {
           children: [
             for (final i in ExerciseIntensity.values)
               Expanded(
-                child: ChoicePill(label: i.label, selected: _intensity == i, onTap: () => setState(() => _intensity = i)),
+                child: ChoicePill(
+                  label: i.label,
+                  selected: _intensity == i,
+                  onTap: () => setState(() => _intensity = i),
+                ),
               ),
           ],
         ),
-        Text(
-          switch (_intensity) {
-            ExerciseIntensity.light => 'Light: you could chat the whole way.',
-            ExerciseIntensity.moderate => 'Moderate: you could talk, but not sing.',
-            ExerciseIntensity.hard => 'Hard: only a few words at a time.',
-          },
-          style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-        ),
-        if (_failed) const SheetNote(lead: "Couldn't log your exercise.", detail: 'Check your connection and try again.'),
+        Text(switch (_intensity) {
+          ExerciseIntensity.light => 'Light: you could chat the whole way.',
+          ExerciseIntensity.moderate => 'Moderate: you could talk, but not sing.',
+          ExerciseIntensity.hard => 'Hard: only a few words at a time.',
+        }, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+        if (_failed)
+          const SheetNote(lead: "Couldn't log your exercise.", detail: 'Check your connection and try again.'),
         SheetAction(label: _busy ? 'Logging…' : 'Log exercise', onPressed: _busy || _kind == null ? null : _save),
       ],
     );
@@ -216,14 +231,22 @@ class _KindCard extends StatelessWidget {
               spacing: 2,
               children: [
                 // A new key each time it's picked, so the reps play again.
-                SizedBox(height: 52, child: MoveFigure(moveFor(kind), key: ValueKey((kind, selected)), animate: selected, reps: 3)),
+                SizedBox(
+                  height: 52,
+                  child: MoveFigure(moveFor(kind), key: ValueKey((kind, selected)), animate: selected, reps: 3),
+                ),
                 SizedBox(
                   height: 30,
                   child: Text(
                     kind.label,
                     textAlign: TextAlign.center,
                     maxLines: 2,
-                    style: TextStyle(fontSize: TextSize.xxs, height: 1.2, fontWeight: FontWeight.w700, color: selected ? c.synapseInk : c.ink),
+                    style: TextStyle(
+                      fontSize: TextSize.xxs,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? c.synapseInk : c.ink,
+                    ),
                   ),
                 ),
               ],

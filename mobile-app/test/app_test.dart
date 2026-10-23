@@ -289,7 +289,9 @@ void main() {
     expect(find.text('Browse foods'), findsOneWidget);
   });
 
-  testWidgets('log exercise from the add menu: it shows on Today with its calories, and can be removed', (tester) async {
+  testWidgets('log exercise from the add menu: it shows on Today with its calories, and can be removed', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await signIn(tester);
     await add(tester, 'Log exercise');
@@ -339,7 +341,11 @@ void main() {
     await tester.scrollUntilVisible(find.text('What can I make?'), 300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('What can I make?'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Salmon and spinach scramble'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Salmon and spinach scramble'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('✓ Eggs'), findsOneWidget);
     expect(find.text('+ Chives'), findsOneWidget);
     expect(find.text('To buy: Chives'), findsOneWidget);
@@ -362,18 +368,27 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Your list'), 'Frozen fries\nSpinach\nFlavoured yogurt');
     await tester.tap(find.text('Review my list'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Plain Greek yogurt with berries'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.text('Plain Greek yogurt with berries'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('3 items · 2 to swap'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Ninja air fryer'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('For Frozen fries'), findsOneWidget);
   });
 
-  testWidgets('work out a recipe: calories per serving, which ingredients are estimated, and log a serving', (tester) async {
+  testWidgets('work out a recipe: calories per serving, which ingredients are estimated, and log a serving', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await signIn(tester);
     await add(tester, 'Work out a recipe');
 
-    await tester.enterText(find.widgetWithText(TextField, 'Ingredients'), '1 cup rolled oats\n2 eggs\n1 tbsp olive oil');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ingredients'),
+      '1 cup rolled oats\n2 eggs\n1 tbsp olive oil',
+    );
     await tester.tap(find.byTooltip('More servings'));
     await tester.pump();
     expect(find.text('2'), findsWidgets);
@@ -396,7 +411,9 @@ void main() {
     expect(find.textContaining('1 of 2 servings'), findsWidgets);
   });
 
-  testWidgets('Today reads top to bottom: score, next step, food, then habits; an input opens what it measures', (tester) async {
+  testWidgets('Today reads top to bottom: score, next step, food, then habits; an input opens what it measures', (
+    tester,
+  ) async {
     await pumpApp(tester);
     // Tall enough to lay out the whole day at once, so positions can be compared.
     tester.view.physicalSize = const Size(360, 4000);
@@ -428,23 +445,39 @@ void main() {
     expect(find.textContaining('Your longevity score'), findsOneWidget);
   });
 
-  testWidgets('Your plan: the 3-week challenge and the weight goal on Today, and the weekly weigh-in in Up next', (tester) async {
+  testWidgets('Your plan: the 3-week challenge and the weight goal on Today, and the weekly weigh-in in Up next', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(360, 4000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final started = DateTime.now().subtract(const Duration(days: 5));
-    final startedOn = '${started.year}-${started.month.toString().padLeft(2, '0')}-${started.day.toString().padLeft(2, '0')}';
+    final startedOn =
+        '${started.year}-${started.month.toString().padLeft(2, '0')}-${started.day.toString().padLeft(2, '0')}';
     SharedPreferences.setMockInitialValues({'weightUnit': 'kg'});
     final api = MockNeuroCalApi()..latency = Duration.zero;
     // Outside the test's fake clock: the mock's calls wait on real timers.
     await tester.runAsync(() async {
       await api.saveProfile({
         'bioProfile': {'eveningScreens': '1_2', 'phoneAtNight': 'nightstand', 'movement': 'none', 'fasting': 'none'},
-        'weightGoal': {'startKg': 95, 'targetKg': 85, 'startedOn': startedOn, 'pacePctPerWeek': 0.5, 'fastingCaution': false},
+        'weightGoal': {
+          'startKg': 95,
+          'targetKg': 85,
+          'startedOn': startedOn,
+          'pacePctPerWeek': 0.5,
+          'fastingCaution': false,
+        },
       });
       await api.logWeight(94.2, date: isoDate(DateTime.now().subtract(const Duration(days: 9))));
     });
-    await tester.pumpWidget(NeuroCalApp(api: api, auth: MockAuthClient(), theme: ThemeController(await SharedPreferences.getInstance()), openLink: (_) async => true));
+    await tester.pumpWidget(
+      NeuroCalApp(
+        api: api,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        openLink: (_) async => true,
+      ),
+    );
     await signIn(tester);
 
     expect(find.text('Your plan'), findsOneWidget);
@@ -455,7 +488,9 @@ void main() {
     expect(find.text('Log weight'), findsWidgets);
   });
 
-  testWidgets('Your coffee: the mould check, Bulletproof coffee into Log a meal, and the caffeine curfew', (tester) async {
+  testWidgets('Your coffee: the mould check, Bulletproof coffee into Log a meal, and the caffeine curfew', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
@@ -515,7 +550,9 @@ void main() {
     expect(tester.getSemantics(find.bySemanticsLabel('Morning daylight')), isSemantics(isChecked: true));
   });
 
-  testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (tester) async {
+  testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
@@ -730,37 +767,40 @@ void main() {
     expect(find.text('Joint pain or arthritis'), findsOneWidget);
   });
 
-  testWidgets('healthspan: this week\'s longevity habits on Progress, with hard cardio left out for a heart condition', (tester) async {
-    await pumpApp(tester);
-    await signIn(tester);
-    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
-    await tester.pumpAndSettle();
-    expect(find.text('Healthspan'), findsOneWidget);
-    expect(find.text('2 of 7 this week'), findsOneWidget);
-    expect(find.text('95 / 150 min'), findsOneWidget);
-    expect(find.text('12% (under 20%)'), findsOneWidget);
+  testWidgets(
+    'healthspan: this week\'s longevity habits on Progress, with hard cardio left out for a heart condition',
+    (tester) async {
+      await pumpApp(tester);
+      await signIn(tester);
+      await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+      await tester.pumpAndSettle();
+      expect(find.text('Healthspan'), findsOneWidget);
+      expect(find.text('2 of 7 this week'), findsOneWidget);
+      expect(find.text('95 / 150 min'), findsOneWidget);
+      expect(find.text('12% (under 20%)'), findsOneWidget);
 
-    // A heart condition, set in Me, reloads the week with the hard session left out of the count.
-    await tester.tap(find.widgetWithText(InkWell, 'Today'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel('Me'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('No conditions'), 200);
-    final card = find.ancestor(of: find.text('No conditions'), matching: find.byType(AppCard));
-    await tapCentered(tester, find.descendant(of: card, matching: find.text('Change')));
-    await tester.ensureVisible(find.text('A heart condition'));
-    await tester.tap(find.text('A heart condition'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(InkWell, 'Progress'));
-    await tester.pumpAndSettle();
-    expect(find.text('2 of 6 this week'), findsOneWidget);
-    expect(find.textContaining('Left out for your health'), findsOneWidget);
-  });
+      // A heart condition, set in Me, reloads the week with the hard session left out of the count.
+      await tester.tap(find.widgetWithText(InkWell, 'Today'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Me'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('No conditions'), 200);
+      final card = find.ancestor(of: find.text('No conditions'), matching: find.byType(AppCard));
+      await tapCentered(tester, find.descendant(of: card, matching: find.text('Change')));
+      await tester.ensureVisible(find.text('A heart condition'));
+      await tester.tap(find.text('A heart condition'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(InkWell, 'Progress'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 6 this week'), findsOneWidget);
+      expect(find.textContaining('Left out for your health'), findsOneWidget);
+    },
+  );
 
   testWidgets('health markers on Progress → Body: the latest with its change, and a reading typed in', (tester) async {
     await pumpApp(tester);
@@ -817,7 +857,9 @@ void main() {
     expect(find.text('100.5 '), findsOneWidget);
   });
 
-  testWidgets('a new level is marked once with its card to share, and the level can be shared any time', (tester) async {
+  testWidgets('a new level is marked once with its card to share, and the level can be shared any time', (
+    tester,
+  ) async {
     await pumpApp(tester, saved: {'levelSeen': 1});
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Progress'));

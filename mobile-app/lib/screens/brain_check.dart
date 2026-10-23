@@ -13,7 +13,8 @@ import '../widgets/sheet.dart';
 /// two minutes. After the Psychomotor Vigilance Task used in sleep research. Returns the scored check,
 /// or null if they left before finishing.
 Future<BrainCheck?> showBrainCheck(BuildContext context) =>
-    Navigator.of(context).push<BrainCheck>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => const BrainCheckScreen()));
+    Navigator.of(context)
+        .push<BrainCheck>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => const BrainCheckScreen()));
 
 enum _Phase { intro, waiting, light, feedback, saving, done, failed }
 
@@ -169,34 +170,44 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
   Widget _intro(BuildContext context) {
     final c = context.colors;
     final minutes = widget.duration.inMinutes;
-    return _fitOrScroll(Padding(
-      padding: const EdgeInsets.all(Space.s5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: Space.s4,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(tooltip: 'Close', icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
-          ),
-          const Text('Brain speed check', style: TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-          Text(
-            'A light appears at random moments. Tap anywhere as fast as you can when it does, and not before. '
-            'It takes ${minutes < 1 ? 'under a minute' : 'about $minutes minutes'}.',
-            style: TextStyle(fontSize: TextSize.md, height: 1.45, color: c.inkSoft),
-          ),
-          Text(
-            widget.note ??
-                'Do it at about the same time each day, sitting down, with notifications off. Your score is compared with your own usual, '
-                    "so you can see which days you're sharper. It's a self-check, not a medical test.",
-            style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
-          ),
-          const Spacer(),
-          SheetAction(label: 'Start', onPressed: _start),
-          if (widget.skipLabel != null) TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel!)),
-        ],
+    return _fitOrScroll(
+      Padding(
+        padding: const EdgeInsets.all(Space.s5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s4,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                tooltip: 'Close',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            const Text(
+              'Brain speed check',
+              style: TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+            ),
+            Text(
+              'A light appears at random moments. Tap anywhere as fast as you can when it does, and not before. '
+              'It takes ${minutes < 1 ? 'under a minute' : 'about $minutes minutes'}.',
+              style: TextStyle(fontSize: TextSize.md, height: 1.45, color: c.inkSoft),
+            ),
+            Text(
+              widget.note ??
+                  'Do it at about the same time each day, sitting down, with notifications off. Your score is compared with your own usual, '
+                      "so you can see which days you're sharper. It's a self-check, not a medical test.",
+              style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
+            ),
+            const Spacer(),
+            SheetAction(label: 'Start', onPressed: _start),
+            if (widget.skipLabel != null)
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel!)),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _test(BuildContext context) {
@@ -219,9 +230,15 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
               left: 0,
               right: 0,
               child: Text(
-                left.isNegative ? 'Last few' : '${left.inSeconds ~/ 60}:${(left.inSeconds % 60).toString().padLeft(2, '0')} left',
+                left.isNegative
+                    ? 'Last few'
+                    : '${left.inSeconds ~/ 60}:${(left.inSeconds % 60).toString().padLeft(2, '0')} left',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: c.mist.withValues(alpha: 0.6), fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: c.mist.withValues(alpha: 0.6),
+                  fontSize: TextSize.sm,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             Center(
@@ -235,7 +252,10 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
                   _feedback,
                   style: TextStyle(color: c.mist, fontSize: TextSize.xxl, fontWeight: FontWeight.w800),
                 ),
-                _ => Text('Wait for the light', style: TextStyle(color: c.mist.withValues(alpha: 0.5), fontSize: TextSize.md)),
+                _ => Text(
+                  'Wait for the light',
+                  style: TextStyle(color: c.mist.withValues(alpha: 0.5), fontSize: TextSize.md),
+                ),
               },
             ),
           ],
@@ -249,35 +269,56 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
     Widget stat(String value, String label) => Expanded(
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800)),
-          Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800),
+          ),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+          ),
         ],
       ),
     );
-    return _fitOrScroll(Padding(
-      padding: const EdgeInsets.all(Space.s5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: Space.s4,
-        children: [
-          const Spacer(),
-          Text('Brain speed', textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
-          // The reaction time leads; the score stays behind the scenes for your usual and your level.
-          Text('${r.medianMs} ms', textAlign: TextAlign.center, style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1)),
-          Text('typical reaction', textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
-          Row(children: [stat('${r.lapses}', 'slow responses'), stat('${r.falseStarts}', 'too soon')]),
-          Text(
-            r.lapses > 2
-                ? 'Several slow responses: a sign of a tired brain. Sleep, daylight and a walk help more than coffee.'
-                : 'Do it daily to build your usual; the app will show how sleep, food and fasting move it.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
-          ),
-          const Spacer(),
-          SheetAction(label: widget.doneLabel, onPressed: () => Navigator.of(context).pop(r)),
-        ],
+    return _fitOrScroll(
+      Padding(
+        padding: const EdgeInsets.all(Space.s5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s4,
+          children: [
+            const Spacer(),
+            Text(
+              'Brain speed',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+            ),
+            // The reaction time leads; the score stays behind the scenes for your usual and your level.
+            Text(
+              '${r.medianMs} ms',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1),
+            ),
+            Text(
+              'typical reaction',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+            ),
+            Row(children: [stat('${r.lapses}', 'slow responses'), stat('${r.falseStarts}', 'too soon')]),
+            Text(
+              r.lapses > 2
+                  ? 'Several slow responses: a sign of a tired brain. Sleep, daylight and a walk help more than coffee.'
+                  : 'Do it daily to build your usual; the app will show how sleep, food and fasting move it.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
+            ),
+            const Spacer(),
+            SheetAction(label: widget.doneLabel, onPressed: () => Navigator.of(context).pop(r)),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   /// Fills the screen so the button sits at the bottom, and scrolls when large text needs more room.
@@ -297,10 +338,16 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: Space.s3,
       children: [
-        const Text("Couldn't save your check", style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
+        const Text(
+          "Couldn't save your check",
+          style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800),
+        ),
         const Text('Your reactions are still here. Check your connection and try again.'),
         FilledButton(onPressed: _save, child: const Text('Try again')),
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel ?? 'Close without saving')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.skipLabel ?? 'Close without saving'),
+        ),
       ],
     ),
   );

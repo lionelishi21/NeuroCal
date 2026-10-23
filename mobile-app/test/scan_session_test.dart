@@ -2,8 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/scan/scan_session.dart';
 
 const front = 'Supplement Facts Serving Size 2 capsules Amount per serving Magnesium glycinate 200 mg Zinc 15 mg';
-const back = 'Other ingredients rice flour vegetable cellulose capsule Distributed by Calm Labs lot MG2405 expires 2027';
-const side = 'Directions take two capsules daily with food Warning keep out of reach of children consult physician pregnant';
+const back =
+    'Other ingredients rice flour vegetable cellulose capsule Distributed by Calm Labs lot MG2405 expires 2027';
+const side =
+    'Directions take two capsules daily with food Warning keep out of reach of children consult physician pregnant';
 
 void main() {
   test('words are lowercase, three letters or more, without punctuation', () {

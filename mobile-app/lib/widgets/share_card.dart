@@ -12,25 +12,33 @@ import 'toast.dart';
 
 /// "Share my score": a story-sized card (1080 × 1920) with today's Focus Score and streak, previewed in a
 /// sheet and handed to the phone's share sheet as an image.
-Future<void> showShareScore(BuildContext context, {required int score, required String word, int streakDays = 0}) => _showShare(
-  context,
-  title: 'Share your score',
-  event: 'score_shared',
-  text: 'My Focus Score today: $score. I track how food, sleep and stress shape my focus with NeuroCal. neurocal.ai',
-  card: ScoreCard(score: score, word: word, streakDays: streakDays),
-);
+Future<void> showShareScore(BuildContext context, {required int score, required String word, int streakDays = 0}) =>
+    _showShare(
+      context,
+      title: 'Share your score',
+      event: 'score_shared',
+      text:
+          'My Focus Score today: $score. I track how food, sleep and stress shape my focus with NeuroCal. neurocal.ai',
+      card: ScoreCard(score: score, word: word, streakDays: streakDays),
+    );
 
 /// "Share my progress": how much weight is down and since when, never the weight itself.
-Future<void> showShareWeight(BuildContext context, {required String lost, required String since, String? toGo}) => _showShare(
-  context,
-  title: 'Share your progress',
-  event: 'weight_shared',
-  text: '$lost down since $since, eating for focus with NeuroCal. neurocal.ai',
-  card: WeightProgressCard(lost: lost, since: since, toGo: toGo),
-);
+Future<void> showShareWeight(BuildContext context, {required String lost, required String since, String? toGo}) =>
+    _showShare(
+      context,
+      title: 'Share your progress',
+      event: 'weight_shared',
+      text: '$lost down since $since, eating for focus with NeuroCal. neurocal.ai',
+      card: WeightProgressCard(lost: lost, since: since, toGo: toGo),
+    );
 
 /// A level reached on the biohacking ladder (docs/NCBM.md §8).
-Future<void> showShareLevel(BuildContext context, {required int level, required String name, bool justReached = false}) => _showShare(
+Future<void> showShareLevel(
+  BuildContext context, {
+  required int level,
+  required String name,
+  bool justReached = false,
+}) => _showShare(
   context,
   title: justReached ? 'You reached $name' : 'Share your level',
   event: 'level_shared',
@@ -38,8 +46,17 @@ Future<void> showShareLevel(BuildContext context, {required int level, required 
   card: LevelCard(level: level, name: name),
 );
 
-Future<void> _showShare(BuildContext context, {required String title, required String event, required String text, required Widget card}) =>
-    showAppSheet<void>(context, title: title, builder: (_) => _Share(card: card, text: text, event: event));
+Future<void> _showShare(
+  BuildContext context, {
+  required String title,
+  required String event,
+  required String text,
+  required Widget card,
+}) => showAppSheet<void>(
+  context,
+  title: title,
+  builder: (_) => _Share(card: card, text: text, event: event),
+);
 
 class _Share extends StatefulWidget {
   const _Share({required this.card, required this.text, required this.event});
@@ -83,7 +100,10 @@ class _ShareState extends State<_Share> {
     spacing: Space.s4,
     children: [
       Center(
-        child: RepaintBoundary(key: _card, child: SizedBox.fromSize(size: _size, child: widget.card)),
+        child: RepaintBoundary(
+          key: _card,
+          child: SizedBox.fromSize(size: _size, child: widget.card),
+        ),
       ),
       SheetAction(label: _busy ? 'Getting it ready…' : 'Share', onPressed: _busy ? null : _share),
     ],
@@ -124,7 +144,10 @@ class _CardFrame extends StatelessWidget {
                 spacing: Space.s2,
                 children: [
                   const LogoMark(size: 22),
-                  Text('NeuroCal', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink)),
+                  Text(
+                    'NeuroCal',
+                    style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink),
+                  ),
                 ],
               ),
               const Spacer(),
@@ -134,7 +157,10 @@ class _CardFrame extends StatelessWidget {
                 'Eat for how you want to think.',
                 style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.ink),
               ),
-              Text('neurocal.ai', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+              Text(
+                'neurocal.ai',
+                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+              ),
             ],
           ),
         ),
@@ -158,17 +184,28 @@ class ScoreCard extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('My Focus Score today', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+          Text(
+            'My Focus Score today',
+            style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+          ),
           const SizedBox(height: Space.s3),
           Center(
             child: FocusRing(
               score: score,
               size: 170,
-              child: Text('$score', style: TextStyle(fontSize: 56, fontWeight: FontWeight.w800, height: 1, letterSpacing: -2, color: c.ink)),
+              child: Text(
+                '$score',
+                style: TextStyle(fontSize: 56, fontWeight: FontWeight.w800, height: 1, letterSpacing: -2, color: c.ink),
+              ),
             ),
           ),
           const SizedBox(height: Space.s3),
-          Center(child: Text(word, style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: c.ink))),
+          Center(
+            child: Text(
+              word,
+              style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: c.ink),
+            ),
+          ),
           if (streakDays > 1) ...[
             const SizedBox(height: Space.s2),
             Center(
@@ -177,7 +214,10 @@ class ScoreCard extends StatelessWidget {
                 spacing: 4,
                 children: [
                   Icon(Icons.local_fire_department_rounded, size: 18, color: c.glucose),
-                  Text('$streakDays-day streak', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.glucose)),
+                  Text(
+                    '$streakDays-day streak',
+                    style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.glucose),
+                  ),
                 ],
               ),
             ),
@@ -209,13 +249,23 @@ class WeightProgressCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: Space.s2,
         children: [
-          Text('Down since $since', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+          Text(
+            'Down since $since',
+            style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+          ),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(lost, style: TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1, letterSpacing: -2, color: c.ink)),
+            child: Text(
+              lost,
+              style: TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1, letterSpacing: -2, color: c.ink),
+            ),
           ),
-          if (toGo != null) Text(toGo!, style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700, color: c.chlorophyll)),
+          if (toGo != null)
+            Text(
+              toGo!,
+              style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700, color: c.chlorophyll),
+            ),
           const SizedBox(height: Space.s2),
           Text(
             'Steady, from meals that keep my focus up.',
@@ -242,7 +292,10 @@ class LevelCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: Space.s3,
         children: [
-          Text('My biohacking level', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+          Text(
+            'My biohacking level',
+            style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+          ),
           Center(
             child: Container(
               width: 140,
@@ -250,12 +303,29 @@ class LevelCard extends StatelessWidget {
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [NeuroCalColors.ringFrom, NeuroCalColors.ringTo]),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [NeuroCalColors.ringFrom, NeuroCalColors.ringTo],
+                ),
               ),
-              child: Text('$level', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w800, height: 1, color: NeuroCalColors.onSignal)),
+              child: Text(
+                '$level',
+                style: const TextStyle(
+                  fontSize: 64,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  color: NeuroCalColors.onSignal,
+                ),
+              ),
             ),
           ),
-          Center(child: Text(name, style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: c.ink))),
+          Center(
+            child: Text(
+              name,
+              style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: c.ink),
+            ),
+          ),
           Row(
             spacing: Space.s1,
             children: [
@@ -263,13 +333,19 @@ class LevelCard extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: 6,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.pill), color: step <= level ? c.synapse : c.track),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                      color: step <= level ? c.synapse : c.track,
+                    ),
                   ),
                 ),
             ],
           ),
           Center(
-            child: Text('Level $level of 5, earned with habits', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+            child: Text(
+              'Level $level of 5, earned with habits',
+              style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+            ),
           ),
         ],
       ),

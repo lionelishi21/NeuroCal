@@ -40,7 +40,9 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
       scope.analytics.track('first_meal_read', {'found': result.items.isNotEmpty});
       setState(() {
         _items = result.items;
-        if (result.problem != null || result.items.isEmpty) _problem = 'That photo is hard to read. Try again in good light, with the whole plate in view.';
+        if (result.problem != null || result.items.isEmpty) {
+          _problem = 'That photo is hard to read. Try again in good light, with the whole plate in view.';
+        }
       });
     } on ApiException catch (e) {
       if (mounted) {
@@ -98,13 +100,14 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                     children: [
                       Semantics(
                         header: true,
-                        child: Text(read ? 'Here’s your meal' : 'See it work: snap a meal', style: text.headlineMedium?.copyWith(letterSpacing: -0.7)),
+                        child: Text(
+                          read ? 'Here’s your meal' : 'See it work: snap a meal',
+                          style: text.headlineMedium?.copyWith(letterSpacing: -0.7),
+                        ),
                       ),
                       const SizedBox(height: Space.s2),
                       Text(
-                        read
-                            ? 'About $kcal kcal. Every meal you snap feeds your blood sugar and timing scores.'
-                            : 'Point your camera at any food, even a snack or your coffee. NeuroCal reads it in seconds.',
+                        read ? 'About $kcal kcal. Every meal you snap feeds your blood sugar and timing scores.' : 'Point your camera at any food, even a snack or your coffee. NeuroCal reads it in seconds.',
                         style: text.bodyLarge?.copyWith(color: c.inkSoft),
                       ),
                       const SizedBox(height: Space.s5),
@@ -113,7 +116,10 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                           spacing: Space.s3,
                           children: [
                             const CircularProgressIndicator(),
-                            Text('Reading your photo…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+                            Text(
+                              'Reading your photo…',
+                              style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                            ),
                           ],
                         )
                       else if (read)
@@ -126,12 +132,21 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(i.name, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                                      Text(i.portion, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                                      Text(
+                                        i.name,
+                                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                                      ),
+                                      Text(
+                                        i.portion,
+                                        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                Text('${i.calories.round()} kcal', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                                Text(
+                                  '${i.calories.round()} kcal',
+                                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                                ),
                               ],
                             ),
                           )
@@ -147,7 +162,10 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                         ),
                       if (_problem != null) ...[
                         const SizedBox(height: Space.s3),
-                        Text(_problem!, style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.beet)),
+                        Text(
+                          _problem!,
+                          style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.beet),
+                        ),
                       ],
                     ],
                   ),
@@ -159,8 +177,14 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                     spacing: Space.s2,
                     children: read
                         ? [
-                            FilledButton(onPressed: _saving ? null : () => _log(items), child: Text(_saving ? 'Logging…' : 'Log it')),
-                            TextButton(onPressed: _saving ? null : widget.onDone, child: const Text('Continue without logging')),
+                            FilledButton(
+                              onPressed: _saving ? null : () => _log(items),
+                              child: Text(_saving ? 'Logging…' : 'Log it'),
+                            ),
+                            TextButton(
+                              onPressed: _saving ? null : widget.onDone,
+                              child: const Text('Continue without logging'),
+                            ),
                           ]
                         : [
                             FilledButton.icon(
@@ -168,7 +192,10 @@ class _FirstMealScreenState extends State<FirstMealScreen> {
                               icon: const Icon(Icons.photo_camera_rounded),
                               label: const Text('Take a photo'),
                             ),
-                            OutlinedButton(onPressed: _reading ? null : () => _snap(ImageSource.gallery), child: const Text('Choose a photo')),
+                            OutlinedButton(
+                              onPressed: _reading ? null : () => _snap(ImageSource.gallery),
+                              child: const Text('Choose a photo'),
+                            ),
                             TextButton(
                               onPressed: _reading
                                   ? null

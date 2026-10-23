@@ -87,8 +87,7 @@ class _SleepScreenState extends State<SleepScreen> {
                   else if (!hasSleep)
                     EmptyCard(
                       title: 'No sleep logged yet',
-                      detail:
-                          "Log last night and we'll put your sleep, last meal and late screens on one clock, so patterns are easy to spot.",
+                      detail: "Log last night and we'll put your sleep, last meal and late screens on one clock, so patterns are easy to spot.",
                       action: SoftButton(label: 'Log sleep', onPressed: _logSleep),
                     )
                   else ...[
@@ -147,7 +146,11 @@ class _SleepScreenState extends State<SleepScreen> {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(56),
                       padding: const EdgeInsets.symmetric(horizontal: Space.s2),
-                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.base, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: TextSize.base,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onPressed: _logSleep,
                     child: const Text('Log sleep'),
@@ -160,7 +163,11 @@ class _SleepScreenState extends State<SleepScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: Space.s2),
                       foregroundColor: c.synapseInk,
                       side: BorderSide(color: c.ruleStrong, width: 1.5),
-                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.base, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: TextSize.base,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onPressed: () => _log(showLogScreenTimeSheet, 'Screen time logged'),
                     child: const FittedBox(fit: BoxFit.scaleDown, child: Text('Log screen time')),

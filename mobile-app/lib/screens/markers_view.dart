@@ -16,7 +16,14 @@ String _when(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 /// Health markers on Progress → Body: each with its latest reading, how it moved over about three months
 /// (green the healthier way, amber the other), and a general adult reference. Never a diagnosis.
 class MarkersSection extends StatelessWidget {
-  const MarkersSection(this.markers, {super.key, required this.units, required this.onUnits, required this.onAdd, this.onImport});
+  const MarkersSection(
+    this.markers, {
+    super.key,
+    required this.units,
+    required this.onUnits,
+    required this.onAdd,
+    this.onImport,
+  });
 
   /// Null when they didn't load.
   final List<MarkerSummary>? markers;
@@ -95,7 +102,11 @@ class _MarkerRow extends StatelessWidget {
     final shownChange = change == null ? null : changeShown(m.marker, change, units);
     final moved = shownChange == null
         ? null
-        : '${change! > 0 ? '+' : change < 0 ? '−' : ''}${formatLab(m.marker, shownChange.abs(), units)} $unit in 3 months';
+        : '${change! > 0
+              ? '+'
+              : change < 0
+              ? '−'
+              : ''}${formatLab(m.marker, shownChange.abs(), units)} $unit in 3 months';
     return Semantics(
       container: true,
       label: '${m.label}: $value $unit on ${_when(m.latest.measuredAt)}${moved == null ? '' : ', $moved'}. $reference',
@@ -110,19 +121,39 @@ class _MarkerRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Expanded(child: Text(m.label, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700))),
-                Text('$value ', style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800)),
-                Text(unit, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                Expanded(
+                  child: Text(
+                    m.label,
+                    style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Text(
+                  '$value ',
+                  style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  unit,
+                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                ),
               ],
             ),
             Row(
               spacing: Space.s2,
               children: [
-                Text(_when(m.latest.measuredAt), style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
-                if (moved != null) Flexible(child: Tag(moved, fill: fill, ink: ink)),
+                Text(
+                  _when(m.latest.measuredAt),
+                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                ),
+                if (moved != null)
+                  Flexible(
+                    child: Tag(moved, fill: fill, ink: ink),
+                  ),
               ],
             ),
-            Text(reference, style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft)),
+            Text(
+              reference,
+              style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+            ),
           ],
         ),
       ),
@@ -164,7 +195,10 @@ class _AddMarkerState extends State<_AddMarker> {
     final value = typed == null ? null : toStored(_marker.id, typed, _units);
     if (value == null || value < _marker.min || value > _marker.max) {
       String shown(double v) => formatLab(_marker.id, toShown(_marker.id, v, _units), _units);
-      setState(() => _problem = '${_marker.label} should be between ${shown(_marker.min)} and ${shown(_marker.max)} ${labUnitOf(_marker.id, _marker.unit, _units)}.');
+      setState(
+        () => _problem =
+            '${_marker.label} should be between ${shown(_marker.min)} and ${shown(_marker.max)} ${labUnitOf(_marker.id, _marker.unit, _units)}.',
+      );
       return;
     }
     setState(() {
@@ -174,7 +208,8 @@ class _AddMarkerState extends State<_AddMarker> {
     try {
       final now = DateTime.now();
       final at = _daysAgo == 0 ? null : DateTime(now.year, now.month, now.day - _daysAgo, 9);
-      await AppScope.of(context).api.recordMarkers([(marker: _marker.id, value: value, measuredAt: at, source: 'manual')]);
+      await AppScope.of(context).api
+          .recordMarkers([(marker: _marker.id, value: value, measuredAt: at, source: 'manual')]);
       if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (e) {
       if (mounted) setState(() => _problem = e.message);
@@ -196,7 +231,13 @@ class _AddMarkerState extends State<_AddMarker> {
           initialValue: _marker.id,
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Marker'),
-          items: [for (final m in markerInfos) DropdownMenuItem(value: m.id, child: Text(m.label, overflow: TextOverflow.ellipsis))],
+          items: [
+            for (final m in markerInfos)
+              DropdownMenuItem(
+                value: m.id,
+                child: Text(m.label, overflow: TextOverflow.ellipsis),
+              ),
+          ],
           onChanged: (id) => setState(() {
             _marker = markerInfo(id!)!;
             _problem = null;
@@ -206,7 +247,11 @@ class _AddMarkerState extends State<_AddMarker> {
           controller: _value,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-          decoration: InputDecoration(labelText: 'Value', suffixText: labUnitOf(_marker.id, _marker.unit, _units), helperText: _marker.hint),
+          decoration: InputDecoration(
+            labelText: 'Value',
+            suffixText: labUnitOf(_marker.id, _marker.unit, _units),
+            helperText: _marker.hint,
+          ),
           onChanged: (_) => setState(() => _problem = null),
         ),
         if (converts(_marker.id, LabUnits.mmol))
@@ -220,13 +265,21 @@ class _AddMarkerState extends State<_AddMarker> {
               u.save();
             },
           ),
-        Text('When', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+        Text(
+          'When',
+          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+        ),
         Wrap(
           spacing: Space.s2,
           runSpacing: Space.s2,
           children: [
             for (final (days, label) in const [(0, 'Today'), (1, 'Yesterday'), (7, 'Last week'), (30, 'Last month')])
-              ChoicePill(label: label, height: 40, selected: _daysAgo == days, onTap: () => setState(() => _daysAgo = days)),
+              ChoicePill(
+                label: label,
+                height: 40,
+                selected: _daysAgo == days,
+                onTap: () => setState(() => _daysAgo = days),
+              ),
           ],
         ),
         if (_problem != null) SheetNote(lead: 'Check the value.', detail: _problem!),
@@ -263,14 +316,25 @@ class GlucoseCard extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
-                child: Text('$inRange% in range', style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
+                child: Text(
+                  '$inRange% in range',
+                  style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800),
+                ),
               ),
-              Text('avg $mean', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
+              Text(
+                'avg $mean',
+                style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+              ),
             ],
           ),
           ClipRRect(
             borderRadius: BorderRadius.circular(Radii.pill),
-            child: LinearProgressIndicator(value: inRange / 100, minHeight: 6, backgroundColor: c.track, color: inRange >= 70 ? c.chlorophyll : c.glucose),
+            child: LinearProgressIndicator(
+              value: inRange / 100,
+              minHeight: 6,
+              backgroundColor: c.track,
+              color: inRange >= 70 ? c.chlorophyll : c.glucose,
+            ),
           ),
           Text(
             'Time in $range over the last ${week.length} ${week.length == 1 ? 'day' : 'days'} from your glucose sensor. It sets the blood-sugar part of your Focus Score.',
@@ -295,7 +359,10 @@ class LabUnitsChoice extends StatelessWidget {
     runSpacing: Space.s2,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      Text('Lab units', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: context.colors.inkSoft)),
+      Text(
+        'Lab units',
+        style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: context.colors.inkSoft),
+      ),
       for (final (u, label) in const [(LabUnits.us, 'mg/dL, %'), (LabUnits.mmol, 'mmol/L, mmol/mol')])
         ChoicePill(label: label, height: 36, selected: units == u, onTap: () => onChanged(u)),
     ],

@@ -146,7 +146,12 @@ class _FeelingCard extends StatelessWidget {
                         flag.label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
-                        style: TextStyle(fontSize: TextSize.xs, height: 1.2, fontWeight: FontWeight.w700, color: selected ? c.synapseInk : c.ink),
+                        style: TextStyle(
+                          fontSize: TextSize.xs,
+                          height: 1.2,
+                          fontWeight: FontWeight.w700,
+                          color: selected ? c.synapseInk : c.ink,
+                        ),
                       ),
                     ),
                   ],

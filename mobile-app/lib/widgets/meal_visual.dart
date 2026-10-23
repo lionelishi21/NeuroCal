@@ -76,9 +76,22 @@ class MealVisual extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(color: c.paper, width: 3),
-                                    boxShadow: [BoxShadow(color: c.ink.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 4))],
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: c.ink.withValues(alpha: 0.12),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                  child: ClipOval(child: FoodImage(id: f.id, category: f.category, size: height * 0.72 - 6, radius: height)),
+                                  child: ClipOval(
+                                    child: FoodImage(
+                                      id: f.id,
+                                      category: f.category,
+                                      size: height * 0.72 - 6,
+                                      radius: height,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -105,7 +118,11 @@ class _Plate extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: c.paper, shape: BoxShape.circle, border: Border.all(color: c.rule, width: 2)),
+      decoration: BoxDecoration(
+        color: c.paper,
+        shape: BoxShape.circle,
+        border: Border.all(color: c.rule, width: 2),
+      ),
       child: Icon(Icons.restaurant_rounded, size: size * 0.45, color: c.synapseInk),
     );
   }
@@ -128,7 +145,10 @@ class _Pop extends StatelessWidget {
       curve: Interval((index * 0.18).clamp(0, 0.6), 1, curve: Curves.easeOutBack),
       builder: (context, t, child) => Opacity(
         opacity: t.clamp(0, 1),
-        child: Transform.rotate(angle: tilt * t, child: Transform.scale(scale: 0.6 + 0.4 * t, child: child)),
+        child: Transform.rotate(
+          angle: tilt * t,
+          child: Transform.scale(scale: 0.6 + 0.4 * t, child: child),
+        ),
       ),
       child: child,
     );

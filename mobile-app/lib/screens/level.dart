@@ -84,7 +84,11 @@ class _LevelViewState extends State<LevelView> {
         const ScreenTitle('Your level', detail: 'From your habits over the last 28 days'),
         const SizedBox(height: 14),
         if (snapshot.hasError)
-          ScreenFailed(title: "Couldn't load your level", detail: 'Check your connection and try again.', onRetry: _reload)
+          ScreenFailed(
+            title: "Couldn't load your level",
+            detail: 'Check your connection and try again.',
+            onRetry: _reload,
+          )
         else if (!snapshot.hasData)
           const ScreenLoading(label: 'Loading your level', heights: [180, 220])
         else
@@ -96,8 +100,14 @@ class _LevelViewState extends State<LevelView> {
   List<Widget> _body(BuildContext context, Level l) {
     final c = context.colors;
     final next = l.level < 5 ? l.level + 1 : null;
-    final nextHabits = [for (final r in l.requirements) if (r.level == next) r];
-    final held = [for (final r in l.requirements) if (r.level <= l.level) r];
+    final nextHabits = [
+      for (final r in l.requirements)
+        if (r.level == next) r,
+    ];
+    final held = [
+      for (final r in l.requirements)
+        if (r.level <= l.level) r,
+    ];
     return [
       if (_reached) ...[
         _Reached(
@@ -123,10 +133,16 @@ class _LevelViewState extends State<LevelView> {
       if (next == null)
         Padding(
           padding: const EdgeInsets.only(top: Space.s3),
-          child: Text('You hold every level. Keep the habits and it stays.', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+          child: Text(
+            'You hold every level. Keep the habits and it stays.',
+            style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+          ),
         )
       else ...[
-        BlockTitle('To reach ${Level.names[next]}', note: '${nextHabits.where((r) => r.met).length} of ${nextHabits.length} done'),
+        BlockTitle(
+          'To reach ${Level.names[next]}',
+          note: '${nextHabits.where((r) => r.met).length} of ${nextHabits.length} done',
+        ),
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(children: [for (final (i, r) in nextHabits.indexed) _Habit(r, divider: i > 0)]),
@@ -172,13 +188,23 @@ class _Reached extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 2,
               children: [
-                Text('You reached ${level.name}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-                Text('Level ${level.level} of 5, from your habits.', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                Text(
+                  'You reached ${level.name}',
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  'Level ${level.level} of 5, from your habits.',
+                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                ),
               ],
             ),
           ),
           TextButton(onPressed: onShare, child: const Text('Share')),
-          IconButton(tooltip: 'Dismiss', icon: Icon(Icons.close_rounded, color: c.inkSoft), onPressed: onDismiss),
+          IconButton(
+            tooltip: 'Dismiss',
+            icon: Icon(Icons.close_rounded, color: c.inkSoft),
+            onPressed: onDismiss,
+          ),
         ],
       ),
     );
@@ -222,7 +248,12 @@ class _Ladder extends StatelessWidget {
                   ),
                   child: Text(
                     '${level.level}',
-                    style: const TextStyle(fontSize: TextSize.xxxl, fontWeight: FontWeight.w800, color: NeuroCalColors.onSignal, height: 1),
+                    style: const TextStyle(
+                      fontSize: TextSize.xxxl,
+                      fontWeight: FontWeight.w800,
+                      color: NeuroCalColors.onSignal,
+                      height: 1,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -234,7 +265,10 @@ class _Ladder extends StatelessWidget {
                         level.level == 0 ? 'Level 1 is next' : 'Level ${level.level} of 5',
                         style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.synapseInk),
                       ),
-                      Text(level.name, style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, height: 1.15)),
+                      Text(
+                        level.name,
+                        style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, height: 1.15),
+                      ),
                     ],
                   ),
                 ),
@@ -295,7 +329,9 @@ class _Habit extends StatelessWidget {
     return MergeSemantics(
       child: Container(
         padding: const EdgeInsets.fromLTRB(Space.s4, Space.s3, Space.s4, Space.s3),
-        decoration: BoxDecoration(border: divider ? Border(top: BorderSide(color: c.rule)) : null),
+        decoration: BoxDecoration(
+          border: divider ? Border(top: BorderSide(color: c.rule)) : null,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s3,
@@ -311,8 +347,14 @@ class _Habit extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
                 children: [
-                  Text(habit.title, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, height: 1.3)),
-                  Text(habit.progress, style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft)),
+                  Text(
+                    habit.title,
+                    style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, height: 1.3),
+                  ),
+                  Text(
+                    habit.progress,
+                    style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                  ),
                 ],
               ),
             ),

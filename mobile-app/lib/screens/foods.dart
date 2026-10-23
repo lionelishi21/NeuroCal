@@ -114,18 +114,29 @@ class _FoodsScreenState extends State<FoodsScreen> {
           final (foods, diet) = snapshot.data!;
           final term = _search.text.trim().toLowerCase();
           final region = _region ?? _regionOf(Localizations.localeOf(context));
-          final regions = [for (final r in _regionNames.keys) if (foods.any((f) => f.regions.contains(r))) r];
-          final menu = [for (final f in foods) if (f.eatingOut && f.regions.contains(region)) f];
+          final regions = [
+            for (final r in _regionNames.keys)
+              if (foods.any((f) => f.regions.contains(r))) r,
+          ];
+          final menu = [
+            for (final f in foods)
+              if (f.eatingOut && f.regions.contains(region)) f,
+          ];
           final chains = <String, String>{for (final f in menu) f.chain!.id: f.chain!.name};
           final shown = _eatingOut
               ? [
                   for (final f in menu)
-                    if ((_chain == null || f.chain!.id == _chain) && (term.isEmpty || f.fullName.toLowerCase().contains(term))) f,
+                    if ((_chain == null || f.chain!.id == _chain) &&
+                        (term.isEmpty || f.fullName.toLowerCase().contains(term)))
+                      f,
                 ]
               : [
                   for (final f in foods)
                     // Chain items only show up for a search, so browsing stays on whole foods.
-                    if ((term.isEmpty ? !f.eatingOut : f.fullName.toLowerCase().contains(term) && (!f.eatingOut || f.regions.contains(region))) &&
+                    if ((term.isEmpty
+                            ? !f.eatingOut
+                            : f.fullName.toLowerCase().contains(term) &&
+                                  (!f.eatingOut || f.regions.contains(region))) &&
                         (_goal == null || f.goals.contains(_goal)) &&
                         (!_myDiet || diet == null || f.diets.contains(diet)))
                       f,
@@ -150,37 +161,37 @@ class _FoodsScreenState extends State<FoodsScreen> {
                       spacing: Space.s2,
                       runSpacing: Space.s2,
                       children: [
+                        ChoicePill(
+                          label: 'All',
+                          selected: _goal == null && !_eatingOut,
+                          onTap: () => setState(() {
+                            _goal = null;
+                            _eatingOut = false;
+                          }),
+                        ),
+                        if (menu.isNotEmpty)
                           ChoicePill(
-                            label: 'All',
-                            selected: _goal == null && !_eatingOut,
+                            label: 'Eating out',
+                            selected: _eatingOut,
                             onTap: () => setState(() {
+                              _eatingOut = !_eatingOut;
                               _goal = null;
-                              _eatingOut = false;
+                              _chain = null;
                             }),
                           ),
-                          if (menu.isNotEmpty)
+                        if (!_eatingOut)
+                          for (final g in _goals)
                             ChoicePill(
-                              label: 'Eating out',
-                              selected: _eatingOut,
-                              onTap: () => setState(() {
-                                _eatingOut = !_eatingOut;
-                                _goal = null;
-                                _chain = null;
-                              }),
+                              label: _goalNames[g]!,
+                              selected: _goal == g,
+                              onTap: () => setState(() => _goal = _goal == g ? null : g),
                             ),
-                          if (!_eatingOut)
-                            for (final g in _goals)
-                              ChoicePill(
-                                label: _goalNames[g]!,
-                                selected: _goal == g,
-                                onTap: () => setState(() => _goal = _goal == g ? null : g),
-                              ),
-                          if (!_eatingOut && diet != null && diet != 'omnivore' && diet != 'standard')
-                            ChoicePill(
-                              label: 'Fits my diet',
-                              selected: _myDiet,
-                              onTap: () => setState(() => _myDiet = !_myDiet),
-                            ),
+                        if (!_eatingOut && diet != null && diet != 'omnivore' && diet != 'standard')
+                          ChoicePill(
+                            label: 'Fits my diet',
+                            selected: _myDiet,
+                            onTap: () => setState(() => _myDiet = !_myDiet),
+                          ),
                       ],
                     ),
                     if (_eatingOut) ...[
@@ -198,7 +209,10 @@ class _FoodsScreenState extends State<FoodsScreen> {
                             runSpacing: Space.s2,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Text('Menus in', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                              Text(
+                                'Menus in',
+                                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                              ),
                               for (final r in regions)
                                 ChoicePill(
                                   label: _regionNames[r]!,
@@ -272,7 +286,10 @@ class _FoodTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(aspectRatio: 1, child: FoodImage(id: food.id, category: food.category)),
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: FoodImage(id: food.id, category: food.category),
+                ),
                 const SizedBox(height: Space.s2),
                 Text(
                   food.name,
@@ -281,7 +298,9 @@ class _FoodTile extends StatelessWidget {
                   style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  food.chain == null ? '${food.calories.round()} kcal · ${food.serving}' : '${food.chain!.name} · ${food.calories.round()} kcal',
+                  food.chain == null
+                      ? '${food.calories.round()} kcal · ${food.serving}'
+                      : '${food.chain!.name} · ${food.calories.round()} kcal',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
@@ -298,8 +317,16 @@ class _FoodTile extends StatelessWidget {
 /// A food up close: photo, why it helps, nutrition and a servings choice. Returns the choice when
 /// [action] is tapped.
 /// [all] is the catalog, for an eating-out item's better pick.
-Future<PickedFood?> showFoodSheet(BuildContext context, CatalogFood food, {required String action, List<CatalogFood> all = const []}) =>
-    showAppSheet<PickedFood>(context, title: food.fullName, builder: (_) => _FoodSheet(food, action: action, all: all));
+Future<PickedFood?> showFoodSheet(
+  BuildContext context,
+  CatalogFood food, {
+  required String action,
+  List<CatalogFood> all = const [],
+}) => showAppSheet<PickedFood>(
+  context,
+  title: food.fullName,
+  builder: (_) => _FoodSheet(food, action: action, all: all),
+);
 
 const _servingChoices = [0.5, 1.0, 1.5, 2.0, 3.0];
 
@@ -334,8 +361,14 @@ class _FoodSheetState extends State<_FoodSheet> {
     Widget stat(String value, String label) => Expanded(
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-          Text(label, style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+          ),
         ],
       ),
     );
@@ -343,15 +376,26 @@ class _FoodSheetState extends State<_FoodSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        if (f != widget.food) Text(f.fullName, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800)),
-        SizedBox(height: 180, child: FoodImage(id: f.id, category: f.category, radius: Radii.hero)),
+        if (f != widget.food)
+          Text(
+            f.fullName,
+            style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800),
+          ),
+        SizedBox(
+          height: 180,
+          child: FoodImage(id: f.id, category: f.category, radius: Radii.hero),
+        ),
         Text(f.why, style: const TextStyle(fontSize: TextSize.sm, height: 1.45)),
         if (f.eatingOut)
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
-              Tag(_glycemicLabel(f.glycemicLoad), fill: f.glycemicLoad == GlycemicLoad.high ? c.glucoseSoft : c.mist, ink: f.glycemicLoad == GlycemicLoad.high ? c.glucoseInk : c.inkSoft),
+              Tag(
+                _glycemicLabel(f.glycemicLoad),
+                fill: f.glycemicLoad == GlycemicLoad.high ? c.glucoseSoft : c.mist,
+                ink: f.glycemicLoad == GlycemicLoad.high ? c.glucoseInk : c.inkSoft,
+              ),
               Tag(f.processing.label, fill: c.mist, ink: c.inkSoft),
             ],
           )
@@ -360,7 +404,8 @@ class _FoodSheetState extends State<_FoodSheet> {
             spacing: 6,
             runSpacing: 6,
             children: [
-              for (final g in f.goals) Tag('Good for ${_goalNames[g]!.toLowerCase()}', fill: c.synapseSoft, ink: c.synapseInk),
+              for (final g in f.goals)
+                Tag('Good for ${_goalNames[g]!.toLowerCase()}', fill: c.synapseSoft, ink: c.synapseInk),
               Tag(_glycemicLabel(f.glycemicLoad), fill: c.mist, ink: c.inkSoft),
             ],
           ),
@@ -375,7 +420,10 @@ class _FoodSheetState extends State<_FoodSheet> {
             ],
           ),
         ),
-        Text('Servings · ${f.serving} each', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+        Text(
+          'Servings · ${f.serving} each',
+          style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+        ),
         Wrap(
           spacing: Space.s2,
           runSpacing: Space.s2,
@@ -385,7 +433,10 @@ class _FoodSheetState extends State<_FoodSheet> {
           ],
         ),
         if (better case final b?) _BetterPick(b, onTap: () => _switchTo(b)),
-        Text(_sourceNote(f), style: TextStyle(fontSize: TextSize.xxs, height: 1.35, color: c.inkSoft)),
+        Text(
+          _sourceNote(f),
+          style: TextStyle(fontSize: TextSize.xxs, height: 1.35, color: c.inkSoft),
+        ),
         if (f.sourceUrl case final url?)
           Align(
             alignment: Alignment.centerLeft,
@@ -402,8 +453,10 @@ class _FoodSheetState extends State<_FoodSheet> {
 
 String _sourceNote(CatalogFood f) => switch (f.source) {
   'usda' => "Nutrition from USDA's analysis of the US menu (FoodData Central). Recipes and portions change, so treat it as close, not exact.",
-  'chain' => "Nutrition as ${f.chain?.name ?? 'the chain'} publishes it${f.fiberG == 0 ? '; fibre isn\'t published' : ''}.",
-  'recipe' => 'Estimated from a typical recipe with USDA ingredient data. Portions and recipes vary from place to place.',
+  'chain' =>
+    "Nutrition as ${f.chain?.name ?? 'the chain'} publishes it${f.fiberG == 0 ? '; fibre isn\'t published' : ''}.",
+  'recipe' =>
+    'Estimated from a typical recipe with USDA ingredient data. Portions and recipes vary from place to place.',
   _ => 'Nutrition from USDA FoodData Central.',
 };
 
@@ -445,7 +498,8 @@ class _BetterPick extends StatelessWidget {
     final c = context.colors;
     return Semantics(
       button: true,
-      label: 'Better pick here: ${food.name}, ${food.calories.round()} calories, ${food.macros.proteinG.round()} grams of protein',
+      label:
+          'Better pick here: ${food.name}, ${food.calories.round()} calories, ${food.macros.proteinG.round()} grams of protein',
       excludeSemantics: true,
       child: Material(
         color: c.chlorophyllSoft,
@@ -464,8 +518,14 @@ class _BetterPick extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 2,
                     children: [
-                      Text('Better pick here', style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
-                      Text(food.name, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                      Text(
+                        'Better pick here',
+                        style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                      ),
+                      Text(
+                        food.name,
+                        style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                      ),
                       Text(
                         '${food.calories.round()} kcal, ${food.macros.proteinG.round()} g protein',
                         style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),

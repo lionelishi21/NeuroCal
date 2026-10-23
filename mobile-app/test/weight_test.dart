@@ -14,7 +14,11 @@ import 'package:neurocal/weight_units.dart';
 import 'package:neurocal/widgets/share_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildContext) body, {Future<void> Function(Uint8List, String)? shareImage}) async {
+Future<MockNeuroCalApi> pumpWith(
+  WidgetTester tester,
+  Widget Function(BuildContext) body, {
+  Future<void> Function(Uint8List, String)? shareImage,
+}) async {
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -29,7 +33,10 @@ Future<MockNeuroCalApi> pumpWith(WidgetTester tester, Widget Function(BuildConte
       openLink: (_) async => true,
       billing: MockBilling(active: true),
       shareImage: shareImage ?? (_, _) async {},
-      child: MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(body: Builder(builder: body))),
+      child: MaterialApp(
+        theme: buildTheme(Brightness.light),
+        home: Scaffold(body: Builder(builder: body)),
+      ),
     ),
   );
   return api;
@@ -45,7 +52,10 @@ void main() {
   testWidgets('the goal sheet checks the numbers and the safety answer, then saves and logs today', (tester) async {
     final api = await pumpWith(
       tester,
-      (context) => TextButton(onPressed: () => showWeightGoalSheet(context, unit: WeightUnit.kg), child: const Text('Open')),
+      (context) => TextButton(
+        onPressed: () => showWeightGoalSheet(context, unit: WeightUnit.kg),
+        child: const Text('Open'),
+      ),
     );
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
@@ -142,7 +152,10 @@ void main() {
     );
     expect(bread.toItem().processing, FoodProcessing.processed);
     expect(bread.toItem().toJson()['processing'], 'processed');
-    expect(FoodItem.fromJson({...bread.toItem().toJson(), 'processing': 'ultra_processed'}).processing, FoodProcessing.ultraProcessed);
+    expect(
+      FoodItem.fromJson({...bread.toItem().toJson(), 'processing': 'ultra_processed'}).processing,
+      FoodProcessing.ultraProcessed,
+    );
   });
 
   testWidgets('weight progress shares how much is down and since when, never the weight', (tester) async {
@@ -185,7 +198,12 @@ void main() {
     await pumpWith(
       tester,
       (context) => WeightCard(
-        const WeightHistory(entries: [(date: '2026-10-10', kg: 90), (date: '2026-10-18', kg: 90.2)], trendKg: 90.1, targetKg: 85, toGoKg: 5.1),
+        const WeightHistory(
+          entries: [(date: '2026-10-10', kg: 90), (date: '2026-10-18', kg: 90.2)],
+          trendKg: 90.1,
+          targetKg: 85,
+          toGoKg: 5.1,
+        ),
         unit: WeightUnit.kg,
         onLog: () {},
         onGoal: () {},

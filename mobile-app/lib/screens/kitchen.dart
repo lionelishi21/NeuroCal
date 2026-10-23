@@ -59,7 +59,10 @@ class _KitchenScreenState extends State<KitchenScreen> {
   }
 
   Future<FastingStatus?> _load() =>
-      AppScope.of(context).api.fasting().then<FastingStatus?>((f) => f.kind == FastingKind.off ? null : f).catchError((Object _) => null);
+      AppScope.of(context).api
+          .fasting()
+          .then<FastingStatus?>((f) => f.kind == FastingKind.off ? null : f)
+          .catchError((Object _) => null);
 
   void _reload() {
     setState(() {
@@ -161,7 +164,12 @@ class BrowseFoodsCard extends StatelessWidget {
 
   final VoidCallback onTap;
 
-  static const _preview = [('salmon', 'fish'), ('blueberries', 'fruit'), ('walnuts', 'nuts_seeds'), ('eggs', 'eggs_dairy')];
+  static const _preview = [
+    ('salmon', 'fish'),
+    ('blueberries', 'fruit'),
+    ('walnuts', 'nuts_seeds'),
+    ('eggs', 'eggs_dairy'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -190,8 +198,13 @@ class BrowseFoodsCard extends StatelessWidget {
                         Positioned(
                           left: i * 21.0,
                           child: Container(
-                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.paper, width: 2)),
-                            child: ClipOval(child: FoodImage(id: id, category: category, size: 36, radius: 18)),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: c.paper, width: 2),
+                            ),
+                            child: ClipOval(
+                              child: FoodImage(id: id, category: category, size: 36, radius: 18),
+                            ),
                           ),
                         ),
                     ],
@@ -201,7 +214,10 @@ class BrowseFoodsCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Browse foods', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                      Text(
+                        'Browse foods',
+                        style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                      ),
                       Text('For focus, energy, sleep and calm', style: TextStyle(fontSize: TextSize.xs)),
                     ],
                   ),
@@ -220,7 +236,13 @@ enum _Tone { amber, green, violet, blue }
 
 /// A way into a tool from the Kitchen tab: an icon in its colour, a title and what it does.
 class _LinkCard extends StatelessWidget {
-  const _LinkCard({required this.icon, required this.title, required this.detail, required this.tone, required this.onTap});
+  const _LinkCard({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.tone,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String title;
@@ -263,7 +285,10 @@ class _LinkCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
+                      Text(
+                        title,
+                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                      ),
                       Text(detail, style: const TextStyle(fontSize: TextSize.xs)),
                     ],
                   ),
@@ -277,4 +302,3 @@ class _LinkCard extends StatelessWidget {
     );
   }
 }
-

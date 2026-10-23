@@ -114,7 +114,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             duration: Duration(seconds: 30),
             minWaitMs: 1000,
             maxWaitMs: 3000,
-            note: 'One last step: see how sharp you are right now. Your score goes into your starting point. '
+            note:
+                'One last step: see how sharp you are right now. Your score goes into your starting point. '
                 "It's a self-check, not a medical test.",
             skipLabel: 'Skip for now',
             doneLabel: 'See my starting point',
@@ -131,7 +132,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       });
       // Once the score has drawn in: the high point of onboarding, before the paywall.
       Future<void>.delayed(const Duration(milliseconds: 1800), () async {
-        if (mounted && await scope.reviewPrompt?.maybeAsk() == true) scope.analytics.track('review_prompted', {'moment': 'starting_point'});
+        if (mounted && await scope.reviewPrompt?.maybeAsk() == true) {
+          scope.analytics.track('review_prompted', {'moment': 'starting_point'});
+        }
       });
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.status >= 500 ? 'Try again in a moment.' : e.message);
@@ -145,7 +148,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final saved = _saved;
-    if (saved != null && _committed) return FirstMealScreen(picker: widget.picker ?? ImagePicker(), onDone: () => widget.onDone(saved));
+    if (saved != null && _committed) {
+      return FirstMealScreen(picker: widget.picker ?? ImagePicker(), onDone: () => widget.onDone(saved));
+    }
     if (saved != null) {
       return _StartingPoint(
         name: saved.displayName,
@@ -156,7 +161,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           if (saved.id case final id?) {
             final now = DateTime.now();
             SharedPreferences.getInstance()
-                .then((p) => p.setString(challengeKey(id), DateTime(now.year, now.month, now.day).toIso8601String().substring(0, 10)))
+                .then(
+                  (p) => p.setString(
+                    challengeKey(id),
+                    DateTime(now.year, now.month, now.day).toIso8601String().substring(0, 10),
+                  ),
+                )
                 .catchError((Object _) => false);
           }
           setState(() => _committed = true);
@@ -405,7 +415,9 @@ class _QuestionField extends StatelessWidget {
   final ValueChanged<String> onPick;
 
   bool get _multi => question.kind == QuestionKind.multi;
-  bool _isOn(String value) => _multi ? ((answers[question.key] as List<String>?) ?? const <String>[]).contains(value) : answers[question.key] == value;
+  bool _isOn(String value) => _multi
+      ? ((answers[question.key] as List<String>?) ?? const <String>[]).contains(value)
+      : answers[question.key] == value;
 
   /// A food photo for a choice, where one says it at a glance.
   static const _choiceFoods = <String, Map<String, (String, String)>>{
@@ -584,7 +596,11 @@ class _QuestionField extends StatelessWidget {
                   if (question.note != null) ...[
                     const SizedBox(width: Space.s3),
                     Flexible(
-                      child: Text(question.note!, textAlign: TextAlign.end, style: detailStyle.copyWith(fontWeight: FontWeight.w500)),
+                      child: Text(
+                        question.note!,
+                        textAlign: TextAlign.end,
+                        style: detailStyle.copyWith(fontWeight: FontWeight.w500),
+                      ),
                     ),
                   ],
                 ],
@@ -883,13 +899,19 @@ class _StartingPoint extends StatelessWidget {
                         spacing: Space.s1,
                         children: [
                           Icon(Icons.check_circle_rounded, size: 18, color: c.chlorophyll),
-                          Text('Profile saved', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll)),
+                          Text(
+                            'Profile saved',
+                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                          ),
                         ],
                       ),
                       const SizedBox(height: Space.s2),
                       Semantics(
                         header: true,
-                        child: Text('Your starting point, $name', style: text.headlineMedium?.copyWith(letterSpacing: -0.7)),
+                        child: Text(
+                          'Your starting point, $name',
+                          style: text.headlineMedium?.copyWith(letterSpacing: -0.7),
+                        ),
                       ),
                       const SizedBox(height: Space.s4),
                       Center(
@@ -915,7 +937,10 @@ class _StartingPoint extends StatelessWidget {
                         style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
                       ),
                       const SizedBox(height: Space.s4),
-                      Text('Where the points come from', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink)),
+                      Text(
+                        'Where the points come from',
+                        style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink),
+                      ),
                       const SizedBox(height: Space.s2),
                       for (final g in start.gains)
                         Padding(
@@ -927,10 +952,29 @@ class _StartingPoint extends StatelessWidget {
                                 width: 48,
                                 padding: const EdgeInsets.symmetric(vertical: 4),
                                 alignment: Alignment.center,
-                                decoration: BoxDecoration(color: c.chlorophyllSoft, borderRadius: BorderRadius.circular(Radii.pill)),
-                                child: Text('+${g.points}', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.chlorophyll)),
+                                decoration: BoxDecoration(
+                                  color: c.chlorophyllSoft,
+                                  borderRadius: BorderRadius.circular(Radii.pill),
+                                ),
+                                child: Text(
+                                  '+${g.points}',
+                                  style: TextStyle(
+                                    fontSize: TextSize.sm,
+                                    fontWeight: FontWeight.w800,
+                                    color: c.chlorophyll,
+                                  ),
+                                ),
                               ),
-                              Expanded(child: Text(g.change, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, height: 1.3))),
+                              Expanded(
+                                child: Text(
+                                  g.change,
+                                  style: const TextStyle(
+                                    fontSize: TextSize.sm,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1006,11 +1050,19 @@ class _HoldToCommitState extends State<_HoldToCommit> with SingleTickerProviderS
                 fit: StackFit.expand,
                 children: [
                   ColoredBox(color: c.synapseSoft),
-                  FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: _fill.value, child: ColoredBox(color: c.synapse)),
+                  FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: _fill.value,
+                    child: ColoredBox(color: c.synapse),
+                  ),
                   Center(
                     child: Text(
                       _fill.value > 0.5 ? 'Keep holding…' : widget.label,
-                      style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, color: _fill.value > 0.5 ? c.onAccent : c.synapseInk),
+                      style: TextStyle(
+                        fontSize: TextSize.md,
+                        fontWeight: FontWeight.w800,
+                        color: _fill.value > 0.5 ? c.onAccent : c.synapseInk,
+                      ),
                     ),
                   ),
                 ],
@@ -1038,17 +1090,30 @@ class _Projection extends StatelessWidget {
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.all(Space.s4),
-        decoration: BoxDecoration(color: c.paper, borderRadius: BorderRadius.circular(Radii.card), border: Border.all(color: c.rule)),
+        decoration: BoxDecoration(
+          color: c.paper,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: c.rule),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Your 3-week target', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+            Text(
+              'Your 3-week target',
+              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+            ),
             Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(text: '${start.score}', style: TextStyle(color: c.inkSoft)),
+                  TextSpan(
+                    text: '${start.score}',
+                    style: TextStyle(color: c.inkSoft),
+                  ),
                   const TextSpan(text: '  →  '),
-                  TextSpan(text: '${start.target}', style: TextStyle(color: c.chlorophyll)),
+                  TextSpan(
+                    text: '${start.target}',
+                    style: TextStyle(color: c.chlorophyll),
+                  ),
                 ],
               ),
               style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800),
@@ -1062,15 +1127,30 @@ class _Projection extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 builder: (context, t, _) => CustomPaint(
                   size: Size.infinite,
-                  painter: _ProjectionPainter(from: start.score, to: start.target, progress: t, line: c.chlorophyll, grid: c.rule, faint: c.inkFaint),
+                  painter: _ProjectionPainter(
+                    from: start.score,
+                    to: start.target,
+                    progress: t,
+                    line: c.chlorophyll,
+                    grid: c.rule,
+                    faint: c.inkFaint,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: Space.s1),
             Row(
               children: [
-                Expanded(child: Text('Today', style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft))),
-                Text('In 3 weeks', style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+                Expanded(
+                  child: Text(
+                    'Today',
+                    style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                  ),
+                ),
+                Text(
+                  'In 3 weeks',
+                  style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                ),
               ],
             ),
           ],
@@ -1081,7 +1161,14 @@ class _Projection extends StatelessWidget {
 }
 
 class _ProjectionPainter extends CustomPainter {
-  _ProjectionPainter({required this.from, required this.to, required this.progress, required this.line, required this.grid, required this.faint});
+  _ProjectionPainter({
+    required this.from,
+    required this.to,
+    required this.progress,
+    required this.line,
+    required this.grid,
+    required this.faint,
+  });
 
   final int from;
   final int to;
@@ -1123,5 +1210,6 @@ class _ProjectionPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ProjectionPainter old) => old.progress != progress || old.from != from || old.to != to || old.line != line;
+  bool shouldRepaint(_ProjectionPainter old) =>
+      old.progress != progress || old.from != from || old.to != to || old.line != line;
 }

@@ -158,7 +158,8 @@ String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.to
 String _hm(Duration d) => d.inHours > 0 ? '${d.inHours}h ${d.inMinutes % 60}m' : '${d.inMinutes}m';
 
 /// "SR" for "Sam Rivera".
-String initials(String name) => name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
+String initials(String name) =>
+    name.trim().split(RegExp(r'\s+')).take(2).map((w) => w.isEmpty ? '' : w[0].toUpperCase()).join();
 
 /// Today, in four parts that read top to bottom: the Focus Score with its six inputs, the one next
 /// step, food (calories, meals, what to eat next) and the day's habits (Brain speed, exercise, how you
@@ -184,6 +185,7 @@ class TodayScreen extends StatefulWidget {
   /// Runs a flow from the add menu (log a meal, check in, …).
   final void Function(Capture) onCapture;
   final VoidCallback onOpenMe;
+
   /// The fasting timer lives in Kitchen.
   final VoidCallback onOpenKitchen;
   final VoidCallback onOpenPantry;
@@ -224,7 +226,9 @@ class _TodayScreenState extends State<TodayScreen> {
     final scope = AppScope.of(context);
     final reminders = scope.reminders;
     // The API keeps 31 days, so a longer streak shows as 31 until history goes further back.
-    final history = _date == null ? _api.history(31).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null) : Future.value(null);
+    final history = _date == null
+        ? _api.history(31).then<List<HistoryDay>?>((h) => h).catchError((Object _) => null)
+        : Future.value(null);
     final healthspan = _date == null
         ? _api.healthspan().then<HealthspanWeek?>((h) => h).catchError((Object _) => null)
         : Future<HealthspanWeek?>.value(null);
@@ -238,14 +242,19 @@ class _TodayScreenState extends State<TodayScreen> {
     final days = await history;
     final weights = await weightsLoad;
     final lastWeighIn = weights?.entries.lastOrNull?.date;
-    final weighInDue = goal != null && weights != null && (lastWeighIn == null || DateTime.now().difference(DateTime.parse(lastWeighIn)).inDays >= 7);
+    final weighInDue =
+        goal != null &&
+        weights != null &&
+        (lastWeighIn == null || DateTime.now().difference(DateTime.parse(lastWeighIn)).inDays >= 7);
     // The challenge counts from "Hold to commit"; accounts from before that use the weight goal's start.
     ThreeWeeks? plan;
     final starting = startingFromProfile(widget.profile);
     if (_date == null && days != null && starting != null) {
       final id = widget.profile.id;
       final startedOn = (id == null ? null : (await prefsLoad)?.getString(challengeKey(id))) ?? goal?.startedOn;
-      if (startedOn != null) plan = threeWeeks(started: DateTime.parse(startedOn), starting: starting, days: days, today: DateTime.now());
+      if (startedOn != null) {
+        plan = threeWeeks(started: DateTime.parse(startedOn), starting: starting, days: days, today: DateTime.now());
+      }
     }
     final streak = days == null ? null : streakFrom(days, date);
     // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
@@ -253,16 +262,33 @@ class _TodayScreenState extends State<TodayScreen> {
     final homeWidget = scope.homeWidget;
     if (homeWidget != null && _date == null) {
       final status = _statusOf(
-        _Day(date, d.focus, d.bio, d.meals, stack: d.stack, exercise: d.exercise, environment: d.environment, fasting: d.fasting, weighInDue: weighInDue),
+        _Day(
+          date,
+          d.focus,
+          d.bio,
+          d.meals,
+          stack: d.stack,
+          exercise: d.exercise,
+          environment: d.environment,
+          fasting: d.fasting,
+          weighInDue: weighInDue,
+        ),
       );
       final score = d.focus.score;
       homeWidget
-          .show((score: score, word: score == null ? 'No score yet' : scoreWord(score), next: stepTitle(nextStep(status, DateTime.now())), streakDays: streak?.days ?? 0))
+          .show((
+            score: score,
+            word: score == null ? 'No score yet' : scoreWord(score),
+            next: stepTitle(nextStep(status, DateTime.now())),
+            streakDays: streak?.days ?? 0,
+          ))
           .catchError((Object _) {});
     }
     // A first full week is a good moment to ask for a rating.
     if (streak case (days: 7, todayDone: true)) {
-      scope.reviewPrompt?.maybeAsk().then((asked) => asked ? scope.analytics.track('review_prompted', {'moment': 'week_streak'}) : null);
+      scope.reviewPrompt?.maybeAsk().then(
+        (asked) => asked ? scope.analytics.track('review_prompted', {'moment': 'week_streak'}) : null,
+      );
     }
     return _Day(
       date,
@@ -390,14 +416,24 @@ class _TodayScreenState extends State<TodayScreen> {
     if (day.healthspan case final week? when day.isToday)
       _HealthspanRow(
         week,
-        onOpen: () => showAppSheet<void>(context, title: 'This week', builder: (_) => HealthspanCard(changes: widget.changes)),
+        onOpen: () => showAppSheet<void>(
+          context,
+          title: 'This week',
+          builder: (_) => HealthspanCard(changes: widget.changes),
+        ),
       ),
     if (day.isToday) _BrainSpeed(day.brain, onCheck: () => widget.onCapture(Capture.brain)),
     if (day.exercise case final exercise? when exercise.exercises.isNotEmpty || day.isToday)
       _ExerciseCard(exercise, onLog: () => widget.onCapture(Capture.exercise), onRemove: _removeExercise),
-    if (day.isToday) _Feeling(day.bio.flags, reminders: AppScope.of(context).reminders, onCheckIn: () => widget.onCapture(Capture.checkIn)),
+    if (day.isToday)
+      _Feeling(
+        day.bio.flags,
+        reminders: AppScope.of(context).reminders,
+        onCheckIn: () => widget.onCapture(Capture.checkIn),
+      ),
     if (day.isToday && day.stack != null) StackCard(day.stack!, onManage: _manageStack, framed: false),
-    if (day.isToday && day.environment != null) EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
+    if (day.isToday && day.environment != null)
+      EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
   ];
 
   @override
@@ -420,7 +456,9 @@ class _TodayScreenState extends State<TodayScreen> {
               children: [
                 _TopBar(
                   date: today ? longDate(now) : 'Looking back',
-                  title: today ? (first.isEmpty ? greeting(now.hour) : '${greeting(now.hour)}, $first') : longDate(date),
+                  title: today
+                      ? (first.isEmpty ? greeting(now.hour) : '${greeting(now.hour)}, $first')
+                      : longDate(date),
                   initials: initials(widget.profile.displayName),
                   fasting: today ? day?.fasting : null,
                   onOpenMe: widget.onOpenMe,
@@ -437,7 +475,8 @@ class _TodayScreenState extends State<TodayScreen> {
                         : 'Your meals and score are safe. Check your connection and try again.',
                     onRetry: _refresh,
                   )
-                else if (day == null || snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
+                else if (day == null ||
+                    snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
                   const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
                 else ...[
                   _FocusCard(
@@ -447,7 +486,12 @@ class _TodayScreenState extends State<TodayScreen> {
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
                     onLogExercise: () => widget.onCapture(Capture.exercise),
                     onShare: day.isToday && day.focus.score != null
-                        ? () => showShareScore(context, score: day.focus.score!, word: scoreWord(day.focus.score!), streakDays: day.streak?.days ?? 0)
+                        ? () => showShareScore(
+                            context,
+                            score: day.focus.score!,
+                            word: scoreWord(day.focus.score!),
+                            streakDays: day.streak?.days ?? 0,
+                          )
                         : null,
                     onSetUpEnvironment: () async {
                       if (await showPlaceSheet(context) != null && mounted) widget.onChanged();
@@ -473,7 +517,9 @@ class _TodayScreenState extends State<TodayScreen> {
                   ],
                   BlockTitle(
                     day.fastPlanned ? 'Fasting' : 'Food',
-                    note: day.meals.isEmpty ? null : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
+                    note: day.meals.isEmpty
+                        ? null
+                        : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
                   ),
                   if (day.fastPlanned)
                     FastingCard(day.fasting!, onBoundary: _refresh, onEnd: _endFast)
@@ -499,7 +545,11 @@ class _TodayScreenState extends State<TodayScreen> {
                         ? EmptyCard(
                             title: 'No meals yet today',
                             detail: "Snap your first plate and we'll read it against your sleep and stress.",
-                            action: SoftButton(label: '+ Log a meal', semanticLabel: 'Log a meal', onPressed: () => widget.onCapture(Capture.meal)),
+                            action: SoftButton(
+                              label: '+ Log a meal',
+                              semanticLabel: 'Log a meal',
+                              onPressed: () => widget.onCapture(Capture.meal),
+                            ),
                           )
                         : const EmptyCard(title: 'No meals logged', detail: 'Nothing was logged on this day.')
                   else
@@ -507,12 +557,15 @@ class _TodayScreenState extends State<TodayScreen> {
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          for (final (i, meal) in day.meals.indexed) _MealRow(meal, divider: i > 0, onRemove: () => _remove(meal)),
+                          for (final (i, meal) in day.meals.indexed)
+                            _MealRow(meal, divider: i > 0, onRemove: () => _remove(meal)),
                         ],
                       ),
                     ),
                   // Suggestions wait until the last two hours of a planned fast, to break it well.
-                  if (day.isToday && (!day.fastPlanned || day.fasting!.planUntil!.difference(DateTime.now()) <= const Duration(hours: 2))) ...[
+                  if (day.isToday &&
+                      (!day.fastPlanned ||
+                          day.fasting!.planUntil!.difference(DateTime.now()) <= const Duration(hours: 2))) ...[
                     BlockTitle(day.fastPlanned ? 'Break your fast' : 'What to eat next'),
                     if (day.fastPlanned)
                       Padding(
@@ -540,10 +593,7 @@ class _TodayScreenState extends State<TodayScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          for (final (i, row) in rows.indexed) ...[
-                            if (i > 0) Divider(height: 1, color: c.rule),
-                            row,
-                          ],
+                          for (final (i, row) in rows.indexed) ...[if (i > 0) Divider(height: 1, color: c.rule), row],
                         ],
                       ),
                     ),
@@ -593,9 +643,19 @@ class _TopBar extends StatelessWidget {
     final f = fasting;
     final now = DateTime.now();
     final chip = switch (f?.kind) {
-      FastingKind.fasting when f!.since != null => (Icons.timelapse_rounded, 'Fasting ${_hm(now.difference(f.since!))}', c.synapseSoft, c.synapseInk),
+      FastingKind.fasting when f!.since != null => (
+        Icons.timelapse_rounded,
+        'Fasting ${_hm(now.difference(f.since!))}',
+        c.synapseSoft,
+        c.synapseInk,
+      ),
       FastingKind.fasted => (Icons.check_circle_outline_rounded, 'Fast done', c.chlorophyll, c.onAccent),
-      FastingKind.eating when f!.closesAt != null => (Icons.restaurant_rounded, 'Eat until ${_clock(f.closesAt!)}', c.glucoseSoft, c.glucoseInk),
+      FastingKind.eating when f!.closesAt != null => (
+        Icons.restaurant_rounded,
+        'Eat until ${_clock(f.closesAt!)}',
+        c.glucoseSoft,
+        c.glucoseInk,
+      ),
       _ => null,
     };
     return Row(
@@ -609,10 +669,21 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 2,
               children: [
-                Text(date, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft)),
+                Text(
+                  date,
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+                ),
                 Semantics(
                   header: true,
-                  child: Text(title, style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.15)),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: TextSize.xxl,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      height: 1.15,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -638,7 +709,10 @@ class _TopBar extends StatelessWidget {
                     spacing: Space.s1,
                     children: [
                       Icon(icon, size: 16, color: ink),
-                      Text(label, style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink)),
+                      Text(
+                        label,
+                        style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink),
+                      ),
                     ],
                   ),
                 ),
@@ -661,7 +735,10 @@ class _TopBar extends StatelessWidget {
                 width: 36,
                 height: 36,
                 alignment: Alignment.center,
-                child: Text(initials, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk)),
+                child: Text(
+                  initials,
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk),
+                ),
               ),
             ),
           ),
@@ -881,7 +958,11 @@ class _FocusCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 'Weights tuned to your Brain speed',
-                                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
+                                style: TextStyle(
+                                  fontSize: TextSize.xxs,
+                                  fontWeight: FontWeight.w700,
+                                  color: c.synapseInk,
+                                ),
                               ),
                             ),
                           ],
@@ -909,7 +990,11 @@ class _FocusCard extends StatelessWidget {
                       'Evening timing' => (name: 'Log screen time', empty: 'Late food and screens', run: onLogScreens),
                       'Stress' => (name: 'Check in', empty: 'No check-ins yet', run: onCheckIn),
                       'Movement' => (name: 'Log exercise', empty: 'Counts once you log exercise', run: onLogExercise),
-                      'Environment' => (name: 'Set up environment', empty: 'Your town’s air, or the check in your habits', run: onSetUpEnvironment),
+                      'Environment' => (
+                        name: 'Set up environment',
+                        empty: 'Your town’s air, or the check in your habits',
+                        run: onSetUpEnvironment,
+                      ),
                       _ => null,
                     },
                   ),
@@ -936,7 +1021,14 @@ const _inputWhy = {
 /// One of the six inputs as a small ring in its body system's colour: full and green from 0.75,
 /// amber below; a "+" when there's nothing yet and it can be logged.
 class _Input extends StatelessWidget {
-  const _Input({required this.name, required this.short, required this.detail, required this.value, this.waiting, this.action});
+  const _Input({
+    required this.name,
+    required this.short,
+    required this.detail,
+    required this.value,
+    this.waiting,
+    this.action,
+  });
 
   final String name;
 
@@ -977,10 +1069,17 @@ class _Input extends StatelessWidget {
         children: [
           Text(
             _word,
-            style: TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, color: v == null ? c.inkFaint : (good ? c.chlorophyll : c.glucoseInk)),
+            style: TextStyle(
+              fontSize: TextSize.xl,
+              fontWeight: FontWeight.w800,
+              color: v == null ? c.inkFaint : (good ? c.chlorophyll : c.glucoseInk),
+            ),
           ),
           if (v != null) Meter(value: v, color: good ? c.chlorophyllBar : c.glucose, height: 8),
-          Text(v != null ? detail : (waiting ?? act?.empty ?? 'Nothing logged yet'), style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+          Text(
+            v != null ? detail : (waiting ?? act?.empty ?? 'Nothing logged yet'),
+            style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+          ),
           if (_inputWhy[name] case final why?) Text(why, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
           if (act != null)
             SheetAction(
@@ -1028,14 +1127,22 @@ class _Input extends StatelessWidget {
                         color: good ? c.chlorophyllBar : c.glucose,
                       ),
                     ),
-                    Icon(add ? Icons.add_rounded : icon, size: 20, color: v == null ? (add ? c.synapseInk : c.inkFaint) : ink),
+                    Icon(
+                      add ? Icons.add_rounded : icon,
+                      size: 20,
+                      color: v == null ? (add ? c.synapseInk : c.inkFaint) : ink,
+                    ),
                   ],
                 ),
               ),
               Text(
                 short,
                 maxLines: 1,
-                style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: v == null ? c.inkSoft : c.ink),
+                style: TextStyle(
+                  fontSize: TextSize.xxs,
+                  fontWeight: FontWeight.w700,
+                  color: v == null ? c.inkSoft : c.ink,
+                ),
               ),
             ],
           ),
@@ -1084,7 +1191,9 @@ class _Calories extends StatelessWidget {
               ),
               Flexible(
                 child: Text(
-                  bio.caloriesEaten > 0 ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten' : 'Nothing eaten yet',
+                  bio.caloriesEaten > 0
+                      ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten'
+                      : 'Nothing eaten yet',
                   textAlign: TextAlign.end,
                   style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
                 ),
@@ -1233,13 +1342,21 @@ class _Feeling extends StatelessWidget {
                     child: Row(
                       spacing: 4,
                       children: [
-                        Icon(done ? Icons.check_circle_rounded : Icons.schedule_rounded, size: 14, color: done ? c.chlorophyll : c.synapseInk),
+                        Icon(
+                          done ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                          size: 14,
+                          color: done ? c.chlorophyll : c.synapseInk,
+                        ),
                         Flexible(
                           child: Text(
                             done
                                 ? '${window.label} check-in done'
                                 : '${window.label} window open until ${clock(window.on(now, r!.wakeHour).end)}',
-                            style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: done ? c.chlorophyll : c.synapseInk),
+                            style: TextStyle(
+                              fontSize: TextSize.xxs,
+                              fontWeight: FontWeight.w700,
+                              color: done ? c.chlorophyll : c.synapseInk,
+                            ),
                           ),
                         ),
                       ],
@@ -1352,7 +1469,11 @@ class _SuggestionsState extends State<_Suggestions> {
                 TextButton(
                   style: TextButton.styleFrom(
                     minimumSize: const Size(0, 44),
-                    textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                    textStyle: const TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: TextSize.sm,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   onPressed: () => setState(() => _more = !_more),
                   child: Text(_more ? 'Fewer ideas' : 'More ideas'),
@@ -1501,51 +1622,65 @@ class _Processing extends StatelessWidget {
       (bio.ultraProcessedKcal, c.beet, 'Ultra-processed'),
     ];
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: Space.s2,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: Space.s2,
-            children: [
-              const Expanded(
-                child: Text('How processed', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800)),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: Space.s2,
+          children: [
+            const Expanded(
+              child: Text(
+                'How processed',
+                style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
               ),
-              // Both sides may wrap: with large text the label alone can be wider than the card.
-              Flexible(
-                child: Text(
-                  ultra == 0 ? 'No ultra-processed food' : '$ultra% ultra-processed',
-                  textAlign: TextAlign.end,
-                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: ultra >= 25 ? c.beet : c.inkSoft),
-                ),
-              ),
-            ],
-          ),
-          Semantics(
-            label: [for (final (kcal, _, name) in parts) if (kcal > 0) '$name ${(kcal / total * 100).round()}%'].join(', '),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(Radii.pill),
-              child: SizedBox(
-                height: 10,
-                child: Row(
-                  // Empty boxes take no height unless stretched to the bar's.
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final (kcal, color, _) in parts)
-                      if (kcal > 0) Expanded(flex: kcal.round().clamp(1, 1 << 20), child: ColoredBox(color: color)),
-                  ],
+            ),
+            // Both sides may wrap: with large text the label alone can be wider than the card.
+            Flexible(
+              child: Text(
+                ultra == 0 ? 'No ultra-processed food' : '$ultra% ultra-processed',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: TextSize.xs,
+                  fontWeight: FontWeight.w700,
+                  color: ultra >= 25 ? c.beet : c.inkSoft,
                 ),
               ),
             ),
+          ],
+        ),
+        Semantics(
+          label: [
+            for (final (kcal, _, name) in parts)
+              if (kcal > 0) '$name ${(kcal / total * 100).round()}%',
+          ].join(', '),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.pill),
+            child: SizedBox(
+              height: 10,
+              child: Row(
+                // Empty boxes take no height unless stretched to the bar's.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final (kcal, color, _) in parts)
+                    if (kcal > 0)
+                      Expanded(
+                        flex: kcal.round().clamp(1, 1 << 20),
+                        child: ColoredBox(color: color),
+                      ),
+                ],
+              ),
+            ),
           ),
-          Text(
-            ultra >= 25
-                ? 'Ultra-processed food is easy to overeat: in studies people ate about 500 kcal more a day on it without noticing. Swap one item for a whole food.'
-                : 'Mostly whole food today. That keeps you full for fewer calories.',
-            style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
-          ),
-        ],
-      );
+        ),
+        Text(
+          ultra >= 25
+              ? 'Ultra-processed food is easy to overeat: in studies people ate about 500 kcal more a day on it without noticing. Swap one item for a whole food.'
+              : 'Mostly whole food today. That keeps you full for fewer calories.',
+          style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+        ),
+      ],
+    );
   }
 }
 
@@ -1584,7 +1719,10 @@ class _PlanCard extends StatelessWidget {
         children: [
           Semantics(
             header: true,
-            child: Text('Your plan', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk)),
+            child: Text(
+              'Your plan',
+              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk),
+            ),
           ),
           if (plan != null)
             MergeSemantics(
@@ -1596,11 +1734,14 @@ class _PlanCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          plan.day > challengeDays ? '3 weeks done' : '3-week challenge · day ${plan.day} of $challengeDays',
+                          plan.day > challengeDays
+                              ? '3 weeks done'
+                              : '3-week challenge · day ${plan.day} of $challengeDays',
                           style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
                         ),
                       ),
-                      if (plan.now != null && plan.day <= challengeDays) pill(plan.onTrack ? 'On track' : 'Behind', plan.onTrack),
+                      if (plan.now != null && plan.day <= challengeDays)
+                        pill(plan.onTrack ? 'On track' : 'Behind', plan.onTrack),
                     ],
                   ),
                   Text(
@@ -1638,7 +1779,10 @@ class _PlanCard extends StatelessWidget {
                     Icon(Icons.monitor_weight_outlined, size: 22, color: c.ionInk),
                     Expanded(
                       child: w?.trendKg == null
-                          ? Text('Weigh in to see your pace to ${unit.format(goal.targetKg)}.', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700))
+                          ? Text(
+                              'Weigh in to see your pace to ${unit.format(goal.targetKg)}.',
+                              style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                            )
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               spacing: 2,
@@ -1646,7 +1790,8 @@ class _PlanCard extends StatelessWidget {
                                 Text(
                                   [
                                     unit.format(w!.trendKg!),
-                                    if (goal.startKg - w.trendKg! >= 0.05) '${unit.format(goal.startKg - w.trendKg!)} down since ${_since(goal.startedOn)}',
+                                    if (goal.startKg - w.trendKg! >= 0.05)
+                                      '${unit.format(goal.startKg - w.trendKg!)} down since ${_since(goal.startedOn)}',
                                   ].join(' · '),
                                   style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
                                 ),
@@ -1709,7 +1854,10 @@ class _HealthspanRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 2,
                   children: [
-                    const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                    const Text(
+                      'Healthspan',
+                      style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                    ),
                     Text(
                       '${week.done} of ${week.counted} longevity habits this week',
                       style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
@@ -1738,7 +1886,13 @@ class _BrainSpeed extends StatelessWidget {
     final c = context.colors;
     final latest = history?.checks.firstOrNull;
     final now = DateTime.now();
-    final today = latest != null && latest.takenAt.year == now.year && latest.takenAt.month == now.month && latest.takenAt.day == now.day ? latest : null;
+    final today =
+        latest != null &&
+            latest.takenAt.year == now.year &&
+            latest.takenAt.month == now.month &&
+            latest.takenAt.day == now.day
+        ? latest
+        : null;
     final usual = history?.baselineScore;
     final diff = today != null && usual != null ? today.score - usual : null;
     return Padding(
@@ -1765,7 +1919,10 @@ class _BrainSpeed extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 2,
               children: [
-                const Text('Brain speed', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                const Text(
+                  'Brain speed',
+                  style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                ),
                 Text(
                   // Against your own usual, not a second 0-100 number beside the Focus Score.
                   today == null
@@ -1818,10 +1975,20 @@ class _ExerciseCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Exercise', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                    const Text(
+                      'Exercise',
+                      style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                    ),
                     Text(
-                      empty ? 'Even a 20-minute walk lifts focus for the next couple of hours.' : '${day.totalMinutes} min · ${_kcal(day.totalKcal)} kcal burned',
-                      style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: empty ? c.inkSoft : c.chlorophyll, fontWeight: empty ? null : FontWeight.w700),
+                      empty
+                          ? 'Even a 20-minute walk lifts focus for the next couple of hours.'
+                          : '${day.totalMinutes} min · ${_kcal(day.totalKcal)} kcal burned',
+                      style: TextStyle(
+                        fontSize: TextSize.xs,
+                        height: 1.35,
+                        color: empty ? c.inkSoft : c.chlorophyll,
+                        fontWeight: empty ? null : FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -1833,7 +2000,9 @@ class _ExerciseCard extends StatelessWidget {
             Container(
               margin: const EdgeInsets.only(top: Space.s2),
               padding: const EdgeInsets.only(top: Space.s2),
-              decoration: BoxDecoration(border: Border(top: BorderSide(color: c.rule))),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: c.rule)),
+              ),
               child: Row(
                 spacing: 10,
                 children: [
@@ -1844,7 +2013,10 @@ class _ExerciseCard extends StatelessWidget {
                       style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  Text('${e.kcal} kcal', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                  Text(
+                    '${e.kcal} kcal',
+                    style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                  ),
                   Semantics(
                     button: true,
                     label: 'Remove ${e.kind.label.toLowerCase()}',
@@ -1854,7 +2026,10 @@ class _ExerciseCard extends StatelessWidget {
                       onTap: () => onRemove(e),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        child: Text('Remove', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft)),
+                        child: Text(
+                          'Remove',
+                          style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+                        ),
                       ),
                     ),
                   ),
@@ -1962,7 +2137,13 @@ class _UpNextState extends State<_UpNext> {
         'Log sleep',
         () => widget.onCapture(Capture.sleep),
       ),
-      DayStep.checkIn => (Icons.mood_rounded, stepTitle(DayStep.checkIn), 'Tap how you feel right now. It takes ten seconds.', 'Check in', () => widget.onCapture(Capture.checkIn)),
+      DayStep.checkIn => (
+        Icons.mood_rounded,
+        stepTitle(DayStep.checkIn),
+        'Tap how you feel right now. It takes ten seconds.',
+        'Check in',
+        () => widget.onCapture(Capture.checkIn),
+      ),
       DayStep.weigh => (
         Icons.monitor_weight_outlined,
         stepTitle(DayStep.weigh),
@@ -2013,7 +2194,10 @@ class _UpNextState extends State<_UpNext> {
     final secondary = switch (step) {
       DayStep.meal when widget.onPlanFast != null => ('I’m fasting today', widget.onPlanFast!),
       DayStep.move => ('Log other exercise', () => widget.onCapture(Capture.exercise)),
-      DayStep.sleep when access == SleepAccess.notConnected => ('Log it by hand', () => widget.onCapture(Capture.sleep)),
+      DayStep.sleep when access == SleepAccess.notConnected => (
+        'Log it by hand',
+        () => widget.onCapture(Capture.sleep),
+      ),
       _ => null,
     };
 
@@ -2042,7 +2226,11 @@ class _UpNextState extends State<_UpNext> {
                   header: true,
                   child: Text(
                     finished ? 'Your day' : 'Up next',
-                    style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: finished ? c.chlorophyll : c.synapseInk),
+                    style: TextStyle(
+                      fontSize: TextSize.xs,
+                      fontWeight: FontWeight.w800,
+                      color: finished ? c.chlorophyll : c.synapseInk,
+                    ),
                   ),
                 ),
               ),
@@ -2085,7 +2273,11 @@ class _UpNextState extends State<_UpNext> {
                         : streak.todayDone
                         ? '${streak.days}-day streak. Today counts'
                         : '${streak.days}-day streak. Log a meal or your sleep to keep it',
-                    style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: streak.days > 0 ? c.glucoseInk : c.inkSoft),
+                    style: TextStyle(
+                      fontSize: TextSize.xs,
+                      fontWeight: FontWeight.w700,
+                      color: streak.days > 0 ? c.glucoseInk : c.inkSoft,
+                    ),
                   ),
                 ),
               ],
@@ -2097,7 +2289,10 @@ class _UpNextState extends State<_UpNext> {
             duration: still ? Duration.zero : Motion.select,
             transitionBuilder: (child, a) => FadeTransition(
               opacity: a,
-              child: SlideTransition(position: Tween(begin: const Offset(0.15, 0), end: Offset.zero).animate(a), child: child),
+              child: SlideTransition(
+                position: Tween(begin: const Offset(0.15, 0), end: Offset.zero).animate(a),
+                child: child,
+              ),
             ),
             child: Padding(
               key: ValueKey(step),
@@ -2114,7 +2309,10 @@ class _UpNextState extends State<_UpNext> {
                         width: 48,
                         height: 48,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(color: finished ? c.chlorophyllSoft : c.synapseSoft, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: finished ? c.chlorophyllSoft : c.synapseSoft,
+                          shape: BoxShape.circle,
+                        ),
                         child: Icon(icon, size: 26, color: finished ? c.chlorophyll : c.synapseInk),
                       ),
                       Expanded(
@@ -2122,15 +2320,23 @@ class _UpNextState extends State<_UpNext> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           spacing: 2,
                           children: [
-                            Text(title, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.2)),
-                            Text(why, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
+                            Text(
+                              title,
+                              style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.2),
+                            ),
+                            Text(
+                              why,
+                              style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                   FilledButton(
-                    style: finished ? FilledButton.styleFrom(backgroundColor: c.chlorophyllSoft, foregroundColor: c.chlorophyll) : null,
+                    style: finished
+                        ? FilledButton.styleFrom(backgroundColor: c.chlorophyllSoft, foregroundColor: c.chlorophyll)
+                        : null,
                     onPressed: () {
                       AppScope.of(context).analytics.track('up_next_tapped', {'step': step.name});
                       onAction();
@@ -2170,7 +2376,11 @@ class _UpNextState extends State<_UpNext> {
                       Expanded(
                         child: Text(
                           item.title,
-                          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, color: item.done ? c.inkSoft : c.ink),
+                          style: TextStyle(
+                            fontSize: TextSize.sm,
+                            fontWeight: FontWeight.w600,
+                            color: item.done ? c.inkSoft : c.ink,
+                          ),
                         ),
                       ),
                     ],

@@ -3,7 +3,8 @@ import 'package:neurocal/api/models.dart';
 import 'package:neurocal/screens/streak.dart';
 
 void main() {
-  HistoryDay day(String date, {double kcal = 0, int? sleep}) => HistoryDay(date: date, calorieTarget: 2200, caloriesEaten: kcal, proteinG: 0, sleepMinutes: sleep);
+  HistoryDay day(String date, {double kcal = 0, int? sleep}) =>
+      HistoryDay(date: date, calorieTarget: 2200, caloriesEaten: kcal, proteinG: 0, sleepMinutes: sleep);
   final today = DateTime(2026, 10, 17, 9);
 
   test('counts back from today, or from yesterday while today is still open', () {

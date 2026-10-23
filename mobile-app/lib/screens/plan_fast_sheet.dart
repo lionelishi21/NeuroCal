@@ -70,7 +70,9 @@ class _PlanFastState extends State<_PlanFast> {
     if (!until.isAfter(now)) until = until.add(const Duration(days: 1));
     setState(() {
       _until = until;
-      _problem = _fits(until, now) ? null : 'That’s longer than $_limit hours from your last meal. Pick an earlier time.';
+      _problem = _fits(until, now)
+          ? null
+          : 'That’s longer than $_limit hours from your last meal. Pick an earlier time.';
     });
   }
 
@@ -112,7 +114,8 @@ class _PlanFastState extends State<_PlanFast> {
         Text(
           [
             'Today and the timer switch to your fast until it ends. Logging a meal ends it early.',
-            if (widget.status?.lastMealAt case final last? when _from == last) 'It counts from your last meal, at ${fastEnd(last, now)}.',
+            if (widget.status?.lastMealAt case final last? when _from == last)
+              'It counts from your last meal, at ${fastEnd(last, now)}.',
           ].join(' '),
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
@@ -128,7 +131,9 @@ class _PlanFastState extends State<_PlanFast> {
             }),
           ),
         ChoicePill(
-          label: until != null && !choices.any((ch) => ch.until == until) ? 'Until ${fastEnd(until, now)}' : 'Pick a time',
+          label: until != null && !choices.any((ch) => ch.until == until)
+              ? 'Until ${fastEnd(until, now)}'
+              : 'Pick a time',
           radius: Radii.option,
           selected: until != null && !choices.any((ch) => ch.until == until),
           onTap: _pickTime,
@@ -140,11 +145,15 @@ class _PlanFastState extends State<_PlanFast> {
         if (until != null && until.difference(_from) > const Duration(hours: 24))
           const SheetNote(
             lead: 'Over 24 hours.',
-            detail: 'Check with your clinician first, keep drinking water, and stop if you feel dizzy, faint or unwell.',
+            detail:
+                'Check with your clinician first, keep drinking water, and stop if you feel dizzy, faint or unwell.',
             watch: true,
           ),
         if (_problem != null) SheetNote(lead: 'Can’t plan that.', detail: _problem!),
-        SheetAction(label: _busy ? 'Starting…' : 'Start fasting', onPressed: _busy || until == null || !_fits(until, now) ? null : _start),
+        SheetAction(
+          label: _busy ? 'Starting…' : 'Start fasting',
+          onPressed: _busy || until == null || !_fits(until, now) ? null : _start,
+        ),
       ],
     );
   }

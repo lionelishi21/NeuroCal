@@ -15,7 +15,12 @@ void main() {
       sent.add(jsonDecode(request.body) as Map<String, dynamic>);
       return http.Response('{}', 200);
     });
-    final analytics = PostHogAnalytics(await SharedPreferences.getInstance(), apiKey: 'phc_test', host: 'https://eu.i.posthog.com', client: client);
+    final analytics = PostHogAnalytics(
+      await SharedPreferences.getInstance(),
+      apiKey: 'phc_test',
+      host: 'https://eu.i.posthog.com',
+      client: client,
+    );
     analytics.track('app_opened');
     analytics.identify('user-1');
     analytics.track('logged', {'kind': 'meal'});

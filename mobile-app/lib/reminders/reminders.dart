@@ -11,7 +11,13 @@ import '../device_time_zone.dart';
 /// and a last call half an hour before it closes. Checking in silences the rest of that window.
 enum ReminderSlot {
   morning('Morning', 0.5, 3.0, 'Your Focus Score is ready', 'Check in to see it, and your one thing for today.'),
-  afternoon('Afternoon', 6.5, 9.0, 'Afternoon check-in', 'How’s your focus? Ten seconds shows what lunch did to your afternoon.'),
+  afternoon(
+    'Afternoon',
+    6.5,
+    9.0,
+    'Afternoon check-in',
+    'How’s your focus? Ten seconds shows what lunch did to your afternoon.',
+  ),
   evening('Evening', 12.5, 15.0, 'Evening check-in', 'How was today? Then dim the screens for a better night.');
 
   const ReminderSlot(this.label, this.startAfterWake, this.endAfterWake, this.title, this.body);
@@ -73,7 +79,11 @@ List<Nudge> nudgesFor({
       final w = slot.on(day, wakeHour);
       final times = [
         (w.start, slot.title, slot.body),
-        (w.start.add(const Duration(hours: 1)), 'Still time to check in', 'Your ${slot.label.toLowerCase()} window is open until ${clock(w.end)}.'),
+        (
+          w.start.add(const Duration(hours: 1)),
+          'Still time to check in',
+          'Your ${slot.label.toLowerCase()} window is open until ${clock(w.end)}.',
+        ),
         (w.end.subtract(const Duration(minutes: 30)), 'Last call', '${slot.label} check-in closes at ${clock(w.end)}.'),
       ];
       for (final (i, (at, title, body)) in times.indexed) {
@@ -131,7 +141,10 @@ class ReminderSettings extends ChangeNotifier {
     final parts = (_prefs.getString(_doneKey) ?? '').split('|');
     if (parts.length != 2 || parts[0] != _day(now)) return {};
     final names = parts[1].split(',');
-    return {for (final slot in ReminderSlot.values) if (names.contains(slot.name)) slot};
+    return {
+      for (final slot in ReminderSlot.values)
+        if (names.contains(slot.name)) slot,
+    };
   }
 
   /// The window open at [now], whether or not it nudges; null between windows.
@@ -264,7 +277,11 @@ class DeviceReminders implements Reminders {
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         // Asked for when the first window is switched on, not at launch.
-        iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
       ),
       onDidReceiveNotificationResponse: (r) => _tapped(r.payload),
     );

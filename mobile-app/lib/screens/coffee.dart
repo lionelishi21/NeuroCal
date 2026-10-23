@@ -12,7 +12,11 @@ import 'log_meal_sheet.dart';
 /// Bulletproof coffee to make and log, and the caffeine curfew from the wake time. Built from the
 /// coffee answers in onboarding.
 Future<void> openCoffee(BuildContext context, Profile profile, {required VoidCallback onChanged}) =>
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CoffeeScreen(profile: profile, onChanged: onChanged)));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CoffeeScreen(profile: profile, onChanged: onChanged),
+      ),
+    );
 
 /// The wake-time answer in onboarding, as an hour.
 const _wakeHours = {'before_6': 5.5, '6_to_8': 7.0, 'after_8': 8.5};
@@ -23,9 +27,19 @@ const _curfewAfterWake = 8.0;
 
 /// Bulletproof coffee as three items for Log a meal, per mug.
 List<FoodItem> bulletproofItems() => const [
-  FoodItem(name: 'Black coffee', portion: '1 mug (240 ml)', calories: 2, macros: Macros(proteinG: 0.3, carbsG: 0, fatG: 0)),
+  FoodItem(
+    name: 'Black coffee',
+    portion: '1 mug (240 ml)',
+    calories: 2,
+    macros: Macros(proteinG: 0.3, carbsG: 0, fatG: 0),
+  ),
   FoodItem(name: 'MCT oil (C8)', portion: '1 tbsp', calories: 130, macros: Macros(proteinG: 0, carbsG: 0, fatG: 14)),
-  FoodItem(name: 'Grass-fed butter or ghee', portion: '1 tbsp', calories: 102, macros: Macros(proteinG: 0.1, carbsG: 0, fatG: 11.5)),
+  FoodItem(
+    name: 'Grass-fed butter or ghee',
+    portion: '1 tbsp',
+    calories: 102,
+    macros: Macros(proteinG: 0.1, carbsG: 0, fatG: 11.5),
+  ),
 ];
 
 class CoffeeScreen extends StatelessWidget {
@@ -77,9 +91,15 @@ class CoffeeScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 7),
-            child: Container(width: 6, height: 6, decoration: BoxDecoration(color: c.glucoseInk, shape: BoxShape.circle)),
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: c.glucoseInk, shape: BoxShape.circle),
+            ),
           ),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: TextSize.sm, height: 1.4))),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+          ),
         ],
       ),
     );
@@ -91,7 +111,10 @@ class CoffeeScreen extends StatelessWidget {
           if (!drinks)
             Padding(
               padding: const EdgeInsets.only(bottom: Space.s3),
-              child: Text('You said you don’t drink coffee. This is here if you start.', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+              child: Text(
+                'You said you don’t drink coffee. This is here if you start.',
+                style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+              ),
             ),
           AppCard(
             child: Column(
@@ -101,20 +124,31 @@ class CoffeeScreen extends StatelessWidget {
                 Row(
                   spacing: Space.s3,
                   children: [
-                    Icon(tested ? Icons.verified_rounded : Icons.coffee_rounded, color: tested ? c.chlorophyll : c.glucoseInk),
-                    const Expanded(child: Text('Mould-tested coffee', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800))),
+                    Icon(
+                      tested ? Icons.verified_rounded : Icons.coffee_rounded,
+                      color: tested ? c.chlorophyll : c.glucoseInk,
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Mould-tested coffee',
+                        style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                      ),
+                    ),
                   ],
                 ),
                 Text(
-                  tested
-                      ? 'You said you drink coffee tested for mould toxins. Scan a new bag to check its label.'
-                      : 'Coffee can carry mould toxins (mycotoxins) from how the beans were dried and stored. Scan your bag to see whether it says it’s tested.',
+                  tested ? 'You said you drink coffee tested for mould toxins. Scan a new bag to check its label.' : 'Coffee can carry mould toxins (mycotoxins) from how the beans were dried and stored. Scan your bag to see whether it says it’s tested.',
                   style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
                 ),
                 if (sensitive)
                   Text(
                     'You said you’re sensitive to mould, so a tested coffee matters more for you.',
-                    style: TextStyle(fontSize: TextSize.sm, height: 1.4, fontWeight: FontWeight.w700, color: c.glucoseInk),
+                    style: TextStyle(
+                      fontSize: TextSize.sm,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                      color: c.glucoseInk,
+                    ),
                   ),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -160,7 +194,10 @@ class CoffeeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 2,
                     children: [
-                      Text('Last cup by $curfew', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                      Text(
+                        'Last cup by $curfew',
+                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                      ),
                       Text(
                         'Eight hours after you wake. Half the caffeine is still in you five or six hours later, and it costs deep sleep.',
                         style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),

@@ -67,14 +67,80 @@ class FakeLabelCamera implements LabelCamera {
 
 /// A real image, so the thumbnails decode.
 final onePixelPng = Uint8List.fromList(const [
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-  0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+  0x89,
+  0x50,
+  0x4e,
+  0x47,
+  0x0d,
+  0x0a,
+  0x1a,
+  0x0a,
+  0x00,
+  0x00,
+  0x00,
+  0x0d,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1f,
+  0x15,
+  0xc4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0d,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9c,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0d,
+  0x0a,
+  0x2d,
+  0xb4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4e,
+  0x44,
+  0xae,
+  0x42,
+  0x60,
+  0x82,
 ]);
 
 const front = 'Supplement Facts Serving Size 2 capsules Amount per serving Magnesium glycinate 200 mg Zinc 15 mg';
-const back = 'Other ingredients rice flour vegetable cellulose capsule Distributed by Calm Labs lot MG2405 expires 2027';
-const side = 'Directions take two capsules daily with food Warning keep out of reach of children consult physician pregnant';
+const back =
+    'Other ingredients rice flour vegetable cellulose capsule Distributed by Calm Labs lot MG2405 expires 2027';
+const side =
+    'Directions take two capsules daily with food Warning keep out of reach of children consult physician pregnant';
 
 Future<void> pumpSheet(WidgetTester tester, String photoName, {LabelCamera? camera}) async {
   await pumpSheetWithApi(tester, photoName, camera: camera);
@@ -100,7 +166,11 @@ Future<MockNeuroCalApi> pumpSheetWithApi(WidgetTester tester, String photoName, 
         home: Scaffold(
           body: Builder(
             builder: (context) => TextButton(
-              onPressed: () => showSupplementSheet(context, picker: FakePicker(photoName), camera: () => camera ?? FakeLabelCamera([front])),
+              onPressed: () => showSupplementSheet(
+                context,
+                picker: FakePicker(photoName),
+                camera: () => camera ?? FakeLabelCamera([front]),
+              ),
               child: const Text('Open'),
             ),
           ),
@@ -184,7 +254,9 @@ void main() {
     expect(find.text('Scan again'), findsOneWidget);
   });
 
-  testWidgets('a scanned label goes into the stack with servings, timing and the bottle size from the label', (tester) async {
+  testWidgets('a scanned label goes into the stack with servings, timing and the bottle size from the label', (
+    tester,
+  ) async {
     final api = await pumpSheetWithApi(tester, 'label.jpg');
     await tester.tap(find.text('Choose a photo'));
     await tester.pumpAndSettle();

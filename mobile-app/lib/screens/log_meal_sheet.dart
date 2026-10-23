@@ -24,7 +24,12 @@ Future<bool?> showLogMealSheet(
 }) => showAppSheet<bool>(
   context,
   title: 'Log a meal',
-  builder: (_) => _LogMeal(picker: picker ?? ImagePicker(), onScanSupplement: onScanSupplement, onScanFood: onScanFood, initialItems: initialItems),
+  builder: (_) => _LogMeal(
+    picker: picker ?? ImagePicker(),
+    onScanSupplement: onScanSupplement,
+    onScanFood: onScanFood,
+    initialItems: initialItems,
+  ),
 );
 
 MealKind kindFor(DateTime t) => switch (t.hour) {
@@ -171,9 +176,8 @@ class _LogMealState extends State<_LogMeal> {
       _saveFailed = false;
     });
     try {
-      await AppScope.of(
-        context,
-      ).api.createMeal(NewMeal(kind: _kind, eatenAt: DateTime.now(), items: chosen, clientKey: _clientKey));
+      await AppScope.of(context).api
+          .createMeal(NewMeal(kind: _kind, eatenAt: DateTime.now(), items: chosen, clientKey: _clientKey));
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
@@ -826,7 +830,11 @@ class _ManualFormState extends State<_ManualForm> {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                      textStyle: const TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: TextSize.sm,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onPressed: _add,
                     child: const Text('Add item'),
@@ -836,7 +844,11 @@ class _ManualFormState extends State<_ManualForm> {
                   style: TextButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     foregroundColor: c.inkSoft,
-                    textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                    textStyle: const TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: TextSize.sm,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   onPressed: widget.onCancel,
                   child: const Text('Cancel'),

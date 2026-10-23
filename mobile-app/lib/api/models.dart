@@ -20,7 +20,10 @@ enum FoodProcessing {
   final String wire;
   final String label;
 
-  static FoodProcessing? fromWire(Object? wire) => [for (final p in values) if (p.wire == wire) p].firstOrNull;
+  static FoodProcessing? fromWire(Object? wire) => [
+    for (final p in values)
+      if (p.wire == wire) p,
+  ].firstOrNull;
 }
 
 /// The check-in flags, in the order the sheet shows them, with the labels the web app uses.
@@ -192,7 +195,14 @@ class FocusComponents {
 }
 
 class FocusScore {
-  const FocusScore({required this.date, required this.score, required this.components, required this.explanation, this.tuned = false, this.glycemicFromSensor = false});
+  const FocusScore({
+    required this.date,
+    required this.score,
+    required this.components,
+    required this.explanation,
+    this.tuned = false,
+    this.glycemicFromSensor = false,
+  });
 
   final String date;
 
@@ -213,7 +223,7 @@ class FocusScore {
     components: FocusComponents.fromJson(j['components'] as Map<String, dynamic>),
     explanation: j['explanation'] as String,
     tuned: j['tuned'] == true,
-  
+
     glycemicFromSensor: j['glycemicFromSensor'] == true,
   );
 }
@@ -384,7 +394,9 @@ class Help {
           title: p['title'] as String,
           summary: p['summary'] as String,
           steps: [for (final step in p['steps'] as List) step as String],
-          source: p['source'] == null ? null : (title: p['source']['title'] as String, url: p['source']['url'] as String),
+          source: p['source'] == null
+              ? null
+              : (title: p['source']['title'] as String, url: p['source']['url'] as String),
         ),
     ],
     products: [for (final p in j['products'] as List) productFromJson(p as Map<String, dynamic>)],
@@ -516,7 +528,9 @@ class FoodScan {
   final ({bool moldTested, String detail})? coffee;
 
   String get name {
-    if (brand != null && productName != null && productName!.toLowerCase().contains(brand!.toLowerCase())) return productName!;
+    if (brand != null && productName != null && productName!.toLowerCase().contains(brand!.toLowerCase())) {
+      return productName!;
+    }
     final joined = [brand, productName].whereType<String>().join(' ');
     return joined.isEmpty ? 'Packaged food' : joined;
   }
@@ -547,7 +561,9 @@ class FoodScan {
       markers: [for (final m in p['markers'] as List) m as String],
       flags: [for (final f in j['flags'] as List) (kind: f['kind'] as String, message: f['message'] as String)],
       item: j['item'] == null ? null : FoodItem.fromJson(j['item'] as Map<String, dynamic>),
-      coffee: j['coffee'] == null ? null : (moldTested: j['coffee']['moldTested'] as bool, detail: j['coffee']['detail'] as String),
+      coffee: j['coffee'] == null
+          ? null
+          : (moldTested: j['coffee']['moldTested'] as bool, detail: j['coffee']['detail'] as String),
     );
   }
 }
@@ -574,8 +590,12 @@ Map<String, dynamic> ingredientJson(SupplementIngredient i) => {
   'inBlend': i.inBlend,
 };
 
-SupplementIngredient ingredientFromJson(Map<String, dynamic> i) =>
-    (name: i['name'] as String, amount: (i['amount'] as num?)?.toDouble(), unit: i['unit'] as String?, inBlend: i['inBlend'] as bool);
+SupplementIngredient ingredientFromJson(Map<String, dynamic> i) => (
+  name: i['name'] as String,
+  amount: (i['amount'] as num?)?.toDouble(),
+  unit: i['unit'] as String?,
+  inBlend: i['inBlend'] as bool,
+);
 
 /// A supplement someone takes (`StackItem` in the contracts).
 class StackItem {
@@ -647,7 +667,11 @@ class SupplementStack {
     items: [for (final i in j['items'] as List) StackItem.fromJson(i as Map<String, dynamic>)],
     flags: [
       for (final f in j['flags'] as List)
-        (kind: f['kind'] as String, message: f['message'] as String, itemIds: [for (final id in f['itemIds'] as List) id as String]),
+        (
+          kind: f['kind'] as String,
+          message: f['message'] as String,
+          itemIds: [for (final id in f['itemIds'] as List) id as String],
+        ),
     ],
   );
 }
@@ -1104,12 +1128,16 @@ class TodayData {
   final EnvironmentDay? environment;
 
   factory TodayData.fromJson(Map<String, dynamic> j) {
-    T? maybe<T>(String key, T Function(Map<String, dynamic>) parse) => j[key] == null ? null : parse(j[key] as Map<String, dynamic>);
+    T? maybe<T>(String key, T Function(Map<String, dynamic>) parse) =>
+        j[key] == null ? null : parse(j[key] as Map<String, dynamic>);
     return TodayData(
       focus: FocusScore.fromJson(j['focus'] as Map<String, dynamic>),
       bio: BioState.fromJson(j['bio'] as Map<String, dynamic>),
       meals: [for (final m in j['meals'] as List) Meal.fromJson(m as Map<String, dynamic>)],
-      recipes: maybe('recipes', (r) => [for (final x in r['recipes'] as List) Recipe.fromJson(x as Map<String, dynamic>)]),
+      recipes: maybe(
+        'recipes',
+        (r) => [for (final x in r['recipes'] as List) Recipe.fromJson(x as Map<String, dynamic>)],
+      ),
       fasting: maybe('fasting', FastingStatus.fromJson),
       stack: maybe('stack', SupplementStack.fromJson),
       brain: maybe('brain', BrainCheckHistory.fromJson),
@@ -1152,7 +1180,14 @@ enum ExerciseIntensity {
 }
 
 class Exercise {
-  const Exercise({required this.id, required this.kind, required this.intensity, required this.minutes, required this.startedAt, required this.kcal});
+  const Exercise({
+    required this.id,
+    required this.kind,
+    required this.intensity,
+    required this.minutes,
+    required this.startedAt,
+    required this.kcal,
+  });
 
   final String id;
   final ExerciseKind kind;
@@ -1175,7 +1210,12 @@ class Exercise {
 
 /// A day's exercise with its totals (`ExerciseDay` in the contracts).
 class ExerciseDay {
-  const ExerciseDay({this.exercises = const [], this.totalMinutes = 0, this.totalKcal = 0, this.estimatedWeight = false});
+  const ExerciseDay({
+    this.exercises = const [],
+    this.totalMinutes = 0,
+    this.totalKcal = 0,
+    this.estimatedWeight = false,
+  });
 
   /// Earliest first.
   final List<Exercise> exercises;
@@ -1226,7 +1266,10 @@ class PantryRecipe {
   final List<String> steps;
   final String whyItFits;
 
-  List<String> get missing => [for (final i in ingredients) if (!i.inPantry) i.name];
+  List<String> get missing => [
+    for (final i in ingredients)
+      if (!i.inPantry) i.name,
+  ];
 
   /// One serving, ready for Log a meal.
   FoodItem toItem() => FoodItem(name: title, portion: '1 serving', calories: calories.toDouble(), macros: macros);
@@ -1283,7 +1326,12 @@ class Level {
     name: j['name'] as String,
     requirements: [
       for (final r in j['requirements'] as List)
-        (level: (r['level'] as num).toInt(), title: r['title'] as String, met: r['met'] as bool, progress: r['progress'] as String),
+        (
+          level: (r['level'] as num).toInt(),
+          title: r['title'] as String,
+          met: r['met'] as bool,
+          progress: r['progress'] as String,
+        ),
     ],
   );
 }
@@ -1315,7 +1363,10 @@ class ShoppingReview {
     ],
     devices: [
       for (final d in j['devices'] as List)
-        (product: productFromJson(d['product'] as Map<String, dynamic>), because: [for (final b in d['because'] as List) b as String]),
+        (
+          product: productFromJson(d['product'] as Map<String, dynamic>),
+          because: [for (final b in d['because'] as List) b as String],
+        ),
     ],
   );
 }
@@ -1361,7 +1412,9 @@ class RecipeAnalysis {
     title: j['title'] as String? ?? '',
     servings: (j['servings'] as num?)?.toInt() ?? 1,
     calories: (j['calories'] as num?)?.toInt() ?? 0,
-    macros: j['macros'] == null ? const Macros(proteinG: 0, carbsG: 0, fatG: 0) : Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    macros: j['macros'] == null
+        ? const Macros(proteinG: 0, carbsG: 0, fatG: 0)
+        : Macros.fromJson(j['macros'] as Map<String, dynamic>),
     processing: FoodProcessing.fromWire(j['processing']) ?? FoodProcessing.whole,
     catalogShare: (j['catalogShare'] as num?)?.toDouble() ?? 0,
     ingredients: [
@@ -1450,7 +1503,13 @@ class PlanMeal {
   final List<({String name, String quantity, double grams, bool inPantry, bool fromCatalog})> ingredients;
   final List<String> steps;
 
-  FoodItem toItem() => FoodItem(name: title, portion: '1 serving', calories: calories.toDouble(), macros: macros, processing: processing);
+  FoodItem toItem() => FoodItem(
+    name: title,
+    portion: '1 serving',
+    calories: calories.toDouble(),
+    macros: macros,
+    processing: processing,
+  );
 
   factory PlanMeal.fromJson(Map<String, dynamic> j) => PlanMeal(
     kind: MealKind.values.firstWhere((k) => k.name == j['kind'], orElse: () => MealKind.lunch),
@@ -1474,7 +1533,13 @@ class PlanMeal {
 
 /// A few days of meals with day totals, targets and a shopping list (`MealPlanResponse` in the contracts).
 class MealPlan {
-  const MealPlan({required this.createdAt, required this.days, required this.targetCalories, required this.targetProteinG, required this.shoppingList});
+  const MealPlan({
+    required this.createdAt,
+    required this.days,
+    required this.targetCalories,
+    required this.targetProteinG,
+    required this.shoppingList,
+  });
 
   final DateTime createdAt;
   final List<({int day, List<PlanMeal> meals, int calories, Macros macros})> days;
@@ -1496,11 +1561,11 @@ class MealPlan {
     targetCalories: (j['targets']['calories'] as num).toInt(),
     targetProteinG: (j['targets']['macros']['proteinG'] as num).toDouble(),
     shoppingList: [
-      for (final s in j['shoppingList'] as List) (name: s['name'] as String, grams: (s['grams'] as num).toInt(), meals: (s['meals'] as num).toInt()),
+      for (final s in j['shoppingList'] as List)
+        (name: s['name'] as String, grams: (s['grams'] as num).toInt(), meals: (s['meals'] as num).toInt()),
     ],
   );
 }
-
 
 /// One weekly longevity habit (`HealthspanHabit` in the contracts).
 class HealthspanHabit {
@@ -1565,7 +1630,13 @@ class HealthspanWeek {
 
 /// One health marker reading (`MarkerReading` in the contracts).
 class MarkerReading {
-  const MarkerReading({required this.id, required this.marker, required this.value, required this.measuredAt, required this.source});
+  const MarkerReading({
+    required this.id,
+    required this.marker,
+    required this.value,
+    required this.measuredAt,
+    required this.source,
+  });
 
   final String id;
   final String marker;

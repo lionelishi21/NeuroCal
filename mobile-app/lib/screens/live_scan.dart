@@ -18,11 +18,19 @@ typedef LiveScanResult = ({String? barcode, List<Uint8List> photos});
 /// scan at once. Null if they closed it.
 Future<LiveScanResult?> showLiveScan(BuildContext context, LabelCamera camera, {bool findBarcode = false}) =>
     Navigator.of(context).push<LiveScanResult>(
-      MaterialPageRoute(fullscreenDialog: true, builder: (_) => LiveScanPage(camera: camera, findBarcode: findBarcode)),
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => LiveScanPage(camera: camera, findBarcode: findBarcode),
+      ),
     );
 
 class LiveScanPage extends StatefulWidget {
-  const LiveScanPage({super.key, required this.camera, this.findBarcode = false, this.interval = const Duration(milliseconds: 700)});
+  const LiveScanPage({
+    super.key,
+    required this.camera,
+    this.findBarcode = false,
+    this.interval = const Duration(milliseconds: 700),
+  });
 
   final LabelCamera camera;
 
@@ -108,7 +116,9 @@ class _LiveScanPageState extends State<LiveScanPage> {
             _status = 'Turn the bottle slowly to show the rest of the label.';
           case FrameVerdict.keep:
             _photos.add(frame.bytes);
-            _status = _session.full ? "That's the whole label." : 'Side ${_photos.length} captured. Keep turning the bottle.';
+            _status = _session.full
+                ? "That's the whole label."
+                : 'Side ${_photos.length} captured. Keep turning the bottle.';
         }
       });
       if (verdict == FrameVerdict.keep) {
@@ -143,7 +153,12 @@ class _LiveScanPageState extends State<LiveScanPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          if (_stage == _Stage.scanning) FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: 1080, height: 1920, child: widget.camera.preview())),
+          if (_stage == _Stage.scanning)
+            FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(width: 1080, height: 1920, child: widget.camera.preview()),
+            ),
           if (_stage == _Stage.scanning)
             IgnorePointer(
               child: Center(
@@ -209,7 +224,10 @@ class _LiveScanPageState extends State<LiveScanPage> {
                       children: [
                         Semantics(
                           liveRegion: true,
-                          child: Text(_status, style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700, height: 1.35)),
+                          child: Text(
+                            _status,
+                            style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700, height: 1.35),
+                          ),
                         ),
                         Row(
                           spacing: Space.s2,
@@ -217,7 +235,9 @@ class _LiveScanPageState extends State<LiveScanPage> {
                             for (var i = 0; i < _session.maxFrames; i++)
                               Expanded(
                                 child: Semantics(
-                                  label: i < _photos.length ? 'Side ${i + 1} captured' : 'Side ${i + 1} not yet captured',
+                                  label: i < _photos.length
+                                      ? 'Side ${i + 1} captured'
+                                      : 'Side ${i + 1} not yet captured',
                                   child: AspectRatio(
                                     aspectRatio: 3 / 4,
                                     child: ClipRRect(
@@ -225,9 +245,15 @@ class _LiveScanPageState extends State<LiveScanPage> {
                                       child: i < _photos.length
                                           ? Image.memory(_photos[i], fit: BoxFit.cover, gaplessPlayback: true)
                                           : DecoratedBox(
-                                              decoration: BoxDecoration(color: c.mist, border: Border.all(color: c.rule)),
+                                              decoration: BoxDecoration(
+                                                color: c.mist,
+                                                border: Border.all(color: c.rule),
+                                              ),
                                               child: Center(
-                                                child: Text('${i + 1}', style: TextStyle(color: c.inkFaint, fontWeight: FontWeight.w700)),
+                                                child: Text(
+                                                  '${i + 1}',
+                                                  style: TextStyle(color: c.inkFaint, fontWeight: FontWeight.w700),
+                                                ),
                                               ),
                                             ),
                                     ),
@@ -285,7 +311,10 @@ class _Panel extends StatelessWidget {
     children: [
       Semantics(
         liveRegion: true,
-        child: Text(status, style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700, height: 1.35)),
+        child: Text(
+          status,
+          style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w700, height: 1.35),
+        ),
       ),
       ?action,
     ],

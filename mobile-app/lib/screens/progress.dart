@@ -100,7 +100,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-typedef _BodyData = ({WeightHistory? weights, WeightUnit unit, LabUnits labUnits, BrainCheckHistory? brain, List<MarkerSummary>? markers, List<GlucoseDay> glucose, bool diabetic});
+typedef _BodyData = ({
+  WeightHistory? weights,
+  WeightUnit unit,
+  LabUnits labUnits,
+  BrainCheckHistory? brain,
+  List<MarkerSummary>? markers,
+  List<GlucoseDay> glucose,
+  bool diabetic,
+});
 
 /// Weight trend and Brain speed over the past month.
 class _Body extends StatefulWidget {
@@ -206,7 +214,12 @@ class _BodyState extends State<_Body> {
   Future<void> _goal(_BodyData data) async {
     final profile = await AppScope.of(context).api.me().catchError((Object _) => null);
     if (!mounted) return;
-    final saved = await showWeightGoalSheet(context, unit: data.unit, current: profile?.weightGoal, lastKg: data.weights?.entries.lastOrNull?.kg);
+    final saved = await showWeightGoalSheet(
+      context,
+      unit: data.unit,
+      current: profile?.weightGoal,
+      lastKg: data.weights?.entries.lastOrNull?.kg,
+    );
     if (saved == true && mounted) {
       showToast(context, 'Weight goal saved');
       _reload();
@@ -232,7 +245,11 @@ class _BodyState extends State<_Body> {
               onGoal: () => _goal(snapshot.data!),
             )
           else
-            ScreenFailed(title: "Couldn't load your weight", detail: 'Check your connection and try again.', onRetry: _reload),
+            ScreenFailed(
+              title: "Couldn't load your weight",
+              detail: 'Check your connection and try again.',
+              onRetry: _reload,
+            ),
           if (AppScope.of(context).photos case final photos?) ...[
             const BlockTitle('Progress photos', note: 'Only on this phone'),
             ProgressPhotosSection(store: photos, weightOn: (day) => _weightOn(snapshot.data!, day)),
@@ -251,7 +268,9 @@ class _BodyState extends State<_Body> {
               await u.save();
               _reload();
             },
-            onAdd: _addMarker, onImport: _canImport ? _importHealth : null),
+            onAdd: _addMarker,
+            onImport: _canImport ? _importHealth : null,
+          ),
         ],
       ],
     ),

@@ -105,7 +105,11 @@ final _unlocked = MockBilling(active: true);
 
 /// In the person's browser, not inside the app: product pages are other companies' sites.
 Future<void> _shareOutside(Uint8List png, String text) => SharePlus.instance.share(
-  ShareParams(files: [XFile.fromData(png, mimeType: 'image/png')], fileNameOverrides: ['neurocal-focus-score.png'], text: text),
+  ShareParams(
+    files: [XFile.fromData(png, mimeType: 'image/png')],
+    fileNameOverrides: ['neurocal-focus-score.png'],
+    text: text,
+  ),
 );
 
 Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
@@ -187,7 +191,11 @@ class NeuroCalApp extends StatelessWidget {
           home: ListenableBuilder(
             listenable: auth,
             builder: (context, _) {
-              if (!auth.signedIn) WidgetsBinding.instance.addPostFrameCallback((_) => _navigator.currentState?.popUntil((r) => r.isFirst));
+              if (!auth.signedIn) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _navigator.currentState?.popUntil((r) => r.isFirst),
+                );
+              }
               return auth.signedIn ? _SignedIn(key: ValueKey(auth.email)) : const AccountScreen();
             },
           ),

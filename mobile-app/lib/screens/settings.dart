@@ -287,7 +287,10 @@ class SettingsScreen extends StatelessWidget {
               child: TextButton(
                 style: TextButton.styleFrom(foregroundColor: c.beet, minimumSize: const Size(0, 44)),
                 onPressed: () => _confirmDeleteAccount(context),
-                child: const Text('Delete account', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                child: const Text(
+                  'Delete account',
+                  style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ),
@@ -306,7 +309,11 @@ class SettingsScreen extends StatelessWidget {
 }
 
 Future<void> _confirmDeleteAccount(BuildContext context) async {
-  final deleted = await showAppSheet<bool>(context, title: 'Delete your account?', builder: (_) => const _DeleteAccount());
+  final deleted = await showAppSheet<bool>(
+    context,
+    title: 'Delete your account?',
+    builder: (_) => const _DeleteAccount(),
+  );
   if (deleted == true && context.mounted) {
     final auth = AppScope.of(context).auth;
     // Before signing out: Settings is gone once the sign-in screen replaces it.
@@ -357,8 +364,13 @@ class _DeleteAccountState extends State<_DeleteAccount> {
           "It doesn't cancel a subscription: cancel that in your App Store or Google Play subscriptions first.",
           style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
         ),
-        if (_failed) const SheetNote(lead: "Couldn't delete your account.", detail: 'Check your connection and try again.'),
-        SheetAction(label: _busy ? 'Deleting…' : 'Delete account', destructive: true, onPressed: _busy ? null : _delete),
+        if (_failed)
+          const SheetNote(lead: "Couldn't delete your account.", detail: 'Check your connection and try again.'),
+        SheetAction(
+          label: _busy ? 'Deleting…' : 'Delete account',
+          destructive: true,
+          onPressed: _busy ? null : _delete,
+        ),
       ],
     );
   }
@@ -380,7 +392,9 @@ class _SubscriptionState extends State<_Subscription> {
     final billing = AppScope.of(context).billing;
     try {
       final found = await billing.restore();
-      if (mounted) showToast(context, found ? 'Subscription restored' : 'No subscription found for this account.', ToastTone.info);
+      if (mounted) {
+        showToast(context, found ? 'Subscription restored' : 'No subscription found for this account.', ToastTone.info);
+      }
     } catch (_) {
       if (mounted) showToast(context, "Couldn't reach the store. Try again.", ToastTone.problem);
     }
@@ -425,7 +439,11 @@ class _Reminders extends StatelessWidget {
     final done = await settings.set(slot, on);
     if (!context.mounted) return;
     if (!done) {
-      showToast(context, 'Notifications are off for NeuroCal. Turn them on in your phone’s settings.', ToastTone.problem);
+      showToast(
+        context,
+        'Notifications are off for NeuroCal. Turn them on in your phone’s settings.',
+        ToastTone.problem,
+      );
     } else if (on) {
       showToast(context, '${slot.label} window set: ${slot.range(settings.wakeHour)} every day');
     }
@@ -446,15 +464,23 @@ class _Reminders extends StatelessWidget {
                 MergeSemantics(
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s3, Space.s2),
-                    decoration: BoxDecoration(border: i == 0 ? null : Border(top: BorderSide(color: c.rule))),
+                    decoration: BoxDecoration(
+                      border: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                    ),
                     child: Row(
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${slot.label} · ${slot.range(settings.wakeHour)}', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                              Text('Nudges until you check in', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                              Text(
+                                '${slot.label} · ${slot.range(settings.wakeHour)}',
+                                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                              ),
+                              Text(
+                                'Nudges until you check in',
+                                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                              ),
                             ],
                           ),
                         ),
@@ -487,7 +513,11 @@ class _HealthState extends State<_Health> {
   late var _conditions = widget.conditions;
 
   Future<void> _change() async {
-    final saved = await showAppSheet<List<String>>(context, title: 'Your health', builder: (_) => _HealthSheet(_conditions));
+    final saved = await showAppSheet<List<String>>(
+      context,
+      title: 'Your health',
+      builder: (_) => _HealthSheet(_conditions),
+    );
     if (saved == null || !mounted) return;
     setState(() => _conditions = saved);
     widget.onChanged?.call();
@@ -546,7 +576,10 @@ class _HealthSheetState extends State<_HealthSheet> {
       _failed = false;
     });
     // In the choices' order, so the list reads the same everywhere.
-    final picked = [for (final (value, _, _) in conditionChoices) if (_picked.contains(value)) value];
+    final picked = [
+      for (final (value, _, _) in conditionChoices)
+        if (_picked.contains(value)) value,
+    ];
     try {
       await AppScope.of(context).api.saveProfile({'healthConditions': picked});
       if (mounted) Navigator.of(context).pop(picked);

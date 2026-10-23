@@ -98,7 +98,13 @@ abstract interface class NeuroCalApi {
   });
 
   /// [servingsPerContainer] 0 clears it; [newBottle] restarts the running-low count today.
-  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false});
+  Future<StackItem> updateStackItem(
+    String id, {
+    int? servingsPerDay,
+    StackTiming? timing,
+    int? servingsPerContainer,
+    bool newBottle = false,
+  });
   Future<void> removeFromStack(String id);
   Future<void> setTaken(String id, bool taken);
 
@@ -208,7 +214,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
       } on FormatException {
         body = null;
       }
-      if (body case {'message': final String message, 'code': final String code}) throw ApiException(res.statusCode, message, code: code);
+      if (body case {'message': final String message, 'code': final String code}) {
+        throw ApiException(res.statusCode, message, code: code);
+      }
       throw ApiException(res.statusCode, res.reasonPhrase ?? 'Request failed');
     }
     return res.body.isEmpty ? null : jsonDecode(res.body);
@@ -269,7 +277,11 @@ class HttpNeuroCalApi implements NeuroCalApi {
         ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: 'list.jpg'));
       res = await http.Response.fromStream(await _client.send(req));
     } else {
-      res = await _client.post(_uri('/shopping/review'), headers: await _headers(json: true), body: jsonEncode({'text': text}));
+      res = await _client.post(
+        _uri('/shopping/review'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'text': text}),
+      );
     }
     return ShoppingReview.fromJson(_decode(res) as Map<String, dynamic>);
   }
@@ -283,7 +295,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<MealPlan> createMealPlan(int days) async => MealPlan.fromJson(
-    _decode(await _client.post(_uri('/meal-plan'), headers: await _headers(json: true), body: jsonEncode({'days': days}))) as Map<String, dynamic>,
+    _decode(
+      await _client.post(_uri('/meal-plan'), headers: await _headers(json: true), body: jsonEncode({'days': days})),
+    ) as Map<String, dynamic>,
   );
 
   @override
@@ -297,24 +311,31 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<EnvironmentDay> environment() async => EnvironmentDay.fromJson(await _get('/environment') as Map<String, dynamic>);
+  Future<EnvironmentDay> environment() async =>
+      EnvironmentDay.fromJson(await _get('/environment') as Map<String, dynamic>);
 
   @override
   Future<EnvironmentDay> setEnvironmentPlace(String? place) async => EnvironmentDay.fromJson(
-    _decode(await _client.put(_uri('/environment/location'), headers: await _headers(json: true), body: jsonEncode({'place': place})))
-        as Map<String, dynamic>,
+    _decode(
+      await _client.put(
+        _uri('/environment/location'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'place': place}),
+      ),
+    ) as Map<String, dynamic>,
   );
 
   @override
   Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items) async => EnvironmentDay.fromJson(
     _decode(
-          await _client.put(
-            _uri('/environment/check'),
-            headers: await _headers(json: true),
-            body: jsonEncode({'items': {for (final e in items.entries) e.key.wire: e.value}}),
-          ),
-        )
-        as Map<String, dynamic>,
+      await _client.put(
+        _uri('/environment/check'),
+        headers: await _headers(json: true),
+        body: jsonEncode({
+          'items': {for (final e in items.entries) e.key.wire: e.value},
+        }),
+      ),
+    ) as Map<String, dynamic>,
   );
 
   @override
@@ -325,7 +346,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<List<PantryItem>> addToPantry(List<String> names) async => _pantryFrom(
-    _decode(await _client.post(_uri('/pantry'), headers: await _headers(json: true), body: jsonEncode({'names': names}))),
+    _decode(
+      await _client.post(_uri('/pantry'), headers: await _headers(json: true), body: jsonEncode({'names': names})),
+    ),
   );
 
   @override
@@ -335,7 +358,8 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<List<PantryRecipe>> pantryRecipes() async {
-    final body = _decode(await _client.post(_uri('/pantry/recipes'), headers: await _headers())) as Map<String, dynamic>;
+    final body =
+        _decode(await _client.post(_uri('/pantry/recipes'), headers: await _headers())) as Map<String, dynamic>;
     return [for (final r in body['recipes'] as List) PantryRecipe.fromJson(r as Map<String, dynamic>)];
   }
 
@@ -376,13 +400,18 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<FastingStatus> planFast(DateTime until) async {
-    final res = await _client.put(_uri('/fasting/plan'), headers: await _headers(json: true), body: jsonEncode({'until': isoWithOffset(until)}));
+    final res = await _client.put(
+      _uri('/fasting/plan'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'until': isoWithOffset(until)}),
+    );
     return FastingStatus.fromJson(_decode(res) as Map<String, dynamic>);
   }
 
   @override
-  Future<FastingStatus> endFast() async =>
-      FastingStatus.fromJson(_decode(await _client.delete(_uri('/fasting/plan'), headers: await _headers())) as Map<String, dynamic>);
+  Future<FastingStatus> endFast() async => FastingStatus.fromJson(
+    _decode(await _client.delete(_uri('/fasting/plan'), headers: await _headers())) as Map<String, dynamic>,
+  );
 
   @override
   Future<BrainCheck> addBrainCheck(List<int> reactionTimesMs, int falseStarts) async {
@@ -399,7 +428,8 @@ class HttpNeuroCalApi implements NeuroCalApi {
       BrainCheckHistory.fromJson(await _get('/brain-checks', {'days': '$days'}) as Map<String, dynamic>);
 
   @override
-  Future<FoodScan> scanBarcode(String code) async => FoodScan.fromJson(await _get('/foods/barcode/$code') as Map<String, dynamic>);
+  Future<FoodScan> scanBarcode(String code) async =>
+      FoodScan.fromJson(await _get('/foods/barcode/$code') as Map<String, dynamic>);
 
   @override
   Future<BetterChoice> betterChoice(FoodScan scan) async {
@@ -421,7 +451,8 @@ class HttpNeuroCalApi implements NeuroCalApi {
     final req = http.MultipartRequest('POST', _uri('/foods/scan'))
       ..headers.addAll(await _headers())
       ..files.addAll([
-        for (final (i, photo) in photos.indexed) http.MultipartFile.fromBytes('photo', photo, filename: 'side-${i + 1}.jpg'),
+        for (final (i, photo) in photos.indexed)
+          http.MultipartFile.fromBytes('photo', photo, filename: 'side-${i + 1}.jpg'),
       ]);
     final res = await http.Response.fromStream(await _client.send(req));
     return FoodScan.fromJson(_decode(res) as Map<String, dynamic>);
@@ -455,14 +486,21 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false}) async {
+  Future<StackItem> updateStackItem(
+    String id, {
+    int? servingsPerDay,
+    StackTiming? timing,
+    int? servingsPerContainer,
+    bool newBottle = false,
+  }) async {
     final res = await _client.put(
       _uri('/stack/$id'),
       headers: await _headers(json: true),
       body: jsonEncode({
         'servingsPerDay': ?servingsPerDay,
         'timing': ?timing?.wire,
-        if (servingsPerContainer != null) 'servingsPerContainer': servingsPerContainer == 0 ? null : servingsPerContainer,
+        if (servingsPerContainer != null)
+          'servingsPerContainer': servingsPerContainer == 0 ? null : servingsPerContainer,
         if (newBottle) 'newBottle': true,
       }),
     );
@@ -476,7 +514,13 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<void> setTaken(String id, bool taken) async {
-    _decode(await _client.put(_uri('/stack/$id/taken'), headers: await _headers(json: true), body: jsonEncode({'taken': taken})));
+    _decode(
+      await _client.put(
+        _uri('/stack/$id/taken'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'taken': taken}),
+      ),
+    );
   }
 
   Future<List<CatalogFood>>? _foods;
@@ -556,15 +600,19 @@ class HttpNeuroCalApi implements NeuroCalApi {
 
   @override
   Future<List<GlucoseDay>> glucose() async => [
-    for (final d in (await _get('/glucose') as Map<String, dynamic>)['days'] as List) GlucoseDay.fromJson(d as Map<String, dynamic>),
+    for (final d in (await _get('/glucose') as Map<String, dynamic>)['days'] as List)
+      GlucoseDay.fromJson(d as Map<String, dynamic>),
   ];
 
   @override
-  Future<void> recordGlucose(List<GlucoseDay> days) => _post('/glucose', {'days': [for (final d in days) d.toJson()]});
+  Future<void> recordGlucose(List<GlucoseDay> days) => _post('/glucose', {
+    'days': [for (final d in days) d.toJson()],
+  });
 
   @override
   Future<List<MarkerSummary>> markers() async => [
-    for (final m in (await _get('/markers') as Map<String, dynamic>)['markers'] as List) MarkerSummary.fromJson(m as Map<String, dynamic>),
+    for (final m in (await _get('/markers') as Map<String, dynamic>)['markers'] as List)
+      MarkerSummary.fromJson(m as Map<String, dynamic>),
   ];
 
   @override
@@ -588,23 +636,26 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<void> deleteMarker(String id) async => _decode(await _client.delete(_uri('/markers/${Uri.encodeComponent(id)}'), headers: await _headers()));
+  Future<void> deleteMarker(String id) async =>
+      _decode(await _client.delete(_uri('/markers/${Uri.encodeComponent(id)}'), headers: await _headers()));
 
   @override
-  Future<HealthspanWeek> healthspan() async => HealthspanWeek.fromJson(await _get('/healthspan') as Map<String, dynamic>);
+  Future<HealthspanWeek> healthspan() async =>
+      HealthspanWeek.fromJson(await _get('/healthspan') as Map<String, dynamic>);
 
   @override
-  Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source) => _post('/telemetry/sleep', {
-    'sessions': [
-      for (final n in nights)
-        {
-          'start': n.start.toUtc().toIso8601String(),
-          'end': n.end.toUtc().toIso8601String(),
-          'source': source,
-          if (n.deepMinutes > 0) 'deepMinutes': n.deepMinutes,
-        },
-    ],
-  });
+  Future<void> importSleep(List<({DateTime start, DateTime end, int deepMinutes})> nights, String source) =>
+      _post('/telemetry/sleep', {
+        'sessions': [
+          for (final n in nights)
+            {
+              'start': n.start.toUtc().toIso8601String(),
+              'end': n.end.toUtc().toIso8601String(),
+              'source': source,
+              if (n.deepMinutes > 0) 'deepMinutes': n.deepMinutes,
+            },
+        ],
+      });
 
   @override
   Future<void> logScreenTime(DateTime windowStart, DateTime windowEnd, int minutes) => _post('/telemetry/screen-time', {

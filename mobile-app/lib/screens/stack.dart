@@ -10,7 +10,8 @@ import 'supplement_sheet.dart';
 
 const _order = [StackTiming.morning, StackTiming.withFood, StackTiming.evening, StackTiming.any];
 
-List<StackItem> _sorted(List<StackItem> items) => [...items]..sort((a, b) => _order.indexOf(a.timing).compareTo(_order.indexOf(b.timing)));
+List<StackItem> _sorted(List<StackItem> items) =>
+    [...items]..sort((a, b) => _order.indexOf(a.timing).compareTo(_order.indexOf(b.timing)));
 
 String _dose(StackItem i) {
   final serving = i.servingSize == null ? '${i.servingsPerDay} a day' : '${i.servingsPerDay} × ${i.servingSize}';
@@ -74,87 +75,104 @@ class _StackCardState extends State<StackCard> {
     final taken = _items.where((i) => i.takenToday).length;
     const padding = EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s3, Space.s2);
     final body = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: Space.s2,
-        children: [
-          Row(
-            spacing: Space.s3,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
-                child: Icon(Icons.medication_rounded, size: 22, color: c.synapseInk),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
+        Row(
+          spacing: Space.s3,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.synapseSoft, shape: BoxShape.circle),
+              child: Icon(Icons.medication_rounded, size: 22, color: c.synapseInk),
+            ),
+            const Expanded(
+              child: Text(
+                'Supplements today',
+                style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
               ),
-              const Expanded(
-                child: Text('Supplements today', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+            ),
+            Text(
+              '$taken of ${_items.length} taken',
+              style: TextStyle(
+                fontSize: TextSize.xs,
+                fontWeight: FontWeight.w700,
+                color: taken == _items.length ? c.chlorophyll : c.inkSoft,
               ),
-              Text(
-                '$taken of ${_items.length} taken',
-                style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: taken == _items.length ? c.chlorophyll : c.inkSoft),
-              ),
-            ],
-          ),
-          for (final item in _items)
-            Semantics(
-              checked: item.takenToday,
-              label: '${item.name}, ${_dose(item)}${item.runningLow ? ', ${item.daysLeft} days left' : ''}',
-              excludeSemantics: true,
+            ),
+          ],
+        ),
+        for (final item in _items)
+          Semantics(
+            checked: item.takenToday,
+            label: '${item.name}, ${_dose(item)}${item.runningLow ? ', ${item.daysLeft} days left' : ''}',
+            excludeSemantics: true,
+            onTap: () => _toggle(item),
+            child: InkWell(
               onTap: () => _toggle(item),
-              child: InkWell(
-                onTap: () => _toggle(item),
-                borderRadius: BorderRadius.circular(Radii.option),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Space.s2),
-                  child: Row(
-                    spacing: Space.s3,
-                    children: [
-                      // A small pop when ticked off.
-                      AnimatedScale(
-                        scale: item.takenToday ? 1 : 0.92,
-                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.select,
-                        curve: Curves.elasticOut,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: item.takenToday ? c.chlorophyll : null,
-                            border: Border.all(color: item.takenToday ? c.chlorophyll : c.ruleStrong, width: 2),
-                          ),
-                          child: item.takenToday ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
+              borderRadius: BorderRadius.circular(Radii.option),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.s2),
+                child: Row(
+                  spacing: Space.s3,
+                  children: [
+                    // A small pop when ticked off.
+                    AnimatedScale(
+                      scale: item.takenToday ? 1 : 0.92,
+                      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.select,
+                      curve: Curves.elasticOut,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: item.takenToday ? c.chlorophyll : null,
+                          border: Border.all(color: item.takenToday ? c.chlorophyll : c.ruleStrong, width: 2),
                         ),
+                        child: item.takenToday ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                fontSize: TextSize.sm,
-                                fontWeight: FontWeight.w700,
-                                color: item.takenToday ? c.inkSoft : c.ink,
-                                decoration: item.takenToday ? TextDecoration.lineThrough : null,
-                              ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: TextStyle(
+                              fontSize: TextSize.sm,
+                              fontWeight: FontWeight.w700,
+                              color: item.takenToday ? c.inkSoft : c.ink,
+                              decoration: item.takenToday ? TextDecoration.lineThrough : null,
                             ),
-                            Text(_dose(item), style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
-                          ],
-                        ),
+                          ),
+                          Text(
+                            _dose(item),
+                            style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                          ),
+                        ],
                       ),
-                      if (item.runningLow)
-                        Tag(item.daysLeft == 0 ? 'Out' : '${item.daysLeft} days left', fill: c.glucoseSoft, ink: c.glucoseInk),
-                    ],
-                  ),
+                    ),
+                    if (item.runningLow)
+                      Tag(
+                        item.daysLeft == 0 ? 'Out' : '${item.daysLeft} days left',
+                        fill: c.glucoseSoft,
+                        ink: c.glucoseInk,
+                      ),
+                  ],
                 ),
               ),
             ),
-          ..._flagNotes(widget.stack.flags),
-          Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onManage, child: const Text('Manage stack'))),
-        ],
-      );
+          ),
+        ..._flagNotes(widget.stack.flags),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(onPressed: widget.onManage, child: const Text('Manage stack')),
+        ),
+      ],
+    );
     return widget.framed ? AppCard(padding: padding, child: body) : Padding(padding: padding, child: body);
   }
 }
@@ -203,7 +221,9 @@ class _StackScreenState extends State<StackScreen> {
   }
 
   Future<void> _edit(StackItem item) async {
-    if (await showAppSheet<bool>(context, title: item.name, builder: (_) => _EditStackItem(item)) == true && mounted) _reload();
+    if (await showAppSheet<bool>(context, title: item.name, builder: (_) => _EditStackItem(item)) == true && mounted) {
+      _reload();
+    }
   }
 
   @override
@@ -215,7 +235,10 @@ class _StackScreenState extends State<StackScreen> {
       builder: (context, snapshot) => ListView(
         padding: EdgeInsets.fromLTRB(Space.s4, tab ? Space.s4 : 0, Space.s4, Space.s6),
         children: [
-          if (tab) ...[const ScreenTitle('Your stack', detail: 'Your supplements and when to take them'), const BlockTitle('Supplements')],
+          if (tab) ...[
+            const ScreenTitle('Your stack', detail: 'Your supplements and when to take them'),
+            const BlockTitle('Supplements'),
+          ],
           ..._supplements(context, snapshot),
         ],
       ),
@@ -223,7 +246,11 @@ class _StackScreenState extends State<StackScreen> {
     return tab
         ? SafeArea(bottom: false, child: body)
         : Scaffold(
-            appBar: AppBar(title: const Text('My stack'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
+            appBar: AppBar(
+              title: const Text('My stack'),
+              backgroundColor: c.mist,
+              surfaceTintColor: Colors.transparent,
+            ),
             body: body,
           );
   }
@@ -231,15 +258,33 @@ class _StackScreenState extends State<StackScreen> {
   List<Widget> _supplements(BuildContext context, AsyncSnapshot<SupplementStack> snapshot) {
     final c = context.colors;
     if (snapshot.hasError) {
-      return [ScreenFailed(title: "Couldn't load your stack", detail: 'Check your connection and try again.', onRetry: _reload)];
+      return [
+        ScreenFailed(
+          title: "Couldn't load your stack",
+          detail: 'Check your connection and try again.',
+          onRetry: _reload,
+        ),
+      ];
     }
-    if (!snapshot.hasData) return [const ScreenLoading(label: 'Loading your stack', heights: [64, 64, 64])];
+    if (!snapshot.hasData) {
+      return [
+        const ScreenLoading(label: 'Loading your stack', heights: [64, 64, 64]),
+      ];
+    }
     final stack = snapshot.data!;
     return [
       if (stack.items.isEmpty)
-        const EmptyCard(title: 'Nothing here yet', detail: 'Scan a supplement label and add it, to get a daily checklist and checks across everything you take.')
+        const EmptyCard(
+          title: 'Nothing here yet',
+          detail: 'Scan a supplement label and add it, to get a daily checklist and checks across everything you take.',
+        )
       else ...[
-        ..._flagNotes(stack.flags).map((w) => Padding(padding: const EdgeInsets.only(bottom: Space.s2), child: w)),
+        ..._flagNotes(stack.flags).map(
+          (w) => Padding(
+            padding: const EdgeInsets.only(bottom: Space.s2),
+            child: w,
+          ),
+        ),
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -320,16 +365,28 @@ class _EditStackItemState extends State<_EditStackItem> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        const Text('Servings a day', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        const Text(
+          'Servings a day',
+          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+        ),
         Row(
           spacing: Space.s2,
-          children: [for (final n in [1, 2, 3, 4]) ChoicePill(label: '$n', selected: _perDay == n, onTap: () => setState(() => _perDay = n))],
+          children: [
+            for (final n in [1, 2, 3, 4])
+              ChoicePill(label: '$n', selected: _perDay == n, onTap: () => setState(() => _perDay = n)),
+          ],
         ),
-        const Text('When', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        const Text(
+          'When',
+          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+        ),
         Wrap(
           spacing: Space.s2,
           runSpacing: Space.s2,
-          children: [for (final t in StackTiming.values) ChoicePill(label: t.label, selected: _timing == t, onTap: () => setState(() => _timing = t))],
+          children: [
+            for (final t in StackTiming.values)
+              ChoicePill(label: t.label, selected: _timing == t, onTap: () => setState(() => _timing = t)),
+          ],
         ),
         TextField(
           controller: _bottle,

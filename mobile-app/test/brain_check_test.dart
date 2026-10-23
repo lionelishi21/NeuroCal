@@ -86,7 +86,11 @@ void main() {
               onPressed: () async => results.add(
                 await Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const BrainCheckScreen(duration: Duration(seconds: 30), note: 'Your score goes into your starting point.', skipLabel: 'Skip for now'),
+                    builder: (_) => const BrainCheckScreen(
+                      duration: Duration(seconds: 30),
+                      note: 'Your score goes into your starting point.',
+                      skipLabel: 'Skip for now',
+                    ),
                   ),
                 ),
               ),

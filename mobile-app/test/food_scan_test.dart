@@ -94,7 +94,9 @@ void main() {
     expect(find.textContaining('Open Food Facts'), findsNothing);
   });
 
-  testWidgets('a processed food offers a better choice: what to buy, a homemade one to log, and the device it uses', (tester) async {
+  testWidgets('a processed food offers a better choice: what to buy, a homemade one to log, and the device it uses', (
+    tester,
+  ) async {
     final logged = await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0123456789012']));
     await scanOnce(tester, 'Start scanning');
 

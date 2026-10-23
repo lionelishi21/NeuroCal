@@ -39,9 +39,11 @@ List<GlucoseDay> glucoseDays(List<GlucoseSample> samples, DateTime today, String
         () {
           final mean = values.reduce((a, b) => a + b) / values.length;
           final variance = values.fold(0.0, (s, v) => s + (v - mean) * (v - mean)) / values.length;
-          int pct(double lo, double hi) => (100 * values.where((v) => v >= lo && v <= hi).length / values.length).round();
+          int pct(double lo, double hi) =>
+              (100 * values.where((v) => v >= lo && v <= hi).length / values.length).round();
           return GlucoseDay(
-            date: '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
+            date:
+                '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
             meanMgdl: mean.roundToDouble(),
             inRange140Pct: pct(70, 140).toDouble(),
             inRange180Pct: pct(70, 180).toDouble(),
@@ -71,7 +73,11 @@ List<({String marker, double value, DateTime day})> dailyMarkers(List<MarkerSamp
         final local = list.first.at.toLocal();
         final latest = list.last.marker.startsWith('bp_');
         final value = latest ? list.last.value : list.fold(0.0, (s, x) => s + x.value) / list.length;
-        return (marker: list.first.marker, value: (value * 10).round() / 10, day: DateTime(local.year, local.month, local.day, 12));
+        return (
+          marker: list.first.marker,
+          value: (value * 10).round() / 10,
+          day: DateTime(local.year, local.month, local.day, 12),
+        );
       }(),
   ];
 }
@@ -146,7 +152,10 @@ class HealthSleepSource implements SleepSource {
 
   static final _markerTypes = <HealthDataType, String>{
     HealthDataType.RESTING_HEART_RATE: 'resting_hr',
-    if (Platform.isAndroid) HealthDataType.HEART_RATE_VARIABILITY_RMSSD: 'hrv' else HealthDataType.HEART_RATE_VARIABILITY_SDNN: 'hrv',
+    if (Platform.isAndroid)
+      HealthDataType.HEART_RATE_VARIABILITY_RMSSD: 'hrv'
+    else
+      HealthDataType.HEART_RATE_VARIABILITY_SDNN: 'hrv',
     HealthDataType.BLOOD_PRESSURE_SYSTOLIC: 'bp_systolic',
     HealthDataType.BLOOD_PRESSURE_DIASTOLIC: 'bp_diastolic',
   };
@@ -185,7 +194,9 @@ class HealthSleepSource implements SleepSource {
     for (final MapEntry(key: type, value: marker) in _markerTypes.entries) {
       try {
         for (final p in await _health.getHealthDataFromTypes(types: [type], startTime: from, endTime: to)) {
-          if (p.value case NumericHealthValue(:final numericValue)) out.add((marker: marker, value: numericValue.toDouble(), at: p.dateFrom));
+          if (p.value case NumericHealthValue(:final numericValue)) {
+            out.add((marker: marker, value: numericValue.toDouble(), at: p.dateFrom));
+          }
         }
       } catch (_) {
         // Not allowed, or not on this phone: the other kinds still come in.
@@ -199,7 +210,11 @@ class HealthSleepSource implements SleepSource {
     await _configure();
     try {
       return [
-        for (final p in await _health.getHealthDataFromTypes(types: [HealthDataType.BLOOD_GLUCOSE], startTime: from, endTime: to))
+        for (final p in await _health.getHealthDataFromTypes(
+          types: [HealthDataType.BLOOD_GLUCOSE],
+          startTime: from,
+          endTime: to,
+        ))
           if (p.value case NumericHealthValue(:final numericValue)) (mgdl: numericValue.toDouble(), at: p.dateFrom),
       ];
     } catch (_) {
@@ -276,7 +291,9 @@ class SleepSync extends ChangeNotifier {
     try {
       final days = dailyMarkers(await source.readMarkers(to.subtract(const Duration(days: 8)), to), to);
       if (days.isNotEmpty) {
-        sent += await api.recordMarkers([for (final d in days) (marker: d.marker, value: d.value, measuredAt: d.day, source: source.wire)]);
+        sent += await api.recordMarkers([
+          for (final d in days) (marker: d.marker, value: d.value, measuredAt: d.day, source: source.wire),
+        ]);
       }
     } catch (e) {
       debugPrint('Heart data sync failed: $e');
@@ -296,7 +313,13 @@ class SleepSync extends ChangeNotifier {
 
 /// For tests and previews: whatever segments it is given, and access as set.
 class FakeSleepSource implements SleepSource {
-  FakeSleepSource({this.installed = true, this.grants = true, this.segments = const [], this.markers = const [], this.glucose = const []});
+  FakeSleepSource({
+    this.installed = true,
+    this.grants = true,
+    this.segments = const [],
+    this.markers = const [],
+    this.glucose = const [],
+  });
 
   final bool installed;
   bool grants;

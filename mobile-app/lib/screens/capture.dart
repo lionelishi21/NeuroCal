@@ -134,7 +134,10 @@ Future<Capture?> showCaptureMenu(BuildContext context) => showAppSheet<Capture>(
             padding: EdgeInsets.only(top: group == CaptureGroup.food ? 0 : Space.s3, bottom: Space.s2),
             child: Semantics(
               header: true,
-              child: Text(group.label, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+              child: Text(
+                group.label,
+                style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+              ),
             ),
           ),
           GridView.count(

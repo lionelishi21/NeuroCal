@@ -37,7 +37,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncSleep());
-    if (widget.showGuide) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context, offerReminders: true) : null);
+    if (widget.showGuide) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? showGuide(context, offerReminders: true) : null);
+    }
   }
 
   Future<void> _openMe() => Navigator.of(context).push(
@@ -174,9 +176,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         selectedIcon: Icons.bar_chart_rounded,
         screen: ProgressScreen(changes: _changes, onChanged: _changed, onCapture: _capture),
       ),
-      (label: 'Stack', icon: Icons.medication_outlined, selectedIcon: Icons.medication_rounded, screen: StackScreen(changes: _changes)),
+      (
+        label: 'Stack',
+        icon: Icons.medication_outlined,
+        selectedIcon: Icons.medication_rounded,
+        screen: StackScreen(changes: _changes),
+      ),
     ];
-    Widget tab(int i) => Expanded(child: _TabButton(label: tabs[i].label, icon: _tab == i ? tabs[i].selectedIcon : tabs[i].icon, selected: _tab == i, onTap: () => setState(() => _tab = i)));
+    Widget tab(int i) => Expanded(
+      child: _TabButton(
+        label: tabs[i].label,
+        icon: _tab == i ? tabs[i].selectedIcon : tabs[i].icon,
+        selected: _tab == i,
+        onTap: () => setState(() => _tab = i),
+      ),
+    );
     final c = context.colors;
     return Scaffold(
       body: IndexedStack(index: _tab, children: [for (final tab in tabs) tab.screen]),
@@ -197,7 +211,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 children: [
                   tab(0),
                   tab(1),
-                  Expanded(child: Center(heightFactor: 1, child: _AddButton(open: _menuOpen, onPressed: _add))),
+                  Expanded(
+                    child: Center(
+                      heightFactor: 1,
+                      child: _AddButton(open: _menuOpen, onPressed: _add),
+                    ),
+                  ),
                   tab(2),
                   tab(3),
                 ],

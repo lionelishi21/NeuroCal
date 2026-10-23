@@ -8,7 +8,9 @@ import 'package:neurocal/theme/theme_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('after sign-in a locked account sees its plan and the trial, and starting it opens the app', (tester) async {
+  testWidgets('after sign-in a locked account sees its plan and the trial, and starting it opens the app', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(360, 740);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

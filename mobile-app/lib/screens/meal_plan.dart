@@ -77,7 +77,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         future: _plan,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Padding(padding: EdgeInsets.all(Space.s4), child: ScreenLoading(label: 'Loading your plan', heights: [120, 200]));
+            return const Padding(
+              padding: EdgeInsets.all(Space.s4),
+              child: ScreenLoading(label: 'Loading your plan', heights: [120, 200]),
+            );
           }
           final plan = snapshot.data;
           return ListView(
@@ -95,7 +98,11 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 again: plan != null,
                 onMake: _make,
               ),
-              if (_problem != null) Padding(padding: const EdgeInsets.only(top: Space.s3), child: SheetNote(lead: 'No plan made.', detail: _problem!)),
+              if (_problem != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.s3),
+                  child: SheetNote(lead: 'No plan made.', detail: _problem!),
+                ),
               if (plan != null && !_making) ..._planView(context, plan),
             ],
           );
@@ -114,7 +121,9 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         spacing: Space.s2,
         children: [
           for (final (i, d) in plan.days.indexed)
-            Expanded(child: ChoicePill(label: 'Day ${d.day}', selected: i == _day, onTap: () => setState(() => _day = i))),
+            Expanded(
+              child: ChoicePill(label: 'Day ${d.day}', selected: i == _day, onTap: () => setState(() => _day = i)),
+            ),
         ],
       ),
       const SizedBox(height: Space.s3),
@@ -125,7 +134,10 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${day.calories} kcal', style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
+                  Text(
+                    '${day.calories} kcal',
+                    style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800),
+                  ),
                   Text(
                     diff.abs() <= plan.targetCalories * 0.05
                         ? 'On your ${plan.targetCalories} kcal target'
@@ -140,14 +152,24 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('${day.macros.proteinG.round()} g', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-                Text('protein of ${plan.targetProteinG.round()} g', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                Text(
+                  '${day.macros.proteinG.round()} g',
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  'protein of ${plan.targetProteinG.round()} g',
+                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                ),
               ],
             ),
           ],
         ),
       ),
-      for (final meal in day.meals) Padding(padding: const EdgeInsets.only(top: Space.s3), child: _MealCard(meal, onLog: widget.onLog)),
+      for (final meal in day.meals)
+        Padding(
+          padding: const EdgeInsets.only(top: Space.s3),
+          child: _MealCard(meal, onLog: widget.onLog),
+        ),
       if (plan.shoppingList.isNotEmpty) ...[
         BlockTitle('Shopping list', note: '${plan.shoppingList.length} items'),
         AppCard(
@@ -186,7 +208,13 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 }
 
 class _MakePlan extends StatelessWidget {
-  const _MakePlan({required this.days, required this.onDays, required this.making, required this.again, required this.onMake});
+  const _MakePlan({
+    required this.days,
+    required this.onDays,
+    required this.making,
+    required this.again,
+    required this.onMake,
+  });
 
   final int days;
   final ValueChanged<int> onDays;
@@ -206,8 +234,18 @@ class _MakePlan extends StatelessWidget {
           Row(
             spacing: Space.s2,
             children: [
-              Text('Days', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft)),
-              for (final d in const [1, 2, 3]) ChoicePill(label: '$d', semanticLabel: '$d days', height: 40, selected: days == d, onTap: () => onDays(d)),
+              Text(
+                'Days',
+                style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+              ),
+              for (final d in const [1, 2, 3])
+                ChoicePill(
+                  label: '$d',
+                  semanticLabel: '$d days',
+                  height: 40,
+                  selected: days == d,
+                  onTap: () => onDays(d),
+                ),
             ],
           ),
           FilledButton.icon(
@@ -216,7 +254,13 @@ class _MakePlan extends StatelessWidget {
             icon: making
                 ? SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.onAccent))
                 : const Icon(Icons.restaurant_menu_rounded, size: 20),
-            label: Text(making ? 'Planning… (up to half a minute)' : again ? 'Make a new plan' : 'Plan my meals'),
+            label: Text(
+              making
+                  ? 'Planning… (up to half a minute)'
+                  : again
+                  ? 'Make a new plan'
+                  : 'Plan my meals',
+            ),
           ),
         ],
       ),
@@ -248,9 +292,18 @@ class _MealCardState extends State<_MealCard> {
         spacing: Space.s2,
         children: [
           MealVisual(ingredients: [for (final i in m.ingredients) i.name], height: 112),
-          Text(kind, style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft)),
-          Text(m.title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, height: 1.25)),
-          Text('${m.calories} kcal · ${m.macros.proteinG.round()} g protein', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+          Text(
+            kind,
+            style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft),
+          ),
+          Text(
+            m.title,
+            style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, height: 1.25),
+          ),
+          Text(
+            '${m.calories} kcal · ${m.macros.proteinG.round()} g protein',
+            style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+          ),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -265,12 +318,18 @@ class _MealCardState extends State<_MealCard> {
           ),
           if (_open) ...[
             for (final i in m.ingredients)
-              Text('${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}', style: const TextStyle(fontSize: TextSize.sm)),
-            for (final (n, step) in m.steps.indexed) Text('${n + 1}. $step', style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+              Text(
+                '${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}',
+                style: const TextStyle(fontSize: TextSize.sm),
+              ),
+            for (final (n, step) in m.steps.indexed)
+              Text('${n + 1}. $step', style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
           ],
           CookActions(
             title: m.title,
-            ingredients: [for (final i in m.ingredients) '${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}'],
+            ingredients: [
+              for (final i in m.ingredients) '${i.quantity.isEmpty ? '${i.grams.round()} g' : i.quantity} ${i.name}',
+            ],
             steps: m.steps,
           ),
           Row(
@@ -278,7 +337,10 @@ class _MealCardState extends State<_MealCard> {
               Expanded(
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: TextButton(onPressed: () => setState(() => _open = !_open), child: Text(_open ? 'Hide recipe' : 'Show recipe')),
+                  child: TextButton(
+                    onPressed: () => setState(() => _open = !_open),
+                    child: Text(_open ? 'Hide recipe' : 'Show recipe'),
+                  ),
                 ),
               ),
               SoftButton(label: 'Log it', semanticLabel: 'Log ${m.title}', onPressed: () => widget.onLog(m)),

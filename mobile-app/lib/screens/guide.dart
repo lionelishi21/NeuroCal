@@ -8,20 +8,34 @@ import '../widgets/sheet.dart';
 
 /// "How NeuroCal works": four short pages on the Focus Score, what moves it, the daily checklist and
 /// where things are. Shown once after onboarding, and from Me and the Today checklist.
-Future<void> showGuide(BuildContext context, {bool offerReminders = false}) => Navigator.of(context).push(
-  MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => GuideScreen(offerReminders: offerReminders)),
-);
+Future<void> showGuide(BuildContext context, {bool offerReminders = false}) => Navigator.of(context)
+    .push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => GuideScreen(offerReminders: offerReminders)));
 
 /// One input of the Focus Score (docs/NCBM.md §4, model v1.1 weights) and how to give it data.
 typedef _Pillar = ({String name, int weight, String how, IconData icon});
 
 const _pillars = <_Pillar>[
   (name: 'Sleep', weight: 30, how: 'Log last night: + → Log sleep', icon: Icons.bedtime_outlined),
-  (name: 'Meal timing', weight: 20, how: 'Log your meals; set a fasting window in Kitchen', icon: Icons.schedule_rounded),
-  (name: 'Blood sugar', weight: 15, how: "What's on your plate: log meals and scan packages", icon: Icons.restaurant_rounded),
+  (
+    name: 'Meal timing',
+    weight: 20,
+    how: 'Log your meals; set a fasting window in Kitchen',
+    icon: Icons.schedule_rounded,
+  ),
+  (
+    name: 'Blood sugar',
+    weight: 15,
+    how: "What's on your plate: log meals and scan packages",
+    icon: Icons.restaurant_rounded,
+  ),
   (name: 'Stress', weight: 15, how: 'Check in a few times a day: + → Check in', icon: Icons.mood_rounded),
   (name: 'Movement', weight: 10, how: 'Log exercise, or do a 5-minute calf pump', icon: Icons.directions_run_rounded),
-  (name: 'Environment', weight: 10, how: 'Morning daylight, a dark quiet bedroom, clean water and air', icon: Icons.air_rounded),
+  (
+    name: 'Environment',
+    weight: 10,
+    how: 'Morning daylight, a dark quiet bedroom, clean water and air',
+    icon: Icons.air_rounded,
+  ),
 ];
 
 class GuideScreen extends StatefulWidget {
@@ -95,7 +109,9 @@ class _GuideScreenState extends State<GuideScreen> {
         backgroundColor: c.mist,
         surfaceTintColor: Colors.transparent,
         title: const Text('How NeuroCal works'),
-        actions: [if (_page < _count - 1) TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Skip'))],
+        actions: [
+          if (_page < _count - 1) TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Skip')),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -119,7 +135,10 @@ class _GuideScreenState extends State<GuideScreen> {
                       duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.select,
                       width: i == _page ? 22 : 8,
                       height: 8,
-                      decoration: BoxDecoration(color: i == _page ? c.synapse : c.ruleStrong, borderRadius: BorderRadius.circular(Radii.pill)),
+                      decoration: BoxDecoration(
+                        color: i == _page ? c.synapse : c.ruleStrong,
+                        borderRadius: BorderRadius.circular(Radii.pill),
+                      ),
                     ),
                 ],
               ),
@@ -136,8 +155,14 @@ class _GuideScreenState extends State<GuideScreen> {
                           style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
                         ),
                         const SizedBox(height: Space.s3),
-                        SheetAction(label: _asking ? 'Turning on…' : 'Turn on reminders and start', onPressed: _asking ? null : _turnOnReminders),
-                        TextButton(onPressed: _asking ? null : () => Navigator.of(context).pop(), child: const Text('Not now')),
+                        SheetAction(
+                          label: _asking ? 'Turning on…' : 'Turn on reminders and start',
+                          onPressed: _asking ? null : _turnOnReminders,
+                        ),
+                        TextButton(
+                          onPressed: _asking ? null : () => Navigator.of(context).pop(),
+                          child: const Text('Not now'),
+                        ),
                       ],
                     )
                   : SheetAction(label: _page == _count - 1 ? 'Start my day' : 'Next', onPressed: _next),
@@ -165,10 +190,21 @@ class _Page extends StatelessWidget {
       children: [
         Semantics(
           header: true,
-          child: Text(title, style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, height: 1.2, letterSpacing: -0.4)),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: TextSize.xxl,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.4,
+            ),
+          ),
         ),
         const SizedBox(height: Space.s2),
-        Text(lead, style: TextStyle(fontSize: TextSize.md, height: 1.45, color: c.inkSoft)),
+        Text(
+          lead,
+          style: TextStyle(fontSize: TextSize.md, height: 1.45, color: c.inkSoft),
+        ),
         const SizedBox(height: Space.s4),
         ...children,
       ],
@@ -182,8 +218,7 @@ class _Score extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const _Page(
     title: 'One number for your brain',
-    lead:
-        'Each morning you get a Focus Score from 0 to 100: how ready you are to think clearly today. It comes from what you log, and after two weeks it learns which inputs matter most for you.',
+    lead: 'Each morning you get a Focus Score from 0 to 100: how ready you are to think clearly today. It comes from what you log, and after two weeks it learns which inputs matter most for you.',
     children: [Center(child: FocusRing(score: 72, size: 180, label: 'Example Focus Score: 72 out of 100'))],
   );
 }
@@ -216,8 +251,14 @@ class _WhatMovesIt extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${p.name} · ${p.weight}%', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                      Text(p.how, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
+                      Text(
+                        '${p.name} · ${p.weight}%',
+                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        p.how,
+                        style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft),
+                      ),
                     ],
                   ),
                 ),
@@ -253,8 +294,14 @@ class _YourNumbers extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$name · $when', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                Text(what, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
+                Text(
+                  '$name · $when',
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  what,
+                  style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft),
+                ),
               ],
             ),
           ),
@@ -266,10 +313,25 @@ class _YourNumbers extends StatelessWidget {
       lead: 'One number for today, and the others show how the days add up.',
       children: [
         number(Icons.blur_circular_rounded, 'Focus Score', 'today', 'How ready your brain is today. The one to watch.'),
-        number(Icons.flag_rounded, 'Your plan', '3 weeks', 'Your Focus Score heading for its target, and your weight heading for yours.'),
+        number(
+          Icons.flag_rounded,
+          'Your plan',
+          '3 weeks',
+          'Your Focus Score heading for its target, and your weight heading for yours.',
+        ),
         number(Icons.favorite_rounded, 'Healthspan', 'this week', 'The weekly habits behind a long, healthy life.'),
-        number(Icons.bolt_rounded, 'Brain speed', 'against your usual', 'A quick reaction check: sharper or slower than you normally are.'),
-        number(Icons.military_tech_rounded, 'Level', 'over months', 'Habits that have stuck, from Getting started to Upgraded.'),
+        number(
+          Icons.bolt_rounded,
+          'Brain speed',
+          'against your usual',
+          'A quick reaction check: sharper or slower than you normally are.',
+        ),
+        number(
+          Icons.military_tech_rounded,
+          'Level',
+          'over months',
+          'Habits that have stuck, from Getting started to Upgraded.',
+        ),
       ],
     );
   }
@@ -287,7 +349,12 @@ class _YourDay extends StatelessWidget {
         spacing: Space.s2,
         children: [
           Icon(Icons.radio_button_unchecked_rounded, size: 20, color: c.chlorophyll),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -328,8 +395,14 @@ class _WhereThingsAre extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700)),
-                Text(what, style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft)),
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  what,
+                  style: TextStyle(fontSize: TextSize.sm, height: 1.35, color: c.inkSoft),
+                ),
               ],
             ),
           ),
@@ -345,7 +418,11 @@ class _WhereThingsAre extends StatelessWidget {
         place(Icons.add_circle_rounded, '+', 'Log a meal, sleep, exercise, a check-in, and more.'),
         place(Icons.bar_chart_rounded, 'Progress', 'Your week and healthspan habits, sleep, body and your level.'),
         place(Icons.medication_rounded, 'Stack', 'Your supplements and when to take them.'),
-        place(Icons.account_circle_rounded, 'Your initials, top of Today', 'Profile, reminders and settings. This guide is there too.'),
+        place(
+          Icons.account_circle_rounded,
+          'Your initials, top of Today',
+          'Profile, reminders and settings. This guide is there too.',
+        ),
       ],
     );
   }

@@ -49,7 +49,10 @@ class _ProgressPhotosSectionState extends State<ProgressPhotosSection> {
 
   Future<void> _open(List<ProgressPhoto> photos, int index) async {
     final deleted = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => _PhotoPage(store: widget.store, photo: photos[index], weight: widget.weightOn?.call(photos[index].takenAt))),
+      MaterialPageRoute(
+        builder: (_) =>
+            _PhotoPage(store: widget.store, photo: photos[index], weight: widget.weightOn?.call(photos[index].takenAt)),
+      ),
     );
     if (deleted == true && mounted) {
       _reload();
@@ -113,7 +116,13 @@ class _ProgressPhotosSectionState extends State<ProgressPhotosSection> {
                     final i = photos.length - 1 - k;
                     return SizedBox(
                       width: 60,
-                      child: _Tile(store: widget.store, photo: photos[i], caption: _when(photos[i].takenAt), aspect: 3 / 4, onTap: () => _open(photos, i)),
+                      child: _Tile(
+                        store: widget.store,
+                        photo: photos[i],
+                        caption: _when(photos[i].takenAt),
+                        aspect: 3 / 4,
+                        onTap: () => _open(photos, i),
+                      ),
                     );
                   },
                 ),
@@ -132,7 +141,14 @@ class _ProgressPhotosSectionState extends State<ProgressPhotosSection> {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.store, required this.photo, required this.caption, required this.aspect, required this.onTap, this.weight});
+  const _Tile({
+    required this.store,
+    required this.photo,
+    required this.caption,
+    required this.aspect,
+    required this.onTap,
+    this.weight,
+  });
 
   final ProgressPhotoStore store;
   final ProgressPhoto photo;
@@ -163,7 +179,9 @@ class _Tile extends StatelessWidget {
                   color: c.mist,
                   child: FutureBuilder(
                     future: store.read(photo.id),
-                    builder: (context, s) => s.data == null ? const SizedBox.expand() : Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true),
+                    builder: (context, s) => s.data == null
+                        ? const SizedBox.expand()
+                        : Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true),
                   ),
                 ),
               ),
@@ -210,7 +228,9 @@ class _PhotoPageState extends State<_PhotoPage> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.weight == null ? _when(widget.photo.takenAt) : '${_when(widget.photo.takenAt)} · ${widget.weight}'),
+        title: Text(
+          widget.weight == null ? _when(widget.photo.takenAt) : '${_when(widget.photo.takenAt)} · ${widget.weight}',
+        ),
         actions: [
           TextButton(
             onPressed: _delete,
@@ -222,7 +242,9 @@ class _PhotoPageState extends State<_PhotoPage> {
         future: widget.store.read(widget.photo.id),
         builder: (context, s) => s.data == null
             ? const SizedBox.expand()
-            : InteractiveViewer(child: Center(child: Image.memory(s.data!, fit: BoxFit.contain))),
+            : InteractiveViewer(
+                child: Center(child: Image.memory(s.data!, fit: BoxFit.contain)),
+              ),
       ),
     );
   }

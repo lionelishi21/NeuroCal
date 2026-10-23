@@ -274,9 +274,8 @@ class _LogScreenTimeState extends State<_LogScreenTime> {
                   keyboardType: TextInputType.number,
                   maxLength: 3,
                   style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800),
-                  decoration: const InputDecoration.collapsed(
-                    hintText: '0',
-                  ).copyWith(counterText: '', filled: false, semanticCounterText: ''),
+                  decoration: const InputDecoration.collapsed(hintText: '0')
+                      .copyWith(counterText: '', filled: false, semanticCounterText: ''),
                 ),
               ),
               Flexible(

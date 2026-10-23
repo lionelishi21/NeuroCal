@@ -142,8 +142,14 @@ class _FastingCardState extends State<FastingCard> {
                         '$label fast',
                         style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft),
                       ),
-                      Text(title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-                      Text(detail, style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft)),
+                      Text(
+                        title,
+                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        detail,
+                        style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                      ),
                     ],
                   ),
                 ),
@@ -155,18 +161,24 @@ class _FastingCardState extends State<FastingCard> {
               [
                 if (s.streakDays > 0) '${s.streakDays} ${s.streakDays == 1 ? 'day' : 'days'} in a row.',
                 // The first days are the hardest: hunger at your usual meal times is mostly habit.
-                if (s.kind == FastingKind.fasting && s.streakDays < 3)
-                  'Hungry at your usual meal time? That habit hunger usually passes in 20–30 minutes. Water, tea or black coffee help.',
+                if (s.kind == FastingKind.fasting && s.streakDays < 3) 'Hungry at your usual meal time? That habit hunger usually passes in 20–30 minutes. Water, tea or black coffee help.',
               ].join(' '),
               style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkSoft),
             ),
           if (s.kind == FastingKind.fasting || s.kind == FastingKind.fasted) const WaterCount(),
           if (s.planned && widget.onEnd != null)
-            Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onEnd, child: const Text('End my fast')))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(onPressed: widget.onEnd, child: const Text('End my fast')),
+            )
           else if (!s.planned && widget.onPlan != null && s.planLimitHours > 0)
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(onPressed: widget.onPlan, icon: const Icon(Icons.timelapse_rounded, size: 18), label: const Text('Plan a fast')),
+              child: TextButton.icon(
+                onPressed: widget.onPlan,
+                icon: const Icon(Icons.timelapse_rounded, size: 18),
+                label: const Text('Plan a fast'),
+              ),
             ),
         ],
       ),
@@ -193,9 +205,11 @@ class _WaterCountState extends State<WaterCount> {
   @override
   void initState() {
     super.initState();
-    SharedPreferences.getInstance().then((p) {
-      if (mounted) setState(() => _glasses = p.getInt(_key) ?? 0);
-    }).catchError((Object _) {});
+    SharedPreferences.getInstance()
+        .then((p) {
+          if (mounted) setState(() => _glasses = p.getInt(_key) ?? 0);
+        })
+        .catchError((Object _) {});
   }
 
   Future<void> _add(int by) async {
@@ -219,13 +233,19 @@ class _WaterCountState extends State<WaterCount> {
           child: Semantics(
             liveRegion: true,
             child: Text(
-              _glasses == 0 ? 'No water logged today' : '$_glasses ${_glasses == 1 ? 'glass' : 'glasses'} of water today',
+              _glasses == 0
+                  ? 'No water logged today'
+                  : '$_glasses ${_glasses == 1 ? 'glass' : 'glasses'} of water today',
               style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
             ),
           ),
         ),
         if (_glasses > 0)
-          IconButton(tooltip: 'One glass less', onPressed: () => _add(-1), icon: Icon(Icons.remove_rounded, color: c.inkSoft)),
+          IconButton(
+            tooltip: 'One glass less',
+            onPressed: () => _add(-1),
+            icon: Icon(Icons.remove_rounded, color: c.inkSoft),
+          ),
         SoftButton(label: '+ Glass', semanticLabel: 'Add a glass of water', height: 36, onPressed: () => _add(1)),
       ],
     );
@@ -253,7 +273,10 @@ class WeightCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s2,
           children: [
-            const Text('Set your weight goal', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+            const Text(
+              'Set your weight goal',
+              style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+            ),
             Text(
               'Add your weight now and your target. We track the trend, not daily swings, and show when you’re on course to get there.',
               style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
@@ -287,7 +310,10 @@ class WeightCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 2,
                   children: [
-                    Text('Weight trend', style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+                    Text(
+                      'Weight trend',
+                      style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                    ),
                     Text(
                       unit.format(h.trendKg!),
                       style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800, letterSpacing: -0.4),
@@ -307,10 +333,16 @@ class WeightCard extends StatelessWidget {
                     context,
                     lost: unit.format(lostKg),
                     since: months(h.entries.first.date),
-                    toGo: h.toGoKg == null ? null : (h.toGoKg == 0 ? 'Goal reached' : '${unit.format(h.toGoKg!)} to go'),
+                    toGo: h.toGoKg == null
+                        ? null
+                        : (h.toGoKg == 0 ? 'Goal reached' : '${unit.format(h.toGoKg!)} to go'),
                   ),
                 ),
-              IconButton(tooltip: 'Weight goal', icon: Icon(Icons.flag_outlined, color: c.inkSoft), onPressed: onGoal),
+              IconButton(
+                tooltip: 'Weight goal',
+                icon: Icon(Icons.flag_outlined, color: c.inkSoft),
+                onPressed: onGoal,
+              ),
             ],
           ),
           if (h.entries.length > 1) SizedBox(height: 64, child: _Sparkline(h.entries, target: h.targetKg)),
@@ -324,7 +356,8 @@ class WeightCard extends StatelessWidget {
                 'Flat this week.'
               else
                 '${unit.format(change)} up this week. One week can be water; watch the next.',
-              if (h.projectedOn != null && h.toGoKg != 0) 'At this rate you reach your goal around ${months(h.projectedOn!)}.',
+              if (h.projectedOn != null && h.toGoKg != 0)
+                'At this rate you reach your goal around ${months(h.projectedOn!)}.',
               if (h.plannedWeeklyLossKg != null) 'Plan: ${unit.format(h.plannedWeeklyLossKg!)} a week.',
             ].join(' '),
             style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: losing ? c.chlorophyll : c.inkSoft),
@@ -348,7 +381,14 @@ class _Sparkline extends StatelessWidget {
     final c = context.colors;
     return Semantics(
       label: 'Chart of your last ${entries.length} weigh-ins',
-      child: CustomPaint(painter: _SparklinePainter(entries.length > 30 ? entries.sublist(entries.length - 30) : entries, target, line: c.synapse, faint: c.ruleStrong)),
+      child: CustomPaint(
+        painter: _SparklinePainter(
+          entries.length > 30 ? entries.sublist(entries.length - 30) : entries,
+          target,
+          line: c.synapse,
+          faint: c.ruleStrong,
+        ),
+      ),
     );
   }
 }

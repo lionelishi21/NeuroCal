@@ -64,7 +64,10 @@ class _PantryScreenState extends State<PantryScreen> {
   }
 
   Future<void> _add(List<String> names) async {
-    final clean = [for (final n in names) if (n.trim().isNotEmpty) n.trim()];
+    final clean = [
+      for (final n in names)
+        if (n.trim().isNotEmpty) n.trim(),
+    ];
     if (clean.isEmpty) return;
     final next = _api.addToPantry(clean);
     setState(() {
@@ -109,7 +112,10 @@ class _PantryScreenState extends State<PantryScreen> {
         builder: (context, snapshot) {
           final items = snapshot.data ?? const <PantryItem>[];
           final have = items.map((i) => _key(i.name)).toSet();
-          final staples = [for (final s in _staples) if (!have.contains(_key(s))) s];
+          final staples = [
+            for (final s in _staples)
+              if (!have.contains(_key(s))) s,
+          ];
           return ListView(
             padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
             children: [
@@ -136,14 +142,24 @@ class _PantryScreenState extends State<PantryScreen> {
               if (snapshot.hasError)
                 Padding(
                   padding: const EdgeInsets.only(top: Space.s3),
-                  child: ScreenFailed(title: "Couldn't load your pantry", detail: 'Check your connection and try again.', onRetry: _reload),
+                  child: ScreenFailed(
+                    title: "Couldn't load your pantry",
+                    detail: 'Check your connection and try again.',
+                    onRetry: _reload,
+                  ),
                 )
               else if (!snapshot.hasData)
-                const Padding(padding: EdgeInsets.only(top: Space.s3), child: ScreenLoading(label: 'Loading your pantry', heights: [96]))
+                const Padding(
+                  padding: EdgeInsets.only(top: Space.s3),
+                  child: ScreenLoading(label: 'Loading your pantry', heights: [96]),
+                )
               else ...[
                 BlockTitle('In your kitchen', note: items.isEmpty ? null : '${items.length} items'),
                 if (items.isEmpty)
-                  Text('Nothing yet. Type items above or tap a staple below.', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft))
+                  Text(
+                    'Nothing yet. Type items above or tap a staple below.',
+                    style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                  )
                 else
                   Wrap(
                     spacing: Space.s2,
@@ -186,7 +202,11 @@ class _PantryScreenState extends State<PantryScreen> {
                 if (items.length < 3)
                   Padding(
                     padding: const EdgeInsets.only(top: Space.s2),
-                    child: Text('Add at least 3 items first.', textAlign: TextAlign.center, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                    child: Text(
+                      'Add at least 3 items first.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                    ),
                   ),
                 if (_recipes != null) _Recipes(_recipes!, onRetry: _cookSomething, onCook: widget.onCook),
               ],
@@ -218,7 +238,10 @@ class _Recipes extends StatelessWidget {
               spacing: Space.s3,
               children: [
                 const CircularProgressIndicator(),
-                Text('Thinking up recipes from your kitchen…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+                Text(
+                  'Thinking up recipes from your kitchen…',
+                  style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                ),
               ],
             ),
           );
@@ -255,7 +278,11 @@ class _Recipes extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const BlockTitle('You could make'),
-            for (final r in list) Padding(padding: const EdgeInsets.only(bottom: Space.s3), child: RecipeCard(r, onCook: onCook)),
+            for (final r in list)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.s3),
+                child: RecipeCard(r, onCook: onCook),
+              ),
           ],
         );
       },
@@ -287,7 +314,10 @@ class _RecipeCardState extends State<RecipeCard> {
         spacing: Space.s2,
         children: [
           MealVisual(ingredients: [for (final i in r.ingredients) i.name], height: 112),
-          Text(r.title, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.25)),
+          Text(
+            r.title,
+            style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800, height: 1.25),
+          ),
           Text(
             '${r.minutes} min · ${r.calories} kcal · ${r.macros.proteinG.round()} g protein',
             style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
@@ -306,15 +336,23 @@ class _RecipeCardState extends State<RecipeCard> {
             ],
           ),
           if (r.missing.isNotEmpty)
-            Text('To buy: ${r.missing.join(', ')}', style: TextStyle(fontSize: TextSize.xs, color: c.glucoseInk)),
+            Text(
+              'To buy: ${r.missing.join(', ')}',
+              style: TextStyle(fontSize: TextSize.xs, color: c.glucoseInk),
+            ),
           if (_steps)
             for (final (n, step) in r.steps.indexed)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: Space.s2,
                 children: [
-                  Text('${n + 1}.', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.synapseInk)),
-                  Expanded(child: Text(step, style: const TextStyle(fontSize: TextSize.sm, height: 1.4))),
+                  Text(
+                    '${n + 1}.',
+                    style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.synapseInk),
+                  ),
+                  Expanded(
+                    child: Text(step, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+                  ),
                 ],
               ),
           CookActions(

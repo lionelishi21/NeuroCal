@@ -200,11 +200,18 @@ class _ScanSupplementState extends State<_ScanSupplement> {
               name.isEmpty ? 'This supplement' : name,
               style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800),
             ),
-            Text(label.summary, style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft)),
+            Text(
+              label.summary,
+              style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+            ),
           ],
         ),
         for (final flag in label.flags)
-          SheetNote(lead: _leads[flag.kind] ?? 'Worth knowing.', detail: flag.message, watch: !_serious.contains(flag.kind)),
+          SheetNote(
+            lead: _leads[flag.kind] ?? 'Worth knowing.',
+            detail: flag.message,
+            watch: !_serious.contains(flag.kind),
+          ),
         const GroupLabel('What the label says', top: 4),
         AppCard(
           padding: EdgeInsets.zero,
@@ -330,23 +337,36 @@ class _AddToStackState extends State<_AddToStack> {
           'We’ll add it to your checklist on Today and check it against everything else you take.',
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
-        Text(serving == null ? 'Servings a day' : 'Servings a day (one is $serving)', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        Text(
+          serving == null ? 'Servings a day' : 'Servings a day (one is $serving)',
+          style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+        ),
         Row(
           spacing: Space.s2,
-          children: [for (final n in [1, 2, 3]) ChoicePill(label: '$n', selected: _perDay == n, onTap: () => setState(() => _perDay = n))],
+          children: [
+            for (final n in [1, 2, 3])
+              ChoicePill(label: '$n', selected: _perDay == n, onTap: () => setState(() => _perDay = n)),
+          ],
         ),
-        const Text('When do you take it?', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+        const Text(
+          'When do you take it?',
+          style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+        ),
         Wrap(
           spacing: Space.s2,
           runSpacing: Space.s2,
           children: [
-            for (final t in StackTiming.values) ChoicePill(label: t.label, selected: _timing == t, onTap: () => setState(() => _timing = t)),
+            for (final t in StackTiming.values)
+              ChoicePill(label: t.label, selected: _timing == t, onTap: () => setState(() => _timing = t)),
           ],
         ),
         TextField(
           controller: _bottle,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Servings in the bottle (optional)', helperText: 'So we can tell you when it’s running low.'),
+          decoration: const InputDecoration(
+            labelText: 'Servings in the bottle (optional)',
+            helperText: 'So we can tell you when it’s running low.',
+          ),
         ),
         if (_failed) const SheetNote(lead: "Couldn't add it.", detail: 'Check your connection and try again.'),
         SheetAction(label: _busy ? 'Adding…' : 'Add to my stack', onPressed: _busy ? null : _save),

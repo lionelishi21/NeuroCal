@@ -26,7 +26,10 @@ Future<List<PickedFood>> pumpFoods(WidgetTester tester) async {
       timeZone: () async => 'Europe/London',
       openLink: (_) async => true,
       billing: MockBilling(active: true),
-      child: MaterialApp(theme: buildTheme(Brightness.light), home: FoodsScreen(onLog: logged.add)),
+      child: MaterialApp(
+        theme: buildTheme(Brightness.light),
+        home: FoodsScreen(onLog: logged.add),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -80,7 +83,9 @@ void main() {
     expect(item.macros.proteinG, 53);
   });
 
-  testWidgets('eating out: pick a chain, open an item, switch to the better pick and log it with the chain name', (tester) async {
+  testWidgets('eating out: pick a chain, open an item, switch to the better pick and log it with the chain name', (
+    tester,
+  ) async {
     final logged = await pumpFoods(tester);
     // Browsing stays on whole foods: chain items only show for Eating out or a search.
     expect(find.text('Big Mac'), findsNothing);
@@ -111,7 +116,9 @@ void main() {
     expect(logged.single.food.toItem().name, 'KFC Original Recipe breast, skin and breading taken off');
   });
 
-  testWidgets('eating out in other countries: Greggs in the UK, Jamaican dishes estimated from recipes', (tester) async {
+  testWidgets('eating out in other countries: Greggs in the UK, Jamaican dishes estimated from recipes', (
+    tester,
+  ) async {
     final logged = await pumpFoods(tester);
     await tester.tap(find.text('Eating out'));
     await tester.pumpAndSettle();

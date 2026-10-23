@@ -8,13 +8,17 @@ import '../widgets/sheet.dart';
 
 /// Cook a dish step by step, full screen and in large type: gather the ingredients first (tick them
 /// off), then one step at a time. Steps slide in as you move; the screen stays awake while cooking.
-Future<void> showCookMode(BuildContext context, {required String title, required List<String> ingredients, required List<String> steps}) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => CookMode(title: title, ingredients: ingredients, steps: steps),
-      ),
-    );
+Future<void> showCookMode(
+  BuildContext context, {
+  required String title,
+  required List<String> ingredients,
+  required List<String> steps,
+}) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    fullscreenDialog: true,
+    builder: (_) => CookMode(title: title, ingredients: ingredients, steps: steps),
+  ),
+);
 
 class CookMode extends StatefulWidget {
   const CookMode({super.key, required this.title, required this.ingredients, required this.steps});
@@ -90,10 +94,16 @@ class _CookModeState extends State<CookMode> {
                 child: AnimatedSwitcher(
                   duration: still ? Duration.zero : Motion.select,
                   transitionBuilder: (child, animation) => SlideTransition(
-                    position: Tween(begin: Offset(_forward ? 0.25 : -0.25, 0), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Motion.settle)),
+                    position: Tween(
+                      begin: Offset(_forward ? 0.25 : -0.25, 0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: animation, curve: Motion.settle)),
                     child: FadeTransition(opacity: animation, child: child),
                   ),
-                  child: KeyedSubtree(key: ValueKey(_page), child: _page == 0 ? _ingredients(context) : _step(context, widget.steps[_page - 1])),
+                  child: KeyedSubtree(
+                    key: ValueKey(_page),
+                    child: _page == 0 ? _ingredients(context) : _step(context, widget.steps[_page - 1]),
+                  ),
                 ),
               ),
               Row(
@@ -102,7 +112,10 @@ class _CookModeState extends State<CookMode> {
                   if (_page > 0)
                     Expanded(
                       child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56), side: BorderSide(color: c.ruleStrong, width: 1.5)),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                          side: BorderSide(color: c.ruleStrong, width: 1.5),
+                        ),
                         onPressed: () => _go(_page - 1),
                         child: const Text('Back'),
                       ),
@@ -110,7 +123,11 @@ class _CookModeState extends State<CookMode> {
                   Expanded(
                     flex: 2,
                     child: SheetAction(
-                      label: _page == 0 ? 'Start cooking' : last ? 'Done' : 'Next step',
+                      label: _page == 0
+                          ? 'Start cooking'
+                          : last
+                          ? 'Done'
+                          : 'Next step',
                       onPressed: last ? () => Navigator.of(context).pop() : () => _go(_page + 1),
                     ),
                   ),
@@ -151,7 +168,10 @@ class _CookModeState extends State<CookMode> {
 
   Widget _step(BuildContext context, String step) => Center(
     child: SingleChildScrollView(
-      child: Text(step, style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w700, height: 1.35, letterSpacing: -0.3)),
+      child: Text(
+        step,
+        style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w700, height: 1.35, letterSpacing: -0.3),
+      ),
     ),
   );
 }

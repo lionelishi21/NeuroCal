@@ -16,7 +16,32 @@ enum LabUnits {
 
   /// Countries whose labs report mmol/L. Everywhere else defaults to mg/dL.
   static const _mmolCountries = {
-    'GB', 'IE', 'CA', 'AU', 'NZ', 'ZA', 'SE', 'NO', 'DK', 'FI', 'IS', 'NL', 'CH', 'CN', 'HK', 'SG', 'MY', 'EE', 'LV', 'LT', 'CZ', 'SK', 'SI', 'HR', 'RU', 'UA', //
+    'GB',
+    'IE',
+    'CA',
+    'AU',
+    'NZ',
+    'ZA',
+    'SE',
+    'NO',
+    'DK',
+    'FI',
+    'IS',
+    'NL',
+    'CH',
+    'CN',
+    'HK',
+    'SG',
+    'MY',
+    'EE',
+    'LV',
+    'LT',
+    'CZ',
+    'SK',
+    'SI',
+    'HR',
+    'RU',
+    'UA', //
   };
 
   /// The saved choice, else from the phone's region.
@@ -44,7 +69,8 @@ const _ifccOffset = 2.15;
 const glucoseMgdlPerMmol = 18.0;
 
 /// Whether [marker] shows differently in [units].
-bool converts(String marker, LabUnits units) => units == LabUnits.mmol && (marker == 'hba1c' || _mgdlPerMmol.containsKey(marker));
+bool converts(String marker, LabUnits units) =>
+    units == LabUnits.mmol && (marker == 'hba1c' || _mgdlPerMmol.containsKey(marker));
 
 /// The unit [marker] is shown in; [stored] is the API's unit.
 String labUnitOf(String marker, String stored, LabUnits units) {

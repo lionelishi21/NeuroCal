@@ -19,11 +19,12 @@ import 'pantry.dart' show RecipeCard;
 /// Scan a packaged food: the barcode first (a product database lookup), else the label (the AI reads
 /// it). Shows how processed it is and what's worth knowing, and for a processed food, a better choice:
 /// a cleaner one to buy and a homemade one from the pantry. Returns one serving to log, or null.
-Future<FoodItem?> showFoodScanSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) => showAppSheet<FoodItem>(
-  context,
-  title: 'Scan a food package',
-  builder: (_) => _FoodScan(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new),
-);
+Future<FoodItem?> showFoodScanSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
+    showAppSheet<FoodItem>(
+      context,
+      title: 'Scan a food package',
+      builder: (_) => _FoodScan(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new),
+    );
 
 const _flagLeads = <String, String>{
   'ultra_processed': 'Ultra-processed.',
@@ -105,7 +106,8 @@ class _FoodScanState extends State<_FoodScan> {
       setState(() {
         if (result.problem != null) {
           _problem = switch (result.problem) {
-            'not_a_label' => "That doesn't look like a food label. Point the camera at the nutrition panel or the ingredients.",
+            'not_a_label' =>
+              "That doesn't look like a food label. Point the camera at the nutrition panel or the ingredients.",
             'blurry' => 'The label is too blurry to read. Hold the phone steady and try again.',
             'too_dark' => 'The label is too dark to read. Try again in better light.',
             _ => 'Part of the label is cut off. Fit the whole panel in the frame.',
@@ -134,7 +136,10 @@ class _FoodScanState extends State<_FoodScan> {
   @override
   Widget build(BuildContext context) {
     if (_reading) {
-      return const Padding(padding: EdgeInsets.symmetric(vertical: Space.s6), child: Center(child: CircularProgressIndicator()));
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: Space.s6),
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
     final scan = _scan;
     return scan == null ? _pickStep(context) : _resultStep(context, scan);
@@ -146,11 +151,14 @@ class _FoodScanState extends State<_FoodScan> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
-        if (_problem != null) SheetNote(lead: _labelOnly ? 'Barcode not found.' : "Couldn't read it.", detail: _problem!, watch: _labelOnly),
+        if (_problem != null)
+          SheetNote(
+            lead: _labelOnly ? 'Barcode not found.' : "Couldn't read it.",
+            detail: _problem!,
+            watch: _labelOnly,
+          ),
         Text(
-          _labelOnly
-              ? 'Point the camera at the nutrition panel, then turn the package to the ingredients.'
-              : 'Point the camera at the barcode. If we don’t know the product, scan the nutrition panel and ingredients instead.',
+          _labelOnly ? 'Point the camera at the nutrition panel, then turn the package to the ingredients.' : 'Point the camera at the barcode. If we don’t know the product, scan the nutrition panel and ingredients instead.',
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
         FilledButton.icon(
@@ -160,7 +168,11 @@ class _FoodScanState extends State<_FoodScan> {
           label: Text(_labelOnly ? 'Scan the label' : 'Start scanning'),
         ),
         OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            foregroundColor: c.synapseInk,
+            side: BorderSide(color: c.ruleStrong, width: 1.5),
+          ),
           onPressed: _choose,
           icon: const Icon(Icons.image_outlined, size: 20),
           label: const Text('Choose a photo of the label'),
@@ -180,8 +192,14 @@ class _FoodScanState extends State<_FoodScan> {
     Widget stat(String value, String label) => Expanded(
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-          Text(label, style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+          ),
         ],
       ),
     );
@@ -193,8 +211,15 @@ class _FoodScanState extends State<_FoodScan> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s2,
           children: [
-            Text(scan.name, style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800)),
-            if (scan.manufacturer != null) Text('Made by ${scan.manufacturer}', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+            Text(
+              scan.name,
+              style: const TextStyle(fontSize: TextSize.lg, fontWeight: FontWeight.w800),
+            ),
+            if (scan.manufacturer != null)
+              Text(
+                'Made by ${scan.manufacturer}',
+                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+              ),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -229,16 +254,28 @@ class _FoodScanState extends State<_FoodScan> {
                   spacing: Space.s2,
                   children: [
                     Icon(Icons.verified_rounded, size: 20, color: c.chlorophyll),
-                    Expanded(child: Text('Mould-tested. ${coffee.detail}', style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.chlorophyll))),
+                    Expanded(
+                      child: Text(
+                        'Mould-tested. ${coffee.detail}',
+                        style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.chlorophyll),
+                      ),
+                    ),
                   ],
                 )
               : SheetNote(lead: 'Mould testing not stated.', detail: coffee.detail, watch: true),
         if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty)
-          Text('A whole food: nothing industrial in the ingredients.', style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll)),
+          Text(
+            'A whole food: nothing industrial in the ingredients.',
+            style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll),
+          ),
         if (scan.processing != FoodProcessing.whole && scan.ingredients.isNotEmpty)
           _better == null
               ? OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: c.synapseInk,
+                    side: BorderSide(color: c.ruleStrong, width: 1.5),
+                  ),
                   onPressed: () => _findBetter(scan),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 20),
                   label: const Text('Find a better choice'),
@@ -250,18 +287,26 @@ class _FoodScanState extends State<_FoodScan> {
                 ),
         if (scan.ingredients.isNotEmpty) ...[
           const GroupLabel('Ingredients', top: 4),
-          Text(scan.ingredients.join(', '), style: TextStyle(fontSize: TextSize.xs, height: 1.5, color: c.inkSoft)),
+          Text(
+            scan.ingredients.join(', '),
+            style: TextStyle(fontSize: TextSize.xs, height: 1.5, color: c.inkSoft),
+          ),
         ],
         Text(
           [
-            if (scan.fromDatabase) 'Product data from Open Food Facts (openfoodfacts.org), under the Open Database License.',
+            if (scan.fromDatabase)
+              'Product data from Open Food Facts (openfoodfacts.org), under the Open Database License.',
             'The glycemic load is an estimate: labels don’t print it.',
           ].join(' '),
           style: TextStyle(fontSize: TextSize.xxs, height: 1.5, color: c.inkSoft),
         ),
         if (scan.item != null) SheetAction(label: 'Log it', onPressed: () => Navigator.of(context).pop(scan.item)),
         OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), foregroundColor: c.synapseInk, side: BorderSide(color: c.ruleStrong, width: 1.5)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: c.synapseInk,
+            side: BorderSide(color: c.ruleStrong, width: 1.5),
+          ),
           onPressed: () => _addToPantry(scan.name),
           icon: const Icon(Icons.kitchen_rounded, size: 18),
           label: const Text('Add to pantry'),
@@ -301,7 +346,10 @@ class _BetterChoice extends StatelessWidget {
               spacing: Space.s3,
               children: [
                 const CircularProgressIndicator(),
-                Text('Finding a better choice…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+                Text(
+                  'Finding a better choice…',
+                  style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                ),
               ],
             ),
           );
@@ -330,7 +378,10 @@ class _BetterChoice extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: Space.s1,
                 children: [
-                  const Text('To buy instead', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800)),
+                  const Text(
+                    'To buy instead',
+                    style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+                  ),
                   Text(b.lookFor, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
                 ],
               ),

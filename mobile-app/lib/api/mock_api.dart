@@ -146,7 +146,9 @@ class MockNeuroCalApi implements NeuroCalApi {
       toGoKg: toGo,
       plannedWeeklyLossKg: goal == null ? null : (goal.startKg * goal.pacePctPerWeek).roundToDouble() / 100,
       // When the trend reaches the target at its current rate, as the API projects it.
-      projectedOn: toGo != null && toGo > 0 && weekly != null && weekly < 0 ? isoDate(last.add(Duration(days: (toGo / -weekly * 7).round()))) : null,
+      projectedOn: toGo != null && toGo > 0 && weekly != null && weekly < 0
+          ? isoDate(last.add(Duration(days: (toGo / -weekly * 7).round())))
+          : null,
     );
   }
 
@@ -159,9 +161,14 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     final now = DateTime.now();
     if (until.difference(now).inMinutes < 30) throw ApiException(400, 'Pick an end at least half an hour from now.');
-    final last = [for (final m in _meals) if (m.calories >= 10 && !m.eatenAt.isAfter(now)) m.eatenAt].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
+    final last = [
+      for (final m in _meals)
+        if (m.calories >= 10 && !m.eatenAt.isAfter(now)) m.eatenAt,
+    ].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
     final from = last != null && now.difference(last).inHours < 48 ? last : now;
-    if (until.difference(from).inMinutes > 48 * 60) throw ApiException(400, 'A planned fast can last up to 48 hours from your last meal. Pick an earlier time.');
+    if (until.difference(from).inMinutes > 48 * 60) {
+      throw ApiException(400, 'A planned fast can last up to 48 hours from your last meal. Pick an earlier time.');
+    }
     _fastPlan = (startedAt: now, until: until);
     return fasting();
   }
@@ -180,13 +187,30 @@ class MockNeuroCalApi implements NeuroCalApi {
     final hours = const {'16_8': 16, 'omad': 23, '12_12': 12}[protocol];
     final now = DateTime.now();
     // Drinks under 10 kcal (water, black coffee, plain tea) don't break a fast.
-    final eaten = [for (final m in _meals) if (m.calories >= 10) m.eatenAt]..sort();
+    final eaten = [
+      for (final m in _meals)
+        if (m.calories >= 10) m.eatenAt,
+    ]..sort();
     final plan = _fastPlan;
     if (plan != null && now.isBefore(plan.until) && !eaten.any((t) => t.isAfter(plan.startedAt) && !t.isAfter(now))) {
       final last = eaten.where((t) => !t.isAfter(now)).lastOrNull;
-      return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.fasting, since: last ?? plan.startedAt, goalAt: plan.until, planUntil: plan.until, lastMealAt: last);
+      return FastingStatus(
+        protocol: protocol,
+        fastHours: hours,
+        kind: FastingKind.fasting,
+        since: last ?? plan.startedAt,
+        goalAt: plan.until,
+        planUntil: plan.until,
+        lastMealAt: last,
+      );
     }
-    if (hours == null) return FastingStatus(protocol: 'none', kind: FastingKind.off, lastMealAt: eaten.where((t) => !t.isAfter(now)).lastOrNull);
+    if (hours == null) {
+      return FastingStatus(
+        protocol: 'none',
+        kind: FastingKind.off,
+        lastMealAt: eaten.where((t) => !t.isAfter(now)).lastOrNull,
+      );
+    }
     final past = eaten.where((t) => !t.isAfter(now)).toList();
     if (past.isEmpty) return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.unknown);
     var opened = past.last;
@@ -196,7 +220,14 @@ class MockNeuroCalApi implements NeuroCalApi {
     }
     final closes = opened.add(Duration(hours: 24 - hours));
     if (now.isBefore(closes)) {
-      return FastingStatus(protocol: protocol, fastHours: hours, kind: FastingKind.eating, openedAt: opened, closesAt: closes, streakDays: 2);
+      return FastingStatus(
+        protocol: protocol,
+        fastHours: hours,
+        kind: FastingKind.eating,
+        openedAt: opened,
+        closesAt: closes,
+        streakDays: 2,
+      );
     }
     final goalAt = past.last.add(Duration(hours: hours));
     return FastingStatus(
@@ -222,12 +253,20 @@ class MockNeuroCalApi implements NeuroCalApi {
     const movement = 0.5; // a 15-minute walk yesterday
     final environment = _environmentSignal();
     // The API's v1.1 weights (backend domain/focusScore.ts), renormalised when environment has no data.
-    final weighted = 0.3 * (sleep ?? 0) + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
+    final weighted =
+        0.3 * (sleep ?? 0) + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
     final score = (100 * weighted / (1 - (sleep == null ? 0.3 : 0) - (environment == null ? 0.1 : 0))).round();
     return FocusScore(
       date: isoDate(day),
       score: score,
-      components: FocusComponents(sleep: sleep, timing: timing, glycemic: glycemic, stress: stress, movement: movement, environment: environment),
+      components: FocusComponents(
+        sleep: sleep,
+        timing: timing,
+        glycemic: glycemic,
+        stress: stress,
+        movement: movement,
+        environment: environment,
+      ),
       explanation:
           'About 6.5 hours of sleep is holding your focus back most. A short walk in daylight before lunch can help.',
       glycemicFromSensor: sensor != null,
@@ -258,13 +297,24 @@ class MockNeuroCalApi implements NeuroCalApi {
   Future<TodayData> today([DateTime? day]) async {
     final date = day ?? DateTime.now();
     final (focus, bio, dayMeals) = await (focusScore(date), bioState(date), meals(date)).wait;
-    final done = [for (final e in _exercises) if (_sameDay(e.startedAt, date)) e];
+    final done = [
+      for (final e in _exercises)
+        if (_sameDay(e.startedAt, date)) e,
+    ];
     final exercise = ExerciseDay(
       exercises: done,
       totalMinutes: done.fold(0, (s, e) => s + e.minutes),
       totalKcal: done.fold(0, (s, e) => s + e.kcal),
     );
-    if (day != null) return TodayData(focus: focus, bio: bio, meals: dayMeals, exercise: exercise, environment: const EnvironmentDay());
+    if (day != null) {
+      return TodayData(
+        focus: focus,
+        bio: bio,
+        meals: dayMeals,
+        exercise: exercise,
+        environment: const EnvironmentDay(),
+      );
+    }
     final (recipes, fast, supplements, brain) = await (recommendations(), fasting(), stack(), brainChecks()).wait;
     return TodayData(
       focus: focus,
@@ -318,7 +368,15 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   final _pantry = <PantryItem>[
-    for (final (i, name) in const ['Eggs', 'Spinach', 'Greek yogurt', 'Oats', 'Frozen berries', 'Canned salmon', 'Lemons'].indexed)
+    for (final (i, name) in const [
+      'Eggs',
+      'Spinach',
+      'Greek yogurt',
+      'Oats',
+      'Frozen berries',
+      'Canned salmon',
+      'Lemons',
+    ].indexed)
       PantryItem(id: 'p${i + 1}', name: name),
   ];
 
@@ -327,7 +385,10 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     final names = photo != null
         ? const ['Frozen fries', 'Flavoured yogurt', 'Eggs', 'Spinach', 'Bottled water']
-        : [for (final l in (text ?? '').split(RegExp(r'[\n,;]+'))) if (l.trim().isNotEmpty) l.trim()];
+        : [
+            for (final l in (text ?? '').split(RegExp(r'[\n,;]+')))
+              if (l.trim().isNotEmpty) l.trim(),
+          ];
     final items = [
       for (final n in names)
         if (RegExp(r'fries|nuggets|soda|yogurt', caseSensitive: false).hasMatch(n))
@@ -336,14 +397,31 @@ class MockNeuroCalApi implements NeuroCalApi {
             processing: FoodProcessing.ultraProcessed,
             verdict: ShoppingVerdict.swap,
             reason: 'Made with additives and easy to overeat.',
-            swapFor: RegExp(r'yogurt', caseSensitive: false).hasMatch(n) ? 'Plain Greek yogurt with berries' : 'Potatoes cut and air-fried at home',
+            swapFor: RegExp(r'yogurt', caseSensitive: false).hasMatch(n)
+                ? 'Plain Greek yogurt with berries'
+                : 'Potatoes cut and air-fried at home',
           )
         else if (RegExp(r'chips|cookies|cereal', caseSensitive: false).hasMatch(n))
-          (name: n, processing: FoodProcessing.ultraProcessed, verdict: ShoppingVerdict.limit, reason: 'Fine now and then.', swapFor: null)
+          (
+            name: n,
+            processing: FoodProcessing.ultraProcessed,
+            verdict: ShoppingVerdict.limit,
+            reason: 'Fine now and then.',
+            swapFor: null,
+          )
         else
-          (name: n, processing: FoodProcessing.whole, verdict: ShoppingVerdict.keep, reason: 'A whole food.', swapFor: null),
+          (
+            name: n,
+            processing: FoodProcessing.whole,
+            verdict: ShoppingVerdict.keep,
+            reason: 'A whole food.',
+            swapFor: null,
+          ),
     ];
-    final fries = [for (final n in names) if (RegExp(r'fries|nuggets', caseSensitive: false).hasMatch(n)) n];
+    final fries = [
+      for (final n in names)
+        if (RegExp(r'fries|nuggets', caseSensitive: false).hasMatch(n)) n,
+    ];
     return ShoppingReview(
       items: items,
       devices: [
@@ -351,7 +429,8 @@ class MockNeuroCalApi implements NeuroCalApi {
           (
             product: (
               name: 'Ninja air fryer',
-              description: 'A countertop air fryer that crisps fresh potatoes, vegetables and chicken with a spoon of oil.',
+              description:
+                  'A countertop air fryer that crisps fresh potatoes, vegetables and chicken with a spoon of oil.',
               url: 'https://www.ninjakitchen.com/',
               affiliate: true,
               ownBrand: false,
@@ -374,15 +453,19 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<MealPlan> createMealPlan(int days) async {
     await _wait();
-    PlanMeal meal(MealKind kind, String title, int kcal, double protein, List<(String, String, bool)> items) => PlanMeal(
-      kind: kind,
-      title: title,
-      calories: kcal,
-      macros: Macros(proteinG: protein, carbsG: kcal * 0.1, fatG: kcal * 0.04),
-      processing: FoodProcessing.whole,
-      ingredients: [for (final (name, qty, have) in items) (name: name, quantity: qty, grams: 100, inPantry: have, fromCatalog: true)],
-      steps: const ['Prepare the ingredients.', 'Cook and serve.'],
-    );
+    PlanMeal meal(MealKind kind, String title, int kcal, double protein, List<(String, String, bool)> items) =>
+        PlanMeal(
+          kind: kind,
+          title: title,
+          calories: kcal,
+          macros: Macros(proteinG: protein, carbsG: kcal * 0.1, fatG: kcal * 0.04),
+          processing: FoodProcessing.whole,
+          ingredients: [
+            for (final (name, qty, have) in items)
+              (name: name, quantity: qty, grams: 100, inPantry: have, fromCatalog: true),
+          ],
+          steps: const ['Prepare the ingredients.', 'Cook and serve.'],
+        );
     final plan = MealPlan(
       createdAt: DateTime.now(),
       days: [
@@ -390,9 +473,21 @@ class MockNeuroCalApi implements NeuroCalApi {
           (
             day: d,
             meals: [
-              meal(MealKind.breakfast, 'Greek yogurt, berries and oats', 420, 28, [('Greek yogurt', '200 g', true), ('Frozen berries', '1 cup', true), ('Oats', '1/2 cup', true)]),
-              meal(MealKind.lunch, 'Salmon and spinach rice bowl', 640, 42, [('Canned salmon', '120 g', true), ('Spinach', '2 handfuls', true), ('Brown rice', '1 cup', false)]),
-              meal(MealKind.dinner, 'Chicken, sweet potato and broccoli', 690, 48, [('Chicken breast', '150 g', false), ('Sweet potato', '1 medium', false), ('Broccoli', '1 cup', false)]),
+              meal(MealKind.breakfast, 'Greek yogurt, berries and oats', 420, 28, [
+                ('Greek yogurt', '200 g', true),
+                ('Frozen berries', '1 cup', true),
+                ('Oats', '1/2 cup', true),
+              ]),
+              meal(MealKind.lunch, 'Salmon and spinach rice bowl', 640, 42, [
+                ('Canned salmon', '120 g', true),
+                ('Spinach', '2 handfuls', true),
+                ('Brown rice', '1 cup', false),
+              ]),
+              meal(MealKind.dinner, 'Chicken, sweet potato and broccoli', 690, 48, [
+                ('Chicken breast', '150 g', false),
+                ('Sweet potato', '1 medium', false),
+                ('Broccoli', '1 cup', false),
+              ]),
             ],
             calories: 1750,
             macros: const Macros(proteinG: 118, carbsG: 175, fatG: 58),
@@ -414,7 +509,10 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings}) async {
     await _wait();
-    final lines = [for (final l in text.split('\n')) if (l.trim().isNotEmpty) l.trim()];
+    final lines = [
+      for (final l in text.split('\n'))
+        if (l.trim().isNotEmpty) l.trim(),
+    ];
     if (lines.length < 2) return const RecipeAnalysis(problem: 'not_a_recipe');
     final n = servings ?? 2;
     final ingredients = [
@@ -461,7 +559,9 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<EnvironmentDay> setEnvironmentPlace(String? place) async {
     await _wait();
-    if (place != null && place.toLowerCase().contains('nowhere')) throw ApiException(400, 'We couldn\'t find "$place". Try the nearest town.');
+    if (place != null && place.toLowerCase().contains('nowhere')) {
+      throw ApiException(400, 'We couldn\'t find "$place". Try the nearest town.');
+    }
     _place = place == null || place.trim().isEmpty ? null : '${place.trim()}, sample region';
     return _environmentDay();
   }
@@ -482,12 +582,32 @@ class MockNeuroCalApi implements NeuroCalApi {
       requirements: [
         (level: 1, title: 'Log food on most days', met: true, progress: '24 of the last 28 days (needs 14)'),
         (level: 1, title: 'Log sleep on most nights', met: true, progress: '21 of the last 28 nights (needs 14)'),
-        (level: 2, title: 'Keep ultra-processed food under 20%', met: true, progress: '12% of graded calories were ultra-processed'),
-        (level: 2, title: 'Get near your protein target', met: true, progress: '86% of your protein target on average (needs 80%)'),
-        (level: 3, title: 'Eat and switch off screens on time, 5 nights a week', met: false, progress: 'On time 13 of 21 evenings (needs 5 in 7)'),
+        (
+          level: 2,
+          title: 'Keep ultra-processed food under 20%',
+          met: true,
+          progress: '12% of graded calories were ultra-processed',
+        ),
+        (
+          level: 2,
+          title: 'Get near your protein target',
+          met: true,
+          progress: '86% of your protein target on average (needs 80%)',
+        ),
+        (
+          level: 3,
+          title: 'Eat and switch off screens on time, 5 nights a week',
+          met: false,
+          progress: 'On time 13 of 21 evenings (needs 5 in 7)',
+        ),
         (level: 4, title: 'Sleep well most nights', met: false, progress: 'Sleep averages 71 (needs 75)'),
         (level: 4, title: 'Keep stress low', met: true, progress: 'Stress averages 82 (needs 75)'),
-        (level: 4, title: 'Brain speed at or above your usual', met: false, progress: 'Do the Brain speed check a few more times to set your usual'),
+        (
+          level: 4,
+          title: 'Brain speed at or above your usual',
+          met: false,
+          progress: 'Do the Brain speed check a few more times to set your usual',
+        ),
         (level: 5, title: 'Move most days', met: false, progress: 'Movement: 4 of 10 days with data so far'),
       ],
     );
@@ -532,7 +652,11 @@ class MockNeuroCalApi implements NeuroCalApi {
         calories: 430,
         macros: const Macros(proteinG: 38, carbsG: 6, fatG: 27),
         ingredients: [i('Eggs', '3'), i('Canned salmon', '80 g'), i('Spinach', '2 handfuls'), i('Chives', '1 tbsp')],
-        steps: const ['Whisk the eggs with a pinch of salt.', 'Wilt the spinach in a little oil.', 'Add the eggs and salmon; stir gently until just set.'],
+        steps: const [
+          'Whisk the eggs with a pinch of salt.',
+          'Wilt the spinach in a little oil.',
+          'Add the eggs and salmon; stir gently until just set.',
+        ],
         whyItFits: 'Protein and omega-3 for a steady afternoon, with room left for dinner.',
       ),
       PantryRecipe(
@@ -541,8 +665,17 @@ class MockNeuroCalApi implements NeuroCalApi {
         servings: 1,
         calories: 380,
         macros: const Macros(proteinG: 22, carbsG: 52, fatG: 8),
-        ingredients: [i('Oats', '1/2 cup'), i('Greek yogurt', '150 g'), i('Frozen berries', '1/2 cup'), i('Chia seeds', '1 tbsp')],
-        steps: const ['Stir the oats into the yogurt with a splash of water.', 'Top with the berries.', 'Chill overnight, or eat after 10 minutes.'],
+        ingredients: [
+          i('Oats', '1/2 cup'),
+          i('Greek yogurt', '150 g'),
+          i('Frozen berries', '1/2 cup'),
+          i('Chia seeds', '1 tbsp'),
+        ],
+        steps: const [
+          'Stir the oats into the yogurt with a splash of water.',
+          'Top with the berries.',
+          'Chill overnight, or eat after 10 minutes.',
+        ],
         whyItFits: 'Slow carbs and protein, ready for a busy morning.',
       ),
     ];
@@ -602,7 +735,11 @@ class MockNeuroCalApi implements NeuroCalApi {
     final fastest = sorted.take((sorted.length / 10).round().clamp(1, sorted.length)).toList();
     final lapses = reactionTimesMs.where((x) => x >= 500).length;
     // As the API scores it, calibrated for a phone (backend domain/brainCheck.ts).
-    final raw = 100 - (median - 300).clamp(0, double.infinity) / 4 - lapses / reactionTimesMs.length * 50 - (falseStarts * 2).clamp(0, 20);
+    final raw =
+        100 -
+        (median - 300).clamp(0, double.infinity) / 4 -
+        lapses / reactionTimesMs.length * 50 -
+        (falseStarts * 2).clamp(0, 20);
     final check = BrainCheck(
       takenAt: DateTime.now(),
       score: raw.round().clamp(0, 100),
@@ -645,12 +782,13 @@ class MockNeuroCalApi implements NeuroCalApi {
         processing: FoodProcessing.whole,
         coffee: (
           moldTested: false,
-          detail:
-              "The label doesn't say it's tested for mould toxins. Look for 'mycotoxin-tested' or a named lab test; washed, single-origin beans roasted recently are a safer bet than old, cheap blends.",
+          detail: "The label doesn't say it's tested for mould toxins. Look for 'mycotoxin-tested' or a named lab test; washed, single-origin beans roasted recently are a safer bet than old, cheap blends.",
         ),
       );
     }
-    if (code != '0123456789012') throw ApiException(404, "We don't know that barcode yet. Photograph the label instead.");
+    if (code != '0123456789012') {
+      throw ApiException(404, "We don't know that barcode yet. Photograph the label instead.");
+    }
     return const FoodScan(
       brand: 'Member’s Selection',
       productName: 'Roasted Peanuts',
@@ -724,7 +862,15 @@ class MockNeuroCalApi implements NeuroCalApi {
       sugarsG: 14,
       addedSugarsG: 12,
       sodiumMg: 140,
-      ingredients: ['Whole grain rolled oats', 'sugar', 'canola oil', 'almonds', 'honey', 'soy lecithin', 'natural flavor'],
+      ingredients: [
+        'Whole grain rolled oats',
+        'sugar',
+        'canola oil',
+        'almonds',
+        'honey',
+        'soy lecithin',
+        'natural flavor',
+      ],
       manufacturer: 'Crunchy Foods Inc.',
       producedOn: '2026-08-14',
       bestBefore: '2027-02',
@@ -733,7 +879,10 @@ class MockNeuroCalApi implements NeuroCalApi {
       processing: FoodProcessing.ultraProcessed,
       markers: ['emulsifier', 'flavouring'],
       flags: [
-        (kind: 'ultra_processed', message: 'Ultra-processed: it contains emulsifier, flavouring. Foods like this are easy to overeat.'),
+        (
+          kind: 'ultra_processed',
+          message: 'Ultra-processed: it contains emulsifier, flavouring. Foods like this are easy to overeat.',
+        ),
         (kind: 'high_added_sugar', message: "12 g of added sugar per serving: 24% of a day's limit."),
       ],
       item: FoodItem(
@@ -763,7 +912,11 @@ class MockNeuroCalApi implements NeuroCalApi {
     }
     for (final MapEntry(key: name, value: items) in byName.entries) {
       if (items.length > 1) {
-        flags.add((kind: 'duplicate', message: '${items.map((i) => i.name).join(' and ')} both contain $name.', itemIds: [for (final i in items) i.id]));
+        flags.add((
+          kind: 'duplicate',
+          message: '${items.map((i) => i.name).join(' and ')} both contain $name.',
+          itemIds: [for (final i in items) i.id],
+        ));
       }
     }
     return SupplementStack(items: List.of(_stack), flags: flags);
@@ -795,7 +948,13 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<StackItem> updateStackItem(String id, {int? servingsPerDay, StackTiming? timing, int? servingsPerContainer, bool newBottle = false}) async {
+  Future<StackItem> updateStackItem(
+    String id, {
+    int? servingsPerDay,
+    StackTiming? timing,
+    int? servingsPerContainer,
+    bool newBottle = false,
+  }) async {
     await _wait();
     final i = _stack.indexWhere((s) => s.id == id);
     final old = _stack[i];
@@ -862,18 +1021,15 @@ class MockNeuroCalApi implements NeuroCalApi {
       flags: [
         (
           kind: 'proprietary_blend',
-          message:
-              "Part of this is a proprietary blend: the label gives the blend's total weight but not how much of each ingredient is in it.",
+          message: "Part of this is a proprietary blend: the label gives the blend's total weight but not how much of each ingredient is in it.",
         ),
         (
           kind: 'above_upper_limit',
-          message:
-              'One serving has 50 mg of zinc, above the 40 mg a day that health authorities set as the upper limit for adults. Check with your doctor before taking it.',
+          message: 'One serving has 50 mg of zinc, above the 40 mg a day that health authorities set as the upper limit for adults. Check with your doctor before taking it.',
         ),
         (
           kind: 'no_third_party_testing',
-          message:
-              "No third-party testing mark (such as NSF, USP or Informed Sport) was found, so nobody outside the maker is shown to have checked what's inside.",
+          message: "No third-party testing mark (such as NSF, USP or Informed Sport) was found, so nobody outside the maker is shown to have checked what's inside.",
         ),
       ],
       alternative: (
@@ -971,8 +1127,20 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   final _markers = <MarkerReading>[
-    MarkerReading(id: 'mk1', marker: 'resting_hr', value: 66, measuredAt: DateTime.now().subtract(const Duration(days: 92)), source: 'health_connect'),
-    MarkerReading(id: 'mk2', marker: 'resting_hr', value: 61, measuredAt: DateTime.now().subtract(const Duration(days: 1)), source: 'health_connect'),
+    MarkerReading(
+      id: 'mk1',
+      marker: 'resting_hr',
+      value: 66,
+      measuredAt: DateTime.now().subtract(const Duration(days: 92)),
+      source: 'health_connect',
+    ),
+    MarkerReading(
+      id: 'mk2',
+      marker: 'resting_hr',
+      value: 61,
+      measuredAt: DateTime.now().subtract(const Duration(days: 1)),
+      source: 'health_connect',
+    ),
   ];
 
   /// Summarised like the API (backend domain/markers.ts).
@@ -981,7 +1149,8 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     return [
       for (final info in markerInfos)
-        if (_markers.where((r) => r.marker == info.id).toList()..sort((a, b) => a.measuredAt.compareTo(b.measuredAt)) case final mine when mine.isNotEmpty)
+        if (_markers.where((r) => r.marker == info.id).toList()..sort((a, b) => a.measuredAt.compareTo(b.measuredAt))
+            case final mine when mine.isNotEmpty)
           () {
             final latest = mine.last;
             final earlier = mine.where((r) => latest.measuredAt.difference(r.measuredAt).inDays >= 30).firstOrNull;
@@ -994,7 +1163,9 @@ class MockNeuroCalApi implements NeuroCalApi {
               reference: info.reference,
               latest: latest,
               change: change,
-              improving: change == null || change == 0 || info.better == null ? null : (change < 0) == (info.better == 'lower'),
+              improving: change == null || change == 0 || info.better == null
+                  ? null
+                  : (change < 0) == (info.better == 'lower'),
               points: [for (final r in mine.reversed.take(12).toList().reversed) r.value],
             );
           }(),
@@ -1008,11 +1179,23 @@ class MockNeuroCalApi implements NeuroCalApi {
     for (final r in readings) {
       final info = markerInfo(r.marker);
       if (info == null || r.value < info.min || r.value > info.max) {
-        throw ApiException(400, '${info?.label ?? 'That marker'} should be between ${info?.min} and ${info?.max} ${info?.unit}.', code: 'invalid_request');
+        throw ApiException(
+          400,
+          '${info?.label ?? 'That marker'} should be between ${info?.min} and ${info?.max} ${info?.unit}.',
+          code: 'invalid_request',
+        );
       }
       final at = r.measuredAt ?? DateTime.now();
       if (_markers.any((m) => m.marker == r.marker && m.source == r.source && m.measuredAt == at)) continue;
-      _markers.add(MarkerReading(id: 'mk${_markers.length + 1}', marker: r.marker, value: r.value, measuredAt: at, source: r.source));
+      _markers.add(
+        MarkerReading(
+          id: 'mk${_markers.length + 1}',
+          marker: r.marker,
+          value: r.value,
+          measuredAt: at,
+          source: r.source,
+        ),
+      );
       added++;
     }
     return added;
@@ -1040,13 +1223,23 @@ class MockNeuroCalApi implements NeuroCalApi {
         HealthspanHabit(
           id: 'zone2',
           title: 'Easy cardio',
-          detail: joints ? 'Cycling, swimming or brisk walks you could chat through. Kind to joints.' : 'Brisk walks, easy rides or swims you could chat through.',
+          detail: joints
+              ? 'Cycling, swimming or brisk walks you could chat through. Kind to joints.'
+              : 'Brisk walks, easy rides or swims you could chat through.',
           progress: 95,
           target: 150,
           unit: 'min',
           done: false,
         ),
-        const HealthspanHabit(id: 'strength', title: 'Strength', detail: 'Muscle is the organ of longevity: two sessions keep it as you age.', progress: 2, target: 2, unit: 'sessions', done: true),
+        const HealthspanHabit(
+          id: 'strength',
+          title: 'Strength',
+          detail: 'Muscle is the organ of longevity: two sessions keep it as you age.',
+          progress: 2,
+          target: 2,
+          unit: 'sessions',
+          done: true,
+        ),
         HealthspanHabit(
           id: 'hard_cardio',
           title: 'One hard session',
@@ -1057,10 +1250,42 @@ class MockNeuroCalApi implements NeuroCalApi {
           done: false,
           skipped: noHard ? 'Left out for your health. Ask your clinician what intensity suits you.' : null,
         ),
-        const HealthspanHabit(id: 'protein', title: 'Protein most days', detail: 'At least 104 g on 5 days, to keep muscle.', progress: 3, target: 5, unit: 'days', done: false),
-        const HealthspanHabit(id: 'whole_food', title: 'Mostly whole food', detail: "12% of this week's calories were ultra-processed. Under 20% is the goal.", progress: 12, target: 20, unit: '%', done: true),
-        const HealthspanHabit(id: 'steady_wake', title: 'A steady wake time', detail: 'Waking within 45 minutes of your usual time keeps your body clock set.', progress: 4, target: 5, unit: 'nights', done: false),
-        const HealthspanHabit(id: 'daylight', title: 'Morning daylight', detail: 'Ten minutes outside in the morning, five days a week.', progress: 2, target: 5, unit: 'days', done: false),
+        const HealthspanHabit(
+          id: 'protein',
+          title: 'Protein most days',
+          detail: 'At least 104 g on 5 days, to keep muscle.',
+          progress: 3,
+          target: 5,
+          unit: 'days',
+          done: false,
+        ),
+        const HealthspanHabit(
+          id: 'whole_food',
+          title: 'Mostly whole food',
+          detail: "12% of this week's calories were ultra-processed. Under 20% is the goal.",
+          progress: 12,
+          target: 20,
+          unit: '%',
+          done: true,
+        ),
+        const HealthspanHabit(
+          id: 'steady_wake',
+          title: 'A steady wake time',
+          detail: 'Waking within 45 minutes of your usual time keeps your body clock set.',
+          progress: 4,
+          target: 5,
+          unit: 'nights',
+          done: false,
+        ),
+        const HealthspanHabit(
+          id: 'daylight',
+          title: 'Morning daylight',
+          detail: 'Ten minutes outside in the morning, five days a week.',
+          progress: 2,
+          target: 5,
+          unit: 'days',
+          done: false,
+        ),
       ],
     );
   }
@@ -1137,7 +1362,10 @@ class MockNeuroCalApi implements NeuroCalApi {
           title: 'Do ten calf raises after meals',
           summary: 'The calf works as a second heart: a few raises after eating move blood back up from the legs.',
           steps: ['Stand up after the meal.', 'Rise onto your toes and lower slowly, ten times.'],
-          source: (title: 'Sample episode: your second heart', url: 'https://www.youtube.com/watch?v=sample00001&t=1290s'),
+          source: (
+            title: 'Sample episode: your second heart',
+            url: 'https://www.youtube.com/watch?v=sample00001&t=1290s',
+          ),
         ),
       ],
       products: [

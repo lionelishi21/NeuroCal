@@ -18,12 +18,26 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final api = MockNeuroCalApi()..latency = Duration.zero;
     final multi = (await tester.runAsync(
-      () => api.addToStack(name: 'Daily Multi', ingredients: const [], servingsPerDay: 1, timing: StackTiming.withFood, servingsPerContainer: 5),
+      () => api.addToStack(
+        name: 'Daily Multi',
+        ingredients: const [],
+        servingsPerDay: 1,
+        timing: StackTiming.withFood,
+        servingsPerContainer: 5,
+      ),
     ))!;
-    await tester.runAsync(() => api.addToStack(name: 'Magnesium', ingredients: const [], servingsPerDay: 2, timing: StackTiming.evening));
+    await tester.runAsync(
+      () => api.addToStack(name: 'Magnesium', ingredients: const [], servingsPerDay: 2, timing: StackTiming.evening),
+    );
     final stack = SupplementStack(
       items: (await tester.runAsync(api.stack))!.items,
-      flags: const [(kind: 'above_upper_limit', message: 'Together your supplements give 65 mg of zinc a day.', itemIds: <String>[])],
+      flags: const [
+        (
+          kind: 'above_upper_limit',
+          message: 'Together your supplements give 65 mg of zinc a day.',
+          itemIds: <String>[],
+        ),
+      ],
     );
 
     await tester.pumpWidget(
@@ -36,7 +50,9 @@ void main() {
         billing: MockBilling(active: true),
         child: MaterialApp(
           theme: buildTheme(Brightness.light),
-          home: Scaffold(body: SingleChildScrollView(child: StackCard(stack, onManage: () {}))),
+          home: Scaffold(
+            body: SingleChildScrollView(child: StackCard(stack, onManage: () {})),
+          ),
         ),
       ),
     );

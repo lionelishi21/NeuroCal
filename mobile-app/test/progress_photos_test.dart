@@ -8,7 +8,9 @@ import 'package:neurocal/screens/progress_photos_view.dart';
 import 'package:neurocal/theme/theme.dart';
 
 /// A 1 × 1 PNG, so Image.memory has something real to decode.
-final _png = base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+final _png = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+);
 
 Future<void> pump(WidgetTester tester, ProgressPhotoStore store) async {
   tester.view.physicalSize = const Size(360, 740);

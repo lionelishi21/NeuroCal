@@ -71,7 +71,8 @@ class MemoryProgressPhotoStore implements ProgressPhotoStore {
 
   @override
   Future<List<ProgressPhoto>> list() async =>
-      [for (final e in _photos.entries) (id: e.key, takenAt: e.value.$1)]..sort((a, b) => a.takenAt.compareTo(b.takenAt));
+      [for (final e in _photos.entries) (id: e.key, takenAt: e.value.$1)]
+        ..sort((a, b) => a.takenAt.compareTo(b.takenAt));
 
   @override
   Future<ProgressPhoto> add(Uint8List bytes, {DateTime? takenAt}) async {

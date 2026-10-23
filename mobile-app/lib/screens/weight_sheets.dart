@@ -13,23 +13,29 @@ const _maxKg = 350.0;
 
 /// Set or change the weight goal: current and target weight, pace and the safety question.
 /// Saving also logs today's weight. Returns true when something changed.
-Future<bool?> showWeightGoalSheet(BuildContext context, {required WeightUnit unit, WeightGoal? current, double? lastKg}) =>
-    showAppSheet<bool>(
-      context,
-      title: current == null ? 'Set your weight goal' : 'Your weight goal',
-      builder: (_) => _WeightGoal(unit: unit, current: current, lastKg: lastKg),
-    );
+Future<bool?> showWeightGoalSheet(
+  BuildContext context, {
+  required WeightUnit unit,
+  WeightGoal? current,
+  double? lastKg,
+}) => showAppSheet<bool>(
+  context,
+  title: current == null ? 'Set your weight goal' : 'Your weight goal',
+  builder: (_) => _WeightGoal(unit: unit, current: current, lastKg: lastKg),
+);
 
 /// Log today's weight. Returns true when saved.
 Future<bool?> showLogWeightSheet(BuildContext context, {required WeightUnit unit, double? lastKg}) =>
-    showAppSheet<bool>(context, title: 'Log your weight', builder: (_) => _LogWeight(unit: unit, lastKg: lastKg));
+    showAppSheet<bool>(
+      context,
+      title: 'Log your weight',
+      builder: (_) => _LogWeight(unit: unit, lastKg: lastKg),
+    );
 
 /// Up to three digits and one decimal. Checks the whole value: a pattern that can match nothing
 /// makes FilteringTextInputFormatter loop forever.
 final _decimal = [
-  TextInputFormatter.withFunction(
-    (old, next) => RegExp(r'^\d{0,3}([.,]\d?)?$').hasMatch(next.text) ? next : old,
-  ),
+  TextInputFormatter.withFunction((old, next) => RegExp(r'^\d{0,3}([.,]\d?)?$').hasMatch(next.text) ? next : old),
 ];
 double? _parse(String text) => double.tryParse(text.trim().replaceAll(',', '.'));
 
@@ -161,7 +167,10 @@ class _WeightGoalState extends State<_WeightGoal> {
           ],
         ),
         Row(spacing: Space.s3, children: [field(_now, 'Weight now'), field(_target, 'Target')]),
-        Text('Pace', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+        Text(
+          'Pace',
+          style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+        ),
         Wrap(
           spacing: Space.s2,
           runSpacing: Space.s2,
@@ -217,7 +226,9 @@ class _LogWeight extends StatefulWidget {
 }
 
 class _LogWeightState extends State<_LogWeight> {
-  late final _value = TextEditingController(text: widget.lastKg == null ? '' : widget.unit.fromKg(widget.lastKg!).toStringAsFixed(1));
+  late final _value = TextEditingController(
+    text: widget.lastKg == null ? '' : widget.unit.fromKg(widget.lastKg!).toStringAsFixed(1),
+  );
   var _busy = false;
   String? _error;
 

@@ -16,18 +16,32 @@ void main() {
       expect([for (final n in nudges) clock(n.at)], ['07:30', '08:30', '09:30']);
       expect(nudges.last.body, 'Morning check-in closes at 10:00.');
       // At 09:00 only the last call is still ahead.
-      expect([for (final n in nudgesFor(slots: {ReminderSlot.morning}, wakeHour: 7, now: morning9, days: 1)) clock(n.at)], ['09:30']);
+      expect(
+        [
+          for (final n in nudgesFor(slots: {ReminderSlot.morning}, wakeHour: 7, now: morning9, days: 1)) clock(n.at),
+        ],
+        ['09:30'],
+      );
     });
 
     test('a window checked in today gets no more nudges today, but does tomorrow', () {
-      final nudges = nudgesFor(slots: {ReminderSlot.morning}, wakeHour: 7, now: morning9, doneToday: {ReminderSlot.morning}, days: 2);
+      final nudges = nudgesFor(
+        slots: {ReminderSlot.morning},
+        wakeHour: 7,
+        now: morning9,
+        doneToday: {ReminderSlot.morning},
+        days: 2,
+      );
       expect(nudges.every((n) => n.at.day == 16), isTrue);
       expect(nudges, hasLength(3));
     });
 
     test('follows the wake time, and stays under the 64 notifications iOS keeps', () {
       expect(ReminderSlot.evening.range(5.5), '18:00–20:30');
-      expect(nudgesFor(slots: ReminderSlot.values.toSet(), wakeHour: 7, now: DateTime(2026, 10, 15)).length, lessThanOrEqualTo(64));
+      expect(
+        nudgesFor(slots: ReminderSlot.values.toSet(), wakeHour: 7, now: DateTime(2026, 10, 15)).length,
+        lessThanOrEqualTo(64),
+      );
     });
   });
 

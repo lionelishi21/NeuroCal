@@ -119,7 +119,9 @@ class _MoveFigureState extends State<MoveFigure> with SingleTickerProviderStateM
           painter: _FigurePainter(
             kind: widget.kind,
             // A loop (pedals, strokes) runs evenly and holds mid-stroke when still.
-            t: _pace.loop ? (still ? 0.3 : _controller.value) : (still ? 1 : Curves.easeInOut.transform(_controller.value)),
+            t: _pace.loop
+                ? (still ? 0.3 : _controller.value)
+                : (still ? 1 : Curves.easeInOut.transform(_controller.value)),
             ghost: still && widget.animate && widget.kind != MoveKind.rest && !_pace.loop,
             body: c.ink,
             far: c.inkFaint,
@@ -201,7 +203,8 @@ const _ground = 112.0;
 const _footLength = 14.0;
 
 /// Rotates [v] by [a] radians, heel-up for a foot pointing right.
-Offset _turn(Offset v, double a) => Offset(v.dx * math.cos(a) - v.dy * math.sin(a), v.dx * math.sin(a) + v.dy * math.cos(a));
+Offset _turn(Offset v, double a) =>
+    Offset(v.dx * math.cos(a) - v.dy * math.sin(a), v.dx * math.sin(a) + v.dy * math.cos(a));
 
 /// A foot pivoting on its toe: [lift] 0 is flat, 1 is the heel fully up.
 ({Offset heel, Offset ankle}) _footOnToe(Offset toe, double maxDegrees, double lift) {
@@ -278,7 +281,6 @@ _Pose _anklePump(double flex) {
     farToe: toe - const Offset(2, 1),
   );
 }
-
 
 /// A direction [a] radians from straight down, positive towards the front (right).
 Offset _dir(double a) => Offset(math.sin(a), math.cos(a));
@@ -665,7 +667,11 @@ class _FigurePainter extends CustomPainter {
         }
         canvas.drawPath(path, water);
       case MoveKind.tree:
-        canvas.drawLine(const Offset(30, _ground + 1.5), const Offset(70, _ground + 1.5), _stroke(accent.withValues(alpha: 0.5), 4));
+        canvas.drawLine(
+          const Offset(30, _ground + 1.5),
+          const Offset(70, _ground + 1.5),
+          _stroke(accent.withValues(alpha: 0.5), 4),
+        );
       case MoveKind.tennis:
         canvas.drawCircle(const Offset(88, 48), 3.5, Paint()..color = accent);
       case MoveKind.walk || MoveKind.run || MoveKind.squat || MoveKind.jumpingJack || MoveKind.reach:
@@ -710,7 +716,9 @@ class _FigurePainter extends CustomPainter {
     }
     _foot(canvas, p.ankle, p.heel, p.toe, c(body));
     canvas.drawPath(Path()..addPolygon([p.shoulder, p.elbow, p.hand], false), _stroke(c(body), 5.5));
-    if (working == _Working.arm) canvas.drawLine(Offset.lerp(p.shoulder, p.elbow, 0.15)!, p.elbow, _stroke(c(accent), 7.5));
+    if (working == _Working.arm) {
+      canvas.drawLine(Offset.lerp(p.shoulder, p.elbow, 0.15)!, p.elbow, _stroke(c(accent), 7.5));
+    }
     if (kind == MoveKind.tennis) {
       // The racket carries on from the forearm.
       final along = (p.hand - p.elbow) / (p.hand - p.elbow).distance;
@@ -730,5 +738,11 @@ class _FigurePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_FigurePainter old) =>
-      old.t != t || old.kind != kind || old.ghost != ghost || old.body != body || old.accent != accent || old.far != far || old.props != props;
+      old.t != t ||
+      old.kind != kind ||
+      old.ghost != ghost ||
+      old.body != body ||
+      old.accent != accent ||
+      old.far != far ||
+      old.props != props;
 }

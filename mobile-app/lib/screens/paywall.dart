@@ -48,7 +48,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     _load ??= _fetch();
   }
 
-  Future<(List<Plan>, WeightUnit)> _fetch() => (widget.billing.plans(), WeightUnit.load(Localizations.localeOf(context))).wait;
+  Future<(List<Plan>, WeightUnit)> _fetch() =>
+      (widget.billing.plans(), WeightUnit.load(Localizations.localeOf(context))).wait;
   var _busy = false;
 
   Future<void> _buy(Plan plan) async {
@@ -85,7 +86,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final fasting = fastingLabels[p.bioProfile?['fasting']];
     final w = p.weightGoal;
     final answers = p.bioProfile;
-    final start = answers == null || answers.isEmpty ? null : startingScore({for (final e in answers.entries) if (e.value != null) e.key: e.value as Object});
+    final start = answers == null || answers.isEmpty
+        ? null
+        : startingScore({
+            for (final e in answers.entries)
+              if (e.value != null) e.key: e.value as Object,
+          });
     return [
       if (start != null && start.target > start.score) 'Focus Score from ${start.score} to ${start.target} in 3 weeks',
       if (w != null) _weightLine(w, unit) else ?goal,
@@ -134,7 +140,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
               children: [
                 Text(
                   name.isEmpty ? 'Your plan is ready' : 'Your plan is ready, $name',
-                  style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.15),
+                  style: const TextStyle(
+                    fontSize: TextSize.xxl,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    height: 1.15,
+                  ),
                 ),
                 const SizedBox(height: Space.s4),
                 Container(
@@ -151,7 +162,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           children: [
                             Icon(Icons.check_circle_rounded, size: 20, color: c.synapseInk),
                             Expanded(
-                              child: Text(line, style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600, color: c.synapseInk)),
+                              child: Text(
+                                line,
+                                style: TextStyle(
+                                  fontSize: TextSize.md,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.synapseInk,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -166,7 +184,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       spacing: Space.s3,
                       children: [
                         Icon(icon, color: c.inkSoft),
-                        Expanded(child: Text(text, style: const TextStyle(fontSize: TextSize.sm, height: 1.35))),
+                        Expanded(
+                          child: Text(text, style: const TextStyle(fontSize: TextSize.sm, height: 1.35)),
+                        ),
                       ],
                     ),
                   ),
@@ -261,13 +281,22 @@ class _PlanOption extends StatelessWidget {
             child: Row(
               spacing: Space.s3,
               children: [
-                Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: selected ? c.synapse : c.ruleStrong),
+                Icon(
+                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  color: selected ? c.synapse : c.ruleStrong,
+                ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-                      Text(detail, style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                      Text(
+                        title,
+                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        detail,
+                        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                      ),
                     ],
                   ),
                 ),
@@ -311,8 +340,14 @@ class _Timeline extends StatelessWidget {
           child: Text.rich(
             TextSpan(
               children: [
-                TextSpan(text: '$when  ', style: const TextStyle(fontWeight: FontWeight.w800)),
-                TextSpan(text: what, style: TextStyle(color: c.inkSoft)),
+                TextSpan(
+                  text: '$when  ',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                TextSpan(
+                  text: what,
+                  style: TextStyle(color: c.inkSoft),
+                ),
               ],
             ),
             style: const TextStyle(fontSize: TextSize.sm, height: 1.4),
@@ -326,8 +361,16 @@ class _Timeline extends StatelessWidget {
       children: [
         step(Icons.lock_open_rounded, 'Today', 'Everything unlocked. Nothing to pay.'),
         // The backend's hourly trial reminder job sends this (SendTrialRemindersUseCase).
-        step(Icons.mail_outline_rounded, '${reminder.day} ${months[reminder.month - 1]}', 'We email you a reminder, with how to cancel.'),
-        step(Icons.event_rounded, '${charge.day} ${months[charge.month - 1]}', 'Your trial ends and you’re charged $price, unless you cancel before.'),
+        step(
+          Icons.mail_outline_rounded,
+          '${reminder.day} ${months[reminder.month - 1]}',
+          'We email you a reminder, with how to cancel.',
+        ),
+        step(
+          Icons.event_rounded,
+          '${charge.day} ${months[charge.month - 1]}',
+          'Your trial ends and you’re charged $price, unless you cancel before.',
+        ),
       ],
     );
   }

@@ -68,22 +68,27 @@ class _HealthspanCardState extends State<HealthspanCard> {
                           Expanded(
                             child: Semantics(
                               header: true,
-                              child: const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                              child: const Text(
+                                'Healthspan',
+                                style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                              ),
                             ),
                           ),
                           Flexible(
                             child: Text(
                               '${week.done} of ${week.counted} this week',
                               textAlign: TextAlign.end,
-                              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                              style: TextStyle(
+                                fontSize: TextSize.xs,
+                                fontWeight: FontWeight.w700,
+                                color: c.chlorophyll,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       Text(
-                        week.score == null
-                            ? 'The weekly habits behind a long, healthy life.'
-                            : 'Your longevity score: the weekly habits behind a long, healthy life, against where they should be by today.',
+                        week.score == null ? 'The weekly habits behind a long, healthy life.' : 'Your longevity score: the weekly habits behind a long, healthy life, against where they should be by today.',
                         style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
                       ),
                     ],
@@ -96,7 +101,10 @@ class _HealthspanCardState extends State<HealthspanCard> {
           ],
         ),
       );
-      return Padding(padding: const EdgeInsets.only(bottom: Space.s3), child: card);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: Space.s3),
+        child: card,
+      );
     },
   );
 }
@@ -114,7 +122,9 @@ class _Habit extends StatelessWidget {
     final lowerIsBetter = h.unit == '%';
     final shown = '${h.progress.round()}';
     final amount = lowerIsBetter ? '$shown% (under ${h.target.round()}%)' : '$shown / ${h.target.round()} ${h.unit}';
-    final fraction = lowerIsBetter ? (h.done ? 1.0 : (h.target / (h.progress == 0 ? 1 : h.progress)).clamp(0.0, 1.0)) : (h.progress / h.target).clamp(0.0, 1.0);
+    final fraction = lowerIsBetter
+        ? (h.done ? 1.0 : (h.target / (h.progress == 0 ? 1 : h.progress)).clamp(0.0, 1.0))
+        : (h.progress / h.target).clamp(0.0, 1.0);
     return Semantics(
       container: true,
       label: '${h.title}: ${skipped ? 'left out. ${h.skipped}' : '$amount${h.done ? ', done' : ''}. ${h.detail}'}',
@@ -144,16 +154,35 @@ class _Habit extends StatelessWidget {
                     alignment: WrapAlignment.spaceBetween,
                     spacing: Space.s2,
                     children: [
-                      Text(h.title, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: skipped ? c.inkSoft : c.ink)),
-                      if (!skipped) Text(amount, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+                      Text(
+                        h.title,
+                        style: TextStyle(
+                          fontSize: TextSize.sm,
+                          fontWeight: FontWeight.w700,
+                          color: skipped ? c.inkSoft : c.ink,
+                        ),
+                      ),
+                      if (!skipped)
+                        Text(
+                          amount,
+                          style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                        ),
                     ],
                   ),
                   if (!skipped)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(Radii.pill),
-                      child: LinearProgressIndicator(value: fraction, minHeight: 5, backgroundColor: c.track, color: h.done ? c.chlorophyll : c.synapse),
+                      child: LinearProgressIndicator(
+                        value: fraction,
+                        minHeight: 5,
+                        backgroundColor: c.track,
+                        color: h.done ? c.chlorophyll : c.synapse,
+                      ),
                     ),
-                  Text(skipped ? h.skipped! : h.detail, style: TextStyle(fontSize: TextSize.xs, height: 1.3, color: c.inkSoft)),
+                  Text(
+                    skipped ? h.skipped! : h.detail,
+                    style: TextStyle(fontSize: TextSize.xs, height: 1.3, color: c.inkSoft),
+                  ),
                 ],
               ),
             ),
@@ -191,7 +220,10 @@ class HealthspanRing extends StatelessWidget {
                 color: c.chlorophyllBar,
               ),
             ),
-            Text('$score', style: TextStyle(fontSize: size * 0.36, fontWeight: FontWeight.w800, color: c.ink)),
+            Text(
+              '$score',
+              style: TextStyle(fontSize: size * 0.36, fontWeight: FontWeight.w800, color: c.ink),
+            ),
           ],
         ),
       ),

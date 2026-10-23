@@ -159,7 +159,10 @@ final steps = <OnboardingStep>[
     'Anything we should know?',
     detail: 'NeuroCal keeps your plan safe around these, like no long fasts on diabetes medicines. It doesn’t treat any condition; check changes with your clinician.',
     [
-      const Question('hasConditions', QuestionKind.segments, [('no', 'None of these', null), ('yes', 'Yes, some', null)]),
+      const Question('hasConditions', QuestionKind.segments, [
+        ('no', 'None of these', null),
+        ('yes', 'Yes, some', null),
+      ]),
       Question(
         'conditions',
         QuestionKind.multi,

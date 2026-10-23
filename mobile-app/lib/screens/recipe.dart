@@ -43,7 +43,11 @@ class _RecipeScreenState extends State<RecipeScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Scaffold(
-      appBar: AppBar(title: const Text('Work out a recipe'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
+      appBar: AppBar(
+        title: const Text('Work out a recipe'),
+        backgroundColor: c.mist,
+        surfaceTintColor: Colors.transparent,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
         children: [
@@ -66,7 +70,12 @@ class _RecipeScreenState extends State<RecipeScreen> {
           const SizedBox(height: Space.s3),
           Row(
             children: [
-              Expanded(child: Text('Servings', style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft))),
+              Expanded(
+                child: Text(
+                  'Servings',
+                  style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+                ),
+              ),
               IconButton(
                 tooltip: 'Fewer servings',
                 onPressed: (_servings ?? 2) > 1 ? () => setState(() => _servings = (_servings ?? 2) - 1) : null,
@@ -74,7 +83,10 @@ class _RecipeScreenState extends State<RecipeScreen> {
               ),
               Semantics(
                 liveRegion: true,
-                child: Text(_servings == null ? 'As written' : '$_servings', style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
+                child: Text(
+                  _servings == null ? 'As written' : '$_servings',
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                ),
               ),
               IconButton(
                 tooltip: 'More servings',
@@ -117,7 +129,10 @@ class _Result extends StatelessWidget {
               spacing: Space.s3,
               children: [
                 const CircularProgressIndicator(),
-                Text('Reading the recipe…', style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft)),
+                Text(
+                  'Reading the recipe…',
+                  style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                ),
               ],
             ),
           );
@@ -126,14 +141,21 @@ class _Result extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(top: Space.s4),
             child: switch (snapshot.error) {
-              ApiException(status: 402) => const SheetNote(lead: 'Part of your subscription.', detail: 'Recipe calories come with NeuroCal Pro.'),
+              ApiException(status: 402) => const SheetNote(
+                lead: 'Part of your subscription.',
+                detail: 'Recipe calories come with NeuroCal Pro.',
+              ),
               ApiException(status: 400, :final message) => SheetNote(lead: 'Check the recipe.', detail: message),
               ApiException(status: >= 500) => ScreenFailed(
                 title: "Couldn't read the recipe",
                 detail: 'The recipe service isn’t answering right now. Try again in a few minutes.',
                 onRetry: onRetry,
               ),
-              _ => ScreenFailed(title: "Couldn't read the recipe", detail: 'Check your connection and try again.', onRetry: onRetry),
+              _ => ScreenFailed(
+                title: "Couldn't read the recipe",
+                detail: 'Check your connection and try again.',
+                onRetry: onRetry,
+              ),
             },
           );
         }
@@ -141,7 +163,10 @@ class _Result extends StatelessWidget {
         if (r.problem != null) {
           return const Padding(
             padding: EdgeInsets.only(top: Space.s4),
-            child: SheetNote(lead: 'That doesn’t look like a recipe.', detail: 'List the ingredients with their amounts, one per line.'),
+            child: SheetNote(
+              lead: 'That doesn’t look like a recipe.',
+              detail: 'List the ingredients with their amounts, one per line.',
+            ),
           );
         }
         final (fill, ink) = switch (r.processing) {
@@ -152,8 +177,14 @@ class _Result extends StatelessWidget {
         Widget stat(String value, String label) => Expanded(
           child: Column(
             children: [
-              Text(value, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
-              Text(label, style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft)),
+              Text(
+                value,
+                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+              ),
+              Text(
+                label,
+                style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+              ),
             ],
           ),
         );
@@ -173,9 +204,15 @@ class _Result extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Expanded(
-                        child: Text('${r.calories} kcal', style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800)),
+                        child: Text(
+                          '${r.calories} kcal',
+                          style: const TextStyle(fontSize: TextSize.xl, fontWeight: FontWeight.w800),
+                        ),
                       ),
-                      Text('per serving', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
+                      Text(
+                        'per serving',
+                        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                      ),
                     ],
                   ),
                   Row(
@@ -187,7 +224,12 @@ class _Result extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Expanded(child: Align(alignment: Alignment.centerLeft, child: Tag(r.processing.label, fill: fill, ink: ink))),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Tag(r.processing.label, fill: fill, ink: ink),
+                        ),
+                      ),
                       TextButton.icon(
                         onPressed: () => AppScope.of(context).openLink(videoSearchFor(r.title)),
                         icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
@@ -206,7 +248,9 @@ class _Result extends StatelessWidget {
                   for (final (n, i) in r.ingredients.indexed)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: Space.s4, vertical: Space.s3),
-                      decoration: BoxDecoration(border: n == 0 ? null : Border(top: BorderSide(color: c.rule))),
+                      decoration: BoxDecoration(
+                        border: n == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                      ),
                       child: Row(
                         spacing: Space.s2,
                         children: [
@@ -214,15 +258,28 @@ class _Result extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(i.name, style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
                                 Text(
-                                  [if (i.quantity.isNotEmpty) i.quantity, '${i.grams.round()} g', if (!i.fromCatalog) 'estimated'].join(' · '),
-                                  style: TextStyle(fontSize: TextSize.xxs, color: i.fromCatalog ? c.inkSoft : c.glucoseInk),
+                                  i.name,
+                                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  [
+                                    if (i.quantity.isNotEmpty) i.quantity,
+                                    '${i.grams.round()} g',
+                                    if (!i.fromCatalog) 'estimated',
+                                  ].join(' · '),
+                                  style: TextStyle(
+                                    fontSize: TextSize.xxs,
+                                    color: i.fromCatalog ? c.inkSoft : c.glucoseInk,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          Text('${i.calories} kcal', style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700)),
+                          Text(
+                            '${i.calories} kcal',
+                            style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                          ),
                         ],
                       ),
                     ),

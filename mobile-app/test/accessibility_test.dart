@@ -79,7 +79,15 @@ void main() {
 
   testWidgets('text at twice the size fits in the add menu and each logging sheet', (tester) async {
     await _open(tester, textScale: 2);
-    for (final entry in ['Log a meal', 'Check in', 'Log exercise', 'Log sleep', 'Log weight', 'Log screen time', 'Brain speed check']) {
+    for (final entry in [
+      'Log a meal',
+      'Check in',
+      'Log exercise',
+      'Log sleep',
+      'Log weight',
+      'Log screen time',
+      'Brain speed check',
+    ]) {
       await tester.tap(find.bySemanticsLabel('Add'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'the add menu');

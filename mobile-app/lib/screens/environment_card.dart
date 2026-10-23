@@ -37,7 +37,15 @@ class _EnvironmentCardState extends State<EnvironmentCard> {
   Future<void> _answer(EnvironmentItem item, bool kept) async {
     final before = _day;
     // Shown at once; put back if it doesn't save.
-    setState(() => _day = EnvironmentDay(place: _day.place, aqi: _day.aqi, category: _day.category, check: {..._day.check, item: kept}, signal: _day.signal));
+    setState(
+      () => _day = EnvironmentDay(
+        place: _day.place,
+        aqi: _day.aqi,
+        category: _day.category,
+        check: {..._day.check, item: kept},
+        signal: _day.signal,
+      ),
+    );
     try {
       final saved = await AppScope.of(context).api.saveEnvironmentCheck({item: kept});
       if (!mounted) return;
@@ -70,60 +78,75 @@ class _EnvironmentCardState extends State<EnvironmentCard> {
     };
     const padding = EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14);
     final body = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: Space.s3,
-        children: [
-          Row(
-            spacing: Space.s3,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: c.ionSoft, shape: BoxShape.circle),
-                child: Icon(Icons.air_rounded, size: 22, color: c.ionInk),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s3,
+      children: [
+        Row(
+          spacing: Space.s3,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.ionSoft, shape: BoxShape.circle),
+              child: Icon(Icons.air_rounded, size: 22, color: c.ionInk),
+            ),
+            const Expanded(
+              child: Text(
+                'Environment',
+                style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
               ),
-              const Expanded(child: Text('Environment', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800))),
-              if (d.aqi != null)
-                Semantics(
-                  label: 'Air quality ${d.aqi}, ${d.categoryLabel}',
-                  excludeSemantics: true,
-                  child: Tag('AQI ${d.aqi} · ${d.categoryLabel}', fill: fill, ink: ink),
+            ),
+            if (d.aqi != null)
+              Semantics(
+                label: 'Air quality ${d.aqi}, ${d.categoryLabel}',
+                excludeSemantics: true,
+                child: Tag('AQI ${d.aqi} · ${d.categoryLabel}', fill: fill, ink: ink),
+              ),
+          ],
+        ),
+        if (d.place == null)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Set your town to add the air you breathe.',
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                ),
+              ),
+              SoftButton(label: 'Set town', onPressed: _setPlace),
+            ],
+          )
+        else
+          InkWell(
+            onTap: _setPlace,
+            borderRadius: BorderRadius.circular(Radii.option),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.s1),
+              child: Text(
+                'Air in ${d.place} · change',
+                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+              ),
+            ),
+          ),
+        // Two ticks a row, like the supplements above them.
+        LayoutBuilder(
+          builder: (context, box) => Wrap(
+            children: [
+              for (final item in EnvironmentItem.values)
+                SizedBox(
+                  width: box.maxWidth / 2,
+                  child: _Tick(
+                    label: item.label,
+                    done: d.check[item] == true,
+                    onTap: () => _answer(item, d.check[item] != true),
+                  ),
                 ),
             ],
           ),
-          if (d.place == null)
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Set your town to add the air you breathe.', style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft)),
-                ),
-                SoftButton(label: 'Set town', onPressed: _setPlace),
-              ],
-            )
-          else
-            InkWell(
-              onTap: _setPlace,
-              borderRadius: BorderRadius.circular(Radii.option),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: Space.s1),
-                child: Text('Air in ${d.place} · change', style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft)),
-              ),
-            ),
-          // Two ticks a row, like the supplements above them.
-          LayoutBuilder(
-            builder: (context, box) => Wrap(
-              children: [
-                for (final item in EnvironmentItem.values)
-                  SizedBox(
-                    width: box.maxWidth / 2,
-                    child: _Tick(label: item.label, done: d.check[item] == true, onTap: () => _answer(item, d.check[item] != true)),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      );
+        ),
+      ],
+    );
     return widget.framed ? AppCard(padding: padding, child: body) : Padding(padding: padding, child: body);
   }
 }
@@ -164,7 +187,10 @@ class _Tick extends StatelessWidget {
                 child: done ? Icon(Icons.check_rounded, size: 16, color: c.onAccent) : null,
               ),
               Expanded(
-                child: Text(label, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, color: done ? c.inkSoft : c.ink)),
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600, color: done ? c.inkSoft : c.ink),
+                ),
               ),
             ],
           ),
@@ -175,8 +201,11 @@ class _Tick extends StatelessWidget {
 }
 
 /// Set the town for air quality. Returns the day with it, or null when closed.
-Future<EnvironmentDay?> showPlaceSheet(BuildContext context, {String? current}) =>
-    showAppSheet<EnvironmentDay>(context, title: 'Air quality where you live', builder: (_) => _PlaceSheet(current: current));
+Future<EnvironmentDay?> showPlaceSheet(BuildContext context, {String? current}) => showAppSheet<EnvironmentDay>(
+  context,
+  title: 'Air quality where you live',
+  builder: (_) => _PlaceSheet(current: current),
+);
 
 class _PlaceSheet extends StatefulWidget {
   const _PlaceSheet({this.current});
@@ -207,7 +236,9 @@ class _PlaceSheetState extends State<_PlaceSheet> {
       final day = await AppScope.of(context).api.setEnvironmentPlace(place);
       if (mounted) Navigator.of(context).pop(day);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _problem = e.status == 400 ? e.message : 'Places can’t be looked up right now. Try again soon.');
+      if (mounted) {
+        setState(() => _problem = e.status == 400 ? e.message : 'Places can’t be looked up right now. Try again soon.');
+      }
     } catch (_) {
       if (mounted) setState(() => _problem = 'Check your connection and try again.');
     } finally {
@@ -235,7 +266,10 @@ class _PlaceSheetState extends State<_PlaceSheet> {
           onSubmitted: (v) => v.trim().isEmpty ? null : _save(v.trim()),
         ),
         if (_problem != null) SheetNote(lead: 'Not found.', detail: _problem!),
-        SheetAction(label: _busy ? 'Looking it up…' : 'Save', onPressed: _busy ? null : () => _place.text.trim().isEmpty ? null : _save(_place.text.trim())),
+        SheetAction(
+          label: _busy ? 'Looking it up…' : 'Save',
+          onPressed: _busy ? null : () => _place.text.trim().isEmpty ? null : _save(_place.text.trim()),
+        ),
         if (widget.current != null)
           TextButton(onPressed: _busy ? null : () => _save(null), child: const Text('Stop using my town')),
       ],

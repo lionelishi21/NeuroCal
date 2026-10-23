@@ -89,7 +89,13 @@ Widget _frame({required String title, required String detail, required ui.Image 
             SizedBox(height: small ? 8 : 12),
             Text(
               detail,
-              style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: small ? 13.5 : 16.5, height: 1.4, fontWeight: FontWeight.w500, color: const Color(0xFFB9C1DA)),
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: small ? 13.5 : 16.5,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFB9C1DA),
+              ),
             ),
             SizedBox(height: small ? 20 : 32),
             Expanded(
@@ -153,7 +159,15 @@ class _PhoneShell extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(34 * scale, 14 * scale, 28 * scale, 0),
                 child: Row(
                   children: [
-                    Text('9:41', style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 16 * scale, fontWeight: FontWeight.w700, color: ink)),
+                    Text(
+                      '9:41',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 16 * scale,
+                        fontWeight: FontWeight.w700,
+                        color: ink,
+                      ),
+                    ),
                     const Spacer(),
                     Icon(Icons.signal_cellular_alt_rounded, size: 17 * scale, color: ink),
                     SizedBox(width: 5 * scale),
@@ -195,7 +209,10 @@ Future<void> _write(WidgetTester tester, String name, String title, String detai
       RepaintBoundary(
         child: FittedBox(
           fit: BoxFit.fill,
-          child: SizedBox.fromSize(size: canvas, child: _frame(title: title, detail: detail, screen: screen)),
+          child: SizedBox.fromSize(
+            size: canvas,
+            child: _frame(title: title, detail: detail, screen: screen),
+          ),
         ),
       ),
     );
@@ -211,8 +228,21 @@ Future<MockNeuroCalApi> _sampleApi(WidgetTester tester) async {
   await tester.runAsync(() async {
     await api.saveProfile({
       // Late screens and a phone by the bed: a believable starting point with room to grow.
-      'bioProfile': {'eveningScreens': '3_plus', 'phoneAtNight': 'next_to_head', 'movement': 'none', 'fasting': '16_8', 'friction': 'afternoon_crash', 'wake': '6_to_8'},
-      'weightGoal': {'startKg': 95, 'targetKg': 85, 'startedOn': isoDate(started), 'pacePctPerWeek': 0.75, 'fastingCaution': false},
+      'bioProfile': {
+        'eveningScreens': '3_plus',
+        'phoneAtNight': 'next_to_head',
+        'movement': 'none',
+        'fasting': '16_8',
+        'friction': 'afternoon_crash',
+        'wake': '6_to_8',
+      },
+      'weightGoal': {
+        'startKg': 95,
+        'targetKg': 85,
+        'startedOn': isoDate(started),
+        'pacePctPerWeek': 0.75,
+        'fastingCaution': false,
+      },
     });
     // Three weeks of weigh-ins, down about 0.12 kg a day with the usual water swings.
     for (var i = 21; i >= 1; i--) {
@@ -227,12 +257,20 @@ Future<MockNeuroCalApi> _sampleApi(WidgetTester tester) async {
 Future<GlobalKey> _openApp(WidgetTester tester, MockNeuroCalApi api) async {
   _usePhone(tester);
   // The 3-week challenge, started at "Hold to commit" eight days ago.
-  SharedPreferences.setMockInitialValues({'weightUnit': 'kg', 'challenge.start.u1': isoDate(DateTime.now().subtract(const Duration(days: 8)))});
+  SharedPreferences.setMockInitialValues({
+    'weightUnit': 'kg',
+    'challenge.start.u1': isoDate(DateTime.now().subtract(const Duration(days: 8))),
+  });
   final key = GlobalKey();
   await tester.pumpWidget(
     RepaintBoundary(
       key: key,
-      child: NeuroCalApp(api: api, auth: MockAuthClient(), theme: ThemeController(await SharedPreferences.getInstance()), openLink: (_) async => true),
+      child: NeuroCalApp(
+        api: api,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        openLink: (_) async => true,
+      ),
     ),
   );
   await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'sam@example.com');
@@ -251,7 +289,9 @@ Future<void> _show(WidgetTester tester, Finder finder, {double alignment = 0.1})
 
 void main() {
   setUpAll(() async {
-    await _font('PlusJakartaSans', [for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/PlusJakartaSans-$w.ttf']);
+    await _font('PlusJakartaSans', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/PlusJakartaSans-$w.ttf',
+    ]);
     final fonts = '${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts';
     await _font('MaterialIcons', ['$fonts/MaterialIcons-Regular.otf']);
     // Buttons take Material's own face.
@@ -261,14 +301,26 @@ void main() {
   testWidgets('1 Today', (tester) async {
     final key = await _openApp(tester, await _sampleApi(tester));
     final screen = await _capture(tester, key);
-    await _write(tester, '1_today', 'Lose weight and think clearer', 'One Focus Score each morning, from your sleep, food, stress and movement.', screen);
+    await _write(
+      tester,
+      '1_today',
+      'Lose weight and think clearer',
+      'One Focus Score each morning, from your sleep, food, stress and movement.',
+      screen,
+    );
   });
 
   testWidgets('2 Your plan', (tester) async {
     final key = await _openApp(tester, await _sampleApi(tester));
     await _show(tester, find.text('Your plan'), alignment: 0.02);
     final screen = await _capture(tester, key);
-    await _write(tester, '2_plan', 'Watch both goals move', 'Your Focus Score heading for its target, and your weight heading for yours.', screen);
+    await _write(
+      tester,
+      '2_plan',
+      'Watch both goals move',
+      'Your Focus Score heading for its target, and your weight heading for yours.',
+      screen,
+    );
   });
 
   testWidgets('3 Fasting', (tester) async {
@@ -286,7 +338,13 @@ void main() {
     await tester.scrollUntilVisible(find.text('Focus Score'), -300);
     await _show(tester, find.text('Planned fast'), alignment: 0.2);
     final screen = await _capture(tester, key);
-    await _write(tester, '3_fasting', 'Fast your way', 'Plan a fast until noon tomorrow. Water and black coffee don’t break it.', screen);
+    await _write(
+      tester,
+      '3_fasting',
+      'Fast your way',
+      'Plan a fast until noon tomorrow. Water and black coffee don’t break it.',
+      screen,
+    );
   });
 
   testWidgets('4 Check in', (tester) async {
@@ -299,7 +357,13 @@ void main() {
     await tester.tap(find.text('Sharp'));
     await tester.pumpAndSettle();
     final screen = await _capture(tester, key);
-    await _write(tester, '4_check_in', 'Check in in ten seconds', 'Tap how you feel. NeuroCal links it to your sleep and food.', screen);
+    await _write(
+      tester,
+      '4_check_in',
+      'Check in in ten seconds',
+      'Tap how you feel. NeuroCal links it to your sleep and food.',
+      screen,
+    );
   });
 
   testWidgets('5 Food scan', (tester) async {
@@ -328,7 +392,12 @@ void main() {
             theme: buildTheme(Brightness.light),
             home: Builder(
               builder: (context) => Scaffold(
-                body: Center(child: TextButton(onPressed: () => showFoodScanSheet(context, camera: () => camera), child: const Text('Open'))),
+                body: Center(
+                  child: TextButton(
+                    onPressed: () => showFoodScanSheet(context, camera: () => camera),
+                    child: const Text('Open'),
+                  ),
+                ),
               ),
             ),
           ),
@@ -351,7 +420,13 @@ void main() {
     await tester.pumpAndSettle();
     await _show(tester, find.text('A better choice'), alignment: 0.05);
     final screen = await _capture(tester, key);
-    await _write(tester, '5_food_scan', 'See what’s really in your food', 'Scan a package for additives and sugar, and get a cleaner swap you can make.', screen);
+    await _write(
+      tester,
+      '5_food_scan',
+      'See what’s really in your food',
+      'Scan a package for additives and sugar, and get a cleaner swap you can make.',
+      screen,
+    );
     FlutterError.onError = reportError;
   });
 
@@ -364,7 +439,13 @@ void main() {
     await tester.tap(find.text('Walk'));
     await tester.pump(const Duration(milliseconds: 300));
     final screen = await _capture(tester, key);
-    await _write(tester, '6_move', 'Move, with a guide', 'Log a walk in two taps, or follow a five-minute routine at your desk.', screen);
+    await _write(
+      tester,
+      '6_move',
+      'Move, with a guide',
+      'Log a walk in two taps, or follow a five-minute routine at your desk.',
+      screen,
+    );
     await tester.pumpAndSettle();
   });
 }

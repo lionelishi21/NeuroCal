@@ -636,11 +636,19 @@ class _WhatHelps extends StatelessWidget {
                                       padding: EdgeInsets.zero,
                                       minimumSize: const Size(0, 36),
                                       foregroundColor: c.synapseInk,
-                                      textStyle: const TextStyle(fontFamily: fontFamily, fontSize: TextSize.xs, fontWeight: FontWeight.w700),
+                                      textStyle: const TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: TextSize.xs,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                     onPressed: () => AppScope.of(context).openLink(Uri.parse(source.url)),
                                     icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
-                                    label: Text('Watch where it’s said: ${source.title}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                                    label: Text(
+                                      'Watch where it’s said: ${source.title}',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               const SizedBox(height: Space.s1),
@@ -691,8 +699,7 @@ class _WhatHelps extends StatelessWidget {
                           [
                             if (data.products.any((p) => p.affiliate))
                               'We earn a commission when you buy through an affiliate link.',
-                            if (data.products.any((p) => p.ownBrand))
-                              '"Our brand" products are sold by MitoProof, which is run by the people who make NeuroCal.',
+                            if (data.products.any((p) => p.ownBrand)) '"Our brand" products are sold by MitoProof, which is run by the people who make NeuroCal.',
                             "Neither changes what we suggest; suggestions come from your week's data.",
                           ].join(' '),
                           style: TextStyle(fontSize: TextSize.xxs, height: 1.5, color: c.inkSoft),

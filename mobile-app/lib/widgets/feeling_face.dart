@@ -21,7 +21,15 @@ class FeelingFace extends StatelessWidget {
     return ExcludeSemantics(
       child: CustomPaint(
         size: Size.square(size),
-        painter: _FacePainter(flag: flag, fill: fill, accent: accent, ink: c.ink, paper: c.paper, cloud: c.ruleStrong, drop: c.ionInk),
+        painter: _FacePainter(
+          flag: flag,
+          fill: fill,
+          accent: accent,
+          ink: c.ink,
+          paper: c.paper,
+          cloud: c.ruleStrong,
+          drop: c.ionInk,
+        ),
       ),
     );
   }
@@ -40,7 +48,15 @@ class FeelingFace extends StatelessWidget {
 
 /// Drawn in a 100 × 100 box: the head is centred at (50, 56) with a radius of 32.
 class _FacePainter extends CustomPainter {
-  _FacePainter({required this.flag, required this.fill, required this.accent, required this.ink, required this.paper, required this.cloud, required this.drop});
+  _FacePainter({
+    required this.flag,
+    required this.fill,
+    required this.accent,
+    required this.ink,
+    required this.paper,
+    required this.cloud,
+    required this.drop,
+  });
 
   final CognitiveFlag flag;
   final Color fill, accent, ink, paper, cloud, drop;
@@ -113,9 +129,18 @@ class _FacePainter extends CustomPainter {
         );
         // A cloud sitting over the top of the head.
         // Merged into one outline, so the stroke doesn't cross the inside.
-        var shape = Path()..addRRect(RRect.fromRectAndRadius(const Rect.fromLTRB(26, 30, 82, 44), const Radius.circular(7)));
-        for (final (center, radius) in [(const Offset(38, 30), 12.0), (const Offset(55, 24), 15.0), (const Offset(71, 31), 11.0)]) {
-          shape = Path.combine(PathOperation.union, shape, Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
+        var shape = Path()
+          ..addRRect(RRect.fromRectAndRadius(const Rect.fromLTRB(26, 30, 82, 44), const Radius.circular(7)));
+        for (final (center, radius) in [
+          (const Offset(38, 30), 12.0),
+          (const Offset(55, 24), 15.0),
+          (const Offset(71, 31), 11.0),
+        ]) {
+          shape = Path.combine(
+            PathOperation.union,
+            shape,
+            Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+          );
         }
         canvas.drawPath(shape, _solid(paper));
         canvas.drawPath(shape, _line(cloud, 3));
@@ -130,7 +155,10 @@ class _FacePainter extends CustomPainter {
         final battery = RRect.fromRectAndRadius(const Rect.fromLTWH(70, 10, 22, 12), const Radius.circular(3));
         canvas.drawRRect(battery, _line(accent, 3));
         canvas.drawLine(const Offset(94.5, 14), const Offset(94.5, 18), _line(accent, 3));
-        canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(73, 13, 5, 6), const Radius.circular(1.5)), _solid(accent));
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(const Rect.fromLTWH(73, 13, 5, 6), const Radius.circular(1.5)),
+          _solid(accent),
+        );
       case CognitiveFlag.wired:
         for (final x in [39.0, 61.0]) {
           canvas.drawCircle(Offset(x, 52), 7.5, _solid(paper));
@@ -194,5 +222,6 @@ class _FacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_FacePainter old) => old.flag != flag || old.fill != fill || old.accent != accent || old.ink != ink;
+  bool shouldRepaint(_FacePainter old) =>
+      old.flag != flag || old.fill != fill || old.accent != accent || old.ink != ink;
 }

@@ -23,7 +23,12 @@ typedef ThreeWeeks = ({
   bool onTrack,
 });
 
-ThreeWeeks? threeWeeks({required DateTime started, required StartingScore starting, required List<HistoryDay> days, required DateTime today}) {
+ThreeWeeks? threeWeeks({
+  required DateTime started,
+  required StartingScore starting,
+  required List<HistoryDay> days,
+  required DateTime today,
+}) {
   final from = DateTime(started.year, started.month, started.day);
   final day = DateTime(today.year, today.month, today.day).difference(from).inDays + 1;
   if (day < 1 || day > challengeDays + _shownAfter) return null;
@@ -31,7 +36,13 @@ ThreeWeeks? threeWeeks({required DateTime started, required StartingScore starti
   final now = recent.isEmpty ? null : (recent.reduce((a, b) => a + b) / recent.length).round();
   final expected = starting.score + (starting.target - starting.score) * (day.clamp(1, challengeDays) / challengeDays);
   // A few points of give: one rough night shouldn't read as falling behind.
-  return (day: day, start: starting.score, target: starting.target, now: now, onTrack: now != null && now >= expected - 3);
+  return (
+    day: day,
+    start: starting.score,
+    target: starting.target,
+    now: now,
+    onTrack: now != null && now >= expected - 3,
+  );
 }
 
 /// The onboarding answers kept in the profile, as the starting score reads them.
