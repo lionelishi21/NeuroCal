@@ -155,12 +155,16 @@ class ChoicePill extends StatelessWidget {
             height: height,
             alignment: Alignment.center,
             padding: EdgeInsets.symmetric(horizontal: radius == Radii.pill ? Space.s4 : Space.s1),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: TextSize.md,
-                fontWeight: FontWeight.w700,
-                color: selected ? c.onAccent : c.ink,
+            // Shrinks to fit a narrow pill when text is large, rather than spilling out of it.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: TextSize.md,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? c.onAccent : c.ink,
+                ),
               ),
             ),
           ),

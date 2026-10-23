@@ -71,9 +71,12 @@ class _HealthspanCardState extends State<HealthspanCard> {
                               child: const Text('Healthspan', style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
                             ),
                           ),
-                          Text(
-                            '${week.done} of ${week.counted} this week',
-                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                          Flexible(
+                            child: Text(
+                              '${week.done} of ${week.counted} this week',
+                              textAlign: TextAlign.end,
+                              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.chlorophyll),
+                            ),
                           ),
                         ],
                       ),
@@ -136,11 +139,12 @@ class _Habit extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: 2,
                 children: [
-                  Row(
+                  // Title and amount side by side; the amount moves under the title when large text needs the room.
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: Space.s2,
                     children: [
-                      Expanded(
-                        child: Text(h.title, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: skipped ? c.inkSoft : c.ink)),
-                      ),
+                      Text(h.title, style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: skipped ? c.inkSoft : c.ink)),
                       if (!skipped) Text(amount, style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
                     ],
                   ),

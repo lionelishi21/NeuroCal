@@ -143,7 +143,8 @@ Future<Capture?> showCaptureMenu(BuildContext context) => showAppSheet<Capture>(
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: Space.s2,
             crossAxisSpacing: Space.s2,
-            childAspectRatio: 1.75,
+            // Taller tiles as text grows, so two lines of large text still fit.
+            childAspectRatio: 1.75 / MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.5),
             children: [
               for (final (i, option) in Capture.values.indexed)
                 if (option.group == group) tile(i, option),

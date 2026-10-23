@@ -187,16 +187,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
         child: SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.s2, 6, Space.s2, Space.s2),
-            child: Row(
-              children: [
-                tab(0),
-                tab(1),
-                Expanded(child: Center(heightFactor: 1, child: _AddButton(open: _menuOpen, onPressed: _add))),
-                tab(2),
-                tab(3),
-              ],
+          // Tab labels grow with large text only so far, like the system's own tab bars: the rest of
+          // the app scales fully.
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.s2, 6, Space.s2, Space.s2),
+              child: Row(
+                children: [
+                  tab(0),
+                  tab(1),
+                  Expanded(child: Center(heightFactor: 1, child: _AddButton(open: _menuOpen, onPressed: _add))),
+                  tab(2),
+                  tab(3),
+                ],
+              ),
             ),
           ),
         ),
@@ -224,9 +229,10 @@ class _TabButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.control),
         onTap: onTap,
-        child: SizedBox(
-          height: 56,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: Space.s1,
             children: [

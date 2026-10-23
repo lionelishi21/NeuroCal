@@ -193,31 +193,36 @@ class _DayPicker extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(Radii.option),
                   onTap: () => onPick(i),
-                  child: SizedBox(
-                    height: 56,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 2,
-                      children: [
-                        Text(
-                          weekdayShort[d.day.weekday - 1],
-                          style: TextStyle(
-                            fontSize: TextSize.xxxs,
-                            fontWeight: FontWeight.w600,
-                            height: 1,
-                            color: (selected == i ? c.onAccent : c.ink).withValues(alpha: 0.8),
+                  // Seven narrow days: their names and dates grow with large text only so far.
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.3,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 2,
+                        children: [
+                          Text(
+                            weekdayShort[d.day.weekday - 1],
+                            style: TextStyle(
+                              fontSize: TextSize.xxxs,
+                              fontWeight: FontWeight.w600,
+                              height: 1,
+                              color: (selected == i ? c.onAccent : c.ink).withValues(alpha: 0.8),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${d.day.day}',
-                          style: TextStyle(
-                            fontSize: TextSize.base,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1,
-                            color: selected == i ? c.onAccent : c.ink,
+                          Text(
+                            '${d.day.day}',
+                            style: TextStyle(
+                              fontSize: TextSize.base,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                              color: selected == i ? c.onAccent : c.ink,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -303,12 +308,14 @@ class _DayCard extends StatelessWidget {
                   ),
                 ),
                 if (today)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: c.synapseSoft, borderRadius: BorderRadius.circular(Radii.pill)),
-                    child: Text(
-                      'Today so far',
-                      style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: c.synapseSoft, borderRadius: BorderRadius.circular(Radii.pill)),
+                      child: Text(
+                        'Today so far',
+                        style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
+                      ),
                     ),
                   ),
               ],
@@ -372,9 +379,12 @@ class _Columns extends StatelessWidget {
                 ),
               ),
               if (note != null)
-                Text(
-                  note!,
-                  style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                Flexible(
+                  child: Text(
+                    note!,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+                  ),
                 ),
             ],
           ),

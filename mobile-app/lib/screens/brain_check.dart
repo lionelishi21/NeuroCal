@@ -169,7 +169,7 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
   Widget _intro(BuildContext context) {
     final c = context.colors;
     final minutes = widget.duration.inMinutes;
-    return Padding(
+    return _fitOrScroll(Padding(
       padding: const EdgeInsets.all(Space.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,7 +196,7 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
           if (widget.skipLabel != null) TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(widget.skipLabel!)),
         ],
       ),
-    );
+    ));
   }
 
   Widget _test(BuildContext context) {
@@ -254,7 +254,7 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
         ],
       ),
     );
-    return Padding(
+    return _fitOrScroll(Padding(
       padding: const EdgeInsets.all(Space.s5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -277,8 +277,18 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
           SheetAction(label: widget.doneLabel, onPressed: () => Navigator.of(context).pop(r)),
         ],
       ),
-    );
+    ));
   }
+
+  /// Fills the screen so the button sits at the bottom, and scrolls when large text needs more room.
+  Widget _fitOrScroll(Widget column) => LayoutBuilder(
+    builder: (context, box) => SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: box.maxHeight),
+        child: IntrinsicHeight(child: column),
+      ),
+    ),
+  );
 
   Widget _failed(BuildContext context) => Padding(
     padding: const EdgeInsets.all(Space.s5),

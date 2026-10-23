@@ -279,9 +279,12 @@ class _LogScreenTimeState extends State<_LogScreenTime> {
                   ).copyWith(counterText: '', filled: false, semanticCounterText: ''),
                 ),
               ),
-              Text(
-                'minutes',
-                style: TextStyle(fontSize: TextSize.md, color: c.inkSoft),
+              Flexible(
+                child: Text(
+                  'minutes',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: TextSize.md, color: c.inkSoft),
+                ),
               ),
             ],
           ),

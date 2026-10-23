@@ -705,29 +705,34 @@ class _WeekStrip extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(Radii.option),
                     onTap: () => onPick(d),
-                    child: SizedBox(
-                      height: 48,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 2,
-                        children: [
-                          Text(
-                            weekdayShort[d.weekday - 1][0],
-                            style: TextStyle(
-                              fontSize: TextSize.xxs,
-                              fontWeight: FontWeight.w600,
-                              color: _sameDay(d, selected) ? c.onAccent : c.inkSoft,
+                    // Seven days in a fixed strip: letters and dates grow with large text only so far.
+                    child: MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 1.3,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          spacing: 2,
+                          children: [
+                            Text(
+                              weekdayShort[d.weekday - 1][0],
+                              style: TextStyle(
+                                fontSize: TextSize.xxs,
+                                fontWeight: FontWeight.w600,
+                                color: _sameDay(d, selected) ? c.onAccent : c.inkSoft,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${d.day}',
-                            style: TextStyle(
-                              fontSize: TextSize.md,
-                              fontWeight: FontWeight.w800,
-                              color: _sameDay(d, selected) ? c.onAccent : c.ink,
+                            Text(
+                              '${d.day}',
+                              style: TextStyle(
+                                fontSize: TextSize.md,
+                                fontWeight: FontWeight.w800,
+                                color: _sameDay(d, selected) ? c.onAccent : c.ink,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -802,29 +807,33 @@ class _FocusCard extends StatelessWidget {
               FocusRing(
                 score: score,
                 size: 104,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      score?.toString() ?? '–',
-                      style: TextStyle(
-                        fontSize: TextSize.xxxl,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                        height: 1,
-                        color: score == null ? c.inkFaint : c.ink,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    if (score != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 3),
-                        child: Text(
-                          'of 100',
-                          style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w500, color: c.inkSoft),
+                // The number has to fit the ring: it grows with large text only so far.
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.3,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        score?.toString() ?? '–',
+                        style: TextStyle(
+                          fontSize: TextSize.xxxl,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1,
+                          height: 1,
+                          color: score == null ? c.inkFaint : c.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
-                  ],
+                      if (score != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(
+                            'of 100',
+                            style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w500, color: c.inkSoft),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: Space.s4),
@@ -843,7 +852,7 @@ class _FocusCard extends StatelessWidget {
                         ),
                         if (onShare != null)
                           SizedBox.square(
-                            dimension: 32,
+                            dimension: 48,
                             child: IconButton(
                               tooltip: 'Share my score',
                               padding: EdgeInsets.zero,
@@ -1046,6 +1055,7 @@ class _Calories extends StatelessWidget {
     final c = context.colors;
     final left = bio.calorieTarget - bio.caloriesEaten.round();
     final over = left < 0;
+    final stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     final macros = [
       ('Protein', bio.macrosEaten.proteinG, bio.macroTargets.proteinG, c.ion),
       ('Carbs', bio.macrosEaten.carbsG, bio.macroTargets.carbsG, c.glucose),
@@ -1072,11 +1082,12 @@ class _Calories extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                bio.caloriesEaten > 0
-                    ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten'
-                    : 'Nothing eaten yet',
-                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+              Flexible(
+                child: Text(
+                  bio.caloriesEaten > 0 ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten' : 'Nothing eaten yet',
+                  textAlign: TextAlign.end,
+                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                ),
               ),
             ],
           ),
@@ -1091,11 +1102,16 @@ class _Calories extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 14),
-          Row(
+          // Three across; stacked when large text wouldn't fit three.
+          Flex(
+            direction: stacked ? Axis.vertical : Axis.horizontal,
+            // Full width when stacked; a row in a scrolling list has no height to stretch to.
+            crossAxisAlignment: stacked ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
             spacing: 14,
             children: [
               for (final (name, got, goal, color) in macros)
-                Expanded(
+                _Flexed(
+                  stacked: stacked,
                   child: MergeSemantics(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1142,6 +1158,17 @@ class _Calories extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Expanded in a row; as it is in a column.
+class _Flexed extends StatelessWidget {
+  const _Flexed({required this.stacked, required this.child});
+
+  final bool stacked;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => stacked ? child : Expanded(child: child);
 }
 
 class _Feeling extends StatelessWidget {
@@ -2019,7 +2046,13 @@ class _UpNextState extends State<_UpNext> {
                   ),
                 ),
               ),
-              Text('$done of ${items.length} done', style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft)),
+              Flexible(
+                child: Text(
+                  '$done of ${items.length} done',
+                  textAlign: TextAlign.end,
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                ),
+              ),
               IconButton(
                 tooltip: 'How NeuroCal works',
                 onPressed: widget.onHowItWorks,

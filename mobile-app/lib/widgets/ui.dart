@@ -74,10 +74,14 @@ class BlockTitle extends StatelessWidget {
             ),
           ),
         ),
+        // Wraps under large text rather than pushing past the edge.
         if (note != null)
-          Text(
-            note!,
-            style: TextStyle(fontSize: TextSize.xs, color: context.colors.inkSoft),
+          Flexible(
+            child: Text(
+              note!,
+              textAlign: TextAlign.end,
+              style: TextStyle(fontSize: TextSize.xs, color: context.colors.inkSoft),
+            ),
           ),
       ],
     ),

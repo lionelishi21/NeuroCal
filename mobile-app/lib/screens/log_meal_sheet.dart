@@ -589,9 +589,10 @@ class _PhotoTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(Radii.card),
         onTap: onTap,
-        child: SizedBox(
-          height: 120,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 120),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: 10,
             children: [
