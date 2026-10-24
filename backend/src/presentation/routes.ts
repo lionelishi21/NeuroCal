@@ -50,6 +50,7 @@ import {
   PantryRecipesResponse,
   PlanFastRequest,
   CoffeeDay,
+  CoffeeProducts,
   LogCoffeeRequest,
   BetterChoiceRequest,
   BetterChoiceResponse,
@@ -274,12 +275,13 @@ async function photosFrom(req: ApiRequest, max: number) {
 }
 
 /** A food scan over the wire: the label as read, NeuroCal's grading, and a serving to log. */
-const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, flags, item, coffee }: FoodScan) => ({
+const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, flags, item, coffee, coffeeFat }: FoodScan) => ({
   ...reading,
   processing,
   flags,
   ...(item ? { item: toFoodItem(item) } : {}),
   ...(coffee ? { coffee } : {}),
+  ...(coffeeFat ? { coffeeFat } : {}),
 });
 
 const toCoffeeDay = (d: CoffeeDayRecord) => ({
@@ -585,6 +587,11 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
     ["GET", /^\/coffee$/, async (req) => ok(CoffeeDay, toCoffeeDay(await uc.coffee.day(req.userId, date(req))))],
+    [
+      "GET",
+      /^\/coffee\/products$/,
+      async () => ok(CoffeeProducts, { products: (await uc.coffee.products()).map((item) => toProductRecommendation({ item, similarity: 1 })) }),
+    ],
     [
       "POST",
       /^\/coffee$/,

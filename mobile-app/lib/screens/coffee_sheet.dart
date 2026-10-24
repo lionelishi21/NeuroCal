@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../coffee_fats.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
@@ -49,6 +50,17 @@ class _LogCoffeeState extends State<_LogCoffee> {
   CoffeeDay? _day;
   var _busy = false;
   String? _problem;
+
+  /// The MCT oil and butter or ghee scanned for this person's coffee, once loaded.
+  ({CoffeeFat? mct, CoffeeFat? fat})? _mine;
+
+  @override
+  void initState() {
+    super.initState();
+    coffeeFats().then((f) {
+      if (mounted) setState(() => _mine = f);
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -126,7 +138,16 @@ class _LogCoffeeState extends State<_LogCoffee> {
           spacing: Space.s2,
           runSpacing: Space.s2,
           children: [
-            for (final (label, kind, addIns) in _presets)
+            for (final (label, kind, addIns) in [
+              // Their own cup, with what they scanned, first.
+              if (_mine case (mct: final mct, fat: final fat) when mct != null || fat != null)
+                (
+                  'My Bulletproof',
+                  CoffeeKind.brewed,
+                  [mct?.addIn ?? CoffeeAddIn.mctC8, fat?.addIn ?? CoffeeAddIn.butterGrassFed],
+                ),
+              ..._presets,
+            ])
               ActionChip(
                 avatar: const Icon(Icons.coffee_rounded, size: 18),
                 label: Text(label),
@@ -139,6 +160,11 @@ class _LogCoffeeState extends State<_LogCoffee> {
               ),
           ],
         ),
+        if (_mine case (mct: final mct, fat: final fat) when mct != null || fat != null)
+          Text(
+            'My Bulletproof uses ${[if (mct != null) mct.name, if (fat != null) fat.name].join(' and ')}.',
+            style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: context.colors.inkSoft),
+          ),
         const GroupLabel('The coffee', top: 0),
         Wrap(
           spacing: Space.s2,

@@ -103,6 +103,13 @@ const OTHER_BRANDS: Product[] = [
   partner("homebiotic", "Homebiotic", "A probiotic spray for household surfaces.", "https://homebiotic.com/", ["home", "mold", "cleaning"]),
   partner("leela-quantum-tech", "Leela Quantum Tech", "Clothing and accessories its maker says are charged with quantum energy. That claim is the maker's own.", "https://leelaq.com/", ["home", "accessories"]),
 
+  // Coffee: what goes in a good cup, suggested on the coffee page (domain/coffee.ts COFFEE_PRODUCT_IDS).
+  partner("bulletproof-brain-octane", "Bulletproof Brain Octane C8 MCT oil", "Pure C8 MCT oil (caprylic acid) from coconut, the MCT that raises ketones most. Start with a teaspoon in coffee and build up.", "https://www.bulletproof.com/", ["coffee", "bulletproof coffee", "mct oil", "ketones", "fasting", "energy"]),
+  partner("sports-research-c8-mct", "Sports Research C8 MCT oil", "Pure C8 MCT oil from coconut, third-party tested. Start with a teaspoon in coffee and build up.", "https://www.sportsresearch.com/", ["coffee", "bulletproof coffee", "mct oil", "ketones", "fasting", "energy"]),
+  partner("kerrygold-butter", "Kerrygold butter", "Irish butter from cows that graze on grass most of the year, so it has more omega-3 and vitamin K2 than regular butter.", "https://www.kerrygold.com/", ["coffee", "bulletproof coffee", "butter", "grass-fed", "fats"]),
+  partner("fourth-and-heart-ghee", "4th & Heart grass-fed ghee", "Ghee (clarified butter) from grass-fed cows. Without the milk solids, it suits people who don't get on with butter.", "https://www.fourthandheart.com/", ["coffee", "bulletproof coffee", "ghee", "grass-fed", "fats"]),
+  partner("thorne-creatine", "Thorne creatine", "Creatine monohydrate, NSF Certified for Sport. 5 g a day, in coffee or water, at any time.", "https://www.thorne.com/", ["creatine", "strength", "focus", "exercise", "supplements"], { supplement: true }),
+
   // Skin
   partner("oneskin", "OneSkin", "Skin-care creams built around the maker's own peptide.", "https://www.oneskin.co/", ["skin", "ageing"]),
   partner("auro-glutathione-serum", "Auro glutathione serum", "A skin serum containing glutathione.", "https://aurowellness.com/", ["skin", "ageing"]),

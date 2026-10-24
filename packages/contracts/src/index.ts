@@ -488,6 +488,10 @@ export const CoffeeDay = z.object({
 });
 export type CoffeeDay = z.infer<typeof CoffeeDay>;
 
+/** What goes in a good cup: mould-tested coffee, pure C8 MCT, grass-fed butter or ghee, creatine. */
+export const CoffeeProducts = z.object({ products: z.array(ProductRecommendation) });
+export type CoffeeProducts = z.infer<typeof CoffeeProducts>;
+
 export const PlanFastRequest = z.object({
   /** When the fast ends: at least half an hour ahead, within planLimitHours of the last meal. */
   until: IsoDateTime,
@@ -1081,6 +1085,11 @@ export const FoodScanResponse = z.object({
   item: FoodItem.optional(),
   /** For coffee only: whether the label or its maker says it's tested for mould toxins (mycotoxins). */
   coffee: z.object({ moldTested: z.boolean(), detail: z.string() }).optional(),
+  /**
+   * For MCT oil, butter or ghee: the coffee add-in it is (pure C8 or a C8/C10 blend, grass-fed or
+   * not), and whether it's the better kind.
+   */
+  coffeeFat: z.object({ addIn: CoffeeAddIn, good: z.boolean(), detail: z.string() }).optional(),
 });
 export type FoodScanResponse = z.infer<typeof FoodScanResponse>;
 
@@ -1345,6 +1354,7 @@ export const endpoints = {
   /** Log a cup; returns the day with it. Not a meal: black and fat-only coffee keep a fast. */
   logCoffee: { method: "POST", path: "/coffee", body: LogCoffeeRequest, response: CoffeeDay },
   deleteCoffee: { method: "DELETE", path: "/coffee/:id" },
+  getCoffeeProducts: { method: "GET", path: "/coffee/products", response: CoffeeProducts },
   /** Fast until a time, counted from the last meal; replaces a plan already running. */
   planFast: { method: "PUT", path: "/fasting/plan", body: PlanFastRequest, response: FastingStatus },
   /** End a planned fast early. */

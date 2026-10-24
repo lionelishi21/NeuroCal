@@ -169,6 +169,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Not a meal. Black coffee, espresso, fat (MCT oil, butter, ghee) and creatine keep a fast going, as a 'fat fast'; milk, sugar or collagen end it. The add-ins' calories count toward the day. Caffeine after the curfew lowers the next day's evening timing in the Focus Score.",
   },
   deleteCoffee: { summary: "Remove a cup", status: 204, params: { id: "The cup's id." } },
+  getCoffeeProducts: {
+    summary: "What goes in a good cup",
+    description: "Mould-tested coffee, pure C8 MCT oil, grass-fed butter or ghee and creatine from the product catalog; only products an admin has left switched on. Affiliate and own-brand products must be labelled.",
+  },
   planFast: {
     summary: "Plan a fast",
     description: "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (48, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",

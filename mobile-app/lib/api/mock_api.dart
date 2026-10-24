@@ -607,6 +607,30 @@ class MockNeuroCalApi implements NeuroCalApi {
     _cups.removeWhere((c) => c.id == id);
   }
 
+  /// As the API's catalog (backend partnerProducts.ts), two of them.
+  @override
+  Future<List<SuggestedProduct>> coffeeProducts() async {
+    await _wait();
+    return const [
+      (
+        name: 'Danger Coffee',
+        description: 'Coffee with added trace minerals, which its maker tests for mold toxins. A morning coffee for people who want caffeine early in the day and none after lunch.',
+        url: 'https://dangercoffee.com/',
+        affiliate: true,
+        ownBrand: false,
+        supplement: false,
+      ),
+      (
+        name: 'Bulletproof Brain Octane C8 MCT oil',
+        description: 'Pure C8 MCT oil (caprylic acid) from coconut, the MCT that raises ketones most. Start with a teaspoon in coffee and build up.',
+        url: 'https://www.bulletproof.com/',
+        affiliate: false,
+        ownBrand: false,
+        supplement: false,
+      ),
+    ];
+  }
+
   @override
   Future<EnvironmentDay> environment() async {
     await _wait();
@@ -840,6 +864,25 @@ class MockNeuroCalApi implements NeuroCalApi {
         coffee: (
           moldTested: false,
           detail: "The label doesn't say it's tested for mould toxins. Look for 'mycotoxin-tested' or a named lab test; washed, single-origin beans roasted recently are a safer bet than old, cheap blends.",
+        ),
+      );
+    }
+    if (code == '0850000000024') {
+      return const FoodScan(
+        brand: 'Pure Oils',
+        productName: 'MCT Oil',
+        servingSize: '1 tbsp',
+        calories: 130,
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 14,
+        ingredients: ['Caprylic acid (C8)', 'Capric acid (C10)'],
+        fromDatabase: true,
+        processing: FoodProcessing.processed,
+        coffeeFat: (
+          addIn: CoffeeAddIn.mctC8C10,
+          good: false,
+          detail: 'A C8/C10 blend. Pure C8 raises ketones more and is easier on the stomach; look for C8 or caprylic acid alone.',
         ),
       );
     }

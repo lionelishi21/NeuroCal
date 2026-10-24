@@ -371,6 +371,12 @@ export class InMemoryCatalog implements ICatalogRepository {
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
   }
+  async productsByIds(ids: readonly string[]) {
+    return ids.flatMap((id) => {
+      const e = this.products.get(id);
+      return e && this.settings.get(id)?.enabled !== false ? [this.shown(e.item)] : [];
+    });
+  }
   async listProducts() {
     return [...this.products.values()].map((e) => this.admin(e.item)).sort((a, b) => a.name.localeCompare(b.name));
   }

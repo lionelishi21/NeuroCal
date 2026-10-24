@@ -22,6 +22,8 @@ export interface ICatalogRepository {
    * `only: "ownSupplements"` searches just the own-brand supplements.
    */
   nearestProducts(embedding: number[], limit: number, only?: "ownSupplements"): Promise<{ item: Product; similarity: number }[]>;
+  /** Enabled products by id, with admin links and labels applied, in the order asked for. */
+  productsByIds(ids: readonly string[]): Promise<Product[]>;
 
   /** Every product, disabled ones included, for the admin screen. */
   listProducts(): Promise<AdminProduct[]>;

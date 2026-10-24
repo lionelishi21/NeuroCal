@@ -45,6 +45,9 @@ abstract interface class NeuroCalApi {
 
   Future<void> deleteCoffee(String id);
 
+  /// What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine.
+  Future<List<SuggestedProduct>> coffeeProducts();
+
   /// Sets the town for air quality (null clears it). Throws [ApiException] 400 when it can't be found.
   Future<EnvironmentDay> setEnvironmentPlace(String? place);
 
@@ -338,6 +341,12 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<void> deleteCoffee(String id) async {
     _decode(await _client.delete(_uri('/coffee/$id'), headers: await _headers()));
+  }
+
+  @override
+  Future<List<SuggestedProduct>> coffeeProducts() async {
+    final j = await _get('/coffee/products') as Map<String, dynamic>;
+    return [for (final p in j['products'] as List) productFromJson(p as Map<String, dynamic>)];
   }
 
   @override

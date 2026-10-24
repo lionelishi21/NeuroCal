@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/product_card.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'food_scan_sheet.dart';
@@ -157,7 +158,7 @@ class CoffeeScreen extends StatelessWidget {
                   ),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: SoftButton(label: 'Scan your coffee bag', onPressed: () => _scan(context)),
+                  child: SoftButton(label: 'Scan coffee, MCT oil or butter', onPressed: () => _scan(context)),
                 ),
               ],
             ),
@@ -180,6 +181,7 @@ class CoffeeScreen extends StatelessWidget {
                 line('Blend for 20 seconds until it’s foamy. Stirring leaves the fat floating.'),
                 const SizedBox(height: Space.s1),
                 Text(
+                  'Not all fats are equal: pure C8 MCT oil makes more ketones than a C8/C10 blend, and grass-fed butter or ghee has more omega-3 and vitamin K2 than regular. Scan yours to check, and My Bulletproof will log with it. '
                   'Start with 1 teaspoon of MCT oil and build up over a week: a full tablespoon at once can upset your stomach. '
                   'It’s fat with no sugar or protein, so it keeps a fast going; its $kcal kcal still count toward your day. Check with your doctor first if you’ve been told to watch saturated fat or cholesterol.',
                   style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
@@ -213,8 +215,41 @@ class CoffeeScreen extends StatelessWidget {
               ],
             ),
           ),
+          const _WhatToBuy(),
         ],
       ),
     );
   }
+}
+
+/// Products for a good cup from the catalog; hidden when there are none or they don't load.
+class _WhatToBuy extends StatefulWidget {
+  const _WhatToBuy();
+
+  @override
+  State<_WhatToBuy> createState() => _WhatToBuyState();
+}
+
+class _WhatToBuyState extends State<_WhatToBuy> {
+  Future<List<SuggestedProduct>>? _products;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _products ??= AppScope.of(context).api.coffeeProducts().catchError((Object _) => <SuggestedProduct>[]);
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder(
+    future: _products,
+    builder: (context, snapshot) {
+      final products = snapshot.data ?? const [];
+      if (products.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: Space.s3,
+        children: [const BlockTitle('What to buy'), for (final p in products) ProductCard(p)],
+      );
+    },
+  );
 }

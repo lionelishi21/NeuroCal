@@ -79,6 +79,11 @@ describe("DrizzleCatalogRepository (pgvector)", () => {
     expect((await repo.nearestProducts(vector!, 5, "ownSupplements")).map((p) => p.item.id)).toEqual(["admin-adk"]);
     await repo.updateProductSettings("glasses", { enabled: false });
     expect((await repo.nearestProducts(vector!, 5)).map((p) => p.item.id)).toEqual(["admin-adk"]);
+    // By id, in the order asked for, still without the disabled one.
+    expect((await repo.productsByIds(["admin-adk", "glasses", "nope"])).map((p) => p.id)).toEqual(["admin-adk"]);
+    await repo.updateProductSettings("glasses", { enabled: true });
+    expect((await repo.productsByIds(["glasses", "admin-adk"])).map((p) => p.id)).toEqual(["glasses", "admin-adk"]);
+    expect(await repo.productsByIds([])).toEqual([]);
     expect((await repo.updateProductSettings("glasses", { url: null, enabled: true }))!.url).toBe("https://brand.example/");
 
     expect(await repo.removeAdminProduct("glasses")).toBe(false);

@@ -1,6 +1,8 @@
-import { type CoffeeAddIn, type CoffeeCup, type CoffeeKind, MAX_CUPS_A_DAY, afterCurfew, cupNutrition, curfewClock, wakeHourOf } from "../../domain/coffee";
+import { COFFEE_PRODUCT_IDS, type CoffeeAddIn, type CoffeeCup, type CoffeeKind, MAX_CUPS_A_DAY, afterCurfew, cupNutrition, curfewClock, wakeHourOf } from "../../domain/coffee";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { isIsoDate, isOnLocalDay, localDateOf, localTimeOf } from "../../domain/localDay";
+import type { Product } from "../../domain/types";
+import type { ICatalogRepository } from "../interfaces/ICatalogRepository";
 import type { IClock } from "../interfaces/IClock";
 import type { ICoffeeRepository, IProfileRepository } from "../interfaces/IRepositories";
 
@@ -23,7 +25,13 @@ export class CoffeeUseCases {
     private readonly profiles: IProfileRepository,
     private readonly coffee: ICoffeeRepository,
     private readonly clock: IClock,
+    private readonly catalog?: Pick<ICatalogRepository, "productsByIds">,
   ) {}
+
+  /** What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine. */
+  async products(): Promise<Product[]> {
+    return this.catalog ? this.catalog.productsByIds(COFFEE_PRODUCT_IDS) : [];
+  }
 
   /** Logs a cup and returns the day it falls on, with it. */
   async log(userId: string, input: { kind: CoffeeKind; addIns: CoffeeAddIn[]; takenAt?: Date }): Promise<CoffeeDay> {

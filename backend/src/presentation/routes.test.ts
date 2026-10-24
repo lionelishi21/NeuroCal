@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -115,6 +115,14 @@ beforeEach(async () => {
       source: "label",
     }),
     products: new FakeProductDatabase({
+      "0850000000024": {
+        brand: "Pure Oils",
+        productName: "MCT Oil",
+        servingSize: "1 tbsp",
+        nutrition: { calories: 130, proteinG: 0, carbsG: 0, fatG: 14 },
+        ingredients: ["Caprylic acid (C8)", "Capric acid (C10)"],
+        source: "open_food_facts",
+      },
       "0123456789012": {
         productName: "Peanuts",
         servingSize: "28 g",
@@ -401,6 +409,16 @@ describe("API routes", () => {
     expect((await call("POST", "/coffee", { kind: "tea", addIns: [] })).status).toBe(400);
     expect((await call("DELETE", `/coffee/${day.cups[0]!.id}`)).status).toBe(204);
     expect(CoffeeDay.parse((await call("GET", "/coffee")).body).cups).toHaveLength(1);
+  });
+
+  it("suggests what goes in a good cup, and a scanned MCT oil says which add-in it is", async () => {
+    const products = CoffeeProducts.parse((await call("GET", "/coffee/products")).body).products;
+    expect(products.map((p) => p.id)).toEqual(["danger-coffee", "bulletproof-brain-octane", "sports-research-c8-mct", "kerrygold-butter", "fourth-and-heart-ghee", "thorne-creatine"]);
+    expect(products.find((p) => p.id === "thorne-creatine")).toMatchObject({ supplement: true });
+
+    const scan = FoodScanResponse.parse((await call("GET", "/foods/barcode/0850000000024")).body);
+    expect(scan.coffeeFat).toMatchObject({ addIn: "mct_c8_c10", good: false });
+    expect(scan.coffee).toBeUndefined();
   });
 
   it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {

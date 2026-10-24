@@ -170,7 +170,7 @@ export function buildUseCases(p: Ports): UseCases {
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),
     getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee),
-    coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock),
+    coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock, p.catalog),
     getSubscription,
     stack: new StackUseCases(p.profiles, p.stack, p.clock),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),

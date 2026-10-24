@@ -133,3 +133,70 @@ export function curfewClock(wakeHour: number): string {
 /** True when a cup at local "HH:MM" `time` comes after the curfew. */
 export const afterCurfew = (time: { hour: number; minute: number }, wakeHour: number) =>
   time.hour * 60 + time.minute > Math.round((wakeHour + CURFEW_AFTER_WAKE_HOURS) * 60);
+
+/**
+ * What a scanned MCT oil, butter or ghee is, as an add-in for the coffee log: pure C8 or a C8/C10
+ * blend, grass-fed or not. Read from the label and the maker; null for anything else.
+ */
+export interface CoffeeFatCheck {
+  /** The add-in it is, to log in a cup. */
+  addIn: CoffeeAddIn;
+  /** Pure C8, or grass-fed butter or ghee. */
+  good: boolean;
+  detail: string;
+}
+
+const NOT_DAIRY_BUTTER = /peanut|almond|cashew|nut butter|seed butter|cocoa butter|cacao butter|shea|apple butter|buttermilk|margarine|spread|butter beans?|butternut|butterscotch/;
+const GRASS_FED = /grass[- ]?fed|pasture[- ]?raised|pasture[- ]?fed/;
+/** Makers whose butter or ghee comes from (mostly) grass-fed cows. */
+const GRASS_FED_BRANDS: { name: string; match: RegExp }[] = [
+  { name: "Kerrygold", match: /kerrygold/ },
+  { name: "Anchor", match: /\banchor\b/ },
+  { name: "Vital Farms", match: /vital farms/ },
+  { name: "Organic Valley", match: /organic valley/ },
+  { name: "4th & Heart", match: /4th (&|and) heart|fourth (&|and) heart/ },
+  { name: "Ancient Organics", match: /ancient organics/ },
+  { name: "Bulletproof", match: /bulletproof/ },
+];
+
+export function coffeeFatCheck(reading: Pick<FoodLabelReading, "productName" | "brand" | "ingredients" | "manufacturer">): CoffeeFatCheck | null {
+  const name = plain(`${reading.brand ?? ""} ${reading.productName ?? ""}`);
+  const text = plain([reading.brand, reading.productName, reading.manufacturer, ...reading.ingredients].filter(Boolean).join(" "));
+
+  if (/\bmct\b|medium[- ]chain|caprylic|brain octane|\bc8\b/.test(name)) {
+    const c8 = /caprylic|\bc8\b|brain octane|octanoic/.test(text);
+    const c10 = /capric|\bc10\b|decanoic|c8\s*\/\s*c10|lauric|\bc12\b/.test(text);
+    if (c8 && !c10) return { addIn: "mct_c8", good: true, detail: "Pure C8 (caprylic acid): the MCT that raises ketones most and is easiest on the stomach." };
+    if (c8 && c10) return { addIn: "mct_c8_c10", good: false, detail: "A C8/C10 blend. Pure C8 raises ketones more and is easier on the stomach; look for C8 or caprylic acid alone." };
+    return {
+      addIn: "mct_c8_c10",
+      good: false,
+      detail: "The label doesn't say which MCTs it holds. Most plain MCT oil is a C8/C10 blend; for the most ketones, look for C8 or caprylic acid alone.",
+    };
+  }
+
+  const ghee = /\bghee\b|clarified butter/.test(name);
+  if (ghee || (/\bbutter\b/.test(name) && !NOT_DAIRY_BUTTER.test(name))) {
+    const brand = GRASS_FED_BRANDS.find((b) => b.match.test(text));
+    const grassFed = GRASS_FED.test(text) || brand !== undefined;
+    const what = ghee ? "ghee" : "butter";
+    if (grassFed) {
+      return {
+        addIn: ghee ? "ghee_grass_fed" : "butter_grass_fed",
+        good: true,
+        detail: GRASS_FED.test(text)
+          ? `Grass-fed ${what}: more omega-3, CLA and vitamin K2 than regular.`
+          : `${brand!.name} ${what} comes from (mostly) grass-fed cows: more omega-3, CLA and vitamin K2 than regular.`,
+      };
+    }
+    return {
+      addIn: ghee ? "ghee" : "butter",
+      good: false,
+      detail: `The label doesn't say the ${what} is grass-fed. Grass-fed has more omega-3, CLA and vitamin K2; look for "grass-fed" or "pasture-raised".`,
+    };
+  }
+  return null;
+}
+
+/** The products the coffee page suggests, by catalog id (partnerProducts.ts): what goes in a good cup. */
+export const COFFEE_PRODUCT_IDS = ["danger-coffee", "bulletproof-brain-octane", "sports-research-c8-mct", "kerrygold-butter", "fourth-and-heart-ghee", "thorne-creatine"] as const;

@@ -428,6 +428,28 @@
         }
       }
     },
+    "/coffee/products": {
+      "get": {
+        "operationId": "getCoffeeProducts",
+        "summary": "What goes in a good cup",
+        "description": "Mould-tested coffee, pure C8 MCT oil, grass-fed butter or ghee and creatine from the product catalog; only products an admin has left switched on. Affiliate and own-brand products must be labelled.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoffeeProducts"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/fasting/plan": {
       "put": {
         "operationId": "planFast",
@@ -3330,6 +3352,20 @@
           "decaf"
         ]
       },
+      "CoffeeProducts": {
+        "type": "object",
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductRecommendation"
+            }
+          }
+        },
+        "required": [
+          "products"
+        ]
+      },
       "CognitiveFlag": {
         "type": "string",
         "enum": [
@@ -4306,6 +4342,25 @@
             },
             "required": [
               "moldTested",
+              "detail"
+            ]
+          },
+          "coffeeFat": {
+            "type": "object",
+            "properties": {
+              "addIn": {
+                "$ref": "#/components/schemas/CoffeeAddIn"
+              },
+              "good": {
+                "type": "boolean"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "addIn",
+              "good",
               "detail"
             ]
           }

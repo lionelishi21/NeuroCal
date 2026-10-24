@@ -1,4 +1,4 @@
-import { type CoffeeCheck, coffeeCheck } from "../../domain/coffee";
+import { type CoffeeCheck, type CoffeeFatCheck, coffeeCheck, coffeeFatCheck } from "../../domain/coffee";
 import { DomainError, InvalidError, NotFoundError, UpstreamError } from "../../domain/errors";
 import { type FoodFlag, type FoodLabelReading, type ProcessingVerdict, foodFlags, foodItemOf, processingOf } from "../../domain/foodLabel";
 import { MAX_PHOTO_BYTES, ownsPhotoKey } from "../../domain/photo";
@@ -17,6 +17,8 @@ export interface FoodScan {
   item?: FoodItem;
   /** For coffee: whether it's stated to be tested for mould toxins. */
   coffee?: CoffeeCheck;
+  /** For MCT oil, butter or ghee: which coffee add-in it is, and whether it's the better kind. */
+  coffeeFat?: CoffeeFatCheck;
 }
 
 /**
@@ -77,6 +79,14 @@ export class ScanFoodUseCase {
     const processing = processingOf(reading.ingredients, reading.sourceNovaGroup);
     const item = reading.problem ? null : foodItemOf(reading, processing);
     const coffee = reading.problem ? null : coffeeCheck(reading);
-    return { reading, processing, flags: foodFlags(reading, processing, this.clock.now()), ...(item ? { item } : {}), ...(coffee ? { coffee } : {}) };
+    const coffeeFat = reading.problem ? null : coffeeFatCheck(reading);
+    return {
+      reading,
+      processing,
+      flags: foodFlags(reading, processing, this.clock.now()),
+      ...(item ? { item } : {}),
+      ...(coffee ? { coffee } : {}),
+      ...(coffeeFat ? { coffeeFat } : {}),
+    };
   }
 }

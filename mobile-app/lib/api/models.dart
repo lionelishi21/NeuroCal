@@ -489,6 +489,7 @@ class FoodScan {
     this.flags = const [],
     this.item,
     this.coffee,
+    this.coffeeFat,
   });
 
   /// not_a_label, blurry, too_dark or cut_off.
@@ -527,6 +528,10 @@ class FoodScan {
   /// For coffee: whether the label or its maker says it's tested for mould toxins.
   final ({bool moldTested, String detail})? coffee;
 
+  /// For MCT oil, butter or ghee: the coffee add-in it is, and whether it's the better kind
+  /// (pure C8, grass-fed).
+  final ({CoffeeAddIn addIn, bool good, String detail})? coffeeFat;
+
   String get name {
     if (brand != null && productName != null && productName!.toLowerCase().contains(brand!.toLowerCase())) {
       return productName!;
@@ -564,6 +569,12 @@ class FoodScan {
       coffee: j['coffee'] == null
           ? null
           : (moldTested: j['coffee']['moldTested'] as bool, detail: j['coffee']['detail'] as String),
+      coffeeFat: switch (j['coffeeFat']) {
+        {'addIn': final String wire, 'good': final bool good, 'detail': final String detail}
+            when CoffeeAddIn.fromWire(wire) != null =>
+          (addIn: CoffeeAddIn.fromWire(wire)!, good: good, detail: detail),
+        _ => null,
+      },
     );
   }
 }

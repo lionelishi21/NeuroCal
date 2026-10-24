@@ -511,11 +511,16 @@ void main() {
     await tester.pumpAndSettle();
     await tapCentered(tester, find.text('Your coffee'));
     expect(find.text('Mould-tested coffee'), findsOneWidget);
-    expect(find.text('Scan your coffee bag'), findsOneWidget);
+    expect(find.text('Scan coffee, MCT oil or butter'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Last cup by'), 200);
     // A cup, not a meal: it doesn't open Log a meal.
     await tapCentered(tester, find.text('Log a Bulletproof coffee'));
     expect(find.text('Cup logged'), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 4));
+    // What to buy, labelled.
+    await tester.scrollUntilVisible(find.text('Bulletproof Brain Octane C8 MCT oil'), 200);
+    expect(find.text('What to buy'), findsOneWidget);
+    expect(find.text('Danger Coffee'), findsOneWidget);
   });
 
   testWidgets(
@@ -531,9 +536,12 @@ void main() {
           timing: StackTiming.morning,
         ),
       );
-      await pumpApp(tester, mock: api);
+      // A scanned MCT oil, kept for My Bulletproof.
+      await pumpApp(tester, mock: api, saved: {'neurocal.coffee.mct': 'mct_c8_c10|Pure Oils MCT Oil'});
       await signIn(tester);
       await add(tester, 'Log coffee');
+      expect(find.text('My Bulletproof'), findsOneWidget);
+      expect(find.text('My Bulletproof uses Pure Oils MCT Oil.'), findsOneWidget);
       expect(find.text('2 kcal, 95 mg caffeine. Keeps your fast going.'), findsOneWidget);
       Future<void> tapIn(Finder f) async {
         await tester.ensureVisible(f);

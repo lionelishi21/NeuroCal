@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../coffee_fats.dart';
 import '../scan/label_camera.dart';
 import '../theme/tokens.dart';
 import '../widgets/product_card.dart';
@@ -263,6 +264,38 @@ class _FoodScanState extends State<_FoodScan> {
                   ],
                 )
               : SheetNote(lead: 'Mould testing not stated.', detail: coffee.detail, watch: true),
+        if (scan.coffeeFat case final fat?) ...[
+          fat.good
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: Space.s2,
+                  children: [
+                    Icon(Icons.verified_rounded, size: 20, color: c.chlorophyll),
+                    Expanded(
+                      child: Text(
+                        fat.detail,
+                        style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.chlorophyll),
+                      ),
+                    ),
+                  ],
+                )
+              : SheetNote(lead: 'Worth an upgrade.', detail: fat.detail, watch: true),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              foregroundColor: c.synapseInk,
+              side: BorderSide(color: c.ruleStrong, width: 1.5),
+            ),
+            onPressed: () async {
+              await chooseCoffeeFat(fat.addIn, scan.name);
+              if (!context.mounted) return;
+              showToast(context, 'Saved for your coffee');
+              Navigator.of(context).pop();
+            },
+            icon: const Icon(Icons.coffee_rounded, size: 20),
+            label: const Text('Use it in my coffee'),
+          ),
+        ],
         if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty)
           Text(
             'A whole food: nothing industrial in the ingredients.',

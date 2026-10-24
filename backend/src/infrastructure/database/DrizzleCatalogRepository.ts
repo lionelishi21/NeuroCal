@@ -1,4 +1,4 @@
-import { and, asc, cosineDistance, eq, notInArray, sql } from "drizzle-orm";
+import { and, asc, cosineDistance, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { Embedded, ICatalogRepository } from "../../application/interfaces/ICatalogRepository";
 import type { AdminProduct, Product, ProductSettings, Protocol } from "../../domain/types";
 import type { Database } from "./client";
@@ -135,6 +135,16 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
       .orderBy(distance)
       .limit(limit);
     return rows.map(({ distance: d, ...row }) => ({ item: toProduct(row), similarity: toSimilarity(d) }));
+  }
+
+  async productsByIds(ids: readonly string[]) {
+    if (ids.length === 0) return [];
+    const rows = await this.db
+      .select(productColumns)
+      .from(products)
+      .where(and(eq(products.enabled, true), inArray(products.id, [...ids])));
+    const byId = new Map(rows.map((r) => [r.id, toProduct(r)]));
+    return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
   }
 
   async listProducts() {

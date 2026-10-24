@@ -5,6 +5,7 @@ import 'package:neurocal/api/models.dart';
 import 'package:neurocal/app_scope.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/billing/billing.dart';
+import 'package:neurocal/coffee_fats.dart';
 import 'package:neurocal/screens/food_scan_sheet.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
@@ -124,5 +125,20 @@ void main() {
     final note = find.textContaining('Mould testing not stated.', findRichText: true);
     await tester.scrollUntilVisible(note, 200);
     expect(find.textContaining('mycotoxin-tested', findRichText: true), findsOneWidget);
+  });
+
+  testWidgets('an MCT oil says it is a C8/C10 blend, and can be kept for My Bulletproof', (tester) async {
+    final logged = await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0850000000024']));
+    await scanOnce(tester, 'Start scanning');
+    final note = find.textContaining('Worth an upgrade.', findRichText: true);
+    await tester.scrollUntilVisible(note, 200);
+    expect(find.textContaining('A C8/C10 blend', findRichText: true), findsOneWidget);
+
+    final use = find.text('Use it in my coffee');
+    await tester.scrollUntilVisible(use, 200);
+    await tester.tap(use);
+    await tester.pumpAndSettle();
+    expect(logged.single, isNull);
+    expect((await coffeeFats()).mct, (addIn: CoffeeAddIn.mctC8C10, name: 'Pure Oils MCT Oil'));
   });
 }
