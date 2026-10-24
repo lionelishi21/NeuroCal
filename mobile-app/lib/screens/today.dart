@@ -1754,6 +1754,14 @@ class _PlanCard extends StatelessWidget {
     return '${_months[d.month - 1]} ${d.year}';
   }
 
+  /// "today", "yesterday" or "on 18 Oct" for a weigh-in's date.
+  String _weighedOn(String iso) {
+    final now = DateTime.now();
+    final d = DateTime.parse(iso);
+    final days = DateTime(now.year, now.month, now.day).difference(DateTime(d.year, d.month, d.day)).inDays;
+    return days == 0 ? 'today' : (days == 1 ? 'yesterday' : 'on ${_since(iso)}');
+  }
+
   String _since(String iso) {
     final d = DateTime.parse(iso);
     return '${d.day} ${_months[d.month - 1]}';
@@ -1845,7 +1853,13 @@ class _PlanCard extends StatelessWidget {
                               children: [
                                 Text(
                                   [
-                                    unit.format(w!.trendKg!),
+                                    // The weigh-in just entered, then the trend, which moves a tenth of the way
+                                    // toward each weigh-in so a day's water doesn't swing it.
+                                    if (w!.entries.lastOrNull case final last?) ...[
+                                      '${unit.format(last.kg)} ${_weighedOn(last.date)}',
+                                      'trend ${unit.format(w.trendKg!)}',
+                                    ] else
+                                      unit.format(w.trendKg!),
                                     if (goal.startKg - w.trendKg! >= 0.05)
                                       '${unit.format(goal.startKg - w.trendKg!)} down since ${_since(goal.startedOn)}',
                                   ].join(' · '),

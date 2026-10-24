@@ -497,6 +497,9 @@ void main() {
     expect(find.text('Your plan'), findsOneWidget);
     expect(find.text('3-week challenge · day 6 of 21'), findsOneWidget);
     expect(find.textContaining('down since'), findsOneWidget);
+    // The last weigh-in itself shows, beside the slower trend.
+    expect(find.textContaining('94.2 kg on '), findsOneWidget);
+    expect(find.textContaining(' · trend '), findsOneWidget);
     // The last weigh-in was 9 days ago: Up next asks for this week's.
     expect(find.text('Weigh in'), findsOneWidget);
     expect(find.text('Log weight'), findsWidgets);
