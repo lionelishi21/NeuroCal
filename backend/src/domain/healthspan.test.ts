@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { type HealthspanInputs, healthspanScore, healthspanWeek, weekSoFar } from "./healthspan";
 
-const base: HealthspanInputs = { exercises: [], mealDays: [], proteinTargetG: 120, wakeMinutes: [], daylightDays: 0, conditions: [] };
+const base: HealthspanInputs = { exercises: [], mealDays: [], proteinTargetG: 120, wakeMinutes: [], daylightDays: 0, conditions: [], bedMinutes: 23 * 60 };
 const habit = (w: HealthspanInputs, id: string) => healthspanWeek(w).find((h) => h.id === id)!;
 
 describe("healthspanWeek", () => {
@@ -28,6 +28,16 @@ describe("healthspanWeek", () => {
     expect(habit(w, "whole_food")).toMatchObject({ progress: 5, done: true });
     expect(habit(w, "steady_wake")).toMatchObject({ progress: 5, done: true });
     expect(habit({ ...base }, "whole_food")).toMatchObject({ done: false, detail: expect.stringContaining("Log meals") });
+  });
+
+  it("counts finished days eaten within 12 hours that end three hours before bed", () => {
+    const day = (first: number, last: number) => ({ proteinG: 100, kcal: 2000, ultraProcessedKcal: 0, gradedKcal: 0, firstMinutes: first * 60, lastMinutes: last * 60 });
+    const today = { proteinG: 40, kcal: 500, ultraProcessedKcal: 0, gradedKcal: 0 }; // no window until the day's over
+    const w = { ...base, mealDays: [day(8, 19), day(10, 20), day(7, 20), day(10, 21.5), today] };
+    // 8–19 and 10–20 fit; 7–20 is 13 hours; 21:30 is too close to an 11pm bedtime.
+    expect(habit(w, "eating_window")).toMatchObject({ progress: 2, target: 5, done: false, detail: expect.stringContaining("finish by 20:00") });
+    expect(habit({ ...w, bedMinutes: 24 * 60 + 30 }, "eating_window")).toMatchObject({ progress: 3, detail: expect.stringContaining("21:30") });
+    expect(habit({ ...base, conditions: ["eating_disorder_history"] }, "eating_window").skipped).toMatch(/clinician/);
   });
 
   it("leaves hard cardio out with a heart condition, and suggests joint-friendly cardio with joint pain", () => {

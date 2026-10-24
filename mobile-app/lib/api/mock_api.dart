@@ -1310,11 +1310,23 @@ class MockNeuroCalApi implements NeuroCalApi {
         const HealthspanHabit(
           id: 'protein',
           title: 'Protein most days',
-          detail: 'At least 104 g on 5 days, to keep muscle.',
+          detail: 'At least 104 g on 5 days, to keep muscle. A lighter day or two rests the growth switch.',
           progress: 3,
           target: 5,
           unit: 'days',
           done: false,
+        ),
+        HealthspanHabit(
+          id: 'eating_window',
+          title: 'Close the kitchen early',
+          detail: 'Eat within 12 hours and finish by 20:00, three hours before bed. Overnight your cells switch from building to repair.',
+          progress: 2,
+          target: 5,
+          unit: 'days',
+          done: false,
+          skipped: _profile?.healthConditions?.any((c) => c == 'eating_disorder_history' || c == 'pregnant') ?? false
+              ? 'Left out for your health. Eat when you need to; ask your clinician about meal timing.'
+              : null,
         ),
         const HealthspanHabit(
           id: 'whole_food',

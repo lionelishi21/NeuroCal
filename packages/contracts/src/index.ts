@@ -835,7 +835,7 @@ export type RecordMarkersRequest = z.infer<typeof RecordMarkersRequest>;
 
 /** One weekly longevity habit (backend domain/healthspan.ts), worked out from what's logged. */
 export const HealthspanHabit = z.object({
-  id: z.enum(["zone2", "strength", "hard_cardio", "protein", "whole_food", "steady_wake", "daylight"]),
+  id: z.enum(["zone2", "strength", "hard_cardio", "protein", "eating_window", "whole_food", "steady_wake", "daylight"]),
   title: z.string(),
   detail: z.string(),
   progress: z.number(),

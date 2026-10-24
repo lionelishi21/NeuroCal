@@ -443,6 +443,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Easy cardio'), findsOneWidget);
     expect(find.textContaining('Your longevity score'), findsOneWidget);
+
+    // The eating window is one of the habits, and "Why these habits" explains the growth switch.
+    expect(find.text('Close the kitchen early'), findsOneWidget);
+    final why = find.widgetWithText(SoftButton, 'Why these habits');
+    await tester.ensureVisible(why);
+    await tester.pumpAndSettle();
+    await tester.tap(why);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('growth switch called mTOR'), findsOneWidget);
+    expect(find.text('Why not rapamycin?'), findsOneWidget);
   });
 
   testWidgets('Your plan: the 3-week challenge and the weight goal on Today, and the weekly weigh-in in Up next', (
@@ -805,7 +815,7 @@ void main() {
       await tester.tap(find.widgetWithText(InkWell, 'Progress'));
       await tester.pumpAndSettle();
       expect(find.text('Healthspan'), findsOneWidget);
-      expect(find.text('2 of 7 this week'), findsOneWidget);
+      expect(find.text('2 of 8 this week'), findsOneWidget);
       expect(find.text('95 / 150 min'), findsOneWidget);
       expect(find.text('12% (under 20%)'), findsOneWidget);
 
@@ -827,7 +837,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(InkWell, 'Progress'));
       await tester.pumpAndSettle();
-      expect(find.text('2 of 6 this week'), findsOneWidget);
+      expect(find.text('2 of 7 this week'), findsOneWidget);
       expect(find.textContaining('Left out for your health'), findsOneWidget);
     },
   );

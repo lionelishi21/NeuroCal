@@ -2,13 +2,17 @@
  * Healthspan: the weekly habits behind a long, healthy life, next to the daily Focus Score. Each is
  * worked out from what's already logged (exercise, meals, sleep, the daylight tick), Monday to Sunday.
  * Targets follow the usual longevity guidance: 150 minutes of easy (zone 2) cardio and two strength
- * sessions a week, one short hard session, protein most days, little ultra-processed food, a steady
- * wake time and morning daylight.
+ * sessions a week, one short hard session, protein most days, an eating window of 12 hours or less that
+ * closes three hours before bed, little ultra-processed food, a steady wake time and morning daylight.
+ *
+ * The eating window, protein and hard exercise are the habits that turn down the cells' growth switch
+ * (mTOR) the way the drug rapamycin does in mice: food, protein and carbs above all, switch it on;
+ * a long overnight gap and exercise (AMPK, its opposite) switch it off so cells repair.
  */
 import type { HealthCondition } from "./conditions";
 import type { ExerciseKind, Intensity } from "./exercise";
 
-export const HEALTHSPAN_HABITS = ["zone2", "strength", "hard_cardio", "protein", "whole_food", "steady_wake", "daylight"] as const;
+export const HEALTHSPAN_HABITS = ["zone2", "strength", "hard_cardio", "protein", "eating_window", "whole_food", "steady_wake", "daylight"] as const;
 export type HealthspanHabitId = (typeof HEALTHSPAN_HABITS)[number];
 
 export interface HealthspanHabit {
@@ -27,8 +31,13 @@ export interface HealthspanHabit {
 
 export interface HealthspanInputs {
   exercises: { kind: ExerciseKind; intensity: Intensity; minutes: number }[];
-  /** One entry per day of the week so far with meals logged. */
-  mealDays: { proteinG: number; kcal: number; ultraProcessedKcal: number; gradedKcal: number }[];
+  /**
+   * One entry per day of the week so far with meals logged. A finished day (not today) also has its
+   * first and last meal, in minutes after that day's midnight (local).
+   */
+  mealDays: { proteinG: number; kcal: number; ultraProcessedKcal: number; gradedKcal: number; firstMinutes?: number; lastMinutes?: number }[];
+  /** The usual bedtime in minutes after midnight (local); past midnight runs over 1440. */
+  bedMinutes: number;
   proteinTargetG: number;
   /** Each night's wake time, minutes after midnight (local). */
   wakeMinutes: number[];
@@ -58,6 +67,15 @@ function isHard(e: HealthspanInputs["exercises"][number]): boolean {
   return e.kind === "hiit" || (e.intensity === "hard" && ["run", "cycle", "swim", "sport", "other"].includes(e.kind));
 }
 
+/** The longest eating window that rests the growth switch, and the gap before bed. */
+export const EATING_WINDOW_MINUTES = 12 * 60;
+export const KITCHEN_CLOSES_BEFORE_BED_MINUTES = 3 * 60;
+
+const clock = (minutes: number) => {
+  const m = (((Math.round(minutes) % 1440) + 1440) % 1440);
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};
+
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
@@ -69,6 +87,11 @@ export function healthspanWeek(w: HealthspanInputs): HealthspanHabit[] {
   const strength = w.exercises.filter((e) => e.kind === "strength").length;
   const hard = w.exercises.filter(isHard).length;
   const proteinDays = w.mealDays.filter((d) => d.proteinG >= 0.8 * w.proteinTargetG).length;
+  const kitchenCloses = w.bedMinutes - KITCHEN_CLOSES_BEFORE_BED_MINUTES;
+  const windowDays = w.mealDays.filter(
+    (d) => d.firstMinutes !== undefined && d.lastMinutes !== undefined && d.lastMinutes - d.firstMinutes <= EATING_WINDOW_MINUTES && d.lastMinutes <= kitchenCloses,
+  ).length;
+  const noMealTiming = w.conditions.includes("eating_disorder_history") || w.conditions.includes("pregnant");
   const graded = w.mealDays.reduce((s, d) => s + d.gradedKcal, 0);
   const upfShare = graded > 0 ? Math.round((100 * w.mealDays.reduce((s, d) => s + d.ultraProcessedKcal, 0)) / graded) : null;
   const usualWake = w.wakeMinutes.length ? median(w.wakeMinutes) : 0;
@@ -108,11 +131,21 @@ export function healthspanWeek(w: HealthspanInputs): HealthspanHabit[] {
     {
       id: "protein",
       title: "Protein most days",
-      detail: `At least ${Math.round(0.8 * w.proteinTargetG)} g on 5 days, to keep muscle.`,
+      detail: `At least ${Math.round(0.8 * w.proteinTargetG)} g on 5 days, to keep muscle. A lighter day or two rests the growth switch.`,
       progress: proteinDays,
       target: 5,
       unit: "days",
       done: proteinDays >= 5,
+    },
+    {
+      id: "eating_window",
+      title: "Close the kitchen early",
+      detail: `Eat within 12 hours and finish by ${clock(kitchenCloses)}, three hours before bed. Overnight your cells switch from building to repair.`,
+      progress: windowDays,
+      target: 5,
+      unit: "days",
+      done: windowDays >= 5,
+      ...(noMealTiming ? { skipped: "Left out for your health. Eat when you need to; ask your clinician about meal timing." } : {}),
     },
     {
       id: "whole_food",

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
+import '../widgets/sheet.dart';
 import '../widgets/ui.dart';
 
 /// Healthspan: this week's longevity habits against their weekly targets, worked out from what's logged.
@@ -98,6 +99,10 @@ class _HealthspanCardState extends State<HealthspanCard> {
             ),
             const SizedBox(height: Space.s2),
             for (final h in week.habits) _Habit(h),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SoftButton(label: 'Why these habits', onPressed: () => showWhyHealthspan(context)),
+            ),
           ],
         ),
       );
@@ -108,6 +113,85 @@ class _HealthspanCardState extends State<HealthspanCard> {
     },
   );
 }
+
+/// Why the habits: the cells' growth switch (mTOR), what turns it down, and why not the drug.
+Future<void> showWhyHealthspan(BuildContext context) => showAppSheet<void>(
+  context,
+  title: 'Why these habits',
+  builder: (context) {
+    final c = context.colors;
+    Widget para(String text) => Text(
+      text,
+      style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
+    );
+    Widget habit(IconData icon, String title, String text) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: Space.s3,
+      children: [
+        Icon(icon, size: 22, color: c.chlorophyll),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+              ),
+              para(text),
+            ],
+          ),
+        ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s3,
+      children: [
+        para(
+          'Every cell has a growth switch called mTOR. Food turns it on, carbs and protein most, and your cells build. '
+          'When it’s off, they clean up and recycle worn-out parts instead.',
+        ),
+        para(
+          'Turning it down is the most reliable way to lengthen life in animals. Rats fed less lived longer, and the drug '
+          'rapamycin, which blocks the switch, gave mice about a quarter more life, even when they started old.',
+        ),
+        const GroupLabel('Three habits do the same, for free', top: Space.s2),
+        habit(
+          Icons.nightlight_round,
+          'Close the kitchen early',
+          'Eat within 12 hours and stop 3 hours before bed, so the switch is off while you sleep and repair can start.',
+        ),
+        habit(
+          Icons.egg_alt_rounded,
+          'Protein most days, a lighter day or two',
+          'Muscle keeps you strong and your brain sharp as you age, so don’t cut protein. One or two lighter days a week, '
+              'or a fast, give the switch a rest.',
+        ),
+        habit(
+          Icons.fitness_center_rounded,
+          'Train hard a few times a week',
+          'Exercise turns on AMPK, the switch’s opposite: burn what you have instead of building.',
+        ),
+        para(
+          'In people, habits have the best evidence. In a study of 123,000 adults followed for up to 34 years, five habits '
+          '(no smoking, a healthy weight, 30 minutes of movement a day, little alcohol and mostly whole food) meant about '
+          '14 more years for women at 50, and 12 for men.',
+        ),
+        const GroupLabel('Longer fasts', top: Space.s2),
+        para(
+          'A 3- or 4-day fast once or twice a year goes deeper. Plan one with your doctor first. NeuroCal plans fasts of up to 48 hours.',
+        ),
+        const GroupLabel('Why not rapamycin?', top: Space.s2),
+        para(
+          'It’s a prescription drug for transplant patients. The one longevity trial in people ran for 48 weeks and missed its '
+          'main goal, and taken too often it can raise blood sugar and weaken your defence against infection. If you’re '
+          'curious, talk to a doctor who will follow your blood work.',
+        ),
+      ],
+    );
+  },
+);
 
 class _Habit extends StatelessWidget {
   const _Habit(this.h);

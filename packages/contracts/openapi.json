@@ -4435,6 +4435,7 @@
               "strength",
               "hard_cardio",
               "protein",
+              "eating_window",
               "whole_food",
               "steady_wake",
               "daylight"
