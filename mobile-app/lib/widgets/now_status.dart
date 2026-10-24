@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../body_state.dart';
+import '../combos.dart';
 import '../theme/tokens.dart';
+import 'ui.dart';
 
 /// The colours of a state, strongest first: amber for caffeine, violet for a fat fast, teal for a fast.
 /// Empty when nothing is going on, and the app keeps its usual blue-to-teal.
@@ -16,11 +18,13 @@ String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.to
 
 String _length(Duration d) => d.inMinutes < 60 ? '${d.inMinutes} min' : '${d.inHours} h';
 
-/// "Now" at the top of Today: what the coffee and the fast are doing, a line each.
+/// "Now" at the top of Today: what the coffee and the fast are doing, a line each, then what today's
+/// coffee and supplements do together.
 class NowStatus extends StatelessWidget {
-  const NowStatus(this.state, {super.key});
+  const NowStatus(this.state, {super.key, this.notes = const []});
 
   final BodyState state;
+  final List<ComboNote> notes;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +112,14 @@ class NowStatus extends StatelessWidget {
                   : null,
             ),
           if (fast != null) row(s.fatFast ? c.synapse : c.ion, fast),
+          if (notes.isNotEmpty) ...[
+            if (caffeine != null || fast != null) Divider(height: Space.s2, color: c.rule),
+            Text(
+              'Together today',
+              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+            ),
+            for (final n in notes) _Note(n),
+          ],
         ],
       ),
     );
@@ -197,6 +209,56 @@ class _StateAuraState extends State<StateAura> with SingleTickerProviderStateMix
         );
       },
       child: widget.child,
+    );
+  }
+}
+
+/// A combination note: what it does, and how strong the evidence is.
+class _Note extends StatelessWidget {
+  const _Note(this.note);
+
+  final ComboNote note;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final n = note;
+    return Semantics(
+      container: true,
+      label: '${n.title}. ${n.evidence.label}. ${n.text}',
+      excludeSemantics: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: Space.s3,
+        children: [
+          Icon(
+            n.caution ? Icons.error_outline_rounded : Icons.join_inner_rounded,
+            size: 20,
+            color: n.caution ? c.glucoseInk : c.synapseInk,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 3,
+              children: [
+                Text(
+                  n.title,
+                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                ),
+                Tag(
+                  n.evidence.label,
+                  fill: n.evidence == Evidence.strong ? c.chlorophyllSoft : c.synapseSoft,
+                  ink: n.evidence == Evidence.strong ? c.chlorophyll : c.synapseInk,
+                ),
+                Text(
+                  n.text,
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

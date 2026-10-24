@@ -7,6 +7,7 @@ import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../body_state.dart';
+import '../combos.dart';
 import '../theme/tokens.dart';
 import '../widgets/feeling_face.dart';
 import '../widgets/focus_ring.dart';
@@ -457,6 +458,10 @@ class _TodayScreenState extends State<TodayScreen> {
       EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
   ];
 
+  /// What today's coffee and supplements do together.
+  List<ComboNote> _notes(_Day day) =>
+      comboNotes(cups: day.coffee?.cups ?? const [], stack: day.stack?.items ?? const []);
+
   /// What the coffee and the fast are doing now; null on a past day.
   BodyState? _now(_Day day) {
     if (!day.isToday) return null;
@@ -512,8 +517,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
                   const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
                 else ...[
-                  if (_now(day) case final state? when !state.isEmpty) ...[
-                    NowStatus(state),
+                  if (_now(day) case final state? when !state.isEmpty || _notes(day).isNotEmpty) ...[
+                    NowStatus(state, notes: _notes(day)),
                     const SizedBox(height: Space.s3),
                   ],
                   _FocusCard(

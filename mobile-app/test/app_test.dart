@@ -21,7 +21,11 @@ var homeWidget = FakeFocusWidget();
 /// Images handed to the share sheet, with their captions.
 final shared = <(Uint8List, String)>[];
 
-Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<String, Object> saved = const {}}) async {
+Future<(ThemeController, MockAuthClient)> pumpApp(
+  WidgetTester tester, {
+  Map<String, Object> saved = const {},
+  MockNeuroCalApi? mock,
+}) async {
   // A small phone, so layout overflows fail the test.
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
@@ -29,7 +33,7 @@ Future<(ThemeController, MockAuthClient)> pumpApp(WidgetTester tester, {Map<Stri
   SharedPreferences.setMockInitialValues(saved);
   final theme = ThemeController(await SharedPreferences.getInstance());
   final auth = MockAuthClient();
-  final api = MockNeuroCalApi()..latency = Duration.zero;
+  final api = mock ?? (MockNeuroCalApi()..latency = Duration.zero);
   opened.clear();
   shared.clear();
   homeWidget = FakeFocusWidget();
@@ -517,7 +521,17 @@ void main() {
   testWidgets(
     'coffee from the add menu: a Bulletproof cup keeps the fast, milk would end it, and Today counts the cups',
     (tester) async {
-      await pumpApp(tester);
+      final api = MockNeuroCalApi()..latency = Duration.zero;
+      // Outside the test's fake clock: the mock's calls wait on real timers.
+      await tester.runAsync(
+        () => api.addToStack(
+          name: 'Calm blend',
+          ingredients: const [(name: 'L-theanine', amount: 200, unit: 'mg', inBlend: false)],
+          servingsPerDay: 1,
+          timing: StackTiming.morning,
+        ),
+      );
+      await pumpApp(tester, mock: api);
       await signIn(tester);
       await add(tester, 'Log coffee');
       expect(find.text('2 kcal, 95 mg caffeine. Keeps your fast going.'), findsOneWidget);
@@ -540,6 +554,8 @@ void main() {
 
       // "Now" at the top: the cup's caffeine is on its way up.
       expect(find.text('Caffeine rising'), findsOneWidget);
+      // The stack's L-theanine pairs with the cup.
+      expect(find.text('Coffee + L-theanine: calm focus'), findsOneWidget);
       await tester.scrollUntilVisible(find.textContaining('1 cup · 95 mg caffeine'), 300);
     },
   );
