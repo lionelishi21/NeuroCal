@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../body_state.dart';
 import '../theme/tokens.dart';
 import '../widgets/feeling_face.dart';
 import '../widgets/focus_ring.dart';
+import '../widgets/now_status.dart';
 import '../widgets/share_card.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
@@ -206,6 +210,11 @@ class _TodayScreenState extends State<TodayScreen> {
 
   NeuroCalApi get _api => AppScope.of(context).api;
 
+  /// Moves "Now" along: caffeine rises and wears off, and the fast's hours grow.
+  late final Timer _tick = Timer.periodic(const Duration(minutes: 1), (_) {
+    if (mounted && _date == null) setState(() {});
+  });
+
   @override
   void initState() {
     super.initState();
@@ -214,6 +223,7 @@ class _TodayScreenState extends State<TodayScreen> {
 
   @override
   void dispose() {
+    _tick.cancel();
     widget.changes.removeListener(_refresh);
     super.dispose();
   }
@@ -222,6 +232,7 @@ class _TodayScreenState extends State<TodayScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _day ??= _load();
+    _tick;
   }
 
   /// One call for the whole screen; the server leaves out an extra that failed, so the day still shows.
@@ -446,6 +457,18 @@ class _TodayScreenState extends State<TodayScreen> {
       EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
   ];
 
+  /// What the coffee and the fast are doing now; null on a past day.
+  BodyState? _now(_Day day) {
+    if (!day.isToday) return null;
+    final bio = widget.profile.bioProfile ?? const {};
+    return bodyStateAt(
+      DateTime.now(),
+      cups: day.coffee?.cups ?? const [],
+      fasting: day.fasting,
+      wakeHour: AppScope.of(context).reminders?.wakeHour ?? wakeHours[bio['wake']] ?? 7.0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -489,8 +512,13 @@ class _TodayScreenState extends State<TodayScreen> {
                     snapshot.connectionState == ConnectionState.waiting && !_sameDay(day.date, date))
                   const ScreenLoading(label: 'Loading the day', heights: [232, 120, 64, 150])
                 else ...[
+                  if (_now(day) case final state? when !state.isEmpty) ...[
+                    NowStatus(state),
+                    const SizedBox(height: Space.s3),
+                  ],
                   _FocusCard(
                     day.focus,
+                    state: _now(day),
                     onCheckIn: () => widget.onCapture(Capture.checkIn),
                     onLogSleep: () => widget.onCapture(Capture.sleep),
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
@@ -843,9 +871,13 @@ class _FocusCard extends StatelessWidget {
     required this.onLogExercise,
     required this.onSetUpEnvironment,
     this.onShare,
+    this.state,
   });
 
   final FocusScore focus;
+
+  /// Tints the card and lights the ring in the colours of what's going on now.
+  final BodyState? state;
 
   /// Null where there's nothing to share (no score, a past day).
   final VoidCallback? onShare;
@@ -870,8 +902,13 @@ class _FocusCard extends StatelessWidget {
       ('Movement', 'Move', "Yesterday's exercise", parts.movement, null),
       ('Environment', 'Air', 'Air and surroundings', parts.environment, null),
     ];
-    // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card.
-    return Container(
+    // The one bold surface in the app: the ring's blue-to-teal, washed faintly across the card, or the
+    // colours of what's going on now (amber caffeine, violet fat fast, teal fast).
+    final now = state == null ? const <Color>[] : stateColors(state!, c);
+    final tint = now.isEmpty ? [NeuroCalColors.ringFrom, NeuroCalColors.ringTo] : [now.first, now.last];
+    return AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.dial,
+      curve: Motion.settle,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(Radii.hero),
@@ -880,9 +917,9 @@ class _FocusCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color.alphaBlend(NeuroCalColors.ringFrom.withValues(alpha: 0.14), c.paper),
+            Color.alphaBlend(tint.first.withValues(alpha: now.isEmpty ? 0.14 : 0.18), c.paper),
             c.paper,
-            Color.alphaBlend(NeuroCalColors.ringTo.withValues(alpha: 0.12), c.paper),
+            Color.alphaBlend(tint.last.withValues(alpha: now.isEmpty ? 0.12 : 0.16), c.paper),
           ],
           stops: const [0, 0.55, 1],
         ),
@@ -891,35 +928,39 @@ class _FocusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              FocusRing(
-                score: score,
-                size: 104,
-                // The number has to fit the ring: it grows with large text only so far.
-                child: MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: 1.3,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        score?.toString() ?? '–',
-                        style: TextStyle(
-                          fontSize: TextSize.xxxl,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
-                          height: 1,
-                          color: score == null ? c.inkFaint : c.ink,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      if (score != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 3),
-                          child: Text(
-                            'of 100',
-                            style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w500, color: c.inkSoft),
+              StateAura(
+                colors: now,
+                intensity: state?.intensity ?? 0,
+                child: FocusRing(
+                  score: score,
+                  size: 104,
+                  // The number has to fit the ring: it grows with large text only so far.
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 1.3,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          score?.toString() ?? '–',
+                          style: TextStyle(
+                            fontSize: TextSize.xxxl,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                            height: 1,
+                            color: score == null ? c.inkFaint : c.ink,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                    ],
+                        if (score != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              'of 100',
+                              style: TextStyle(fontSize: TextSize.xxxs, fontWeight: FontWeight.w500, color: c.inkSoft),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

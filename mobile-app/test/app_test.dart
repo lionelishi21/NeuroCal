@@ -528,6 +528,8 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
 
+      // "Now" at the top: the cup's caffeine is on its way up.
+      expect(find.text('Caffeine rising'), findsOneWidget);
       await tester.scrollUntilVisible(find.textContaining('1 cup · 95 mg caffeine'), 300);
     },
   );
