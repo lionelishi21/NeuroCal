@@ -1,3 +1,4 @@
+import { trialEndingEmail } from "../email/templates";
 import type { IClock } from "../interfaces/IClock";
 import type { IEmailSender } from "../interfaces/IEmailSender";
 import type { EndingTrial, ISubscriptionRepository } from "../interfaces/ISubscriptions";
@@ -38,23 +39,5 @@ export class SendTrialRemindersUseCase {
 
 export function reminderFor(trial: EndingTrial) {
   const day = trial.endsAt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: trial.timeZone });
-  return {
-    to: trial.email,
-    subject: `Your NeuroCal trial ends on ${day}`,
-    text: [
-      "Hi,",
-      "",
-      `A reminder that your free trial of NeuroCal ends on ${day}.`,
-      "",
-      "To keep going, there's nothing to do: your subscription starts then, at the price you saw when you started the trial.",
-      "",
-      "If you'd rather not continue, cancel before then and you won't be charged:",
-      "- iPhone: Settings > your name > Subscriptions > NeuroCal",
-      "- Android: Google Play > your profile > Payments & subscriptions > Subscriptions > NeuroCal",
-      "",
-      "Deleting the app doesn't cancel the subscription.",
-      "",
-      "NeuroCal",
-    ].join("\n"),
-  };
+  return { to: trial.email, ...trialEndingEmail({ to: trial.email, day }) };
 }

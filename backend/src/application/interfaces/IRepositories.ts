@@ -26,6 +26,8 @@ export interface IUserRepository {
    * in one transaction. Returns their sign-in subject, or null when there was no such user.
    */
   delete(userId: string): Promise<{ authSubject: string } | null>;
+  /** The sign-in email, for the account's own emails (welcome, deleted); null when there's no such user. */
+  emailOf(userId: string): Promise<string | null>;
 }
 
 /** Every method below is scoped to one user; implementations must filter by userId (ARCHITECTURE §10). */

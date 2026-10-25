@@ -430,6 +430,9 @@ export class InMemoryUsers implements IUserRepository {
     this.rows.delete(userId);
     return user ? { authSubject: user.subject } : null;
   }
+  async emailOf(userId: string) {
+    return this.rows.get(userId)?.email ?? null;
+  }
 }
 
 export class FakeIdentity implements IIdentityProvider {

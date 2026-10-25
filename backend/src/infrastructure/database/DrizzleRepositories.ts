@@ -117,6 +117,11 @@ export class DrizzleUserRepository implements IUserRepository {
     return row.id;
   }
 
+  async emailOf(userId: string): Promise<string | null> {
+    const [row] = await this.db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+    return row?.email ?? null;
+  }
+
   async delete(userId: string): Promise<{ authSubject: string } | null> {
     return this.db.transaction(async (tx) => {
       const [user] = await tx.select({ subject: users.cognitoSub, email: users.email }).from(users).where(eq(users.id, userId));

@@ -156,8 +156,8 @@ export function buildUseCases(p: Ports): UseCases {
   const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
   return {
     getProfile: new GetProfileUseCase(p.profiles),
-    updateProfile: new UpdateProfileUseCase(p.profiles),
-    deleteAccount: new DeleteAccountUseCase(p.users, p.storage, p.identity),
+    updateProfile: new UpdateProfileUseCase(p.profiles, { users: p.users, email: p.email }),
+    deleteAccount: new DeleteAccountUseCase(p.users, p.storage, p.identity, { email: p.email, clock: p.clock }),
     getBioState,
     recordCheckIn: new RecordCheckInUseCase(p.checkIns),
     createPhotoUpload: new CreatePhotoUploadUseCase(p.storage),

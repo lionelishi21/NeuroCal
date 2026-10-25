@@ -228,6 +228,8 @@ describe("API routes", () => {
     expect(users.rows.has("u1")).toBe(false);
     expect(identity.deleted).toEqual(["sub-1"]);
     expect([...storage.objects.keys()]).toEqual(["uploads/u2/b"]);
+    // The last email: it's gone, and what to do if they didn't do it.
+    expect(email.sent.at(-1)).toMatchObject({ to: "maya@example.com", subject: "Your NeuroCal account has been deleted", html: expect.stringContaining("Didn't do this?") });
   });
 
   it("POST /supplements/analyze takes a multipart photo labelled as a generic file, as the app sends it", async () => {

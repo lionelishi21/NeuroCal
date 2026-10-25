@@ -64,11 +64,19 @@ describe("NeuroCalStack", () => {
     });
   });
 
+  it("sends Cognito's codes through the designed email, from a Lambda outside the VPC", () => {
+    const template = synth("dev");
+    template.hasResourceProperties("AWS::Cognito::UserPool", { LambdaConfig: { CustomMessage: Match.anyValue() } });
+    const [messages] = Object.values(template.findResources("AWS::Lambda::Function", { Properties: { Handler: "index.handler", Timeout: 5 } }));
+    expect(messages).toBeDefined();
+    expect((messages as { Properties: Record<string, unknown> }).Properties.VpcConfig).toBeUndefined();
+  });
+
   it("gives Lambdas secret ARNs, never secret values", () => {
     const functions = dev.findResources("AWS::Lambda::Function", {
       Properties: { Environment: { Variables: { APP_SECRET_ARN: Match.anyValue() } } },
     });
-    expect(Object.keys(functions)).toHaveLength(6); // API, migrations, catalog sync, trial reminders, knowledge sync, device scout
+    expect(Object.keys(functions)).toHaveLength(7); // API, migrations, catalog sync, trial reminders, knowledge sync, device scout, Cognito messages
     for (const f of Object.values(functions)) {
       const vars = (f as { Properties: { Environment: { Variables: Record<string, unknown> } } }).Properties.Environment.Variables;
       expect(Object.keys(vars)).not.toEqual(expect.arrayContaining(["OPENAI_API_KEY"]));

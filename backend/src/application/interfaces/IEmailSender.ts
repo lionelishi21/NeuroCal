@@ -3,6 +3,8 @@ export interface Email {
   subject: string;
   /** Plain text; every email has one. */
   text: string;
+  /** The designed version (application/email/templates.ts); mail apps show it when they can. */
+  html?: string;
   /** Where "unsubscribe" in the mail client goes (the List-Unsubscribe header). */
   unsubscribeUrl?: string;
 }

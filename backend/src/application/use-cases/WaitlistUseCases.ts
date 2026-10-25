@@ -1,3 +1,4 @@
+import { waitlistEmail } from "../email/templates";
 import { ForbiddenError, InvalidError } from "../../domain/errors";
 import type { WaitlistOverview, WaitlistPlatform } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
@@ -36,20 +37,7 @@ export class JoinWaitlistUseCase {
 
     const unsubscribeUrl = `${this.config.webUrl.replace(/\/+$/, "")}/unsubscribe?token=${encodeURIComponent(entry.unsubscribeToken)}`;
     try {
-      await this.email.send({
-        to: entry.email,
-        subject: "You're on the NeuroCal list",
-        text: [
-          "Thanks for signing up.",
-          "",
-          "NeuroCal is coming to iPhone and Android. We'll email you once, the day it's ready to download, with the link.",
-          "",
-          `Changed your mind, or didn't sign up? Unsubscribe here: ${unsubscribeUrl}`,
-          "",
-          "NeuroCal",
-        ].join("\n"),
-        unsubscribeUrl,
-      });
+      await this.email.send({ to: entry.email, ...waitlistEmail({ to: entry.email, unsubscribeUrl }), unsubscribeUrl });
       await this.waitlist.markConfirmationSent(entry.id, this.clock.now());
     } catch (error) {
       // Never the address: logs are not where personal data goes.

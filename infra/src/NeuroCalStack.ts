@@ -234,6 +234,16 @@ export class NeuroCalStack extends Stack {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: retain,
     });
+    // Sign-up and reset codes in NeuroCal's email design (backend/src/application/email/templates.ts).
+    // No database, so outside the VPC: Cognito gives the trigger five seconds.
+    const cognitoMessages = fn("CognitoMessagesFunction", "cognitoMessagesLambda.ts", {
+      vpc: undefined,
+      vpcSubnets: undefined,
+      securityGroups: undefined,
+      memorySize: 256,
+      timeout: Duration.seconds(5),
+    });
+    userPool.addTrigger(cognito.UserPoolOperation.CUSTOM_MESSAGE, cognitoMessages);
     // Deleting an account also deletes its sign-in.
     api.addEnvironment("USER_POOL_ID", userPool.userPoolId);
     userPool.grant(api, "cognito-idp:AdminDeleteUser");

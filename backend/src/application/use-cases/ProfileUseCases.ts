@@ -2,7 +2,9 @@ import { conditionsOf, weightLossAllowed } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { COGNITIVE_GOALS, DIETARY_PREFERENCES, type Profile } from "../../domain/types";
 import { MAX_KG, MIN_KG, PACES, type WeightGoal } from "../../domain/weight";
-import type { IProfileRepository } from "../interfaces/IRepositories";
+import { welcomeEmail } from "../email/templates";
+import type { IEmailSender } from "../interfaces/IEmailSender";
+import type { IProfileRepository, IUserRepository } from "../interfaces/IRepositories";
 
 export class GetProfileUseCase {
   constructor(private readonly profiles: IProfileRepository) {}
@@ -19,9 +21,15 @@ export type ProfilePatch = Partial<Omit<Profile, "userId" | "weightGoal">> & { w
 
 const REQUIRED: (keyof ProfilePatch)[] = ["displayName", "dietaryPreference", "dailyCalorieTarget", "macroTargets"];
 
-/** Creates the profile on first save (all required fields needed), then applies partial updates. */
+/**
+ * Creates the profile on first save (all required fields needed), then applies partial updates. The
+ * first save ends onboarding, so it also sends the welcome email when email is set up.
+ */
 export class UpdateProfileUseCase {
-  constructor(private readonly profiles: IProfileRepository) {}
+  constructor(
+    private readonly profiles: IProfileRepository,
+    private readonly welcome?: { users: Pick<IUserRepository, "emailOf">; email: IEmailSender },
+  ) {}
 
   async execute(input: { userId: string; patch: ProfilePatch }): Promise<Profile> {
     const existing = await this.profiles.get(input.userId);
@@ -51,7 +59,21 @@ export class UpdateProfileUseCase {
     }
     assertValidProfile(next);
     await this.profiles.save(next);
+    if (!existing) await this.sendWelcome(next);
     return next;
+  }
+
+  private async sendWelcome(profile: Profile): Promise<void> {
+    if (!this.welcome?.email.enabled) return;
+    try {
+      const to = await this.welcome.users.emailOf(profile.userId);
+      if (!to || to.endsWith("@unknown")) return;
+      const { proteinG, carbsG, fatG } = profile.macroTargets;
+      await this.welcome.email.send({ to, ...welcomeEmail({ to, name: profile.displayName, kcal: profile.dailyCalorieTarget, proteinG, carbsG, fatG }) });
+    } catch (error) {
+      // The profile is saved either way. Never the address in logs.
+      console.error(JSON.stringify({ event: "welcome_email_failed", error: String(error) }));
+    }
   }
 }
 

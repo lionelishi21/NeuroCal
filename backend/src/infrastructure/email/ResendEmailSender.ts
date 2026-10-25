@@ -20,6 +20,7 @@ export class ResendEmailSender implements IEmailSender {
         to: [email.to],
         subject: email.subject,
         text: email.text,
+        ...(email.html ? { html: email.html } : {}),
         ...(email.unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${email.unsubscribeUrl}>` } } : {}),
       }),
       signal: AbortSignal.timeout(8000),
