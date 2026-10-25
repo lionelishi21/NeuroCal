@@ -54,33 +54,65 @@ export interface FoodFlag {
 
 /**
  * Ingredients that mark a food as ultra-processed (NOVA 4): substances extracted or made
- * industrially, and additives that make food look, taste or feel like something it isn't.
+ * industrially, and additives that make food look, taste or feel like something it isn't. Each
+ * says, in a sentence, what it is and why it's there.
  */
-const MARKERS: { name: string; match: RegExp }[] = [
-  { name: "maltodextrin", match: /maltodextrin/ },
-  { name: "dextrose", match: /\bdextrose\b/ },
-  { name: "glucose syrup", match: /glucose(-fructose)? syrup|glucose solids/ },
-  { name: "corn syrup", match: /corn syrup/ },
-  { name: "invert sugar", match: /invert(ed)? sugar|invert syrup/ },
-  { name: "fructose", match: /\bfructose\b(?! corn)|crystalline fructose/ },
-  { name: "hydrogenated oil", match: /hydrogenated|interesterified/ },
-  { name: "modified starch", match: /modified (corn |tapioca |potato |food )?starch/ },
-  { name: "protein isolate", match: /protein isolate|hydroly[sz]ed (vegetable |soy |wheat )?protein|textured (vegetable|soy) protein/ },
-  { name: "emulsifier", match: /lecithin|mono- ?and diglycerides|polysorbate|emulsif|sodium stearoyl lactylate|\be4[0-9]{2}\b/ },
-  { name: "thickener or gum", match: /carrageenan|xanthan|guar gum|cellulose gum|carboxymethylcellulose|gellan/ },
-  { name: "flavouring", match: /\bflavou?r(ing|s)?\b|natural flavou?r|artificial flavou?r/ },
-  { name: "flavour enhancer", match: /monosodium glutamate|\bmsg\b|disodium (inosinate|guanylate)|yeast extract/ },
-  { name: "sweetener", match: /sucralose|aspartame|acesulfame|saccharin|steviol|stevia|erythritol|sorbitol|maltitol|xylitol/ },
-  { name: "colouring", match: /colou?r(ing|s)?\b|caramel colou?r|red 40|yellow [56]|titanium dioxide|annatto/ },
+const MARKERS: { name: string; match: RegExp; why: string }[] = [
+  { name: "maltodextrin", match: /maltodextrin/, why: "Starch broken down in a factory into a fast sugar. It raises blood sugar even faster than table sugar." },
+  { name: "dextrose", match: /\bdextrose\b/, why: "Pure glucose refined from corn starch: sugar under another name." },
+  { name: "glucose syrup", match: /glucose(-fructose)? syrup|glucose solids/, why: "A sugar syrup made from starch in a factory: cheap sweetness and bulk." },
+  { name: "corn syrup", match: /corn syrup/, why: "A sugar syrup made from corn starch in a factory." },
+  { name: "invert sugar", match: /invert(ed)? sugar|invert syrup/, why: "Sugar split in a factory so it stays soft and sweet: sugar under another name." },
+  { name: "fructose", match: /\bfructose\b(?! corn)|crystalline fructose/, why: "Fruit sugar refined on its own, without the fruit's fibre." },
+  { name: "hydrogenated oil", match: /hydrogenated|interesterified/, why: "Oil hardened in a factory so it keeps longer. Partly hydrogenated oil carries trans fat, the worst kind for your heart." },
+  { name: "modified starch", match: /modified (corn |tapioca |potato |food )?starch/, why: "Starch changed in a factory to thicken and hold texture through processing." },
+  {
+    name: "protein isolate",
+    match: /protein isolate|hydroly[sz]ed (vegetable |soy |wheat )?protein|textured (vegetable|soy) protein/,
+    why: "Protein pulled out of soy, milk or wheat in a factory, not a food you could cook with.",
+  },
+  {
+    name: "emulsifier",
+    match: /lecithin|mono- ?and diglycerides|polysorbate|emulsif|sodium stearoyl lactylate|\be4[0-9]{2}\b/,
+    why: "Keeps fat and water from separating, for a smooth texture that whole ingredients wouldn't hold.",
+  },
+  {
+    name: "thickener or gum",
+    match: /carrageenan|xanthan|guar gum|cellulose gum|carboxymethylcellulose|gellan/,
+    why: "Thickens and stabilises, so it feels richer than what's in it.",
+  },
+  { name: "flavouring", match: /\bflavou?r(ing|s)?\b|natural flavou?r|artificial flavou?r/, why: "Flavour made or extracted in a lab, added so it tastes of more than its ingredients." },
+  {
+    name: "flavour enhancer",
+    match: /monosodium glutamate|\bmsg\b|disodium (inosinate|guanylate)|yeast extract/,
+    why: "Makes savoury food taste stronger, which makes it easy to keep eating.",
+  },
+  {
+    name: "sweetener",
+    match: /sucralose|aspartame|acesulfame|saccharin|steviol|stevia|erythritol|sorbitol|maltitol|xylitol/,
+    why: "Sweet without sugar. It keeps your taste for sweetness up.",
+  },
+  { name: "colouring", match: /colou?r(ing|s)?\b|caramel colou?r|red 40|yellow [56]|titanium dioxide|annatto/, why: "Added only to change how it looks." },
 ];
 
 /** Ingredients that make a simple food "processed" (NOVA 3) when added to whole foods. */
 const CULINARY = /\b(salt|sugar|cane sugar|honey|maple syrup|syrup|oil|butter|vinegar|molasses)\b/;
 
+/** One ingredient behind the verdict: as printed, the kind of additive it is, and why it counts. */
+export interface ProcessingReason {
+  ingredient: string;
+  marker: string;
+  why: string;
+}
+
 export interface ProcessingVerdict {
   level: FoodProcessing;
   /** The industrial ingredients found (ultra-processed only). */
   markers: string[];
+  /** Each industrial ingredient, as printed, with why it makes the food ultra-processed. */
+  reasons: ProcessingReason[];
+  /** Why it's this level, in a sentence or two. */
+  summary: string;
 }
 
 const RANK: Record<FoodProcessing, number> = { whole: 0, processed: 1, ultra_processed: 2 };
@@ -94,12 +126,34 @@ const plain = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").
  */
 export function processingOf(ingredients: string[], sourceNovaGroup?: 1 | 2 | 3 | 4): ProcessingVerdict {
   const text = ingredients.map(plain);
-  const markers = MARKERS.filter((m) => text.some((i) => m.match.test(i))).map((m) => m.name);
-  const fromList: FoodProcessing =
-    markers.length > 0 ? "ultra_processed" : ingredients.length > 1 && text.some((i) => CULINARY.test(i)) ? "processed" : "whole";
-  const level = sourceNovaGroup && RANK[fromNova(sourceNovaGroup)] > RANK[fromList] ? fromNova(sourceNovaGroup) : fromList;
-  return { level, markers };
+  const reasons = MARKERS.flatMap((m) => {
+    const i = text.findIndex((t) => m.match.test(t));
+    return i < 0 ? [] : [{ ingredient: ingredients[i]!.trim(), marker: m.name, why: m.why }];
+  });
+  const markers = reasons.map((r) => r.marker);
+  const added = [...new Set(text.flatMap((t) => t.match(CULINARY)?.[1] ?? []))];
+  const fromList: FoodProcessing = markers.length > 0 ? "ultra_processed" : ingredients.length > 1 && added.length > 0 ? "processed" : "whole";
+  const fromDatabase = sourceNovaGroup && RANK[fromNova(sourceNovaGroup)] > RANK[fromList];
+  const level = fromDatabase ? fromNova(sourceNovaGroup) : fromList;
+  return { level, markers, reasons, summary: summaryOf(level, { reasons, added, fromDatabase: Boolean(fromDatabase), listed: ingredients.length > 0 }) };
 }
+
+function summaryOf(level: FoodProcessing, o: { reasons: ProcessingReason[]; added: string[]; fromDatabase: boolean; listed: boolean }): string {
+  if (level === "ultra_processed") {
+    const lead = o.reasons.length
+      ? `Ultra-processed: it's made with ${o.reasons.length === 1 ? "an ingredient" : `${o.reasons.length} ingredients`} you wouldn't find in a kitchen.`
+      : "Ultra-processed, according to Open Food Facts, from additives on the full label.";
+    return `${lead} Foods like this are built to be easy to overeat: in a controlled study, people ate about 500 kcal a day more on them.`;
+  }
+  if (level === "processed") {
+    return o.fromDatabase && !o.added.length
+      ? "Processed, according to Open Food Facts: whole foods preserved or prepared, with nothing industrial in the ingredients."
+      : `Processed: whole foods with ${listOf(o.added)} added, the way you might at home. Nothing industrial in it; fine in sensible amounts.`;
+  }
+  return o.listed ? "A whole food: nothing added that you wouldn't use in your own kitchen." : "No ingredient list to check, so it's graded as a whole food.";
+}
+
+const listOf = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
 
 /** Glycemic load from carbs less fibre, per serving: an estimate, since labels don't print it. */
 export function estimatedGlycemicLoad(n: FoodNutrition): GlycemicLoad {

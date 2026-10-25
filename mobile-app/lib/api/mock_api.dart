@@ -901,6 +901,7 @@ class MockNeuroCalApi implements NeuroCalApi {
       ingredients: ['Peanuts', 'peanut oil', 'salt'],
       fromDatabase: true,
       processing: FoodProcessing.processed,
+      processingSummary: 'Processed: whole foods with oil and salt added, the way you might at home. Nothing industrial in it; fine in sensible amounts.',
       item: FoodItem(
         name: 'Member’s Selection Roasted Peanuts',
         portion: '28 g',
@@ -978,6 +979,19 @@ class MockNeuroCalApi implements NeuroCalApi {
       fromDatabase: false,
       processing: FoodProcessing.ultraProcessed,
       markers: ['emulsifier', 'flavouring'],
+      reasons: [
+        (
+          ingredient: 'soy lecithin',
+          marker: 'emulsifier',
+          why: 'Keeps fat and water from separating, for a smooth texture that whole ingredients wouldn’t hold.',
+        ),
+        (
+          ingredient: 'natural flavor',
+          marker: 'flavouring',
+          why: 'Flavour made or extracted in a lab, added so it tastes of more than its ingredients.',
+        ),
+      ],
+      processingSummary: 'Ultra-processed: it’s made with 2 ingredients you wouldn’t find in a kitchen. Foods like this are built to be easy to overeat: in a controlled study, people ate about 500 kcal a day more on them.',
       flags: [
         (
           kind: 'ultra_processed',

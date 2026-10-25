@@ -4295,11 +4295,38 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ingredient": {
+                      "type": "string"
+                    },
+                    "marker": {
+                      "type": "string"
+                    },
+                    "why": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ingredient",
+                    "marker",
+                    "why"
+                  ]
+                }
+              },
+              "summary": {
+                "type": "string"
               }
             },
             "required": [
               "level",
-              "markers"
+              "markers",
+              "reasons",
+              "summary"
             ]
           },
           "flags": {

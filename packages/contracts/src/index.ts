@@ -1078,8 +1078,16 @@ export const FoodScanResponse = z.object({
   lotNumber: z.string().optional(),
   /** "open_food_facts" data must be credited where it shows (Open Database License). */
   source: z.enum(["label", "open_food_facts"]),
-  /** NOVA-style level from the ingredient list, and the industrial ingredients that made it ultra-processed. */
-  processing: z.object({ level: z.enum(["whole", "processed", "ultra_processed"]), markers: z.array(z.string()) }),
+  /**
+   * NOVA-style level from the ingredient list: the industrial ingredients that made it ultra-processed,
+   * each as printed with the kind of additive and why it counts, and a sentence on why it's this level.
+   */
+  processing: z.object({
+    level: z.enum(["whole", "processed", "ultra_processed"]),
+    markers: z.array(z.string()),
+    reasons: z.array(z.object({ ingredient: z.string(), marker: z.string(), why: z.string() })),
+    summary: z.string(),
+  }),
   flags: z.array(z.object({ kind: z.enum(["ultra_processed", "high_added_sugar", "high_sodium", "expired", "expires_soon"]), message: z.string() })),
   /** One serving ready to log; its glycemic load is an estimate. Missing without nutrition. */
   item: FoodItem.optional(),

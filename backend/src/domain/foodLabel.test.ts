@@ -5,14 +5,26 @@ const today = new Date("2026-10-14T12:00:00Z");
 
 describe("processing from the ingredient list (NOVA)", () => {
   it("calls anything with industrial ingredients ultra-processed, and names them", () => {
-    expect(processingOf(["Rolled oats", "sugar", "canola oil", "soy lecithin", "natural flavor", "maltodextrin"])).toEqual({
-      level: "ultra_processed",
-      markers: ["maltodextrin", "emulsifier", "flavouring"],
-    });
+    const verdict = processingOf(["Rolled oats", "sugar", "canola oil", "soy lecithin", "natural flavor", "maltodextrin"]);
+    expect(verdict).toMatchObject({ level: "ultra_processed", markers: ["maltodextrin", "emulsifier", "flavouring"] });
+    // Why: each one as printed on the label, what it is, and a sentence on it.
+    expect(verdict.reasons).toEqual([
+      { ingredient: "maltodextrin", marker: "maltodextrin", why: expect.stringContaining("fast sugar") },
+      { ingredient: "soy lecithin", marker: "emulsifier", why: expect.stringContaining("fat and water") },
+      { ingredient: "natural flavor", marker: "flavouring", why: expect.stringContaining("lab") },
+    ]);
+    expect(verdict.summary).toMatch(/^Ultra-processed: it's made with 3 ingredients you wouldn't find in a kitchen\./);
   });
 
   it("calls simple foods made with kitchen ingredients processed, and single foods whole", () => {
-    expect(processingOf(["Rolled oats", "honey", "almonds", "coconut oil"])).toEqual({ level: "processed", markers: [] });
+    expect(processingOf(["Rolled oats", "honey", "almonds", "coconut oil"])).toMatchObject({
+      level: "processed",
+      markers: [],
+      reasons: [],
+      summary: expect.stringContaining("with honey and oil added"),
+    });
+    expect(processingOf(["Peanuts"]).summary).toMatch(/^A whole food/);
+    expect(processingOf(["Peanuts"], 4)).toMatchObject({ level: "ultra_processed", summary: expect.stringContaining("according to Open Food Facts") });
     expect(processingOf(["Peanuts", "salt"]).level).toBe("processed");
     expect(processingOf(["Peanuts"]).level).toBe("whole");
     expect(processingOf(["Rolled oats", "almonds", "raisins"]).level).toBe("whole");
@@ -24,9 +36,10 @@ describe("processing from the ingredient list (NOVA)", () => {
     expect(processingOf(["Peanuts"], 4).level).toBe("ultra_processed");
     expect(processingOf(["Oats", "soy lecithin"], 1).level).toBe("ultra_processed");
     // Nutella's French list, as Open Food Facts sends it.
-    expect(processingOf(["Sucre", "huile de palme", "NOISETTES 13%", "émulsifiants: lécithines [SOJA]", "vanilline"])).toEqual({
+    expect(processingOf(["Sucre", "huile de palme", "NOISETTES 13%", "émulsifiants: lécithines [SOJA]", "vanilline"])).toMatchObject({
       level: "ultra_processed",
       markers: ["emulsifier"],
+      reasons: [{ ingredient: "émulsifiants: lécithines [SOJA]", marker: "emulsifier" }],
     });
   });
 });

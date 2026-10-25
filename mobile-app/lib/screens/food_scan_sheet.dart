@@ -115,6 +115,13 @@ class _FoodScanState extends State<_FoodScan> {
           };
         } else {
           _scan = result;
+          // Not a whole food: the better choice loads straight away, under why it's processed.
+          if (result.processing != FoodProcessing.whole &&
+              result.ingredients.isNotEmpty &&
+              result.coffee == null &&
+              result.coffeeFat == null) {
+            _better = AppScope.of(context).api.betterChoice(result);
+          }
         }
       });
     } on ApiException catch (e) {
@@ -246,8 +253,11 @@ class _FoodScanState extends State<_FoodScan> {
               ],
             ),
           ),
+        if (scan.processingSummary != null) _WhyLevel(scan),
         for (final f in scan.flags)
-          SheetNote(lead: _flagLeads[f.kind] ?? 'Worth knowing.', detail: f.message, watch: f.kind != 'expired'),
+          // "Why it's ultra-processed" says it in full.
+          if (f.kind != 'ultra_processed' || scan.processingSummary == null)
+            SheetNote(lead: _flagLeads[f.kind] ?? 'Worth knowing.', detail: f.message, watch: f.kind != 'expired'),
         if (scan.coffee case final coffee?)
           coffee.moldTested
               ? Row(
@@ -296,7 +306,7 @@ class _FoodScanState extends State<_FoodScan> {
             label: const Text('Use it in my coffee'),
           ),
         ],
-        if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty)
+        if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty && scan.processingSummary == null)
           Text(
             'A whole food: nothing industrial in the ingredients.',
             style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll),
@@ -359,6 +369,68 @@ class _FoodScanState extends State<_FoodScan> {
 }
 
 /// What to buy instead, the same food made at home, and a kitchen device when the recipe uses one.
+/// Why the food is whole, processed or ultra-processed: a sentence, then each industrial ingredient as
+/// printed on the label with what it is and why it counts.
+class _WhyLevel extends StatelessWidget {
+  const _WhyLevel(this.scan);
+
+  final FoodScan scan;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final ultra = scan.processing == FoodProcessing.ultraProcessed;
+    final tone = switch (scan.processing) {
+      FoodProcessing.whole => c.chlorophyll,
+      FoodProcessing.processed => c.glucoseInk,
+      FoodProcessing.ultraProcessed => c.beet,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
+        GroupLabel('Why it’s ${scan.processing.label.toLowerCase()}', top: 0),
+        Text(
+          scan.processingSummary!,
+          style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: ultra ? c.ink : tone),
+        ),
+        for (final r in scan.reasons)
+          Semantics(
+            container: true,
+            label: '${r.ingredient}, ${r.marker}. ${r.why}',
+            excludeSemantics: true,
+            child: Container(
+              padding: const EdgeInsets.all(Space.s3),
+              decoration: BoxDecoration(color: c.beetSoft, borderRadius: BorderRadius.circular(Radii.option)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: Space.s1,
+                children: [
+                  Wrap(
+                    spacing: Space.s2,
+                    runSpacing: Space.s1,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        r.ingredient,
+                        style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800, color: c.ink),
+                      ),
+                      Tag(r.marker, fill: c.paper, ink: c.beet),
+                    ],
+                  ),
+                  Text(
+                    r.why,
+                    style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _BetterChoice extends StatelessWidget {
   const _BetterChoice(this.choice, {required this.onRetry, required this.onCook});
 

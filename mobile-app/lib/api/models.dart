@@ -464,6 +464,9 @@ class BrainCheckHistory {
 
 typedef FoodFlag = ({String kind, String message});
 
+/// One ingredient behind a processing verdict: as printed, the kind of additive, and why it counts.
+typedef ProcessingReason = ({String ingredient, String marker, String why});
+
 /// A packaged food by barcode or label photos, graded by the API (`FoodScanResponse` in the contracts).
 class FoodScan {
   const FoodScan({
@@ -486,6 +489,8 @@ class FoodScan {
     required this.fromDatabase,
     required this.processing,
     this.markers = const [],
+    this.reasons = const [],
+    this.processingSummary,
     this.flags = const [],
     this.item,
     this.coffee,
@@ -520,6 +525,12 @@ class FoodScan {
 
   /// The industrial ingredients that made it ultra-processed.
   final List<String> markers;
+
+  /// Each industrial ingredient as printed, the kind of additive it is, and why it counts.
+  final List<ProcessingReason> reasons;
+
+  /// Why it's this level, in a sentence or two.
+  final String? processingSummary;
   final List<FoodFlag> flags;
 
   /// One serving, ready to log.
@@ -564,6 +575,11 @@ class FoodScan {
       fromDatabase: j['source'] == 'open_food_facts',
       processing: FoodProcessing.fromWire(p['level']) ?? FoodProcessing.whole,
       markers: [for (final m in p['markers'] as List) m as String],
+      reasons: [
+        for (final r in (p['reasons'] as List?) ?? const [])
+          (ingredient: r['ingredient'] as String, marker: r['marker'] as String, why: r['why'] as String),
+      ],
+      processingSummary: p['summary'] as String?,
       flags: [for (final f in j['flags'] as List) (kind: f['kind'] as String, message: f['message'] as String)],
       item: j['item'] == null ? null : FoodItem.fromJson(j['item'] as Map<String, dynamic>),
       coffee: j['coffee'] == null

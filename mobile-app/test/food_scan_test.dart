@@ -9,6 +9,7 @@ import 'package:neurocal/coffee_fats.dart';
 import 'package:neurocal/screens/food_scan_sheet.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
+import 'package:neurocal/widgets/sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'supplement_test.dart' show FakeLabelCamera, back, front, side;
@@ -62,9 +63,13 @@ void main() {
     expect(find.text('Member’s Selection Roasted Peanuts'), findsOneWidget);
     expect(find.text('Processed'), findsOneWidget);
     expect(find.text('166'), findsOneWidget);
-    await tester.scrollUntilVisible(find.textContaining('Open Food Facts'), 200);
-    await tester.scrollUntilVisible(find.text('Log it'), 200);
-    await tester.tap(find.text('Log it'));
+    // The better choice below brings its own scrollables: scroll the sheet.
+    final sheet = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.textContaining('Open Food Facts'), 200, scrollable: sheet);
+    // The scanned food's own button; the homemade alternative has one too.
+    final logIt = find.descendant(of: find.byType(SheetAction), matching: find.text('Log it'));
+    await tester.scrollUntilVisible(logIt, 200, scrollable: sheet);
+    await tester.tap(logIt);
     await tester.pumpAndSettle();
     expect(logged.single?.processing, FoodProcessing.processed);
     expect(logged.single?.calories, 166);
@@ -91,8 +96,20 @@ void main() {
     expect(find.text('Made on 2026-08-14'), findsOneWidget);
     expect(find.text('Lot L2608B'), findsOneWidget);
     expect(find.text('Ultra-processed'), findsOneWidget);
-    expect(find.textContaining('it contains emulsifier, flavouring'), findsOneWidget);
     expect(find.textContaining('Open Food Facts'), findsNothing);
+
+    // Why: each industrial ingredient as printed, what it is, and why it counts.
+    final why = find.text('Why it’s ultra-processed');
+    await tester.scrollUntilVisible(why, 200);
+    expect(find.textContaining('2 ingredients you wouldn’t find in a kitchen'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^soy lecithin, emulsifier\. Keeps fat and water')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^natural flavor, flavouring\.')), findsOneWidget);
+    // The flag doesn't repeat it.
+    expect(find.textContaining('it contains emulsifier, flavouring'), findsNothing);
+
+    // And the alternative is there without asking.
+    await tester.scrollUntilVisible(find.text('A better choice'), 200);
+    expect(find.text('Find a better choice'), findsNothing);
   });
 
   testWidgets('a processed food offers a better choice: what to buy, a homemade one to log, and the device it uses', (
@@ -100,12 +117,9 @@ void main() {
   ) async {
     final logged = await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0123456789012']));
     await scanOnce(tester, 'Start scanning');
+    expect(find.textContaining('with oil and salt added'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Find a better choice'), 200);
-    await tester.tap(find.text('Find a better choice'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('A better choice'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('A better choice'), 200);
     expect(find.textContaining('Leave ones with soy lecithin'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Air-fryer honey almond granola'), 200);
     await tester.scrollUntilVisible(find.text('Ninja air fryer'), 200);
