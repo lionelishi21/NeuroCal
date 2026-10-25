@@ -38,6 +38,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 ## Key Reference Docs
 - See `ARCHITECTURE.md` at the root for full database schemas, TypeScript interfaces, system prompts, and use cases.
 - See `docs/EXECUTION_PLAN.md` for the roadmap, phases and design direction.
+- See `design_system/NeuroCal today screen directions/` for the Claude Design files: screens, the app icon and mark (`assets/neurocal-mark.svg`, drawn in the app by `mobile-app/lib/widgets/logo.dart`), the splash, brand assets and the email designs (built in `backend/src/application/email/templates.ts`).
 - See `docs/NCBM.md` (NeuroCal Biohacking Model) for how every feature ties into the Focus Score; new features should feed a pillar or explain the score.
 
 ## Development Workflows
