@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0C1324</color>
+    <color name="ic_launcher_background">#0E1325</color>
+    <!-- The brand's night (NeuroCalColors.night): the launch screen in light and dark mode alike. -->
+    <color name="launch_background">#0E1325</color>
 </resources>

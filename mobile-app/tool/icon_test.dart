@@ -1,28 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:neurocal/theme/tokens.dart';
 import 'package:neurocal/widgets/logo.dart';
 
-// Regenerate: flutter test tool/icon_test.dart --update-goldens && dart run flutter_launcher_icons
-// Icon masters: the mark at 78% on night (#0C1324), as in the web app's apple-icon.png; plus a
-// transparent foreground for Android adaptive icons (mark inside the 66% safe zone).
-Widget mark(double scale, Color? bg) => Container(
-  color: bg,
-  alignment: Alignment.center,
-  child: SizedBox.square(
-    dimension: 1024 * scale,
-    child: const CustomPaint(
-      painter: LogoPainter(ring: Color(0xFF9D86FF), spark: Color(0xFF43D9C8)),
+// Regenerate: flutter test tool/icon_test.dart --update-goldens && dart run flutter_launcher_icons,
+// then tool/splash_sizes.sh for the launch screens.
+// Masters from the design's mark (design_system/.../assets/neurocal-icon.svg):
+// - icon.png: the app icon, the mark on night at its own size and margin.
+// - foreground.png: the Android adaptive icon's mark, transparent, filling the square (the launcher
+//   insets it 16% and masks it, which leaves the ring inside the safe zone).
+// - splash.png: the launch screen's mark, transparent, 148 dp at 4x.
+// - splash_android12.png: Android 12's launch icon, 288 dp at 4x with the mark in the middle 192 dp
+//   that the system shows.
+Widget painted(double canvas, double mark, {Color? background}) => SizedBox.square(
+  dimension: canvas,
+  child: Center(
+    child: CustomPaint(
+      size: Size.square(mark),
+      painter: LogoPainter(background: background),
     ),
   ),
 );
 
+Future<void> render(WidgetTester tester, String file, double canvas, double mark, {Color? background}) async {
+  tester.view.physicalSize = Size.square(canvas);
+  tester.view.devicePixelRatio = 1;
+  await tester.pumpWidget(RepaintBoundary(child: painted(canvas, mark, background: background)));
+  await expectLater(find.byType(RepaintBoundary).first, matchesGoldenFile('../assets/icon/$file'));
+}
+
 void main() {
   testWidgets('icons', (tester) async {
-    tester.view.physicalSize = const Size(1024, 1024);
-    tester.view.devicePixelRatio = 1;
-    await tester.pumpWidget(RepaintBoundary(child: mark(0.78, const Color(0xFF0C1324))));
-    await expectLater(find.byType(RepaintBoundary).first, matchesGoldenFile('../assets/icon/icon.png'));
-    await tester.pumpWidget(RepaintBoundary(child: mark(0.5, null)));
-    await expectLater(find.byType(RepaintBoundary).first, matchesGoldenFile('../assets/icon/foreground.png'));
+    addTearDown(tester.view.reset);
+    await render(tester, 'icon.png', 1024, 1024, background: NeuroCalColors.night);
+    await render(tester, 'foreground.png', 1024, 1024);
+    await render(tester, 'splash.png', 592, 592);
+    await render(tester, 'splash_android12.png', 1152, 768);
   });
 }

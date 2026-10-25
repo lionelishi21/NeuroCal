@@ -31,6 +31,7 @@ import 'screens/paywall.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
 import 'theme/tokens.dart';
+import 'widgets/splash.dart';
 import 'widgets/toast.dart';
 
 /// Composition root: picks the real or mock API and sign-in from the build settings (config.dart).
@@ -260,7 +261,7 @@ class _SignedInState extends State<_SignedIn> {
       future: _profile,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const SplashScreen();
         }
         if (snapshot.hasError) {
           return Scaffold(
@@ -304,7 +305,7 @@ class _SignedInState extends State<_SignedIn> {
         return FutureBuilder(
           future: _access[profile] ??= _hasAccess(profile),
           builder: (context, access) {
-            if (!access.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            if (!access.hasData) return const SplashScreen();
             if (access.data!) return HomeScreen(profile: profile, showGuide: _justOnboarded);
             return PaywallScreen(
               profile: profile,

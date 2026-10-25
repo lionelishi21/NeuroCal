@@ -119,6 +119,20 @@ class NeuroCalColors extends ThemeExtension<NeuroCalColors> {
   static const ringFrom = Color(0xFF4F63D9);
   static const ringTo = Color(0xFF159C98);
 
+  /// The brand's night, the same in both themes: the app icon, the splash and the emails.
+  static const night = Color(0xFF0E1325);
+
+  /// The splash's light behind the mark, and its loading track.
+  static const nightGlow = Color(0xFF1C2452);
+  static const nightTrack = Color(0xFF232B4A);
+
+  /// Text on night: the name, and the quieter tagline.
+  static const onNight = Color(0xFFFFFFFF);
+  static const onNightSoft = Color(0xFFB4B9CC);
+
+  /// The mark's amber dot: energy.
+  static const markEnergy = Color(0xFFE09A2B);
+
   /// Behind a sheet, and the toast's problem dot: the same in both themes.
   static const scrim = Color(0x80080A14);
   static const signalProblem = Color(0xFFC2412D);
