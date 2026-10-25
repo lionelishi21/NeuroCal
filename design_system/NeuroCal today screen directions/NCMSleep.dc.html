@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding-top:50px;min-height:844px;box-sizing:border-box;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;gap:4px;padding:8px 16px 0 6px">
+    <div onClick="{{ back }}" role="button" aria-label="Back to Today" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;border-radius:50%" style-hover="background:var(--track)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+    <div style="flex:1"><div style="font-size:22px;font-weight:800;letter-spacing:-.4px">Sleep and evenings</div><div style="font-size:13px;color:var(--ink2)">Last 7 nights</div></div>
+  </div>
+
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:16px" aria-busy="true">
+      <div style="height:84px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out infinite"></div>
+      <div style="height:300px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .15s infinite"></div>
+      <div style="height:120px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .3s infinite"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--warn-soft);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">!</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px">Couldn't load your nights</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2)">Check your connection and try again.</div>
+      <div onClick="{{ retry }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Try again</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px;border:1.5px dashed var(--line2);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="font-size:20px;font-weight:800">No sleep logged yet</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2);text-wrap:pretty">Log last night and we'll put your sleep, last meal and late screens on one clock, so patterns are easy to spot.</div>
+      <div onClick="{{ openSleep }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Log sleep</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px 16px 0">
+      <sc-for list="{{ figs }}" as="f" hint-placeholder-count="3">
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:{{ f.ink }}">{{ f.v }}</div>
+          <div style="font-size:12px;line-height:1.3;color:var(--ink2);margin-top:2px">{{ f.k }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px 14px 14px">
+      <div style="font-size:15px;font-weight:700">Your nights on one clock</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;color:var(--ink2)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:8px;border-radius:4px;background:var(--primary)"></span>Asleep</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:var(--mid-bar);border:2px solid var(--card);box-shadow:0 0 0 1px var(--mid-bar)"></span>Last meal</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:4px;border-radius:2px;background:var(--teal)"></span>Screens after 22:00</span>
+      </div>
+      <div style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;margin-top:14px">
+        <span></span>
+        <div style="position:relative;height:16px;font-size:10px;font-weight:600;color:var(--ink3)"><sc-for list="{{ ticks }}" as="t" hint-placeholder-count="7"><span style="position:absolute;left:{{ t.l }};transform:translateX({{ t.tx }})">{{ t.t }}</span></sc-for></div>
+      </div>
+      <div style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;position:relative">
+        <div style="display:flex;flex-direction:column"><sc-for list="{{ nights }}" as="n" hint-placeholder-count="7"><span style="height:34px;display:flex;align-items:center;font-size:12px;font-weight:700">{{ n.d }}</span></sc-for></div>
+        <div style="position:relative">
+          <sc-for list="{{ ticks }}" as="t"><div style="position:absolute;top:0;bottom:0;left:{{ t.l }};border-left:1px solid var(--line)"></div></sc-for>
+          <div style="position:absolute;top:-4px;bottom:0;left:16.667%;border-left:1.5px dashed var(--mid-bar);z-index:2"><span style="position:absolute;bottom:-18px;left:-14px;font-size:10px;font-weight:700;color:var(--mid)">21:00</span></div>
+          <sc-for list="{{ nights }}" as="n">
+            <div style="position:relative;height:34px">
+              <div style="position:absolute;top:9px;height:12px;border-radius:6px;background:var(--primary);left:{{ n.sl }};width:{{ n.sw }}"></div>
+              <sc-if value="{{ n.hasScreen }}"><div style="position:absolute;top:25px;height:4px;border-radius:2px;background:var(--teal);left:22.222%;width:{{ n.scw }}"></div></sc-if>
+              <div style="position:absolute;top:10px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--mid-bar);border:2px solid var(--card);z-index:3;left:{{ n.ml }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+
+    <div style="padding:22px 20px 8px;font-size:17px;font-weight:700">What we noticed</div>
+    <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+      <sc-for list="{{ insights }}" as="x" hint-placeholder-count="3">
+        <div style="padding:14px 16px;font-size:15px;line-height:1.45;border-top:{{ x.border }};text-wrap:pretty">{{ x.t }}</div>
+      </sc-for>
+    </div>
+
+    <div style="padding:22px 20px 8px;font-size:17px;font-weight:700">Every night</div>
+    <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:54px repeat(5,minmax(0,1fr));gap:4px;padding:10px 12px;font-size:11px;font-weight:700;color:var(--ink2);border-bottom:1px solid var(--line)"><span>Night</span><span>Bed</span><span>Woke</span><span>Slept</span><span>Ate</span><span>Screens</span></div>
+      <sc-for list="{{ nights }}" as="n">
+        <div style="display:grid;grid-template-columns:54px repeat(5,minmax(0,1fr));gap:4px;padding:0 12px;min-height:44px;align-items:center;font-size:13px;border-top:{{ n.border }}">
+          <span style="font-weight:700">{{ n.d }}</span><span>{{ n.bed }}</span><span>{{ n.wake }}</span><span style="font-weight:700;color:{{ n.durInk }}">{{ n.dur }}</span><span style="color:{{ n.mealInk }}">{{ n.meal }}</span><span>{{ n.scr }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <div style="height:20px;flex:1"></div>
+  <div style="position:sticky;bottom:0;padding:16px 16px 26px;background:linear-gradient(to bottom,transparent,var(--page) 35%);display:flex;gap:10px">
+    <div onClick="{{ openSleep }}" role="button" style="flex:1;height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 8px 24px var(--primary-glow);cursor:pointer">Log sleep</div>
+    <div onClick="{{ openScreen }}" role="button" style="flex:1;height:56px;border-radius:999px;background:var(--card);border:1.5px solid var(--line2);color:var(--primary-ink);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;box-sizing:border-box">Log screen time</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1500},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;populated&quot;,&quot;empty&quot;,&quot;loading&quot;,&quot;error&quot;],&quot;default&quot;:&quot;populated&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onSheet&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { override: null };
+  componentDidUpdate(p) { if (p.view !== this.props.view) this.setState({ override: null }); }
+  renderVals() {
+    const P = this.props, v = this.state.override || P.view || 'populated';
+    const sheet = k => () => P.onSheet && P.onSheet(k);
+    const N = [['Fri', '23:40', '06:05', '21:50', 45], ['Sat', '00:30', '08:20', '20:30', 20], ['Sun', '01:10', '07:05', '23:10', 90], ['Mon', '23:20', '06:30', '20:05', 0], ['Tue', '22:50', '06:15', '19:40', 15], ['Wed', '00:40', '06:50', '22:40', 60], ['Thu', '23:10', '06:22', '22:40', 30]];
+    const toH = t => { const [h, m] = t.split(':').map(Number); const x = h + m / 60; return x >= 18 ? x - 18 : x + 6; };
+    const clock = h => { let x = (h + 18) % 24; const hh = Math.floor(x), mm = Math.round((x - hh) * 60); return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); };
+    const hm = h => `${Math.floor(h)}h ${String(Math.round((h % 1) * 60)).padStart(2, '0')}m`;
+    const pc = h => (h / 18 * 100) + '%';
+    const rows = N.map(([d, bed, wake, meal, scr], k) => {
+      const b = toH(bed), w = toH(wake), m = toH(meal), dur = w - b, lateMeal = m > 3;
+      return { d, bed, wake, meal, b, dur, lateMeal, scrMin: scr, scr: scr ? scr + ' min' : 'None', sl: pc(b), sw: pc(dur), ml: pc(m), hasScreen: scr > 0, scw: pc(scr / 60), durTxt: hm(dur), border: k ? '1px solid var(--line)' : '0' };
+    });
+    const avg = a => a.reduce((p, c) => p + c, 0) / (a.length || 1);
+    const late = rows.filter(r => r.lateMeal), early = rows.filter(r => !r.lateMeal);
+    const lostMin = Math.round((avg(early.map(r => r.dur)) - avg(late.map(r => r.dur))) * 60);
+    const heavy = rows.filter(r => r.scrMin >= 45), light = rows.filter(r => r.scrMin < 45);
+    const scrDelay = Math.round((avg(heavy.map(r => r.b)) - avg(light.map(r => r.b))) * 60);
+    const bs = rows.map(r => r.b), spread = Math.max(...bs) - Math.min(...bs);
+    return {
+      isLoading: v === 'loading', isError: v === 'error', isEmpty: v === 'empty', isReady: v === 'populated',
+      back: () => P.onNav && P.onNav('today'),
+      retry: () => { this.setState({ override: 'loading' }); setTimeout(() => this.setState({ override: 'populated' }), 900); },
+      openSleep: sheet('sleep'), openScreen: sheet('screen'),
+      figs: [
+        { v: hm(avg(rows.map(r => r.dur))), k: 'Average sleep', ink: 'var(--ink)' },
+        { v: clock(avg(bs)), k: 'Usual bedtime', ink: 'var(--ink)' },
+        { v: `${late.length} of 7`, k: 'Nights eaten after 9pm', ink: late.length > 2 ? 'var(--mid)' : 'var(--ink)' }
+      ],
+      ticks: [0, 3, 6, 9, 12, 15, 18].map((h, k) => ({ t: clock(h).slice(0, 2), l: pc(h), tx: k === 0 ? '0' : k === 6 ? '-100%' : '-50%' })),
+      nights: rows.map(r => ({ ...r, dur: r.durTxt, durInk: r.dur < 7 ? 'var(--mid)' : 'var(--ink)', mealInk: r.lateMeal ? 'var(--mid)' : 'var(--ink)' })),
+      insights: [
+        `On the ${late.length} nights you ate after 21:00, you slept ${lostMin} minutes less than on the other nights.`,
+        `When screens ran 45 minutes or more past 22:00, you went to bed about ${scrDelay} minutes later.`,
+        `Your bedtime moved by ${hm(spread).replace(' 00m', 'h')} across the week. Keeping it within 30 minutes tends to make mornings sharper.`
+      ].map((t, k) => ({ t, border: k ? '1px solid var(--line)' : '0' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}</style>
+</helmet>
+<div data-screen-label="NCBM model" style="position:relative;width:1600px;height:960px;background:#FFFFFF;margin:0 auto;font-family:'Plus Jakarta Sans',system-ui,sans-serif;overflow:hidden">
+  <div style="position:absolute;left:40px;top:32px;display:flex;align-items:baseline;gap:14px">
+    <span style="font-size:14px;font-weight:700;color:#5B3FD0;letter-spacing:.06em;text-transform:uppercase">Figure 1</span>
+    <span style="font-size:26px;font-weight:800;letter-spacing:-.4px">The NeuroCal Biohacking Model</span>
+  </div>
+
+  <div style="position:absolute;left:40px;top:96px;font-size:13px;font-weight:700;color:#5B6276;letter-spacing:.05em;text-transform:uppercase">Seven pillars · inputs</div>
+  <div style="position:absolute;left:470px;top:96px;font-size:13px;font-weight:700;color:#5B6276;letter-spacing:.05em;text-transform:uppercase">Signals · 0 to 1</div>
+  <div style="position:absolute;left:820px;top:96px;width:220px;text-align:center;font-size:13px;font-weight:700;color:#5B6276;letter-spacing:.05em;text-transform:uppercase">Daily score</div>
+
+  <svg width="1600" height="960" viewBox="0 0 1600 960" style="position:absolute;inset:0;pointer-events:none" fill="none">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A90A6"></path></marker>
+      <marker id="ahp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6A4FDB"></path></marker>
+      <marker id="aht" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#159C98"></path></marker>
+    </defs>
+    <g stroke="#8A90A6" stroke-width="2" marker-end="url(#ah)">
+      <path d="M360 176 H462"></path><path d="M360 282 H462"></path><path d="M360 388 H462"></path><path d="M360 494 H462"></path>
+      <path d="M360 600 H462" stroke-dasharray="6 6"></path><path d="M360 706 H462" stroke-dasharray="6 6"></path>
+    </g>
+    <g stroke="#6A4FDB" stroke-width="2.5" marker-end="url(#ahp)">
+      <path d="M690 176 C760 176 770 300 818 300"></path>
+      <path d="M690 282 C750 282 770 323 813 323"></path>
+      <path d="M690 388 C750 388 770 347 813 347"></path>
+      <path d="M690 494 C760 494 770 370 818 370"></path>
+    </g>
+    <g stroke="#6A4FDB" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#ahp)">
+      <path d="M690 600 C880 600 905 540 905 452"></path>
+      <path d="M690 706 C930 706 950 560 950 452"></path>
+    </g>
+    <path d="M1008 415 C1080 480 1080 600 1150 600" stroke="#6A4FDB" stroke-width="2.5" marker-end="url(#ahp)"></path>
+    <path d="M1184 216 C1110 216 1080 262 1038 288" stroke="#159C98" stroke-width="2.5" marker-end="url(#aht)"></path>
+    <path d="M1360 392 V472" stroke="#159C98" stroke-width="2.5" marker-end="url(#aht)"></path>
+    <path d="M360 812 H1150" stroke="#8A90A6" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#ah)"></path>
+  </svg>
+
+  <div style="position:absolute;left:40px;top:130px;width:320px;display:flex;flex-direction:column;gap:14px">
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Fuel</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Meals, macros, glycemic load, how processed (NOVA)</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Rhythm</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Last meal, late screens, fasting window, morning light</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Recovery</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Sleep length and depth</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Mind</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Check-ins: stressed, foggy, sharp, calm</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Movement</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Exercise, steps, calf and circulation work</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Environment</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">Air, water, light, noise, EMF</div></div>
+    <div style="height:92px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:#F3F4FA;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:17px;font-weight:800">Supplements</div><div style="font-size:14px;line-height:1.35;color:#5B6276;text-wrap:pretty">What you take, whole-stack checks</div></div>
+  </div>
+
+  <div style="position:absolute;left:470px;top:148px;width:220px;display:flex;flex-direction:column;gap:50px">
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#EFEBFD;color:#3E27A3;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Glycemic load</span><span style="font-size:14px;font-weight:700">20%</span></div>
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#EFEBFD;color:#3E27A3;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Evening timing</span><span style="font-size:14px;font-weight:700">20%</span></div>
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#EFEBFD;color:#3E27A3;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Sleep</span><span style="font-size:14px;font-weight:700">40%</span></div>
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#EFEBFD;color:#3E27A3;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Stress</span><span style="font-size:14px;font-weight:700">20%</span></div>
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#FFFFFF;border:2px dashed #B9AEF0;color:#5B6276;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Movement</span><span style="font-size:13px;font-weight:700">v1</span></div>
+    <div style="height:56px;box-sizing:border-box;padding:0 16px;border-radius:14px;background:#FFFFFF;border:2px dashed #B9AEF0;color:#5B6276;display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:16px;font-weight:800">Environment</span><span style="font-size:13px;font-weight:700">later</span></div>
+  </div>
+
+  <div style="position:absolute;left:820px;top:225px;width:220px;height:220px;border-radius:50%;background:linear-gradient(145deg,#6A4FDB,#3E3AA8);box-shadow:0 10px 30px rgba(106,79,219,.3);color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+    <span style="font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#E4DEFF">Focus Score</span>
+    <span style="font-size:52px;font-weight:800;letter-spacing:-1.5px;line-height:1.05">0–100</span>
+    <span style="font-size:14px;font-weight:600;color:#E4DEFF">vs. your own usual</span>
+  </div>
+
+  <div style="position:absolute;left:1044px;top:172px;width:116px;font-size:13px;line-height:1.3;font-weight:700;color:#0E6E6B;text-align:right">checks the score against reality</div>
+
+  <div style="position:absolute;left:1160px;top:130px;width:400px;height:262px;box-sizing:border-box;border-radius:20px;background:#E3F5F4;padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:13px;font-weight:700;color:#0E6E6B;letter-spacing:.05em;text-transform:uppercase">Outcomes</div>
+    <div style="height:80px;box-sizing:border-box;border-radius:14px;background:#FFFFFF;padding:0 16px;display:flex;flex-direction:column;justify-content:center;gap:3px"><div style="font-size:17px;font-weight:800">Brain speed check</div><div style="font-size:14px;color:#5B6276">2-minute reaction test</div></div>
+    <div style="height:80px;box-sizing:border-box;border-radius:14px;background:#FFFFFF;padding:0 16px;display:flex;flex-direction:column;justify-content:center;gap:3px"><div style="font-size:17px;font-weight:800">Weight trend</div><div style="font-size:14px;color:#5B6276">Smoothed, not daily swings</div></div>
+  </div>
+
+  <div style="position:absolute;left:1160px;top:480px;width:400px;height:380px;box-sizing:border-box;border-radius:20px;background:#0E1325;color:#EEF0F7;padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:13px;font-weight:700;color:#9D85FA;letter-spacing:.05em;text-transform:uppercase">The loop · outputs</div>
+    <div style="border-radius:14px;background:#1C2340;padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-size:17px;font-weight:800">Weakest signals this week</div><div style="font-size:14px;color:#B4B9CC">Any signal under 0.75, matched to the catalog</div></div>
+    <div style="display:flex;justify-content:center"><svg width="16" height="24" viewBox="0 0 16 24"><path d="M8 0 V18 M2 13 L8 20 L14 13" stroke="#9D85FA" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+    <div style="flex:1;border-radius:14px;background:#2A2F6E;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:17px;font-weight:800">Next action</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="height:32px;padding:0 12px;border-radius:999px;background:#3E3AA8;display:flex;align-items:center;font-size:14px;font-weight:600">What to eat</span>
+        <span style="height:32px;padding:0 12px;border-radius:999px;background:#3E3AA8;display:flex;align-items:center;font-size:14px;font-weight:600">A routine</span>
+        <span style="height:32px;padding:0 12px;border-radius:999px;background:#3E3AA8;display:flex;align-items:center;font-size:14px;font-weight:600">A product or device</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:470px;top:784px;font-size:13px;font-weight:700;color:#5B6276">safety checks, not scored</div>
+
+  <div style="position:absolute;left:40px;top:900px;right:40px;display:flex;align-items:center;gap:28px;font-size:14px;color:#5B6276;border-top:1px solid #E1E3EC;padding-top:18px">
+    <span style="display:flex;align-items:center;gap:10px"><svg width="36" height="4"><path d="M0 2 H36" stroke="#6A4FDB" stroke-width="2.5"></path></svg>In the v0 score</span>
+    <span style="display:flex;align-items:center;gap:10px"><svg width="36" height="4"><path d="M0 2 H36" stroke="#6A4FDB" stroke-width="2" stroke-dasharray="6 6"></path></svg>Designed, not yet in the score</span>
+    <span style="margin-left:auto">Scores are fixed formulas. AI explains them, never sets them.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:960}}"></script>
+</body>
+</html>

@@ -11,3 +11,6 @@ coverage/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# Reference photos dropped into the design files; personal, not part of the design system.
+design_system/**/uploads/

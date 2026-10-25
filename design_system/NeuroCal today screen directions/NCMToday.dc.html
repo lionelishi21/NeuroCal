@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding-top:50px;min-height:844px;box-sizing:border-box;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:8px 12px 0 20px">
+    <div style="min-width:0">
+      <div style="font-size:13px;font-weight:600;color:var(--ink2)">Thursday 2 October</div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15;margin-top:2px">Good afternoon, Sam</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:2px;flex:none">
+      <div onClick="{{ toStreaks }}" role="button" aria-label="12-day streak" style="height:36px;padding:0 10px 0 8px;border-radius:999px;background:var(--mid-soft);color:var(--mid);display:flex;align-items:center;gap:4px;font-size:14px;font-weight:800;cursor:pointer;margin-right:4px" style-active="transform:scale(.94)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 1-9z"></path></svg>12</div>
+      <div onClick="{{ toNotifs }}" role="button" aria-label="Notifications, 1 new" style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;border-radius:50%" style-hover="background:var(--track)" style-active="transform:scale(.92)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"></path></svg><span style="position:absolute;top:10px;right:11px;width:9px;height:9px;border-radius:50%;background:var(--warn);border:2px solid var(--page)"></span></div>
+    </div>
+  </div>
+
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:16px 16px 0" aria-busy="true" aria-label="Loading today">
+      <div style="height:232px;border-radius:24px;background:var(--track);animation:ncpulse 1.2s ease-in-out infinite"></div>
+      <div style="height:120px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .15s infinite"></div>
+      <div style="height:64px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .3s infinite"></div>
+      <div style="height:150px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .45s infinite"></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--warn-soft);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">!</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px">Couldn't load today</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2);text-wrap:pretty">Your meals and score are safe. Check your connection and try again.</div>
+      <div onClick="{{ retry }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Try again</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+    <div style="margin:16px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 6px 20px rgba(18,24,41,.06);animation:ncrise .5s cubic-bezier(.2,.8,.2,1) both">
+      <div onClick="{{ toScore }}" role="button" aria-label="Focus Score details" style="display:grid;grid-template-columns:116px minmax(0,1fr);gap:16px;align-items:center;cursor:pointer">
+        <div style="position:relative;width:116px;height:116px">
+          <svg width="116" height="116" viewBox="0 0 120 120"><defs><linearGradient id="nctd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient></defs><circle cx="60" cy="60" r="52" fill="none" stroke="var(--track)" stroke-width="11" stroke-dasharray="{{ ring.track }}"></circle><circle cx="60" cy="60" r="52" fill="none" stroke="url(#nctd)" stroke-width="11" stroke-linecap="round" stroke-dasharray="{{ ring.dash }}" transform="rotate(-90 60 60)"></circle></svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:38px;font-weight:800;letter-spacing:-1.2px;line-height:1;color:{{ ring.ink }}">{{ ring.text }}</div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-top:3px">{{ ring.sub }}</div></div>
+        </div>
+        <div style="min-width:0;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;font-weight:600;color:var(--primary-ink)">Focus Score</div>
+          <div style="font-size:24px;font-weight:800;letter-spacing:-.4px;line-height:1.1">{{ score.title }}</div>
+          <div style="font-size:14px;line-height:1.45;color:var(--ink2);text-wrap:pretty">{{ score.body }}</div>
+          <sc-if value="{{ hasScore }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--primary-ink);margin-top:2px">What moved it<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9 5l7 7-7 7"></path></svg></div></sc-if>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:14px">
+        <sc-for list="{{ inputs }}" as="f" hint-placeholder-count="4">
+          <div style="background:var(--page);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-height:74px;box-sizing:border-box">
+            <div style="font-size:12px;font-weight:600;color:var(--ink2)">{{ f.name }}</div>
+            <sc-if value="{{ f.has }}"><div style="font-size:15px;font-weight:700;color:{{ f.ink }}">{{ f.value }}</div><div style="height:4px;border-radius:2px;background:var(--track)"><div style="height:4px;border-radius:2px;width:{{ f.pct }};background:{{ f.color }};transition:width .9s cubic-bezier(.2,.8,.2,1) .2s"></div></div></sc-if>
+            <sc-if value="{{ f.action }}"><div onClick="{{ f.onClick }}" role="button" style="align-self:flex-start;height:32px;margin:2px 0;padding:0 12px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer">+ {{ f.action }}</div></sc-if>
+            <div style="font-size:12px;color:var(--ink3)">{{ f.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div onClick="{{ toInsights }}" role="button" style="margin:10px 16px 0;border-radius:20px;background:var(--primary-soft);padding:14px 14px 14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .06s both" style-active="transform:scale(.98)">
+      <div style="width:36px;height:36px;border-radius:12px;flex:none;background:var(--card);color:var(--primary-ink);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"></path></svg></div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:800;letter-spacing:.3px;color:var(--primary-ink)">NEW PATTERN</div><div style="font-size:14px;font-weight:700;line-height:1.35;margin-top:2px;text-wrap:pretty">Late dinners cost you about 8 points the next day</div></div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-ink)" stroke-width="2.4" stroke-linecap="round" style="flex:none"><path d="M9 5l7 7-7 7"></path></svg>
+    </div>
+    <div style="display:none">
+      <div onClick="{{ openSleep }}" role="button" style="flex:1;height:44px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>Log sleep</div>
+      <div onClick="{{ toHelp }}" role="button" style="flex:1;height:44px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"></path></svg>See what helps</div>
+    </div>
+
+    <div style="margin:10px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .12s both">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font-size:22px;font-weight:800;letter-spacing:-.3px;color:{{ cal.ink }}">{{ cal.left }}</span><span style="font-size:13px;color:var(--ink2)">{{ cal.eaten }}</span></div>
+      <div style="height:8px;border-radius:4px;background:var(--track);margin-top:10px"><div style="height:8px;border-radius:4px;width:{{ cal.pct }};background:{{ cal.color }};transition:width 1s cubic-bezier(.2,.8,.2,1) .25s"></div></div>
+      <sc-if value="{{ cal.over }}"><div style="font-size:13px;line-height:1.4;color:var(--warn);margin-top:8px">Over today's target. No need to make up for it tomorrow.</div></sc-if>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px">
+        <sc-for list="{{ macros }}" as="m" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+            <div style="display:flex;justify-content:space-between;gap:4px"><span style="font-size:13px;font-weight:700">{{ m.k }}</span><span style="font-size:12px;color:var(--ink2)">{{ m.v }}</span></div>
+            <div style="height:5px;border-radius:3px;background:var(--track)"><div style="height:5px;border-radius:3px;width:{{ m.pct }};background:{{ m.color }};transition:width 1s cubic-bezier(.2,.8,.2,1) .35s"></div></div>
+            <div style="font-size:11px;color:var(--ink3)">{{ m.of }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="margin:10px 16px 0;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .18s both;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 12px 12px 16px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--ink2)">{{ feel.label }}</div>
+        <div style="font-size:16px;font-weight:700;margin-top:2px;color:{{ feel.ink }}">{{ feel.text }}</div>
+      </div>
+      <div onClick="{{ openCheckin }}" role="button" style="height:44px;padding:0 16px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:14px;font-weight:700;display:flex;align-items:center;cursor:pointer">Check in</div>
+    </div>
+
+    <div style="padding:20px 20px 8px;font-size:18px;font-weight:800;letter-spacing:-.2px">What to eat next</div>
+    <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:18px;font-weight:800;line-height:1.25">{{ rec.name }}</div>
+        <div style="font-size:13px;color:var(--ink2);margin-top:4px">{{ rec.meta }}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ rec.macros }}" as="x" hint-placeholder-count="3"><span style="height:28px;padding:0 10px;border-radius:999px;background:var(--page);font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px"><b style="font-weight:800">{{ x.v }}</b>{{ x.k }}</span></sc-for>
+      </div>
+      <div style="font-size:14px;line-height:1.45;padding-top:10px;border-top:1px solid var(--line);text-wrap:pretty"><b style="font-weight:700;color:var(--teal-ink)">Why it fits: </b>{{ rec.why }}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--ink3)">{{ rec.src }}</span>
+        <div onClick="{{ toggleMore }}" role="button" style="height:44px;padding:0 4px 0 12px;display:flex;align-items:center;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer">{{ moreLabel }}</div>
+      </div>
+      <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;border-top:1px solid var(--line)">
+          <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="2">
+            <div style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)"><span style="font-size:14px;font-weight:600">{{ i.n }}</span><span style="font-size:13px;color:var(--ink2);white-space:nowrap">{{ i.m }}</span></div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:20px 20px 8px;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:18px;font-weight:800;letter-spacing:-.2px">Meals today</span><span style="font-size:13px;color:var(--ink2)">{{ mealCount }}</span></div>
+    <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:0 16px 10px;background:var(--mid-soft);border-radius:16px;padding:12px 12px 12px 14px;display:flex;align-items:center;gap:12px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mid)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="M3 3l18 18M8.5 8.6A6 6 0 0 0 6 13.5 4 4 0 0 0 7 21.4h10M17.8 14A4 4 0 0 0 16 7a6 6 0 0 0-5-1"></path></svg>
+        <div style="flex:1;min-width:0;font-size:13px;line-height:1.4;color:var(--ink)"><b style="font-weight:700">{{ offlineText }}</b> It'll count once it uploads.</div>
+        <div onClick="{{ syncNow }}" role="button" style="height:40px;padding:0 14px;border-radius:999px;background:var(--card);color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer;white-space:nowrap">{{ syncLabel }}</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ noMeals }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:0 16px;border:1.5px dashed var(--line2);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+        <div style="font-size:15px;font-weight:700">No meals yet today</div>
+        <div style="font-size:14px;line-height:1.45;color:var(--ink2);text-wrap:pretty">Snap your first plate and we'll read it against your sleep and stress.</div>
+        <div onClick="{{ openMeal }}" role="button" style="height:44px;padding:0 16px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:14px;font-weight:700;display:flex;align-items:center;cursor:pointer">+ Log a meal</div>
+      </div>
+    </sc-if>
+    <div style="margin:0 16px;background:var(--card);border-radius:20px;border:{{ listBorder }};overflow:hidden">
+      <sc-for list="{{ meals }}" as="m" hint-placeholder-count="3">
+        <div onClick="{{ m.open }}" role="button" style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;padding:12px 8px 12px 14px;border-top:{{ m.border }};cursor:pointer;transition:background .15s" style-hover="background:var(--page)">
+          <span style="font-size:13px;font-weight:600;color:var(--ink2);padding-top:1px">{{ m.t }}</span>
+          <div style="min-width:0;display:flex;flex-direction:column;gap:3px">
+            <span style="font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.2px">{{ m.type }}</span>
+            <span style="font-size:15px;font-weight:600;line-height:1.3">{{ m.items }}</span>
+            <sc-if value="{{ m.hi }}"><span style="align-self:flex-start;margin-top:3px;height:22px;padding:0 8px;border-radius:999px;background:var(--mid-soft);color:var(--mid);font-size:11px;font-weight:700;display:flex;align-items:center">High glycemic load</span></sc-if>
+            <sc-if value="{{ m.pending }}"><span style="align-self:flex-start;margin-top:3px;font-size:12px;color:var(--mid);font-weight:600">Saved on this phone</span></sc-if>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0">
+            <span style="font-size:14px;font-weight:700;padding:1px 6px 0 0">{{ m.kcalText }}</span>
+            <div onClick="{{ m.remove }}" role="button" style="height:36px;padding:0 6px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer" style-hover="color:var(--warn)">Remove</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="height:20px;flex:1"></div>
+    <div style="position:sticky;bottom:0;padding:16px 16px 26px;background:linear-gradient(to bottom,transparent,var(--page) 35%);display:flex;gap:10px">
+      <div onClick="{{ openMeal }}" role="button" style="flex:1.5;height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:700;box-shadow:0 8px 24px var(--primary-glow);cursor:pointer;transition:transform .15s" style-active="transform:scale(.97)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" stroke-linejoin="round"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Log a meal</div>
+      <div onClick="{{ openCheckin }}" role="button" style="flex:1;height:56px;border-radius:999px;background:var(--card);border:1.5px solid var(--line2);color:var(--primary-ink);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;box-sizing:border-box;transition:transform .15s" style-active="transform:scale(.97)">Check in</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1600},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;populated&quot;,&quot;noscore&quot;,&quot;nomeals&quot;,&quot;loading&quot;,&quot;error&quot;,&quot;over&quot;,&quot;offline&quot;],&quot;default&quot;:&quot;populated&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onSheet&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { removed: [], override: null, sync: 'idle', more: false, n: 0, on: false };
+  componentDidMount() { this.run(); }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+  componentDidUpdate(p) { if (p.view !== this.props.view) { this.setState({ removed: [], override: null, sync: 'idle', more: false }); this.run(); } }
+  run() {
+    cancelAnimationFrame(this.raf); this.setState({ n: 0, on: false }); const t0 = performance.now();
+    const tick = t => { const k = Math.min(1, (t - t0) / 1100); this.setState({ n: 1 - Math.pow(1 - k, 3), on: true }); if (k < 1) this.raf = requestAnimationFrame(tick); };
+    this.raf = requestAnimationFrame(tick);
+  }
+  renderVals() {
+    const P = this.props, s = this.state;
+    const nav = k => () => P.onNav && P.onNav(k), sheet = k => () => P.onSheet && P.onSheet(k), toast = m => P.onToast && P.onToast(m);
+    const v = s.override || P.view || 'populated';
+    const T = { kcal: 2200, p: 140, c: 220, f: 75 };
+    const base = [
+      { id: 1, t: '07:40', type: 'Breakfast', items: 'Greek yoghurt, blueberries, oats', kcal: 420, p: 24, c: 58, f: 11 },
+      { id: 2, t: '10:30', type: 'Snack', items: 'Flat white, banana', kcal: 210, p: 8, c: 34, f: 6 },
+      { id: 3, t: '13:05', type: 'Lunch', items: 'Chicken wrap, fries', kcal: 610, p: 46, c: 50, f: 24, hi: true }
+    ];
+    let list = v === 'nomeals' ? [] : v === 'noscore' ? [base[0]] : v === 'over' ? [...base, { id: 4, t: '19:20', type: 'Dinner', items: 'Margherita pizza, garlic bread', kcal: 1140, p: 38, c: 132, f: 48, hi: true }] : v === 'offline' ? [...base, { id: 5, t: '15:10', type: 'Snack', items: 'Apple, almonds', kcal: 190, p: 6, c: 22, f: 10, pending: s.sync !== 'done' }] : base;
+    list = list.filter(m => !s.removed.includes(m.id));
+    const sum = k => list.reduce((a, m) => a + m[k], 0);
+    const eaten = sum('kcal'), left = T.kcal - eaten, over = left < 0;
+    const fmt = n => n.toLocaleString('en-GB');
+    const score = v === 'noscore' ? null : v === 'nomeals' ? 71 : 74;
+    const C = 326.7, W = p => s.on ? p : '0%';
+    const G = (value, pct, sub) => ({ value, pct: W(pct), sub, has: true, color: 'var(--good-bar)', ink: 'var(--good)' });
+    const M = (value, pct, sub) => ({ value, pct: W(pct), sub, has: true, color: 'var(--mid-bar)', ink: 'var(--mid)' });
+    const inputs = v === 'noscore'
+      ? [{ name: 'Sleep', action: 'Log', sub: 'Last night', onClick: sheet('sleep') }, { name: 'Evening timing', sub: 'Needs sleep logged', value: '–', has: true, pct: '0%', ink: 'var(--ink3)' }, { name: 'Glycemic load', sub: 'Builds from meals', value: '–', has: true, pct: '0%', ink: 'var(--ink3)' }, { name: 'Stress', action: 'Check in', sub: 'No check-ins yet', onClick: sheet('checkin') }]
+      : [{ name: 'Sleep', ...G('7h 12m', '82%', 'Last night') }, { name: 'Evening timing', ...M('Late', '45%', 'Dinner at 22:40') }, { name: 'Glycemic load', ...M('Medium', '60%', "Yesterday's food") }, { name: 'Stress', ...G('Low', '80%', '2 check-ins') }];
+    const scoreCopy = score == null
+      ? { title: 'No score yet', body: "Log last night's sleep and check in once. That's enough for a first score." }
+      : { title: 'Good', body: "Solid sleep and low stress are carrying you. Last night's 22:40 dinner is the biggest drag, so expect a dip near 16:00." };
+    const mac = (k, got, tgt) => ({ k, v: got + ' g', of: 'of ' + tgt + ' g', pct: W(Math.min(100, got / tgt * 100) + '%'), color: got > tgt ? 'var(--mid-bar)' : 'var(--teal)' });
+    const recs = {
+      def: { name: 'Salmon, quinoa and greens', meta: '25 min · 520 kcal', macros: [['38 g', 'protein'], ['42 g', 'carbs'], ['20 g', 'fat']], why: `Fits the ${fmt(Math.max(left, 0))} kcal you have left, tops up protein and keeps glycemic load low before your afternoon dip.`, src: 'Recipe from NeuroCal Kitchen' },
+      nomeals: { name: 'Eggs, avocado and rye toast', meta: '10 min · 480 kcal', macros: [['24 g', 'protein'], ['32 g', 'carbs'], ['28 g', 'fat']], why: 'A protein-first first meal keeps the 16:00 dip smaller than a sweet start would.', src: 'Recipe from NeuroCal Kitchen' },
+      over: { name: 'Miso broth with tofu and greens', meta: '15 min · 210 kcal', macros: [['16 g', 'protein'], ['12 g', 'carbs'], ['9 g', 'fat']], why: "You're past today's target. If you're still hungry, this is light, protein-led and won't spike you before bed.", src: 'Recipe from NeuroCal Kitchen' }
+    };
+    const r = recs[v] || recs.def;
+    const pending = list.filter(m => m.pending).length;
+    return {
+      isLoading: v === 'loading', isError: v === 'error', isReady: v !== 'loading' && v !== 'error',
+      retry: () => { this.setState({ override: 'loading' }); setTimeout(() => this.setState({ override: 'populated' }), 900); },
+      toSettings: nav('settings'), toWeek: nav('week'), toSleep: nav('sleep'), toHelp: nav('help'),
+      toScore: () => score != null && P.onNav && P.onNav('score'), toInsights: nav('insights'), toStreaks: nav('streaks'), toNotifs: nav('notifs'), hasScore: score != null,
+      openSleep: sheet('sleep'), openCheckin: sheet('checkin'), openMeal: sheet('meal'),
+      ring: { dash: score == null ? `0 ${C}` : `${C * score / 100 * s.n} ${C}`, track: score == null ? '4 7' : 'none', text: score == null ? '–' : String(Math.round(score * s.n)), sub: score == null ? '' : 'of 100', ink: score == null ? 'var(--ink3)' : 'var(--ink)' },
+      score: scoreCopy, inputs,
+      cal: { left: over ? `${fmt(-left)} kcal over` : `${fmt(left)} kcal left`, eaten: `${fmt(eaten)} of ${fmt(T.kcal)} eaten`, pct: W(Math.min(100, eaten / T.kcal * 100) + '%'), color: over ? 'var(--warn)' : 'var(--primary)', ink: over ? 'var(--warn)' : 'var(--ink)', over },
+      macros: [mac('Protein', sum('p'), T.p), mac('Carbs', sum('c'), T.c), mac('Fat', sum('f'), T.f)],
+      feel: v === 'noscore' ? { label: 'How you feel', text: 'No check-in yet today', ink: 'var(--ink3)' } : { label: 'You said you feel · 11:20', text: 'Sharp, calm', ink: 'var(--ink)' },
+      rec: { ...r, macros: r.macros.map(([v2, k]) => ({ v: v2, k })) },
+      moreOpen: s.more, moreLabel: s.more ? 'Fewer ideas' : 'More ideas',
+      toggleMore: () => this.setState({ more: !s.more }),
+      ideas: [{ n: 'Lentil and feta bowl', m: '20 min · 490 kcal' }, { n: 'Chicken, chickpea and spinach stew', m: '35 min · 560 kcal' }],
+      mealCount: list.length ? `${list.length} logged · ${fmt(eaten)} kcal` : '',
+      offline: v === 'offline' && s.sync !== 'done' && pending > 0,
+      offlineText: pending === 1 ? '1 meal saved on this phone.' : `${pending} meals saved on this phone.`,
+      syncLabel: s.sync === 'busy' ? 'Trying…' : 'Try now',
+      syncNow: () => { if (s.sync === 'busy') return; this.setState({ sync: 'busy' }); setTimeout(() => { this.setState({ sync: 'done' }); toast('Meal uploaded'); }, 1100); },
+      noMeals: !list.length, listBorder: list.length ? '1px solid var(--line)' : '0',
+      meals: list.map((m, i) => ({ ...m, kcalText: m.kcal + ' kcal', border: i ? '1px solid var(--line)' : '0', open: () => P.onNav && P.onNav('meal', m), remove: e => { e && e.stopPropagation && e.stopPropagation(); this.setState({ removed: [...s.removed, m.id] }); toast('Meal removed'); } }))
+    };
+  }
+}
+</script>
+</body>
+</html>

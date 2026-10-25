@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}</style>
+</helmet>
+<div style="padding:64px;display:flex;flex-direction:column;gap:96px;font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-.5px">Website logo</div>
+    <div style="display:flex;flex-wrap:wrap;gap:32px">
+      <div data-screen-label="Logo horizontal dark" style="width:720px;height:320px;background:#0E1325;border-radius:24px;display:flex;align-items:center;justify-content:center;gap:20px">
+        <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:112px;height:112px"></img>
+        <span style="font-size:72px;font-weight:700;letter-spacing:-2px;color:#FFFFFF">NeuroCal</span>
+      </div>
+      <div data-screen-label="Logo horizontal light" style="width:720px;height:320px;background:#FFFFFF;border-radius:24px;display:flex;align-items:center;justify-content:center;gap:20px">
+        <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:112px;height:112px"></img>
+        <span style="font-size:72px;font-weight:700;letter-spacing:-2px;color:#0E1325">NeuroCal</span>
+      </div>
+      <div data-screen-label="Logo stacked" style="width:400px;height:400px;background:#0E1325;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+        <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:176px;height:176px"></img>
+        <span style="font-size:52px;font-weight:700;letter-spacing:-1.5px;color:#FFFFFF">NeuroCal</span>
+      </div>
+      <div data-screen-label="Wordmark only" style="width:560px;height:400px;background:#FFFFFF;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px">
+        <span style="font-size:80px;font-weight:700;letter-spacing:-2.5px;color:#0E1325">NeuroCal</span>
+        <div style="background:#0E1325;border-radius:14px;padding:18px 28px;display:flex;align-items:center;gap:10px">
+          <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:40px;height:40px"></img>
+          <span style="font-size:26px;font-weight:700;letter-spacing:-.6px;color:#FFFFFF">NeuroCal</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:15px;color:#5B6276">Horizontal on dark and light, stacked, wordmark-only. The small one is the size for a nav bar. Mark file: assets/neurocal-mark.svg</div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-.5px">Mobile splash screen</div>
+    <div data-screen-label="Splash" style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:radial-gradient(circle at 50% 44%,#1C2452 0%,#0E1325 62%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+      <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:148px;height:148px;margin-top:-40px"></img>
+      <span style="font-size:38px;font-weight:700;letter-spacing:-1px;color:#FFFFFF">NeuroCal</span>
+      <span style="font-size:17px;font-weight:500;color:#B4B9CC">Lose weight. Think clearer.</span>
+      <div style="position:absolute;bottom:72px;left:50%;transform:translateX(-50%);width:64px;height:4px;border-radius:2px;background:#232B4A;overflow:hidden">
+        <div style="width:40%;height:100%;border-radius:2px;background:linear-gradient(90deg,#4F63D9,#159C98)"></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-.5px">Social</div>
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">Instagram post · launch · 1080×1080</div>
+        <div data-screen-label="IG post launch" style="width:1080px;height:1080px;background:radial-gradient(circle at 50% 38%,#1C2452 0%,#0E1325 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:56px;box-sizing:border-box;padding:96px">
+          <img src="assets/neurocal-mark.svg" alt="NeuroCal mark" style="width:360px;height:360px"></img>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+            <div style="font-size:84px;font-weight:800;letter-spacing:-2.5px;line-height:1.05;color:#FFFFFF;text-align:center">Lose weight.<br>Think clearer.</div>
+            <div style="font-size:32px;font-weight:500;color:#B4B9CC">Meet NeuroCal</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">Instagram post · Focus Score · 1080×1080</div>
+        <div data-screen-label="IG post Focus Score" style="position:relative;width:1080px;height:1080px;background:#0E1325;box-sizing:border-box;padding:96px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="font-size:26px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#E09A2B">Focus Score</div>
+            <div style="font-size:76px;font-weight:800;letter-spacing:-2.2px;line-height:1.05;color:#FFFFFF;max-width:640px">Your brain gets a score every morning.</div>
+          </div>
+          <div style="position:absolute;right:96px;top:300px;width:440px;height:440px">
+            <svg width="440" height="440" viewBox="0 0 440 440" style="position:absolute;inset:0">
+              <defs><linearGradient id="sg" x1="0" y1="0" x2="440" y2="440" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient></defs>
+              <circle cx="220" cy="220" r="190" stroke="#1C2340" stroke-width="36" fill="none"></circle>
+              <circle cx="220" cy="220" r="190" stroke="url(#sg)" stroke-width="36" fill="none" stroke-linecap="round" stroke-dasharray="979 1194" transform="rotate(-90 220 220)" style="filter:drop-shadow(0 0 18px rgba(79,99,217,.55))"></circle>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <span style="font-size:144px;font-weight:800;letter-spacing:-5px;line-height:1;color:#FFFFFF">82</span>
+              <span style="font-size:26px;font-weight:600;color:#B4B9CC">+6 vs your usual</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;max-width:620px">
+              <span style="height:56px;padding:0 24px;border-radius:999px;background:#1C2340;color:#EEF0F7;font-size:24px;font-weight:600;display:flex;align-items:center">Food</span>
+              <span style="height:56px;padding:0 24px;border-radius:999px;background:#1C2340;color:#EEF0F7;font-size:24px;font-weight:600;display:flex;align-items:center">Sleep</span>
+              <span style="height:56px;padding:0 24px;border-radius:999px;background:#1C2340;color:#EEF0F7;font-size:24px;font-weight:600;display:flex;align-items:center">Fasting</span>
+              <span style="height:56px;padding:0 24px;border-radius:999px;background:#1C2340;color:#EEF0F7;font-size:24px;font-weight:600;display:flex;align-items:center">Coffee</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <img src="assets/neurocal-mark.svg" alt="" style="width:56px;height:56px"></img>
+              <span style="font-size:32px;font-weight:700;letter-spacing:-.8px;color:#FFFFFF">NeuroCal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">Instagram story · tip · 1080×1920</div>
+        <div data-screen-label="IG story tip" style="width:1080px;height:1920px;background:linear-gradient(180deg,#0E1325 0%,#151B3A 100%);box-sizing:border-box;padding:220px 96px 240px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="display:flex;flex-direction:column;gap:48px">
+            <span style="align-self:flex-start;height:64px;padding:0 28px;border-radius:999px;background:#E09A2B;color:#0E1325;font-size:28px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center">Tip #01</span>
+            <div style="font-size:112px;font-weight:800;letter-spacing:-3.5px;line-height:1.02;color:#FFFFFF;text-wrap:pretty">Stop eating 3 hours before bed.</div>
+            <div style="font-size:40px;font-weight:500;line-height:1.4;color:#B4B9CC;text-wrap:pretty">Late meals cost you deep sleep. Less deep sleep means more fog the next day.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:40px">
+            <div style="border-radius:32px;background:#1C2340;padding:40px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+              <span style="font-size:34px;font-weight:700;color:#EEF0F7">Evening timing</span>
+              <span style="font-size:34px;font-weight:800;color:#159C98">counts for 20% of your score</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <img src="assets/neurocal-mark.svg" alt="" style="width:72px;height:72px"></img>
+              <span style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#FFFFFF">NeuroCal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">Profile avatar · 400×400 (circle crop shown)</div>
+        <div style="display:flex;gap:32px;align-items:center">
+          <img data-screen-label="Avatar" src="assets/neurocal-icon.svg" alt="NeuroCal avatar" style="width:400px;height:400px;display:block"></img>
+          <img src="assets/neurocal-icon.svg" alt="" style="width:200px;height:200px;border-radius:50%;display:block"></img>
+          <img src="assets/neurocal-icon.svg" alt="" style="width:48px;height:48px;border-radius:50%;display:block"></img>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-.5px">Banners</div>
+    <div style="display:flex;flex-direction:column;gap:48px">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">X header · 1500×500 · avatar covers bottom-left, kept clear</div>
+        <div data-screen-label="X header" style="position:relative;width:1500px;height:500px;overflow:hidden;background:#0E1325">
+          <img src="assets/neurocal-mark.svg" alt="" style="position:absolute;right:-60px;top:-110px;width:720px;height:720px;opacity:.9"></img>
+          <div style="position:absolute;left:520px;top:150px;display:flex;flex-direction:column;gap:16px">
+            <div style="font-size:72px;font-weight:800;letter-spacing:-2px;line-height:1.05;color:#FFFFFF">Lose weight.<br>Think clearer.</div>
+            <div style="font-size:24px;font-weight:500;color:#B4B9CC">One daily Focus Score for food, sleep, fasting and coffee.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">LinkedIn banner · 1584×396 · avatar covers left, kept clear</div>
+        <div data-screen-label="LinkedIn banner" style="position:relative;width:1584px;height:396px;overflow:hidden;background:linear-gradient(90deg,#0E1325 40%,#151B3A 100%)">
+          <div style="position:absolute;left:520px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:14px">
+            <div style="font-size:60px;font-weight:800;letter-spacing:-1.8px;line-height:1.05;color:#FFFFFF">Lose weight. Think clearer.</div>
+            <div style="font-size:24px;font-weight:500;color:#B4B9CC">The biohacking app built around your daily Focus Score.</div>
+          </div>
+          <div style="position:absolute;right:72px;top:0;bottom:0;display:flex;align-items:center;gap:14px">
+            <img src="assets/neurocal-mark.svg" alt="" style="width:88px;height:88px"></img>
+            <span style="font-size:40px;font-weight:700;letter-spacing:-1px;color:#FFFFFF">NeuroCal</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:15px;font-weight:700;color:#5B6276">YouTube cover · 2560×1440 · dashed box = 1546×423 safe area visible on every device</div>
+        <div data-screen-label="YouTube cover" style="position:relative;width:2560px;height:1440px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#1C2452 0%,#0E1325 55%)">
+          <div style="position:absolute;left:507px;top:508px;width:1546px;height:423px;outline:3px dashed rgba(180,185,204,.35);display:flex;align-items:center;justify-content:center;gap:56px">
+            <img src="assets/neurocal-mark.svg" alt="" style="width:300px;height:300px"></img>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <span style="font-size:120px;font-weight:700;letter-spacing:-3.5px;line-height:1;color:#FFFFFF">NeuroCal</span>
+              <span style="font-size:48px;font-weight:500;color:#B4B9CC">Lose weight. Think clearer.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-.5px">Email</div>
+    <a href="NeuroCal Weekly Email.html" style="font-size:18px;font-weight:700">Open the weekly Focus Score report email</a>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

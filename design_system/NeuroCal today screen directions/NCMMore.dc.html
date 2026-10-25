@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>@keyframes ncrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes ncgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes ncdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes ncpop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}@keyframes ncglow{0%,100%{box-shadow:0 0 0 0 rgba(106,79,219,.35)}50%{box-shadow:0 0 0 10px rgba(106,79,219,0)}}</style>
+</helmet>
+<div style="min-height:844px;box-sizing:border-box;display:flex;flex-direction:column;padding-bottom:28px">
+
+<sc-if value="{{ hasBack }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:50px 12px 0 6px;display:flex;align-items:center;gap:2px">
+    <div onClick="{{ back }}" role="button" aria-label="Back" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer" style-hover="background:var(--track)" style-active="transform:scale(.92)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+    <div style="flex:1;min-width:0;font-size:17px;font-weight:800">{{ title }}</div>
+    <sc-if value="{{ isMeal }}"><div onClick="{{ meal.edit }}" role="button" style="height:40px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer" style-hover="background:var(--primary-soft)">Edit</div></sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isScore }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:10px">
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:6px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) both">
+      <div style="position:relative;width:150px;height:150px">
+        <svg width="150" height="150" viewBox="0 0 120 120"><defs><linearGradient id="ncsd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient></defs><circle cx="60" cy="60" r="52" fill="none" stroke="var(--track)" stroke-width="10"></circle><circle cx="60" cy="60" r="52" fill="none" stroke="url(#ncsd)" stroke-width="10" stroke-linecap="round" stroke-dasharray="{{ sc.dash }}" transform="rotate(-90 60 60)"></circle></svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:46px;font-weight:800;letter-spacing:-1.5px;line-height:1">{{ sc.n }}</div><div style="font-size:12px;color:var(--ink2);margin-top:4px">of 100</div></div>
+      </div>
+      <div style="height:28px;padding:0 12px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:13px;font-weight:700;display:flex;align-items:center">+4 vs your usual 70</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2);text-align:center;text-wrap:pretty;max-width:300px">Sleep and calm are lifting you. Last night's late dinner is pulling you down.</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .08s both">
+      <div style="font-size:15px;font-weight:800">What moved it today</div>
+      <div style="font-size:13px;color:var(--ink2);margin-top:2px">Points against your two-week baseline</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+        <sc-for list="{{ contribs }}" as="c" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:116px minmax(0,1fr) 34px;gap:10px;align-items:center">
+            <div style="min-width:0"><div style="font-size:14px;font-weight:700">{{ c.k }}</div><div style="font-size:12px;color:var(--ink2)">{{ c.sub }}</div></div>
+            <div style="position:relative;height:10px;border-radius:5px;background:var(--track)">
+              <div style="position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:var(--line2)"></div>
+              <div style="position:absolute;top:0;bottom:0;left:{{ c.left }};width:{{ c.w }};border-radius:5px;background:{{ c.color }};transform-origin:{{ c.origin }};animation:ncgrow .8s cubic-bezier(.2,.8,.2,1) {{ c.delay }} both"></div>
+            </div>
+            <div style="font-size:14px;font-weight:800;text-align:right;color:{{ c.ink }}">{{ c.v }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .16s both">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:800">Your focus today</span><span style="font-size:12px;color:var(--ink2)">Forecast</span></div>
+      <svg viewBox="0 0 320 120" width="100%" height="120" style="display:block;margin-top:10px;overflow:visible">
+        <line x1="0" y1="100" x2="320" y2="100" stroke="var(--line)"></line>
+        <rect x="178" y="0" width="34" height="100" rx="6" fill="var(--mid-soft)"></rect>
+        <path d="M0 78 C30 60 50 30 80 28 S130 34 150 40 S180 76 196 78 S230 52 252 46 S300 60 320 82" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" style="animation:ncdraw 1.4s cubic-bezier(.4,0,.2,1) .3s both"></path>
+        <line x1="168" y1="8" x2="168" y2="100" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 3"></line>
+        <circle cx="168" cy="62" r="5" fill="var(--card)" stroke="var(--ink)" stroke-width="2.5"></circle>
+        <text x="168" y="118" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">Now</text>
+        <text x="0" y="118" font-size="11" fill="var(--ink2)">07:00</text>
+        <text x="320" y="118" text-anchor="end" font-size="11" fill="var(--ink2)">23:00</text>
+      </svg>
+      <div style="font-size:14px;line-height:1.45;margin-top:10px;text-wrap:pretty"><b style="font-weight:700;color:var(--mid)">Dip likely 16:00–16:45. </b>A 10-minute walk or a protein snack before 15:45 usually softens it for you.</div>
+    </div>
+
+    <div onClick="{{ toInsights }}" role="button" style="height:52px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:15px;font-weight:700;color:var(--primary-ink);cursor:pointer;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .24s both" style-active="transform:scale(.98)">See your patterns<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+    <div style="font-size:12px;line-height:1.5;color:var(--ink2);padding:0 4px;text-wrap:pretty">Your score compares today's sleep, stress, evening timing and glycemic load with your own last 14 days, not with other people.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isMeal }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:10px">
+    <div style="height:190px;border-radius:24px;background:repeating-linear-gradient(135deg,var(--track) 0 10px,var(--page) 10px 20px);border:1px solid var(--line);display:flex;align-items:flex-end;padding:14px;box-sizing:border-box;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) both"><span style="height:28px;padding:0 10px;border-radius:999px;background:var(--card);font-size:12px;font-weight:700;color:var(--ink2);display:flex;align-items:center">Meal photo</span></div>
+    <div style="animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .06s both;padding:4px 4px 0">
+      <div style="font-size:13px;font-weight:700;color:var(--ink2)">{{ meal.type }} · {{ meal.t }}</div>
+      <div style="font-size:24px;font-weight:800;letter-spacing:-.4px;line-height:1.2;margin-top:2px">{{ meal.items }}</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .12s both">
+      <sc-for list="{{ meal.stats }}" as="x" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:800;letter-spacing:-.3px">{{ x.v }}</span><span style="font-size:12px;font-weight:600;color:var(--ink2)">{{ x.k }}</span></div>
+      </sc-for>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .18s both">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;font-weight:800">Glycemic load</span><span style="font-size:14px;font-weight:800;color:{{ meal.glInk }}">{{ meal.gl }}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:10px">
+        <div style="height:8px;border-radius:4px;background:var(--good-bar)"></div><div style="height:8px;border-radius:4px;background:{{ meal.gl2 }}"></div><div style="height:8px;border-radius:4px;background:{{ meal.gl3 }}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink2);margin-top:5px"><span>Low</span><span>Medium</span><span>High</span></div>
+      <div style="font-size:14px;line-height:1.45;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);text-wrap:pretty"><b style="font-weight:700;color:var(--teal-ink)">Effect on focus: </b>{{ meal.effect }}</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) .24s both">
+      <div style="padding:14px 16px 6px;font-size:15px;font-weight:800">What we found</div>
+      <sc-for list="{{ meal.parts }}" as="p" hint-placeholder-count="2">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 16px;border-top:{{ p.border }}">
+          <div style="min-width:0"><div style="font-size:15px;font-weight:600">{{ p.n }}</div><div style="font-size:12px;color:var(--ink2);margin-top:2px">{{ p.macro }}</div></div>
+          <span style="font-size:14px;font-weight:700">{{ p.kcal }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div onClick="{{ meal.remove }}" role="button" style="height:48px;border-radius:999px;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--warn);cursor:pointer" style-active="transform:scale(.98)">Remove meal</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isInsights }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4"><div onClick="{{ f.go }}" role="tab" aria-selected="{{ f.sel }}" style="height:36px;padding:0 14px;border-radius:999px;flex:none;display:flex;align-items:center;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s,color .2s;background:{{ f.bg }};color:{{ f.ink }}">{{ f.t }}</div></sc-for>
+    </div>
+    <sc-for list="{{ insights }}" as="c" hint-placeholder-count="3">
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) {{ c.delay }} both">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:12px;font-weight:800;letter-spacing:.3px;color:{{ c.tagInk }}">{{ c.tag }}</span><span style="font-size:12px;color:var(--ink2)">{{ c.when }}</span></div>
+        <div style="font-size:18px;font-weight:800;line-height:1.25;text-wrap:pretty">{{ c.title }}</div>
+        <sc-if value="{{ c.bars }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ c.rows }}" as="r">
+              <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 26px;gap:8px;align-items:center"><span style="font-size:12px;font-weight:600;color:var(--ink2)">{{ r.k }}</span><div style="height:10px;border-radius:5px;background:var(--track)"><div style="height:10px;border-radius:5px;width:{{ r.w }};background:{{ r.color }};transform-origin:left;animation:ncgrow .8s cubic-bezier(.2,.8,.2,1) .2s both"></div></div><span style="font-size:13px;font-weight:800;text-align:right">{{ r.v }}</span></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="font-size:14px;line-height:1.45;color:var(--ink2);text-wrap:pretty">{{ c.body }}</div>
+        <div style="display:flex;gap:8px;padding-top:2px">
+          <div onClick="{{ c.save }}" role="button" style="height:40px;padding:0 14px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s;background:{{ c.saveBg }};color:{{ c.saveInk }}" style-active="transform:scale(.95)">{{ c.saveLabel }}</div>
+          <div onClick="{{ c.dismiss }}" role="button" style="height:40px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer" style-hover="background:var(--track)">Not useful</div>
+        </div>
+      </div>
+    </sc-for>
+    <sc-if value="{{ noInsights }}"><div style="border:1.5px dashed var(--line2);border-radius:20px;padding:18px;font-size:14px;line-height:1.45;color:var(--ink2)">Nothing here yet. New patterns show up after a few more days of logging.</div></sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isStreaks }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:10px">
+    <div style="background:linear-gradient(150deg,#6A4FDB,#3E3AA8);color:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) both">
+      <div style="display:flex;align-items:flex-end;gap:10px"><span style="font-size:56px;font-weight:800;letter-spacing:-2px;line-height:.9">{{ streakN }}</span><span style="font-size:16px;font-weight:700;padding-bottom:4px">day streak</span></div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px">
+        <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;background:{{ d.bg }};color:{{ d.ink }};border:{{ d.border }};box-sizing:border-box;animation:ncpop .45s cubic-bezier(.2,.8,.2,1) {{ d.delay }} both">{{ d.mark }}</div><span style="font-size:11px;font-weight:700;color:#E4DEFF">{{ d.k }}</span></div>
+        </sc-for>
+      </div>
+      <div style="font-size:13px;line-height:1.45;color:#ECE8FF;text-wrap:pretty">Any day with a meal or a check-in counts. Longest so far: 19 days.</div>
+    </div>
+    <div style="padding:12px 4px 0;font-size:17px;font-weight:800">Milestones</div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+      <sc-for list="{{ badges }}" as="b" hint-placeholder-count="6">
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:8px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) {{ b.delay }} both">
+          <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:{{ b.bg }};color:{{ b.ink }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ b.icon }}"></path></svg></div>
+          <div style="font-size:14px;font-weight:800;line-height:1.25">{{ b.t }}</div>
+          <sc-if value="{{ b.locked }}"><div style="height:5px;border-radius:3px;background:var(--track)"><div style="height:5px;border-radius:3px;width:{{ b.pct }};background:var(--primary);transform-origin:left;animation:ncgrow .9s cubic-bezier(.2,.8,.2,1) .3s both"></div></div></sc-if>
+          <div style="font-size:12px;color:var(--ink2)">{{ b.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isNotifs }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:10px">
+    <div style="padding:4px 4px 0;font-size:13px;font-weight:700;color:var(--ink2)">Reminders</div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) both">
+      <sc-for list="{{ reminders }}" as="r" hint-placeholder-count="4">
+        <div onClick="{{ r.toggle }}" role="switch" aria-checked="{{ r.on }}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px 12px 16px;border-top:{{ r.border }};cursor:pointer">
+          <div style="min-width:0"><div style="font-size:15px;font-weight:700">{{ r.t }}</div><div style="font-size:13px;color:var(--ink2);margin-top:2px">{{ r.sub }}</div></div>
+          <div style="width:50px;height:30px;border-radius:999px;position:relative;transition:background .25s;background:{{ r.track }}"><div style="position:absolute;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .25s cubic-bezier(.3,1.4,.5,1);left:{{ r.knob }}"></div></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) .06s both">
+      <div><div style="font-size:15px;font-weight:700">Quiet hours</div><div style="font-size:13px;color:var(--ink2);margin-top:2px">Nothing between these times</div></div>
+      <span style="height:36px;padding:0 12px;border-radius:999px;background:var(--page);font-size:14px;font-weight:700;display:flex;align-items:center">22:30 – 07:00</span>
+    </div>
+    <div style="padding:14px 4px 0;font-size:13px;font-weight:700;color:var(--ink2)">Recent</div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) .12s both">
+      <sc-for list="{{ recent }}" as="n" hint-placeholder-count="3">
+        <div onClick="{{ n.go }}" role="button" style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:12px;padding:12px 16px;border-top:{{ n.border }};cursor:pointer" style-hover="background:var(--page)">
+          <span style="width:8px;height:8px;border-radius:50%;margin-top:6px;background:{{ n.dot }}"></span>
+          <div style="min-width:0"><div style="font-size:14px;font-weight:700;line-height:1.35;text-wrap:pretty">{{ n.t }}</div><div style="font-size:12px;color:var(--ink2);margin-top:3px">{{ n.when }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isOnb }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:56px 20px 0;flex:1;display:flex;flex-direction:column;min-height:844px;box-sizing:border-box">
+    <sc-if value="{{ onb.showBar }}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div onClick="{{ onb.prev }}" role="button" aria-label="Back" style="width:40px;height:40px;margin-left:-10px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:var(--track)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+        <div style="flex:1;height:6px;border-radius:3px;background:var(--track)"><div style="height:6px;border-radius:3px;background:var(--primary);transition:width .5s cubic-bezier(.2,.8,.2,1);width:{{ onb.pct }}"></div></div>
+        <span style="font-size:12px;font-weight:700;color:var(--ink2);width:30px;text-align:right">{{ onb.count }}</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ onb.s0 }}">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;animation:ncrise .55s cubic-bezier(.2,.8,.2,1) both">
+        <div style="width:84px;height:84px;border-radius:22px;background:linear-gradient(145deg,#6A4FDB,#3E3AA8);display:flex;align-items:center;justify-content:center;animation:ncglow 2.4s ease-in-out infinite"><svg width="50" height="50" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#5FE0D8"></circle></svg></div>
+        <div style="font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.1;text-wrap:balance">Eat for the afternoon you want.</div>
+        <div style="font-size:16px;line-height:1.5;color:var(--ink2);text-wrap:pretty">NeuroCal reads your meals against your sleep and stress, then tells you what to eat next to stay sharp.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ onb.s1 }}">
+      <div style="padding-top:24px;display:flex;flex-direction:column;gap:8px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) both">
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">What matters most?</div>
+        <div style="font-size:15px;color:var(--ink2)">Pick any. You can change these later.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+          <sc-for list="{{ onb.goals }}" as="g" hint-placeholder-count="5">
+            <div onClick="{{ g.go }}" role="checkbox" aria-checked="{{ g.on }}" style="min-height:60px;border-radius:16px;padding:0 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .2s,background .2s;background:{{ g.bg }};border:2px solid {{ g.border }}" style-active="transform:scale(.98)">
+              <div style="flex:1;font-size:16px;font-weight:700">{{ g.t }}</div>
+              <div style="width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;transition:background .2s;background:{{ g.dot }};border:2px solid {{ g.border }};box-sizing:border-box"><sc-if value="{{ g.on }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" style="animation:ncpop .3s ease both"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ onb.s2 }}">
+      <div style="padding-top:24px;display:flex;flex-direction:column;gap:8px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) both">
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">First, we learn your normal</div>
+        <div style="font-size:15px;line-height:1.5;color:var(--ink2);text-wrap:pretty">For two weeks we build your baseline. Your score compares each day with you, not anyone else.</div>
+        <div style="display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px;margin:14px 0 4px">
+          <sc-for list="{{ onb.days }}" as="d" hint-placeholder-count="14"><div style="height:26px;border-radius:6px;background:{{ d.bg }};animation:ncpop .35s cubic-bezier(.2,.8,.2,1) {{ d.delay }} both"></div></sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)"><span>Day 1</span><span>Day 14 · first full score</span></div>
+        <div style="font-size:15px;font-weight:800;margin-top:18px">Speed it up with a wearable</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <sc-for list="{{ onb.wear }}" as="w" hint-placeholder-count="4">
+            <div onClick="{{ w.go }}" role="radio" aria-checked="{{ w.on }}" style="height:54px;border-radius:14px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .2s,background .2s;background:{{ w.bg }};border:2px solid {{ w.border }}"><span style="font-size:15px;font-weight:700">{{ w.t }}</span><span style="font-size:12px;font-weight:600;color:var(--ink2)">{{ w.sub }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ onb.s3 }}">
+      <div style="padding-top:24px;display:flex;flex-direction:column;gap:8px;animation:ncrise .45s cubic-bezier(.2,.8,.2,1) both">
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.15">Gentle nudges</div>
+        <div style="font-size:15px;line-height:1.5;color:var(--ink2)">Three at most a day. Turn off any you don't want.</div>
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:12px">
+          <sc-for list="{{ onb.rem }}" as="r" hint-placeholder-count="3">
+            <div onClick="{{ r.toggle }}" role="switch" aria-checked="{{ r.on }}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 14px 14px 16px;border-top:{{ r.border }};cursor:pointer">
+              <div><div style="font-size:15px;font-weight:700">{{ r.t }}</div><div style="font-size:13px;color:var(--ink2);margin-top:2px">{{ r.sub }}</div></div>
+              <div style="width:50px;height:30px;border-radius:999px;position:relative;transition:background .25s;background:{{ r.track }}"><div style="position:absolute;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .25s cubic-bezier(.3,1.4,.5,1);left:{{ r.knob }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ onb.s4 }}">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:14px;animation:ncrise .5s cubic-bezier(.2,.8,.2,1) both">
+        <div style="width:96px;height:96px;border-radius:50%;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;animation:ncpop .6s cubic-bezier(.2,.8,.2,1) .1s both"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" stroke-dasharray="1" style="animation:ncdraw .5s ease-out .5s both"></path></svg></div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:-.6px">You're set, Sam</div>
+        <div style="font-size:15px;line-height:1.5;color:var(--ink2);max-width:290px;text-wrap:pretty">Log your first meal now. Your first score shows up once you've also logged sleep and checked in.</div>
+      </div>
+    </sc-if>
+
+    <div style="flex:1"></div>
+    <div style="padding:20px 0 34px;display:flex;flex-direction:column;gap:6px">
+      <div onClick="{{ onb.next }}" role="button" style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 8px 24px var(--primary-glow);cursor:pointer;transition:transform .15s" style-active="transform:scale(.97)">{{ onb.cta }}</div>
+      <sc-if value="{{ onb.alt }}"><div onClick="{{ onb.altGo }}" role="button" style="height:48px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--primary-ink);cursor:pointer">{{ onb.alt }}</div></sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1400},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onboarding&quot;,&quot;score&quot;,&quot;meal&quot;,&quot;insights&quot;,&quot;streaks&quot;,&quot;notifs&quot;],&quot;default&quot;:&quot;score&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;meal&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string,d?:any)=&gt;void&quot;},&quot;onSheet&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { n: 0, filter: 'all', saved: [], gone: [], rem: { lunch: true, check: true, wind: true, week: false }, step: 0, goals: ['Steadier afternoons'], wear: 'apple', orem: { lunch: true, check: true, wind: false } };
+  componentDidMount() { this.run(); }
+  componentDidUpdate(p) { if (p.screen !== this.props.screen) this.run(); }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+  run() {
+    cancelAnimationFrame(this.raf); const t0 = performance.now();
+    const tick = t => { const k = Math.min(1, (t - t0) / 1100); this.setState({ n: 1 - Math.pow(1 - k, 3) }); if (k < 1) this.raf = requestAnimationFrame(tick); };
+    this.setState({ n: 0 }); this.raf = requestAnimationFrame(tick);
+  }
+  renderVals() {
+    const P = this.props, s = this.state, scr = P.screen || 'score';
+    const nav = (k, d) => () => P.onNav && P.onNav(k, d), toast = m => P.onToast && P.onToast(m);
+    const ds = i => (i * 0.06).toFixed(2) + 's';
+    const C = 326.7, score = 74;
+    const contribs = [['Sleep', '7h 12m, steady', 9], ['Stress', 'Low, 2 check-ins', 5], ['Glycemic load', "Yesterday's food", -2], ['Evening timing', 'Dinner at 22:40', -8]].map(([k, sub, v], i) => {
+      const w = Math.abs(v) / 10 * 50 + '%';
+      return { k, sub, v: (v > 0 ? '+' : '') + v, w, left: v > 0 ? '50%' : `calc(50% - ${w})`, origin: v > 0 ? 'left' : 'right', color: v > 0 ? 'var(--good-bar)' : 'var(--mid-bar)', ink: v > 0 ? 'var(--good)' : 'var(--mid)', delay: (0.2 + i * 0.08) + 's' };
+    });
+    const m = P.meal || { id: 3, t: '13:05', type: 'Lunch', items: 'Chicken wrap, fries', kcal: 610, p: 46, c: 50, f: 24, hi: true };
+    const names = m.items.split(', '), wts = names.length === 1 ? [1] : names.length === 2 ? [.62, .38] : [.5, .3, .2];
+    const meal = {
+      ...m,
+      stats: [[m.kcal, 'kcal'], [m.p + ' g', 'protein'], [m.c + ' g', 'carbs'], [m.f + ' g', 'fat']].map(([v, k]) => ({ v, k })),
+      gl: m.hi ? 'High' : 'Low', glInk: m.hi ? 'var(--mid)' : 'var(--good)', gl2: m.hi ? 'var(--mid-bar)' : 'var(--track)', gl3: m.hi ? 'var(--mid-bar)' : 'var(--track)',
+      effect: m.hi ? 'Meals like this usually mean a dip around 16:00 for you. A walk or a protein snack before then helps.' : "Steady carbs and decent protein. This one won't move your afternoon much.",
+      parts: names.map((n, i) => ({ n: n[0].toUpperCase() + n.slice(1), kcal: Math.round(m.kcal * wts[i]) + ' kcal', macro: `${Math.round(m.p * wts[i])} g protein · ${Math.round(m.c * wts[i])} g carbs`, border: i ? '1px solid var(--line)' : '0' })),
+      edit: () => toast('Editing opens the detected items'),
+      remove: () => { toast('Meal removed'); P.onNav && P.onNav('today'); }
+    };
+    const IN = [
+      { id: 1, kind: 'pattern', tag: 'PATTERN', when: 'Last 14 days', title: 'Late dinners cost you about 8 points the next day', bars: true, rows: [['Before 20:00', 78, 'var(--good-bar)'], ['After 21:30', 70, 'var(--mid-bar)']], body: 'Based on 9 evenings. The effect is strongest when you sleep under 7 hours.' },
+      { id: 2, kind: 'tip', tag: 'TRY THIS', when: 'For today', title: 'Eat dinner by 20:00 tonight', body: 'You have a 09:00 meeting tomorrow. An earlier dinner is the simplest lever you have.' },
+      { id: 3, kind: 'pattern', tag: 'PATTERN', when: 'Last 14 days', title: 'Protein at breakfast steadies your afternoon', bars: true, rows: [['20 g or more', 77, 'var(--good-bar)'], ['Under 20 g', 69, 'var(--mid-bar)']], body: 'Your 16:00 dip is shallower on days you start with eggs or yoghurt.' },
+      { id: 4, kind: 'experiment', tag: 'EXPERIMENT', when: '7 days', title: 'Swap your 10:30 flat white for one before 10:00', body: "We'll compare your afternoon check-ins against last week and tell you if it helped." }
+    ];
+    const fl = s.filter === 'all' ? IN : IN.filter(c => c.kind === s.filter);
+    const insights = fl.filter(c => !s.gone.includes(c.id)).map((c, i) => {
+      const sv = s.saved.includes(c.id);
+      return { ...c, delay: ds(i), tagInk: c.kind === 'pattern' ? 'var(--primary-ink)' : c.kind === 'tip' ? 'var(--teal-ink)' : 'var(--mid)', rows: (c.rows || []).map(([k, v, color]) => ({ k, v, color, w: v + '%' })), saveLabel: sv ? 'Saved' : 'Save', saveBg: sv ? 'var(--primary)' : 'var(--primary-soft)', saveInk: sv ? 'var(--on-primary)' : 'var(--primary-ink)', save: () => this.setState({ saved: sv ? s.saved.filter(x => x !== c.id) : [...s.saved, c.id] }), dismiss: () => { this.setState({ gone: [...s.gone, c.id] }); toast("Got it. We'll show fewer like this."); } };
+    });
+    const sw = (on, i) => ({ on, track: on ? 'var(--primary)' : 'var(--line2)', knob: on ? '23px' : '3px', border: i ? '1px solid var(--line)' : '0' });
+    const reminders = [['lunch', 'Lunch reminder', '12:30 if nothing logged'], ['check', 'Afternoon check-in', '15:30 on weekdays'], ['wind', 'Last call for food', '21:00, two hours before bed'], ['week', 'Weekly summary', 'Sundays at 18:00']].map(([k, t, sub], i) => ({ t, sub, ...sw(s.rem[k], i), toggle: () => this.setState({ rem: { ...s.rem, [k]: !s.rem[k] } }) }));
+    const recent = [['Your dip is likely around 16:00. A walk now could help.', '15:20 · Today', 'var(--primary)', 'score'], ['New pattern: late dinners cost you about 8 points.', '08:05 · Today', 'var(--primary)', 'insights'], ['12-day streak. Longest is 19.', 'Yesterday', 'var(--line2)', 'streaks']].map(([t, when, dot, k], i) => ({ t, when, dot, border: i ? '1px solid var(--line)' : '0', go: nav(k) }));
+    const done = [1, 1, 1, 1, 0, 0, 0];
+    const week = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((k, i) => ({ k, delay: (0.15 + i * 0.06) + 's', mark: done[i] ? '✓' : i === 4 ? '' : '', bg: done[i] ? '#fff' : 'transparent', ink: '#3E3AA8', border: done[i] ? '0' : i === 4 ? '2px solid #fff' : '2px solid rgba(255,255,255,.35)' }));
+    const badges = [
+      ['First full week', 'Earned 26 Sep', 'M5 4h14v16H5zM5 9h14', false],
+      ['Baseline ready', 'Earned 29 Sep', 'M5 20V12M12 20V5M19 20v-9', false],
+      ['10-day streak', 'Earned yesterday', 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 1-9z', false],
+      ['Earlier dinners', '5 of 7 before 20:00 this week', 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z', false],
+      ['30-day streak', '12 of 30 days', 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 1-9z', 40],
+      ['100 meals logged', '64 of 100', 'M4 8h3l2-2.5h6L17 8h3v11H4z', 64]
+    ].map(([t, sub, icon, lp], i) => ({ t, sub, icon, locked: lp !== false, pct: lp + '%', bg: lp === false ? 'var(--primary-soft)' : 'var(--track)', ink: lp === false ? 'var(--primary-ink)' : 'var(--ink2)', delay: ds(i + 2) }));
+    const st = s.step, N = 4;
+    const sel = on => ({ bg: on ? 'var(--primary-soft)' : 'var(--card)', border: on ? 'var(--primary)' : 'var(--line)' });
+    const onb = {
+      s0: st === 0, s1: st === 1, s2: st === 2, s3: st === 3, s4: st === 4, showBar: st > 0 && st < 4,
+      pct: (st / (N - 1 + 1)) * 100 + '%', count: `${st}/${N - 1}`,
+      prev: () => this.setState({ step: Math.max(0, st - 1) }),
+      next: () => { if (st < 4) this.setState({ step: st + 1 }); else { P.onNav && P.onNav('today'); P.onSheet && P.onSheet('meal'); } },
+      cta: ['Get started', 'Continue', s.wear === 'none' ? 'Continue without one' : 'Connect and continue', 'Turn on reminders', 'Log my first meal'][st],
+      alt: st === 0 ? 'I already have an account' : st === 4 ? 'Look around first' : '',
+      altGo: st === 0 ? () => toast('Opens sign in') : () => P.onNav && P.onNav('today'),
+      goals: ['Steadier afternoons', 'Better sleep', 'Fewer cravings', 'Lose weight gently', 'Calmer days'].map(t => { const on = s.goals.includes(t); return { t, on, ...sel(on), dot: on ? 'var(--primary)' : 'transparent', go: () => this.setState({ goals: on ? s.goals.filter(x => x !== t) : [...s.goals, t] }) }; }),
+      days: Array.from({ length: 14 }, (_, i) => ({ bg: i === 0 ? 'var(--primary)' : i < 7 ? 'var(--bar2)' : 'var(--track)', delay: (i * 0.04).toFixed(2) + 's' })),
+      wear: [['apple', 'Apple Health', 'Sleep, steps, heart rate'], ['oura', 'Oura', 'Sleep, readiness'], ['fitbit', 'Fitbit', 'Sleep, steps'], ['none', "I'll log by hand", 'Takes 20 seconds a day']].map(([k, t, sub]) => ({ t, sub, on: s.wear === k, ...sel(s.wear === k), go: () => this.setState({ wear: k }) })),
+      rem: [['lunch', 'Lunch reminder', '12:30 if nothing logged'], ['check', 'Afternoon check-in', '15:30 on weekdays'], ['wind', 'Last call for food', 'Two hours before bed']].map(([k, t, sub], i) => ({ t, sub, ...sw(s.orem[k], i), toggle: () => this.setState({ orem: { ...s.orem, [k]: !s.orem[k] } }) }))
+    };
+    onb.pct = (st / 3) * 100 + '%'; onb.count = `${Math.min(st, 3)}/3`;
+    return {
+      hasBack: scr !== 'onboarding', back: nav('today'),
+      title: { score: 'Focus Score', meal: 'Meal', insights: 'Insights', streaks: 'Streaks', notifs: 'Notifications' }[scr] || '',
+      isScore: scr === 'score', isMeal: scr === 'meal', isInsights: scr === 'insights', isStreaks: scr === 'streaks', isNotifs: scr === 'notifs', isOnb: scr === 'onboarding',
+      sc: { n: Math.round(score * s.n), dash: `${C * score / 100 * s.n} ${C}` }, contribs, toInsights: nav('insights'),
+      meal,
+      filters: [['all', 'All'], ['pattern', 'Patterns'], ['tip', 'Tips'], ['experiment', 'Experiments']].map(([k, t]) => ({ t, sel: s.filter === k, bg: s.filter === k ? 'var(--ink)' : 'var(--card)', ink: s.filter === k ? 'var(--page)' : 'var(--ink)', go: () => this.setState({ filter: k }) })),
+      insights, noInsights: !insights.length,
+      streakN: Math.round(12 * s.n), week, badges,
+      reminders, recent, onb
+    };
+  }
+}
+</script>
+</body>
+</html>

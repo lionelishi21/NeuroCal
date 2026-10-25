@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}input,select{font-family:inherit}@keyframes ncspin{to{transform:rotate(360deg)}}@keyframes ncscan{0%{top:14%}50%{top:80%}100%{top:14%}}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;gap:48px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:40px 24px;box-sizing:border-box">
+  <div style="{{ phone }}">
+    <sc-if value="{{ showBar }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;padding:14px 28px 0;font:600 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink)"><span>9:41</span><span style="font-size:12px">5G ▮▮▮ 80</span></div></sc-if>
+
+    <sc-if value="{{ isIntro }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:52px 12px 0 22px;height:44px">
+          <div style="display:flex;align-items:center;gap:8px"><svg width="26" height="26" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="var(--teal)"></circle></svg><span style="font:800 18px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.3px">NeuroCal</span></div>
+          <sc-if value="{{ canSkip }}"><div onClick="{{ toSignin }}" style="height:44px;padding:0 12px;display:flex;align-items:center;font:600 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);cursor:pointer">Skip</div></sc-if>
+        </div>
+        <div onClick="{{ next }}" style="position:relative;height:440px;cursor:pointer">
+          <sc-for list="{{ stage }}" as="it" hint-placeholder-count="0">
+            <div style="{{ it.style }}">
+              <sc-if value="{{ it.isChip }}"><div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px;box-shadow:0 6px 18px var(--shadow);white-space:nowrap"><span style="width:10px;height:10px;border-radius:50%;background:{{ it.dot }}"></span><span style="font:600 15px 'Plus Jakarta Sans',sans-serif">{{ it.a }}</span><span style="font:500 14px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">{{ it.b }}</span></div></sc-if>
+              <sc-if value="{{ it.isFrame }}"><div style="position:relative;width:270px;height:250px;border-radius:30px;border:3px solid var(--primary);background:var(--primary-soft);overflow:hidden"><div style="position:absolute;left:16px;right:16px;height:3px;border-radius:2px;background:var(--teal);box-shadow:0 0 14px var(--teal);animation:ncscan 2.2s ease-in-out infinite"></div><div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink)">Reading your plate…</div></div></sc-if>
+              <sc-if value="{{ it.isRing }}"><div style="position:relative;width:200px;height:200px"><svg width="200" height="200" viewBox="0 0 200 200"><defs><linearGradient id="ncob" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient></defs><circle cx="100" cy="100" r="80" fill="none" stroke="var(--track)" stroke-width="16"></circle><circle cx="100" cy="100" r="80" fill="none" stroke="url(#ncob)" stroke-width="16" stroke-linecap="round" transform="rotate(-90 100 100)" style="{{ dashStyle }}"></circle></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font:800 56px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-2px">{{ score }}</div><div style="font:500 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:4px">Focus score</div></div></div></sc-if>
+              <sc-if value="{{ it.isSug }}"><div style="width:310px;box-sizing:border-box;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 10px 28px var(--shadow)"><div style="font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink)">What to eat next</div><div style="font:700 18px 'Plus Jakarta Sans',sans-serif;margin-top:4px">Salmon, rice and greens</div><div style="font:500 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:2px">25 min · 540 kcal · 38 g protein</div><div style="font:400 14px/1.45 'Plus Jakarta Sans',sans-serif;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);text-wrap:pretty">Slow carbs and omega-3 keep your focus steady this afternoon.</div></div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 24px 34px">
+          <div style="{{ txtStyle }}">
+            <div style="font:800 30px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px;text-wrap:balance">{{ copy.t }}</div>
+            <div style="font:400 16px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:10px;text-wrap:pretty">{{ copy.b }}</div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:6px;margin-bottom:18px"><sc-for list="{{ dots }}" as="d"><span style="{{ d }}"></span></sc-for></div>
+          <sc-if value="{{ notLast }}" hint-placeholder-val="{{ true }}"><div onClick="{{ next }}" style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font:700 17px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Next</div></sc-if>
+          <sc-if value="{{ isLast }}"><div style="display:flex;flex-direction:column;gap:4px"><div onClick="{{ toCreate }}" style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font:700 17px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Create an account</div><div onClick="{{ toSignin }}" style="height:48px;display:flex;align-items:center;justify-content:center;font:700 15px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink);cursor:pointer">I already have an account</div></div></sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAuth }}">
+      <div style="{{ enterStyle }}">
+        <div style="padding:58px 24px 32px;display:flex;flex-direction:column;flex:1">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px"><svg width="28" height="28" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="var(--teal)"></circle></svg><span style="font:800 19px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.3px">NeuroCal</span></div>
+            <sc-if value="{{ isSignin }}"><div style="display:flex;background:var(--track);border-radius:999px;padding:3px"><sc-for list="{{ themes }}" as="t"><div onClick="{{ t.on }}" style="{{ t.style }}">{{ t.label }}</div></sc-for></div></sc-if>
+          </div>
+          <div style="font:800 32px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-.8px;margin-top:34px;text-wrap:balance">{{ auth.title }}</div>
+          <div style="font:400 16px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:8px;text-wrap:pretty">{{ auth.sub }}</div>
+          <div style="display:flex;flex-direction:column;gap:16px;margin-top:28px">
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">Email</span><input type="email" value="{{ email }}" onChange="{{ onEmail }}" placeholder="you@example.com" style="{{ emailInput }}" style-focus="border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)"></label>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">Password</span><sc-if value="{{ isSignin }}"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink);cursor:pointer">Forgot password?</span></sc-if></div>
+              <div style="position:relative"><input type="{{ pwType }}" value="{{ pw }}" onChange="{{ onPw }}" style="{{ pwInput }}" style-focus="border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)"><div onClick="{{ togglePw }}" style="position:absolute;right:6px;top:5px;height:44px;padding:0 12px;display:flex;align-items:center;font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink);cursor:pointer">{{ pwToggle }}</div></div>
+              <sc-if value="{{ isCreate }}"><div style="display:flex;align-items:center;gap:8px;font:500 13px 'Plus Jakarta Sans',sans-serif;color:{{ rule.ink }}"><span style="width:16px;height:16px;border-radius:50%;box-sizing:border-box;border:1.5px solid {{ rule.ink }};background:{{ rule.fill }};display:flex;align-items:center;justify-content:center;color:var(--on-good);font-size:10px">{{ rule.tick }}</span>{{ rule.text }}</div></sc-if>
+            </div>
+          </div>
+          <sc-if value="{{ err }}"><div style="margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--err-soft);color:var(--err);font:500 14px/1.45 'Plus Jakarta Sans',sans-serif;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700">{{ err.t }}</span><span>{{ err.b }}</span><sc-if value="{{ err.link }}"><span onClick="{{ toSignin }}" style="font-weight:700;text-decoration:underline;cursor:pointer;margin-top:4px">{{ err.link }}</span></sc-if></div></sc-if>
+          <div onClick="{{ submitAuth }}" style="{{ btnStyle }}"><sc-if value="{{ loading }}"><span style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--on-primary);border-right-color:transparent;animation:ncspin .7s linear infinite"></span></sc-if>{{ auth.btn }}</div>
+          <div style="display:flex;justify-content:center;gap:6px;margin-top:20px;font:500 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)"><span>{{ auth.altQ }}</span><span onClick="{{ auth.altGo }}" style="color:var(--primary-ink);font-weight:700;cursor:pointer">{{ auth.alt }}</span></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isConfirm }}">
+      <div style="{{ enterStyle }}">
+        <div style="padding:58px 24px 32px;display:flex;flex-direction:column;flex:1">
+          <div onClick="{{ toCreate }}" style="width:44px;height:44px;margin-left:-12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+          <div style="font:800 32px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-.8px;margin-top:18px">Check your email</div>
+          <div style="font:400 16px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:8px;text-wrap:pretty">We sent a six-digit code to <b style="color:var(--ink)">{{ emailShown }}</b>.</div>
+          <div style="position:relative;margin-top:30px">
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px"><sc-for list="{{ boxes }}" as="b"><div style="{{ b.style }}">{{ b.v }}</div></sc-for></div>
+            <input value="{{ code }}" onChange="{{ onCode }}" inputMode="numeric" autoComplete="one-time-code" maxLength="6" aria-label="Six-digit code" style="position:absolute;inset:0;opacity:0;font-size:16px;width:100%;cursor:text">
+          </div>
+          <sc-if value="{{ err }}"><div style="margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--err-soft);color:var(--err);font:500 14px/1.45 'Plus Jakarta Sans',sans-serif"><b>{{ err.t }}</b> {{ err.b }}</div></sc-if>
+          <div onClick="{{ submitCode }}" style="{{ btnStyle }}"><sc-if value="{{ loading }}"><span style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--on-primary);border-right-color:transparent;animation:ncspin .7s linear infinite"></span></sc-if>Confirm</div>
+          <div onClick="{{ resend }}" style="height:48px;margin-top:10px;display:flex;align-items:center;justify-content:center;font:700 15px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink);cursor:pointer">Send a new code</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOb }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:52px 24px 32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px">
+          <div onClick="{{ obBack }}" style="{{ backStyle }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+          <span style="font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">Step {{ stepNo }} of 4</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px"><sc-for list="{{ progress }}" as="p"><div style="height:6px;border-radius:3px;background:var(--track);overflow:hidden"><div style="{{ p }}"></div></div></sc-for></div>
+        <div style="{{ stepStyle }}">
+          <sc-if value="{{ s0 }}">
+            <div style="font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px">What should we call you?</div>
+            <div style="display:flex;flex-direction:column;gap:16px;margin-top:26px">
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">First name</span><input value="{{ name }}" onChange="{{ onName }}" placeholder="Your name" style="{{ field }}" style-focus="border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)"></label>
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">Time zone</span><select value="{{ tz }}" onChange="{{ onTz }}" style="{{ field }}"><sc-for list="{{ tzs }}" as="z"><option value="{{ z }}">{{ z }}</option></sc-for></select><span style="font:400 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">Detected from your phone. Used to read late meals and bedtimes.</span></label>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s1 }}">
+            <div style="font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px">How do you eat?</div>
+            <div style="font:400 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:6px">Suggestions will stick to this.</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+              <sc-for list="{{ diets }}" as="d"><div onClick="{{ d.on }}" style="{{ d.style }}"><div style="min-width:0"><div style="font:700 15px 'Plus Jakarta Sans',sans-serif">{{ d.k }}</div><div style="font:400 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">{{ d.d }}</div></div><span style="{{ d.radio }}"></span></div></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s2 }}">
+            <div style="font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px">What do you want more of?</div>
+            <div style="font:400 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:6px">Pick any. You can change this later.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px">
+              <sc-for list="{{ goals }}" as="g"><div onClick="{{ g.on }}" style="{{ g.style }}"><span style="{{ g.check }}">{{ g.tick }}</span><div style="font:700 16px 'Plus Jakarta Sans',sans-serif;margin-top:14px">{{ g.k }}</div><div style="font:400 13px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:2px">{{ g.d }}</div></div></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ s3 }}">
+            <div style="font:800 30px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px">Your daily targets</div>
+            <div style="font:400 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:6px">A starting point. Adjust any time in Settings.</div>
+            <label style="display:flex;flex-direction:column;gap:6px;margin-top:22px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">Calories per day</span><div style="position:relative"><input type="number" value="{{ kcal }}" onChange="{{ onKcal }}" style="{{ bigField }}" style-focus="border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)"><span style="position:absolute;right:16px;top:20px;font:600 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">kcal</span></div></label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px">
+              <sc-for list="{{ macros }}" as="m"><label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">{{ m.k }}</span><div style="position:relative"><input type="number" value="{{ m.v }}" onChange="{{ m.on }}" style="{{ field }}" style-focus="border-color:var(--primary);box-shadow:0 0 0 3px var(--focus-ring)"><span style="position:absolute;right:14px;top:17px;font:500 14px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">g</span></div></label></sc-for>
+            </div>
+            <div style="margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font:500 14px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--ink2);text-wrap:pretty">{{ sumLine }} <b style="color:{{ sumInk }}">{{ sumDiff }}</b></div>
+          </sc-if>
+        </div>
+        <div style="flex:1"></div>
+        <div onClick="{{ obNext }}" style="{{ obBtn }}">{{ obBtnText }}</div>
+        <sc-if value="{{ s2 }}"><div onClick="{{ obSkip }}" style="height:48px;margin-top:4px;display:flex;align-items:center;justify-content:center;font:700 15px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink);cursor:pointer">Skip for now</div></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDone }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+        <div style="position:relative;height:470px;margin-top:60px"><sc-for list="{{ doneStage }}" as="it"><div style="{{ it.style }}">
+          <sc-if value="{{ it.isChip }}"><div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px;box-shadow:0 6px 18px var(--shadow);white-space:nowrap"><span style="width:10px;height:10px;border-radius:50%;background:{{ it.dot }}"></span><span style="font:600 15px 'Plus Jakarta Sans',sans-serif">{{ it.a }}</span><span style="font:500 14px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">{{ it.b }}</span></div></sc-if>
+          <sc-if value="{{ it.isRing }}"><div style="position:relative;width:200px;height:200px"><svg width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" fill="none" stroke="var(--track)" stroke-width="16" stroke-dasharray="6 10"></circle></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg><div style="font:600 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)">Profile saved</div></div></div></sc-if>
+        </div></sc-for></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:0 24px 34px">
+          <div style="font:800 30px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-.7px">You're set, {{ nameShown }}.</div>
+          <div style="font:400 16px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:10px;text-wrap:pretty">Your first Focus Score appears once you log last night's sleep or check in.</div>
+          <div style="flex:1"></div>
+          <div onClick="{{ toToday }}" style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font:700 17px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Go to Today</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isToday }}"><div style="position:absolute;inset:0;overflow-y:auto"><dc-import name="NC Today v2" theme="{{ th }}" state="empty" hint-size="390px,1000px"></dc-import></div></sc-if>
+
+    <div style="{{ toastStyle }}">{{ toast }}</div>
+  </div>
+
+  <div style="width:280px;display:flex;flex-direction:column;gap:20px;padding-top:12px">
+    <div><div style="font:800 26px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.5px">NeuroCal onboarding</div><div style="font:400 14px/1.5 'Plus Jakarta Sans',sans-serif;color:#4A5165;margin-top:6px">Tappable. Tap the illustration or Next to move through the intro.</div></div>
+    <div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ jumps }}" as="j"><div onClick="{{ j.on }}" style="{{ j.style }}"><span style="font:700 12px ui-monospace,monospace;color:#7C8296;width:22px">{{ j.n }}</span>{{ j.label }}</div></sc-for></div>
+    <div style="display:flex;flex-direction:column;gap:6px;font:400 13px/1.5 'Plus Jakarta Sans',sans-serif;color:#4A5165">
+      <div style="font:700 12px 'Plus Jakarta Sans',sans-serif;color:#5B3FD0;text-transform:uppercase;letter-spacing:.6px">Try the states</div>
+      <span>Sign in: password <b>wrong</b> gives the error. Anything else shows loading, then signs you in.</span>
+      <span>Create account: an email starting with <b>taken</b> already exists. <b>password123</b> is too weak.</span>
+      <span>Code: <b>000000</b> is wrong, <b>111111</b> has expired, and any other six digits work.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startAt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;intro&quot;,&quot;signin&quot;,&quot;create&quot;,&quot;confirm&quot;,&quot;ob&quot;,&quot;done&quot;,&quot;today&quot;],&quot;default&quot;:&quot;intro&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#F3F4FA','--card':'#FFFFFF','--field':'#FFFFFF','--ink':'#121829','--ink2':'#5B6276','--ink3':'#7C8296','--line':'#DCDFEA','--track':'#E1E4EE','--primary':'#6A4FDB','--primary-ink':'#5B3FD0','--primary-soft':'#EEEAFD','--on-primary':'#FFFFFF','--teal':'#159C98','--good':'#178A63','--good-bar':'#1E9E74','--on-good':'#FFFFFF','--mid-bar':'#E09A2B','--err':'#B3261E','--err-soft':'#FCE8E6','--focus-ring':'rgba(106,79,219,.18)','--shadow':'rgba(18,24,41,.08)','--toast':'#121829','--on-toast':'#FFFFFF'},
+    dark:{'--page':'#0E1325','--card':'#161C31','--field':'#161C31','--ink':'#EEF0F7','--ink2':'#A3A9BD','--ink3':'#8A90A6','--line':'#2A3149','--track':'#2A3149','--primary':'#9D85FA','--primary-ink':'#B4A2FF','--primary-soft':'#221F45','--on-primary':'#14102B','--teal':'#3CC7BF','--good':'#4FD1A1','--good-bar':'#3CC08D','--on-good':'#0E1325','--mid-bar':'#E6A33A','--err':'#FFB4AB','--err-soft':'#3A1E22','--focus-ring':'rgba(157,133,250,.25)','--shadow':'rgba(0,0,0,.35)','--toast':'#EEF0F7','--on-toast':'#0E1325'}
+  };
+  state = {scr:null,slide:0,txt:0,txtOn:true,enter:true,mode:null,email:'',pw:'',showPw:false,err:null,loading:false,code:'',toast:'',toastOn:false,step:0,dir:1,name:'',tz:'Europe/London',diet:'',goals:[],kcal:'2200',p:'130',c:'240',f:'75',score:0};
+  componentWillUnmount(){ clearInterval(this.iv); clearTimeout(this.tt); }
+  scr(){ return this.state.scr ?? this.props.startAt ?? 'intro'; }
+  animIn(patch, cb){ this.setState({...patch,enter:false}, ()=>setTimeout(()=>{ this.setState({enter:true}); cb&&cb(); },40)); }
+  go(scr){ this.animIn({scr,err:null,loading:false,showPw:false,code:scr==='confirm'?'':this.state.code}); }
+  countTo(n,delay){ clearInterval(this.iv); this.setState({score:0}); setTimeout(()=>{ this.iv=setInterval(()=>{ const s=Math.min(n,this.state.score+2); this.setState({score:s}); if(s>=n) clearInterval(this.iv); },18); },delay); }
+  setSlide(n){ this.setState({slide:n,txtOn:false}); setTimeout(()=>this.setState({txt:n,txtOn:true}),240); if(n===3) this.countTo(74,650); else if(n<3){ clearInterval(this.iv); this.setState({score:0}); } }
+  toastMsg(m){ clearTimeout(this.tt); this.setState({toast:m,toastOn:true}); this.tt=setTimeout(()=>this.setState({toastOn:false}),2200); }
+  setStep(n){ this.animIn({step:n,dir:n>=this.state.step?1:-1}); }
+  submitAuth(){
+    const s=this.state, scr=this.scr(); if(s.loading) return;
+    if(!s.email||!s.pw) return this.setState({err:{t:'Missing details.',b:'Enter your email and password.'}});
+    if(scr==='create'){
+      if(s.pw.length<10) return this.setState({err:{t:'Password too short.',b:'Use at least 10 characters.'}});
+      if(/^taken/i.test(s.email)) return this.setState({err:{t:'You already have an account.',b:'An account with this email already exists.',link:'Sign in instead'}});
+      if(['password123','1234567890','qwertyuiop'].includes(s.pw.toLowerCase())) return this.setState({err:{t:'That password is too easy to guess.',b:'Try a short phrase that only you would know.'}});
+    }
+    this.setState({err:null,loading:true});
+    setTimeout(()=>{
+      if(scr==='signin'&&this.state.pw==='wrong') return this.setState({loading:false,err:{t:"Those details don't match.",b:'Check your email and password, or reset your password.'}});
+      if(scr==='signin'){ this.go('today'); this.toastMsg('Signed in'); } else this.go('confirm');
+    },1100);
+  }
+  submitCode(){
+    const c=this.state.code; if(c.length<6||this.state.loading) return;
+    this.setState({loading:true,err:null});
+    setTimeout(()=>{
+      if(c==='000000') return this.setState({loading:false,err:{t:'Wrong code.',b:'Check the email and try again.'}});
+      if(c==='111111') return this.setState({loading:false,err:{t:'This code has expired.',b:'Send a new code and use it within 10 minutes.'}});
+      this.animIn({scr:'ob',step:0,dir:1,loading:false,err:null});
+    },800);
+  }
+  renderVals() {
+    const s=this.state, scr=this.scr();
+    const th = s.mode==='dark'||(s.mode==null&&this.props.theme==='dark')||(s.mode==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    const ease='cubic-bezier(.34,1.45,.64,1)';
+    const P = {
+      ring:[[195,220,.4,0,0],[195,220,.4,0,0],[195,220,.5,0,0],[195,205,1,1,0],[195,108,.62,1,0]],
+      frame:[[195,215,.85,0,0],[195,215,1,1,0],[195,215,1.15,0,0],[195,205,.6,0,0],[195,108,.4,0,0]],
+      m0:[[120,112,1,1,-8],[195,150,1,1,0],[96,52,.75,.45,-6],[195,205,.3,0,0],[195,108,.2,0,0]],
+      m1:[[236,208,1,1,6],[195,206,1,1,0],[272,86,.75,.45,7],[195,205,.3,0,0],[195,108,.2,0,0]],
+      m2:[[140,308,1,1,-4],[195,262,1,1,0],[288,378,.75,.45,-5],[195,205,.3,0,0],[195,108,.2,0,0]],
+      s0:[[480,150,1,0,12],[480,150,1,0,12],[126,166,1.05,1,-5],[195,205,.3,0,0],[195,108,.2,0,0]],
+      s1:[[490,240,1,0,-10],[490,240,1,0,-10],[266,238,1.05,1,4],[195,205,.3,0,0],[195,108,.2,0,0]],
+      s2:[[480,320,1,0,8],[480,320,1,0,8],[144,308,1.05,1,-3],[195,205,.3,0,0],[195,108,.2,0,0]],
+      sug:[[195,560,.9,0,0],[195,560,.9,0,0],[195,560,.9,0,0],[195,560,.9,0,0],[195,312,1,1,0]]
+    };
+    const defs=[
+      {id:'frame',isFrame:true},{id:'ring',isRing:true},
+      {id:'m0',isChip:true,a:'Oat bowl',b:'420 kcal',dot:'var(--good-bar)'},
+      {id:'m1',isChip:true,a:'Chicken wrap',b:'610 kcal',dot:'var(--mid-bar)'},
+      {id:'m2',isChip:true,a:'Salmon and rice',b:'540 kcal',dot:'var(--good-bar)'},
+      {id:'s0',isChip:true,a:'Sleep',b:'7h 12m',dot:'var(--teal)'},
+      {id:'s1',isChip:true,a:'Last meal',b:'22:40',dot:'var(--primary)'},
+      {id:'s2',isChip:true,a:'Stress',b:'Low',dot:'var(--teal)'},
+      {id:'sug',isSug:true}
+    ];
+    const build=(k)=>defs.map((d,i)=>{ const [x,y,sc,o,r]=P[d.id][k]; const dl=d.isChip?(i-2)*(k===3?80:55):(d.isRing&&k===3?250:0);
+      return {...d,style:{position:'absolute',left:0,top:0,transform:`translate(${x}px,${y}px) translate(-50%,-50%) scale(${sc}) rotate(${r}deg)`,opacity:o,transition:`transform .9s ${ease} ${dl}ms, opacity .45s ease ${dl}ms`,willChange:'transform',pointerEvents:'none'}}; });
+    const C=2*Math.PI*80;
+    const copy=[
+      {t:'Food changes how you think.',b:'What you eat, and when, shows up in your focus a few hours later.'},
+      {t:'Snap a meal. We read the plate.',b:'One photo. NeuroCal finds each item, its portion, calories and glycemic load.'},
+      {t:'Your nights count too.',b:'Sleep, late dinners, evening screens and stress all feed in.'},
+      {t:'One Focus Score, every morning.',b:"0 to 100, with a plain sentence on what's pushing it up or down."},
+      {t:'Know what to eat next.',b:"A suggestion that fits your diet, your targets and the day you're having."}
+    ][s.txt];
+    const field={height:54,width:'100%',boxSizing:'border-box',borderRadius:16,background:'var(--field)',border:'1.5px solid var(--line)',padding:'0 16px',font:"400 16px 'Plus Jakarta Sans',sans-serif",color:'var(--ink)',outline:'none',transition:'border-color .2s, box-shadow .2s',appearance:'none'};
+    const errField={...field,borderColor:s.err?'var(--err)':'var(--line)'};
+    const ruleOk=s.pw.length>=10;
+    const isAuth=scr==='signin'||scr==='create';
+    const auth = scr==='create'
+      ? {title:'Create an account',sub:'Your meals, sleep and check-ins stay private to this account.',btn:s.loading?'Creating account…':'Create account',altQ:'Already have an account?',alt:'Sign in',altGo:()=>this.go('signin')}
+      : {title:'Eat for how you want to think.',sub:'Snap your meals. NeuroCal reads them against your sleep and stress and tells you what to eat next.',btn:s.loading?'Signing in…':'Sign in',altQ:'New here?',alt:'Create an account',altGo:()=>this.go('create')};
+    const btn=(on)=>({height:56,borderRadius:999,background:'var(--primary)',color:'var(--on-primary)',display:'flex',alignItems:'center',justifyContent:'center',gap:10,font:"700 17px 'Plus Jakarta Sans',sans-serif",marginTop:24,cursor:'pointer',opacity:on?1:.45,transition:'opacity .2s'});
+    const authReady = scr==='create' ? (s.email&&ruleOk) : (s.email&&s.pw);
+    const sum=(+s.p||0)*4+(+s.c||0)*4+(+s.f||0)*9, diff=(+s.kcal||0)-sum;
+    const diets=[['Everything','No restrictions.'],['Pescatarian','Fish and seafood, no meat.'],['Vegetarian','No meat or fish. Eggs and dairy are fine.'],['Vegan','Nothing from animals.'],['Keto','Very low carb, higher fat.'],['Mediterranean','Vegetables, olive oil, fish and whole grains.']];
+    const goals=[['Sharper focus','Fewer slumps, longer deep work.'],['Feel calmer','Less wired after meals and coffee.'],['Steadier energy','No mid-afternoon crash.'],['Better sleep','Easier nights, earlier wind-down.']];
+    const obOk=[!!s.name.trim(),!!s.diet,true,(+s.kcal>0)][s.step];
+    const jumpList=[['intro','Intro, 5 screens'],['signin','Sign in'],['create','Create account'],['confirm','Confirm email'],['ob','Onboarding, 4 steps'],['done','Profile saved'],['today','Today']];
+    return {
+      th,
+      phone:{...Component.T[th],position:'relative',width:390,height:844,flex:'none',borderRadius:48,overflow:'hidden',background:'var(--page)',color:'var(--ink)',fontFamily:"'Plus Jakarta Sans',sans-serif",boxShadow:'0 0 0 10px #1d1f26, 0 30px 60px rgba(0,0,0,.22)',margin:10,transition:'background .3s'},
+      showBar:scr!=='today',
+      isIntro:scr==='intro', isAuth, isSignin:scr==='signin', isCreate:scr==='create', isConfirm:scr==='confirm', isOb:scr==='ob', isDone:scr==='done', isToday:scr==='today',
+      stage:build(s.slide), doneStage:build(s.enter?3:2).filter(d=>!d.isFrame&&!d.isSug),
+      dashStyle:{strokeDasharray:`${C*s.score/100} ${C}`}, score:String(s.score),
+      copy, txtStyle:{opacity:s.txtOn?1:0,transform:s.txtOn?'none':'translateY(10px)',transition:'opacity .3s ease, transform .4s ease'},
+      dots:[0,1,2,3,4].map(i=>({height:8,borderRadius:4,width:i===s.slide?26:8,background:i===s.slide?'var(--primary)':'var(--track)',transition:'width .35s ease, background .35s'})),
+      canSkip:s.slide<4, notLast:s.slide<4, isLast:s.slide===4,
+      next:()=>s.slide<4&&this.setSlide(s.slide+1),
+      toSignin:()=>this.go('signin'), toCreate:()=>this.go('create'), toToday:()=>this.go('today'),
+      enterStyle:{position:'absolute',inset:0,display:'flex',flexDirection:'column',overflowY:'auto',opacity:s.enter?1:0,transform:s.enter?'none':'translateX(28px)',transition:'opacity .35s ease, transform .5s cubic-bezier(.2,.8,.2,1)'},
+      themes:[['auto','Auto'],['light','Light'],['dark','Dark']].map(([k,l])=>{ const on=(s.mode??this.props.theme??'light')===k; return {label:l,on:()=>this.setState({mode:k}),style:{height:38,minWidth:44,padding:'0 10px',borderRadius:999,display:'flex',alignItems:'center',justifyContent:'center',font:"600 13px 'Plus Jakarta Sans',sans-serif",cursor:'pointer',background:on?'var(--card)':'transparent',color:on?'var(--ink)':'var(--ink2)',boxShadow:on?'0 1px 3px var(--shadow)':'none',transition:'all .2s'}}; }),
+      auth, email:s.email, pw:s.pw, err:s.err, loading:s.loading,
+      onEmail:e=>this.setState({email:e.target.value,err:null}), onPw:e=>this.setState({pw:e.target.value,err:null}),
+      pwType:s.showPw?'text':'password', pwToggle:s.showPw?'Hide':'Show', togglePw:()=>this.setState({showPw:!s.showPw}),
+      emailInput:errField, pwInput:{...errField,paddingRight:72},
+      rule:{ink:ruleOk?'var(--good)':'var(--ink2)',fill:ruleOk?'var(--good)':'transparent',tick:ruleOk?'✓':'',text:ruleOk?'At least 10 characters':`At least 10 characters · ${s.pw.length} so far`},
+      btnStyle:btn(scr==='confirm'?s.code.length===6:authReady), submitAuth:()=>this.submitAuth(),
+      emailShown:s.email||'you@example.com', code:s.code,
+      onCode:e=>this.setState({code:e.target.value.replace(/\D/g,'').slice(0,6),err:null}),
+      boxes:[0,1,2,3,4,5].map(i=>({v:s.code[i]||'',style:{height:60,borderRadius:14,background:'var(--field)',border:`1.5px solid ${s.err?'var(--err)':i===s.code.length?'var(--primary)':'var(--line)'}`,boxShadow:!s.err&&i===s.code.length?'0 0 0 3px var(--focus-ring)':'none',display:'flex',alignItems:'center',justifyContent:'center',font:"700 24px 'Plus Jakarta Sans',sans-serif",transform:s.code[i]?'scale(1)':'scale(.96)',transition:'all .18s ease'}})),
+      submitCode:()=>this.submitCode(), resend:()=>{ this.setState({code:'',err:null}); this.toastMsg(`New code sent to ${s.email||'you@example.com'}`); },
+      stepNo:String(s.step+1),
+      backStyle:{width:44,height:44,marginLeft:-12,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--ink)',visibility:s.step>0?'visible':'hidden'},
+      obBack:()=>s.step>0&&this.setStep(s.step-1),
+      progress:[0,1,2,3].map(i=>({height:6,borderRadius:3,background:'var(--primary)',width:i<=s.step?'100%':'0%',transition:'width .5s cubic-bezier(.2,.8,.2,1)'})),
+      stepStyle:{marginTop:28,opacity:s.enter?1:0,transform:s.enter?'none':`translateX(${s.dir*36}px)`,transition:'opacity .35s ease, transform .5s cubic-bezier(.2,.8,.2,1)'},
+      s0:s.step===0,s1:s.step===1,s2:s.step===2,s3:s.step===3,
+      field, bigField:{...field,height:62,font:"800 24px 'Plus Jakarta Sans',sans-serif",paddingRight:60},
+      name:s.name, onName:e=>this.setState({name:e.target.value}), tz:s.tz, onTz:e=>this.setState({tz:e.target.value}),
+      tzs:['Europe/London','Europe/Berlin','America/New_York','America/Los_Angeles','Asia/Dubai','Asia/Singapore','Australia/Sydney'],
+      diets:diets.map(([k,d])=>{ const on=s.diet===k; return {k,d,on:()=>this.setState({diet:k}),style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:64,padding:'10px 16px',boxSizing:'border-box',borderRadius:16,background:on?'var(--primary-soft)':'var(--card)',border:`1.5px solid ${on?'var(--primary)':'var(--line)'}`,cursor:'pointer',transform:on?'scale(1.02)':'scale(1)',transition:`all .3s ${ease}`},radio:{width:22,height:22,flex:'none',borderRadius:'50%',boxSizing:'border-box',border:on?'7px solid var(--primary)':'2px solid var(--line)',background:'var(--card)',transition:`border .3s ${ease}`}}; }),
+      goals:goals.map(([k,d])=>{ const on=s.goals.includes(k); return {k,d,tick:on?'✓':'',on:()=>this.setState({goals:on?s.goals.filter(x=>x!==k):[...s.goals,k]}),style:{padding:16,minHeight:132,boxSizing:'border-box',borderRadius:20,background:on?'var(--primary-soft)':'var(--card)',border:`1.5px solid ${on?'var(--primary)':'var(--line)'}`,cursor:'pointer',transform:on?'translateY(-3px)':'none',transition:`all .35s ${ease}`},check:{width:26,height:26,borderRadius:'50%',boxSizing:'border-box',border:on?'0':'2px solid var(--line)',background:on?'var(--primary)':'transparent',color:'var(--on-primary)',display:'flex',alignItems:'center',justifyContent:'center',font:"800 14px 'Plus Jakarta Sans',sans-serif",transform:on?'scale(1.1)':'scale(1)',transition:`all .35s ${ease}`}}; }),
+      kcal:s.kcal, onKcal:e=>this.setState({kcal:e.target.value}),
+      macros:[['Protein','p'],['Carbs','c'],['Fat','f']].map(([k,key])=>({k,v:s[key],on:e=>this.setState({[key]:e.target.value})})),
+      sumLine:`${s.p||0} g protein, ${s.c||0} g carbs and ${s.f||0} g fat add up to ${sum.toLocaleString()} kcal.`,
+      sumDiff:Math.abs(diff)<=50?'Matches your target.':diff>0?`${diff.toLocaleString()} under your target.`:`${(-diff).toLocaleString()} over your target.`,
+      sumInk:Math.abs(diff)<=50?'var(--good)':'var(--ink)',
+      obBtn:{...btn(obOk),marginTop:0}, obBtnText:s.step===3?'Save profile':'Continue',
+      obNext:()=>{ if(!obOk) return; if(s.step<3) this.setStep(s.step+1); else { this.go('done'); this.toastMsg('Profile saved'); } },
+      obSkip:()=>this.setState({goals:[]},()=>this.setStep(3)),
+      nameShown:s.name.trim()||'Maya',
+      toast:s.toast, toastStyle:{position:'absolute',left:'50%',bottom:110,zIndex:9,padding:'12px 18px',borderRadius:999,background:'var(--toast)',color:'var(--on-toast)',font:"600 14px 'Plus Jakarta Sans',sans-serif",whiteSpace:'nowrap',boxShadow:'0 10px 30px rgba(0,0,0,.25)',opacity:s.toastOn?1:0,transform:`translate(-50%, ${s.toastOn?0:16}px) scale(${s.toastOn?1:.95})`,transition:`all .4s ${ease}`,pointerEvents:'none'},
+      jumps:jumpList.map(([k,l],i)=>({n:String(i+1).padStart(2,'0'),label:l,on:()=>{ if(k==='intro'){ this.setState({scr:'intro'}); this.setSlide(0); } else if(k==='ob') this.animIn({scr:'ob',step:0}); else this.go(k); },style:{display:'flex',alignItems:'center',gap:8,height:40,padding:'0 12px',borderRadius:10,cursor:'pointer',font:"600 14px 'Plus Jakarta Sans',sans-serif",background:scr===k?'#fff':'transparent',color:scr===k?'#121829':'#4A5165',boxShadow:scr===k?'0 1px 3px rgba(0,0,0,.08)':'none'}}))
+    };
+  }
+}
+</script>
+</body>
+</html>

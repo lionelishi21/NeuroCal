@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></helmet>
+<div style="{{ root }}">
+  <div style="display:flex;justify-content:space-between;padding:14px 26px 0;font:600 15px 'Plus Jakarta Sans',sans-serif"><span>3:24</span><span style="font-size:12px">5G ▮▮▮ 74</span></div>
+  <div style="padding:72px 24px 32px;display:flex;flex-direction:column;flex:1">
+    <div style="display:flex;align-items:center;gap:10px"><svg width="32" height="32" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="var(--teal)"></circle></svg><span style="font:800 21px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.3px">NeuroCal</span></div>
+    <div style="font:800 34px/1.12 'Plus Jakarta Sans',sans-serif;letter-spacing:-.8px;margin-top:36px;text-wrap:balance">{{ c.title }}</div>
+    <div style="font:400 16px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink2);margin-top:10px;text-wrap:pretty">{{ c.sub }}</div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:32px">
+      <div><div style="font:600 14px 'Plus Jakarta Sans',sans-serif;margin-bottom:6px">Email</div><div style="height:54px;box-sizing:border-box;border-radius:16px;background:var(--field);border:1.5px solid var(--line);display:flex;align-items:center;padding:0 16px;font:400 16px 'Plus Jakarta Sans',sans-serif;color:var(--ink3)">you@example.com</div></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif">Password</span><sc-if value="{{ c.forgot }}"><span style="font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink)">Forgot password?</span></sc-if></div>
+        <div style="height:54px;box-sizing:border-box;border-radius:16px;background:var(--field);border:1.5px solid var(--focus-border);box-shadow:0 0 0 3px var(--focus-ring);display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 16px;font:400 16px 'Plus Jakarta Sans',sans-serif"><span style="letter-spacing:3px">{{ c.pw }}</span><span style="height:44px;padding:0 12px;display:flex;align-items:center;font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--primary-ink)">Show</span></div>
+        <sc-if value="{{ c.rule }}"><div style="display:flex;align-items:center;gap:8px;margin-top:8px;font:500 13px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)"><span style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink3);box-sizing:border-box"></span>At least 10 characters · 7 so far</div></sc-if>
+      </div>
+    </div>
+
+    <div style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font:700 17px 'Plus Jakarta Sans',sans-serif;margin-top:28px">{{ c.btn }}</div>
+    <div style="display:flex;justify-content:center;gap:6px;margin-top:22px;font:500 15px 'Plus Jakarta Sans',sans-serif;color:var(--ink2)"><span>{{ c.altQ }}</span><span style="color:var(--primary-ink);font-weight:700">{{ c.alt }}</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;create&quot;],&quot;default&quot;:&quot;signin&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#F3F4FA','--field':'#FFFFFF','--ink':'#121829','--ink2':'#5B6276','--ink3':'#7C8296','--line':'#DCDFEA','--primary':'#6A4FDB','--primary-ink':'#5B3FD0','--on-primary':'#FFFFFF','--teal':'#159C98','--focus-border':'#6A4FDB','--focus-ring':'rgba(106,79,219,.18)'},
+    dark:{'--page':'#0E1325','--field':'#161C31','--ink':'#EEF0F7','--ink2':'#A3A9BD','--ink3':'#8A90A6','--line':'#2A3149','--primary':'#9D85FA','--primary-ink':'#B4A2FF','--on-primary':'#14102B','--teal':'#3CC7BF','--focus-border':'#9D85FA','--focus-ring':'rgba(157,133,250,.25)'}
+  };
+  renderVals() {
+    const th = this.props.theme === 'dark' ? 'dark' : 'light';
+    const create = this.props.screen === 'create';
+    const c = create
+      ? {title:'Create an account',sub:'Your meals, sleep and check-ins stay private to this account.',forgot:false,rule:true,pw:'•••••••',btn:'Create account',altQ:'Already have an account?',alt:'Sign in'}
+      : {title:'Eat for how you want to think.',sub:'Snap your meals. NeuroCal reads them against your sleep and stress and tells you what to eat next.',forgot:true,rule:false,pw:'••••••••••',btn:'Sign in',altQ:'New here?',alt:'Create an account'};
+    return { c, root:{...Component.T[th],background:'var(--page)',color:'var(--ink)',fontFamily:"'Plus Jakarta Sans',sans-serif",width:'100%',minHeight:'844px',display:'flex',flexDirection:'column'} };
+  }
+}
+</script>
+</body>
+</html>

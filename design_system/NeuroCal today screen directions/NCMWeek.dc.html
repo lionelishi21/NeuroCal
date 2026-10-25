@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding-top:50px;min-height:844px;box-sizing:border-box;display:flex;flex-direction:column;padding-bottom:28px">
+  <div style="display:flex;align-items:center;gap:4px;padding:8px 16px 0 6px">
+    <div onClick="{{ back }}" role="button" aria-label="Back to Today" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;border-radius:50%" style-hover="background:var(--track)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+    <div style="flex:1"><div style="font-size:22px;font-weight:800;letter-spacing:-.4px">This week</div><div style="font-size:13px;color:var(--ink2)">Fri 26 Sep – Thu 2 Oct</div></div>
+  </div>
+
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:16px" aria-busy="true">
+      <div style="height:52px;border-radius:16px;background:var(--track);animation:ncpulse 1.2s ease-in-out infinite"></div>
+      <div style="height:150px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .15s infinite"></div>
+      <div style="height:190px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .3s infinite"></div>
+      <div style="height:190px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .45s infinite"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--warn-soft);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">!</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px">Couldn't load this week</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2)">Check your connection and try again.</div>
+      <div onClick="{{ retry }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Try again</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+    <div role="tablist" aria-label="Day" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:14px 16px 0">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+        <div onClick="{{ d.pick }}" role="tab" style="height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;background:{{ d.bg }};color:{{ d.ink }}">
+          <span style="font-size:11px;font-weight:600;opacity:.8">{{ d.w }}</span><span style="font-size:16px;font-weight:800">{{ d.n }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:700">{{ sel.title }}</span><sc-if value="{{ sel.isToday }}"><span style="height:24px;padding:0 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:12px;font-weight:700;display:flex;align-items:center">Today so far</span></sc-if></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 12px;margin-top:12px">
+        <sc-for list="{{ sel.cells }}" as="c" hint-placeholder-count="4">
+          <div><div style="font-size:12px;font-weight:600;color:var(--ink2)">{{ c.k }}</div><div style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin-top:2px;color:{{ c.ink }}">{{ c.v }}<span style="font-size:13px;font-weight:600;color:var(--ink2)">{{ c.s }}</span></div></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-for list="{{ charts }}" as="ch" hint-placeholder-count="3">
+      <div style="margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px 16px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:700">{{ ch.title }}</span><span style="font-size:12px;color:var(--ink2)">{{ ch.note }}</span></div>
+        <div style="position:relative;height:120px;margin-top:14px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;border-bottom:1px solid var(--line)">
+          <sc-for list="{{ ch.bars }}" as="b" hint-placeholder-count="7">
+            <div onClick="{{ b.pick }}" style="height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:pointer">
+              <sc-if value="{{ b.show }}"><span style="font-size:11px;font-weight:700;margin-bottom:3px;color:var(--ink)">{{ b.label }}</span></sc-if>
+              <div style="width:100%;max-width:30px;border-radius:7px 7px 2px 2px;height:{{ b.h }};background:{{ b.bg }}"></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ ch.line }}"><div style="position:absolute;left:0;right:0;bottom:{{ ch.lineAt }};border-top:1.5px dashed var(--ink3);pointer-events:none"><span style="position:absolute;right:0;top:-18px;font-size:11px;font-weight:700;color:var(--ink2);background:var(--card);padding:0 0 0 4px">{{ ch.lineLabel }}</span></div></sc-if>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:6px"><sc-for list="{{ ch.bars }}" as="b"><span style="text-align:center;font-size:11px;font-weight:600;color:var(--ink2)">{{ b.d }}</span></sc-for></div>
+      </div>
+    </sc-for>
+
+    <div id="nc-help" style="padding:26px 20px 4px;font-size:20px;font-weight:800;letter-spacing:-.3px">What could help</div>
+    <sc-if value="{{ sparse }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:8px 16px 0;border:1.5px dashed var(--line2);border-radius:20px;padding:18px;font-size:14px;line-height:1.45;color:var(--ink2);text-wrap:pretty">Log three more days and we'll show the week's weak points, routines to try and products that might help.</div>
+    </sc-if>
+    <sc-if value="{{ hasHelp }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:6px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Weak points this week</div>
+      <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+        <sc-for list="{{ weak }}" as="w" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;padding:12px 16px;border-top:{{ w.border }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--mid-bar);margin-top:6px;flex:none"></span><div><div style="font-size:15px;font-weight:700">{{ w.t }}</div><div style="font-size:13px;line-height:1.4;color:var(--ink2);margin-top:2px">{{ w.b }}</div></div></div>
+        </sc-for>
+      </div>
+
+      <div style="padding:18px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Routines to try</div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:0 16px">
+        <sc-for list="{{ routines }}" as="r" hint-placeholder-count="2">
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px">
+            <div style="font-size:16px;font-weight:800">{{ r.t }}</div>
+            <div style="font-size:13px;color:var(--ink2);margin-top:2px">{{ r.why }}</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+              <sc-for list="{{ r.steps }}" as="st" hint-placeholder-count="3">
+                <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ st.n }}</span><span style="font-size:14px;line-height:1.4;padding-top:1px">{{ st.t }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:18px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Products that might help</div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:0 16px">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="3">
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ p.tags }}" as="tg"><span style="height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;display:flex;align-items:center;background:{{ tg.bg }};color:{{ tg.ink }}">{{ tg.t }}</span></sc-for></div>
+            <div style="font-size:16px;font-weight:700">{{ p.name }}</div>
+            <div style="font-size:13px;line-height:1.4;color:var(--ink2)">{{ p.why }}</div>
+            <sc-if value="{{ p.supp }}"><div style="font-size:12px;line-height:1.4;color:var(--ink);background:var(--page);border-radius:10px;padding:8px 10px">Supplement. Check with your doctor before starting it, especially if you're pregnant or take medication.</div></sc-if>
+            <div onClick="{{ p.open }}" role="button" style="align-self:flex-start;height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line2);color:var(--primary-ink);font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer">See product<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 17L17 7M9 7h8v8"></path></svg></div>
+          </div>
+        </sc-for>
+        <div style="font-size:12px;line-height:1.5;color:var(--ink2);padding:2px 4px 0;text-wrap:pretty">We earn a commission when you buy through an affiliate link. "Our brand" products are made by NeuroCal. Neither changes what we suggest; suggestions come from your week's data.</div>
+      </div>
+    </sc-if>
+
+    <div style="padding:26px 20px 8px;font-size:17px;font-weight:700">Every day</div>
+    <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow-x:auto">
+      <div style="min-width:600px">
+        <div style="display:grid;grid-template-columns:64px 56px 78px 70px 70px 76px minmax(0,1fr);padding:10px 14px;font-size:11px;font-weight:700;color:var(--ink2);border-bottom:1px solid var(--line)"><span>Day</span><span>Focus</span><span>Calories</span><span>Protein</span><span>Sleep</span><span>Last meal</span><span>Feeling</span></div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+          <div onClick="{{ r.pick }}" style="display:grid;grid-template-columns:64px 56px 78px 70px 70px 76px minmax(0,1fr);padding:0 14px;min-height:44px;align-items:center;font-size:13px;border-top:{{ r.border }};background:{{ r.bg }};cursor:pointer">
+            <span style="font-weight:700">{{ r.d }}</span><span style="font-weight:700">{{ r.focus }}</span><span>{{ r.kcal }}</span><span>{{ r.prot }}</span><span>{{ r.sleep }}</span><span style="color:{{ r.lastInk }}">{{ r.last }}</span><span style="color:var(--ink2)">{{ r.feel }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:2400},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;populated&quot;,&quot;sparse&quot;,&quot;loading&quot;,&quot;error&quot;],&quot;default&quot;:&quot;populated&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { sel: 6, override: null };
+  componentDidUpdate(p) { if (p.view !== this.props.view) this.setState({ override: null, sel: 6 }); }
+  renderVals() {
+    const P = this.props, s = this.state, v = s.override || P.view || 'populated';
+    const toast = m => P.onToast && P.onToast(m);
+    const D = [['Fri', '26', 'Friday 26 September'], ['Sat', '27', 'Saturday 27 September'], ['Sun', '28', 'Sunday 28 September'], ['Mon', '29', 'Monday 29 September'], ['Tue', '30', 'Tuesday 30 September'], ['Wed', '1', 'Wednesday 1 October'], ['Thu', '2', 'Thursday 2 October']];
+    let X = { focus: [62, 70, 58, 66, 71, 55, 74], kcal: [2310, 1980, 2480, 2150, 2050, 2390, 1240], prot: [96, 110, 72, 120, 118, 84, 78], sleep: [6.4, 7.8, 5.9, 7.1, 7.4, 6.2, 7.2], last: ['21:50', '20:30', '23:10', '20:05', '19:40', '22:40', '13:05'], feel: ['Low energy', 'Calm', 'Brain fog', 'Sharp', 'Sharp, calm', 'Wired', 'Sharp, calm'] };
+    const sparse = v === 'sparse';
+    if (sparse) { const n = a => a.map((x, i) => i < 5 ? null : x); X = { focus: n(X.focus), kcal: n(X.kcal), prot: n(X.prot), sleep: n(X.sleep), last: n(X.last), feel: n(X.feel) }; }
+    const fmt = n => n == null ? '–' : n.toLocaleString('en-GB');
+    const hm = h => h == null ? '–' : `${Math.floor(h)}h ${String(Math.round((h % 1) * 60)).padStart(2, '0')}m`;
+    const late = t => t && t !== '–' && t >= '21:00';
+    const i = s.sel, pick = k => () => this.setState({ sel: k });
+    const mk = (title, arr, max, fmtV, line, lineLabel, note) => ({
+      title, note, line: line != null, lineAt: line != null ? (line / max * 100) + '%' : '0', lineLabel,
+      bars: arr.map((x, k) => ({ d: D[k][0][0], pick: pick(k), show: k === i && x != null, label: fmtV(x), h: x == null ? '4px' : Math.max(4, x / max * 100) + '%', bg: x == null ? 'var(--track)' : k === i ? 'var(--primary)' : 'var(--bar2)' }))
+    });
+    const avg = a => { const f = a.filter(x => x != null); return f.length ? f.reduce((p, c) => p + c, 0) / f.length : null; };
+    const charts = [
+      mk('Focus Score', X.focus, 100, x => x, null, '', sparse ? '2 days logged' : `Average ${Math.round(avg(X.focus))}`),
+      mk('Calories', X.kcal, 2800, x => fmt(x), 2200, '2,200 target', 'Against your target'),
+      mk('Sleep', X.sleep, 10, x => hm(x).replace(/ \d+m$/, m => m), 8, '8 h', sparse ? '' : `Average ${hm(avg(X.sleep))}`)
+    ];
+    const kc = X.kcal[i];
+    return {
+      isLoading: v === 'loading', isError: v === 'error', isReady: v !== 'loading' && v !== 'error',
+      back: () => P.onNav && P.onNav('today'),
+      retry: () => { this.setState({ override: 'loading' }); setTimeout(() => this.setState({ override: 'populated' }), 900); },
+      days: D.map(([w, n], k) => ({ w, n, pick: pick(k), bg: k === i ? 'var(--primary)' : 'var(--card)', ink: k === i ? 'var(--on-primary)' : 'var(--ink)' })),
+      sel: {
+        title: D[i][2], isToday: i === 6,
+        cells: [
+          { k: 'Focus Score', v: X.focus[i] ?? '–', s: X.focus[i] != null ? ' / 100' : '', ink: 'var(--ink)' },
+          { k: 'Calories', v: fmt(kc), s: kc != null ? ' / 2,200' : '', ink: kc > 2200 ? 'var(--warn)' : 'var(--ink)' },
+          { k: 'Sleep', v: hm(X.sleep[i]), s: '', ink: X.sleep[i] != null && X.sleep[i] < 7 ? 'var(--mid)' : 'var(--ink)' },
+          { k: 'Last meal', v: X.last[i] || '–', s: '', ink: late(X.last[i]) ? 'var(--mid)' : 'var(--ink)' }
+        ]
+      },
+      charts, sparse, hasHelp: !sparse,
+      weak: [
+        { t: 'Late dinners on 3 nights', b: 'Focus was 9 points lower the morning after eating past 21:00.' },
+        { t: 'Under 7 hours of sleep on 3 nights', b: 'Sunday and Wednesday were your two lowest scores.' },
+        { t: 'Glycemic spikes at lunch', b: 'High glycemic lunches came before your 16:00 dips on Sunday and Wednesday.' }
+      ].map((w, k) => ({ ...w, border: k ? '1px solid var(--line)' : '0' })),
+      routines: [
+        { t: 'Close the kitchen by 20:30', why: 'For the late-dinner nights', steps: ['Eat your last meal by 20:30.', 'If hungry later, keep it to a protein snack under 150 kcal.', 'Dim lights and switch screens to night mode after 21:00.'] },
+        { t: 'A steadier lunch', why: 'For the afternoon dips', steps: ['Start with protein and greens before any starch.', 'Swap fries or white bread for beans, lentils or whole grains.', 'Walk for 10 minutes after eating.'] }
+      ].map(r => ({ ...r, steps: r.steps.map((t, k) => ({ n: k + 1, t })) })),
+      products: [
+        { name: 'NeuroCal Magnesium Glycinate', why: 'Often used to support sleep on nights after stressful days.', tags: ['our', 'supp'], supp: true },
+        { name: 'Hearth amber reading bulb', why: 'Warm, low-blue light for the hour before bed.', tags: ['aff'] },
+        { name: 'Nightshift blue-light glasses', why: 'For the evenings you\u2019re on screens past 22:00.', tags: ['aff'] }
+      ].map(p => ({ ...p, open: () => toast('Opens in your browser'), tags: p.tags.map(t => ({ our: { t: 'Our brand', bg: 'var(--primary-soft)', ink: 'var(--primary-ink)' }, aff: { t: 'Affiliate link', bg: 'var(--mid-soft)', ink: 'var(--mid)' }, supp: { t: 'Supplement', bg: 'var(--page)', ink: 'var(--ink2)' } }[t])) })),
+      rows: D.map(([w, n], k) => ({ d: `${w} ${n}`, focus: X.focus[k] ?? '–', kcal: fmt(X.kcal[k]), prot: X.prot[k] != null ? X.prot[k] + ' g' : '–', sleep: hm(X.sleep[k]), last: X.last[k] || '–', lastInk: late(X.last[k]) ? 'var(--mid)' : 'var(--ink)', feel: X.feel[k] || '–', pick: pick(k), border: k ? '1px solid var(--line)' : '0', bg: k === i ? 'var(--primary-soft)' : 'transparent' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

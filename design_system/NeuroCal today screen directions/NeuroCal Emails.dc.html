@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#DCDCD8;font-family:'Archivo',Arial,sans-serif;color:#0E0E10}a{color:#3530F0}a:hover{color:#1f1aa8}</style>
+</helmet>
+<div style="padding:56px 64px 32px;max-width:1000px">
+  <div style="font:900 72px/0.9 'Archivo',sans-serif;font-stretch:62%">NeuroCal emails</div>
+  <div style="font:400 17px/1.5 'Archivo',sans-serif;color:#3D3D4A;margin-top:10px;max-width:780px;text-wrap:pretty">Six templates at 600 px. Each uses the same frame: a colour band named for the job of the email, one message, at most one main button, and a plain footer. Archivo falls back to Arial in mail clients that block web fonts.</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:48px;padding:0 64px 80px;align-items:flex-start">
+
+<!-- 1 Confirm code -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 1 confirm code">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E1</span>Confirm email code · subject "Your NeuroCal code is 482 913"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#3530F0;color:#fff;padding:28px 40px 32px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#fff;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+      <div style="font:900 52px/0.95 'Archivo',sans-serif;font-stretch:65%;margin-top:36px">Confirm your email</div>
+    </div>
+    <div style="padding:32px 40px 36px;display:flex;flex-direction:column;gap:20px">
+      <div style="font:400 17px/1.55 'Archivo',sans-serif">Enter this code in NeuroCal to finish creating your account.</div>
+      <div style="border:3px solid #0E0E10;padding:18px 0;text-align:center;font:900 64px/1 'Archivo',sans-serif;font-stretch:70%;letter-spacing:10px">482 913</div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A">The code works for 10 minutes. If it runs out, tap "Send a new code" on the confirm screen.</div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A;border-top:1px solid #DADAE0;padding-top:16px">Didn't try to sign up? Ignore this email. Nothing is created until the code is entered.</div>
+    </div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">Sent to maya.okafor@gmail.com · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+<!-- 2 Welcome -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 2 welcome">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E2</span>Welcome after sign-up · subject "Welcome to NeuroCal, Maya"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#3530F0;color:#fff;padding:28px 40px 32px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#fff;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+      <div style="font:900 64px/0.9 'Archivo',sans-serif;font-stretch:62%;margin-top:36px">Welcome, Maya.</div>
+      <div style="font:400 17px/1.5 'Archivo',sans-serif;color:#E2E1FF;margin-top:12px;max-width:440px">Your first Focus Score arrives tomorrow morning. Three things to do today make it accurate.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr">
+      <div style="display:grid;grid-template-columns:64px 1fr;background:#FFB000;color:#0E0E10"><span style="font:900 40px/1 'Archivo',sans-serif;font-stretch:65%;padding:20px 0 0 40px">1</span><div style="padding:20px 40px 20px 12px"><div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%">Log your next meal</div><div style="font:400 15px/1.5 'Archivo',sans-serif">Take a photo before you eat. We work out calories and macros.</div></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;background:#0E0E10;color:#fff"><span style="font:900 40px/1 'Archivo',sans-serif;font-stretch:65%;padding:20px 0 0 40px">2</span><div style="padding:20px 40px 20px 12px"><div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%">Check in this afternoon</div><div style="font:400 15px/1.5 'Archivo',sans-serif;color:#C9C9D4">Pick how you feel: sharp, foggy, wired, calm. It takes five seconds.</div></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;background:#7A1FA2;color:#fff"><span style="font:900 40px/1 'Archivo',sans-serif;font-stretch:65%;padding:20px 0 0 40px">3</span><div style="padding:20px 40px 20px 12px"><div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%">Log tonight's sleep</div><div style="font:400 15px/1.5 'Archivo',sans-serif;color:#F1DDFA">When you wake, tell us when you went to sleep and when you got up.</div></div></div>
+    </div>
+    <div style="padding:32px 40px 36px;display:flex;flex-direction:column;gap:16px;align-items:flex-start">
+      <div style="background:#3530F0;color:#fff;font:800 18px 'Archivo',sans-serif;padding:18px 28px">Open NeuroCal</div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A">Your targets: 2,250 kcal, 140 g protein, 250 g carbs, 75 g fat. Change them any time in Settings.</div>
+    </div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">Sent to maya.okafor@gmail.com · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+<!-- 3 Reset -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 3 reset password">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E3</span>Reset password · subject "Reset your NeuroCal password"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#0E0E10;color:#fff;padding:28px 40px 32px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#3530F0;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+      <div style="font:900 52px/0.95 'Archivo',sans-serif;font-stretch:65%;margin-top:36px">Reset your password</div>
+    </div>
+    <div style="padding:32px 40px 36px;display:flex;flex-direction:column;gap:20px;align-items:flex-start">
+      <div style="font:400 17px/1.55 'Archivo',sans-serif">Someone asked to reset the password for <b>maya.okafor@gmail.com</b> at 08:47 today. The button works for 30 minutes.</div>
+      <div style="background:#3530F0;color:#fff;font:800 18px 'Archivo',sans-serif;padding:18px 28px">Reset password</div>
+      <div style="font:400 14px/1.55 'Archivo',sans-serif;color:#55556A">Button not working? Paste this into your browser:<br><span style="color:#3530F0;text-decoration:underline;word-break:break-all">https://neurocal.app/reset/7Fq2-K9mx-81Lp</span></div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A;border-top:1px solid #DADAE0;padding-top:16px;align-self:stretch">Didn't ask for this? Your password hasn't changed. You can ignore this email.</div>
+    </div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">Sent to maya.okafor@gmail.com · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+<!-- 4 Weekly -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 4 weekly summary">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E4</span>Weekly focus summary · subject "Your week: Focus 70, up 4"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#3530F0;color:#fff;padding:28px 40px 26px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#fff;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div><span style="font:500 14px 'Archivo',sans-serif;color:#E2E1FF">26 Sep – 2 Oct</span></div>
+      <div style="display:flex;align-items:flex-end;gap:20px;margin-top:22px">
+        <div style="font:900 150px/0.8 'Archivo',sans-serif;font-stretch:62%;letter-spacing:-4px">70</div>
+        <div style="padding-bottom:8px"><div style="font:700 17px 'Archivo',sans-serif">Average Focus Score</div><div style="font:400 15px 'Archivo',sans-serif;color:#E2E1FF">Up 4 on last week. Best day: Monday, 80.</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:70px;margin-top:22px;position:relative">
+        <div style="position:absolute;left:0;right:0;bottom:70%;border-top:2px dashed #fff"></div>
+        <div style="height:61%;background:rgba(255,255,255,.55)"></div><div style="height:58%;background:rgba(255,255,255,.55)"></div><div style="height:72%;background:rgba(255,255,255,.55)"></div><div style="height:80%;background:#fff"></div><div style="height:77%;background:rgba(255,255,255,.55)"></div><div style="height:66%;background:rgba(255,255,255,.55)"></div><div style="height:74%;background:rgba(255,255,255,.55)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px;font:600 12px 'Archivo',sans-serif;text-align:center"><span>Fri</span><span>Sat</span><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="background:#FFB000;padding:18px 20px 18px 40px"><div style="font:600 13px 'Archivo',sans-serif">Calories, daily average</div><div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:62%">2,204</div><div style="font:400 13px 'Archivo',sans-serif">Over budget on Fri, Sat and Wed</div></div>
+      <div style="background:#7A1FA2;color:#fff;padding:18px 40px 18px 20px"><div style="font:600 13px 'Archivo',sans-serif">Sleep, nightly average</div><div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:62%">7 h 25</div><div style="font:400 13px 'Archivo',sans-serif;color:#F1DDFA">Longest: Sunday, 8 h 10</div></div>
+    </div>
+    <div style="padding:28px 40px 8px">
+      <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%">What we noticed</div>
+      <div style="font:400 17px/1.55 'Archivo',sans-serif;margin-top:6px;text-wrap:pretty">Your Focus Score was 9 points higher the morning after a dinner before 20:30. You managed that 3 times this week.</div>
+    </div>
+    <div style="padding:20px 40px 8px">
+      <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%;margin-bottom:6px">What could help</div>
+      <div style="border-top:2px solid #0E0E10">
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid #DADAE0"><div style="width:56px;height:56px;background:#3530F0;color:#fff;display:flex;align-items:center;justify-content:center;font:900 18px 'Archivo',sans-serif;font-stretch:70%">20:30</div><div><div style="font:500 13px 'Archivo',sans-serif;color:#55556A">Routine</div><div style="font:700 16px 'Archivo',sans-serif">Finish dinner by 20:30</div></div></div>
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid #DADAE0"><div style="width:56px;height:56px;background:repeating-linear-gradient(135deg,#EBEBF0 0 5px,#F2F2F5 5px 10px)"></div><div><div style="display:flex;gap:6px;align-items:center"><span style="font:500 13px 'Archivo',sans-serif;color:#55556A">Supplement</span><span style="font:700 12px 'Archivo',sans-serif;border:1.5px solid #0E0E10;padding:2px 6px">Affiliate link</span></div><div style="font:700 16px 'Archivo',sans-serif">Magnesium glycinate, 120 capsules</div><div style="font:700 14px 'Archivo',sans-serif;color:#3530F0;text-decoration:underline;margin-top:4px">£27.50 at Boots</div></div></div>
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid #DADAE0"><div style="width:56px;height:56px;background:repeating-linear-gradient(135deg,#EBEBF0 0 5px,#F2F2F5 5px 10px)"></div><div><div style="display:flex;gap:6px;align-items:center"><span style="font:500 13px 'Archivo',sans-serif;color:#55556A">Food</span><span style="font:700 12px 'Archivo',sans-serif;background:#0E0E10;color:#fff;padding:3.5px 7.5px">Our brand</span></div><div style="font:700 16px 'Archivo',sans-serif">NeuroCal slow-release oats, 8 sachets</div><div style="font:700 14px 'Archivo',sans-serif;color:#3530F0;text-decoration:underline;margin-top:4px">£16.00 at neurocal.app</div></div></div>
+      </div>
+      <div style="font:400 13px/1.5 'Archivo',sans-serif;color:#55556A;margin-top:10px">We earn a commission from affiliate links. It never changes what we suggest.</div>
+    </div>
+    <div style="padding:20px 40px 36px"><div style="display:inline-block;background:#3530F0;color:#fff;font:800 18px 'Archivo',sans-serif;padding:18px 28px">See this week</div></div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">You get this every Friday because you turned on weekly summaries. <span style="text-decoration:underline">Stop weekly summaries</span> · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+<!-- 5 Missed check-in -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 5 missed check-in">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E5</span>Missed check-in reminder · subject "How's your focus today?"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#3530F0;color:#fff;padding:28px 40px 32px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#fff;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+      <div style="font:900 52px/0.95 'Archivo',sans-serif;font-stretch:65%;margin-top:36px">How's your focus today?</div>
+      <div style="font:400 17px/1.5 'Archivo',sans-serif;color:#E2E1FF;margin-top:12px">You last checked in on Tuesday at 09:10. Tap one to check in now.</div>
+    </div>
+    <div style="padding:28px 40px 32px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Sharp</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Low focus</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Brain fog</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Low energy</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Wired</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Stressed</span><span style="border:2px solid #0E0E10;font:700 16px 'Archivo',sans-serif;padding:12px 16px">Calm</span>
+      </div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A;text-wrap:pretty">Without check-ins, your Focus Score guesses your stress from sleep alone. One tap a day makes it yours.</div>
+    </div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">We send this after two days without a check-in. <span style="text-decoration:underline">Turn off check-in reminders</span> · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+<!-- 6 Deleted -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="Email 6 account deleted">
+  <div style="font:700 14px 'Archivo',sans-serif"><span style="font:700 12px ui-monospace,monospace;background:#0E0E10;color:#fff;padding:3px 7px;margin-right:8px">E6</span>Account deleted · subject "Your NeuroCal account has been deleted"</div>
+  <div style="width:600px;background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.15)">
+    <div style="background:#0E0E10;color:#fff;padding:28px 40px 32px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;background:#3530F0;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;background:#FFB000"></span></span><span style="font:800 21px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+      <div style="font:900 52px/0.95 'Archivo',sans-serif;font-stretch:65%;margin-top:36px">Your account has been deleted</div>
+    </div>
+    <div style="padding:32px 40px 36px;display:flex;flex-direction:column;gap:18px">
+      <div style="font:400 17px/1.55 'Archivo',sans-serif;text-wrap:pretty">On 2 October 2026 at 14:32 we deleted the NeuroCal account for <b>maya.okafor@gmail.com</b>, along with every meal, sleep log and check-in in it.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border:2px solid #0E0E10">
+        <div style="padding:12px 14px"><div style="font:600 12px 'Archivo',sans-serif;color:#55556A">Meals</div><div style="font:900 28px 'Archivo',sans-serif;font-stretch:65%">612</div></div>
+        <div style="padding:12px 14px;border-left:2px solid #0E0E10"><div style="font:600 12px 'Archivo',sans-serif;color:#55556A">Nights</div><div style="font:900 28px 'Archivo',sans-serif;font-stretch:65%">203</div></div>
+        <div style="padding:12px 14px;border-left:2px solid #0E0E10"><div style="font:600 12px 'Archivo',sans-serif;color:#55556A">Check-ins</div><div style="font:900 28px 'Archivo',sans-serif;font-stretch:65%">341</div></div>
+      </div>
+      <div style="font:400 15px/1.55 'Archivo',sans-serif;color:#55556A">This can't be undone. Backups clear within 30 days. If you want to come back, you can <span style="color:#3530F0;text-decoration:underline;font-weight:700">create a new account</span> any time.</div>
+      <div style="display:grid;grid-template-columns:20px 1fr;gap:10px;border-top:2px solid #D81F14;padding-top:14px;font:400 15px/1.55 'Archivo',sans-serif"><span style="width:20px;height:20px;background:#D81F14;color:#fff;font:800 14px/20px 'Archivo',sans-serif;text-align:center">!</span><span>Didn't do this? Reply to this email straight away and we'll look into it.</span></div>
+    </div>
+    <div style="background:#F2F2F5;padding:20px 40px;font:400 13px/1.55 'Archivo',sans-serif;color:#55556A">This is the last email we'll send to this address. · NeuroCal Ltd, 20 Station Road, Cambridge CB1 2JD</div>
+  </div>
+</div>
+
+</div>
+</x-dc>
+</body>
+</html>

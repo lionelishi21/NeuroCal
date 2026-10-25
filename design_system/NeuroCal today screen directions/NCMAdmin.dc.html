@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding-top:50px;min-height:844px;box-sizing:border-box;display:flex;flex-direction:column;padding-bottom:32px">
+  <div style="display:flex;align-items:center;gap:4px;padding:8px 16px 0 6px">
+    <div onClick="{{ back }}" role="button" aria-label="Back to Settings" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;border-radius:50%" style-hover="background:var(--track)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+    <div style="flex:1"><div style="font-size:22px;font-weight:800;letter-spacing:-.4px">Manage products</div><div style="font-size:13px;color:var(--ink2)">Admin only</div></div>
+  </div>
+
+  <sc-if value="{{ notAdmin }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px">This page is for admins</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2);text-wrap:pretty">You're signed in as sam.rivera@gmail.com, which doesn't have admin access. Ask an admin to add you.</div>
+      <div onClick="{{ toToday }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Back to Today</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:16px" aria-busy="true">
+      <div style="height:300px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out infinite"></div>
+      <div style="height:44px;border-radius:14px;background:var(--track);animation:ncpulse 1.2s ease-in-out .15s infinite"></div>
+      <div style="height:220px;border-radius:20px;background:var(--track);animation:ncpulse 1.2s ease-in-out .3s infinite"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:16px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px 20px;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--warn-soft);color:var(--warn);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">!</div>
+      <div style="font-size:20px;font-weight:800;margin-top:4px">Couldn't load products</div>
+      <div style="font-size:15px;line-height:1.45;color:var(--ink2)">Check your connection and try again.</div>
+      <div onClick="{{ retry }}" role="button" style="height:48px;padding:0 22px;margin-top:8px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;cursor:pointer">Try again</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:18px 20px 8px;font-size:17px;font-weight:700">Add a product</div>
+    <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Name</span><input value="{{ f.name }}" onChange="{{ setName }}" placeholder="e.g. Magnesium glycinate" style="height:48px;border-radius:14px;border:1.5px solid {{ nameBorder }};background:var(--page);color:var(--ink);padding:0 14px;font-size:15px;outline:none;box-sizing:border-box;width:100%"></input><sc-if value="{{ errs.name }}"><span style="font-size:12px;color:var(--warn);font-weight:600">{{ errs.name }}</span></sc-if></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Description</span><textarea value="{{ f.desc }}" onChange="{{ setDesc }}" rows="2" placeholder="One line people will see" style="border-radius:14px;border:1.5px solid var(--line);background:var(--page);color:var(--ink);padding:12px 14px;font-size:15px;outline:none;box-sizing:border-box;width:100%;resize:vertical"></textarea></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Link</span><input value="{{ f.link }}" onChange="{{ setLink }}" placeholder="https://" inputmode="url" style="height:48px;border-radius:14px;border:1.5px solid {{ linkBorder }};background:var(--page);color:var(--ink);padding:0 14px;font-size:15px;outline:none;box-sizing:border-box;width:100%"></input><sc-if value="{{ errs.link }}"><span style="font-size:12px;color:var(--warn);font-weight:600">{{ errs.link }}</span></sc-if></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Words to suggest it for</span><input value="{{ f.words }}" onChange="{{ setWords }}" placeholder="sleep, stress, late dinner" style="height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--page);color:var(--ink);padding:0 14px;font-size:15px;outline:none;box-sizing:border-box;width:100%"></input><span style="font-size:12px;color:var(--ink2)">Separate with commas.</span></label>
+      <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Whose product is it?</span>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--page);border-radius:14px;padding:4px" role="radiogroup"><sc-for list="{{ owners }}" as="o" hint-placeholder-count="3"><div onClick="{{ o.go }}" role="radio" style="height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;background:{{ o.bg }};color:{{ o.ink }}">{{ o.t }}</div></sc-for></div>
+      </div>
+      <div onClick="{{ toggleSupp }}" role="checkbox" style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border-radius:7px;border:2px solid {{ suppBox.bd }};background:{{ suppBox.bg }};color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;box-sizing:border-box">{{ suppBox.mark }}</span><span style="font-size:14px;font-weight:600">It's a supplement<span style="font-weight:400;color:var(--ink2)"> (adds a doctor note)</span></span></div>
+      <div onClick="{{ add }}" role="button" style="height:50px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">Add product</div>
+    </div>
+
+    <div style="padding:24px 20px 8px;font-size:17px;font-weight:700">Products</div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding:0 16px 2px;scrollbar-width:none">
+      <sc-for list="{{ filters }}" as="x" hint-placeholder-count="5"><div onClick="{{ x.go }}" role="button" style="height:40px;flex:none;padding:0 14px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }};border:1.5px solid {{ x.bd }}">{{ x.t }}<span style="opacity:.75">{{ x.n }}</span></div></sc-for>
+    </div>
+    <div style="margin:10px 16px 0;position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2.2" stroke-linecap="round" style="position:absolute;left:14px;top:15px"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg><input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search products" aria-label="Search products" style="height:48px;width:100%;box-sizing:border-box;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:0 14px 0 42px;font-size:15px;outline:none"></input></div>
+
+    <sc-if value="{{ none }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:12px 16px 0;border:1.5px dashed var(--line2);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+        <div style="font-size:15px;font-weight:700">{{ noneText }}</div>
+        <div onClick="{{ clear }}" role="button" style="height:40px;padding:0 14px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer">Show all products</div>
+      </div>
+    </sc-if>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:12px 16px 0">
+      <sc-for list="{{ items }}" as="p" hint-placeholder-count="3">
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;opacity:{{ p.op }}">
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ p.tags }}" as="tg"><span style="height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;display:flex;align-items:center;background:{{ tg.bg }};color:{{ tg.ink }}">{{ tg.t }}</span></sc-for></div>
+          <div style="font-size:16px;font-weight:800">{{ p.name }}</div>
+          <div style="font-size:13px;line-height:1.4;color:var(--ink2)">{{ p.desc }}</div>
+          <div style="font-size:12px;color:var(--ink2)">Suggested for: <b style="color:var(--ink);font-weight:600">{{ p.words }}</b></div>
+          <div style="display:flex;gap:6px"><input value="{{ p.link }}" onChange="{{ p.setLink }}" aria-label="Link" style="flex:1;min-width:0;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--page);color:var(--ink);padding:0 12px;font-size:13px;outline:none"></input><div onClick="{{ p.save }}" role="button" style="height:44px;padding:0 14px;border-radius:12px;background:var(--primary-soft);color:var(--primary-ink);font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer;white-space:nowrap">Save link</div></div>
+          <sc-if value="{{ p.isOur }}"><div onClick="{{ p.builtIn }}" role="button" style="align-self:flex-start;min-height:32px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--primary-ink);cursor:pointer">Use the built-in link</div></sc-if>
+          <div style="display:flex;flex-direction:column;border-top:1px solid var(--line);padding-top:4px">
+            <div onClick="{{ p.toggleOn }}" role="checkbox" style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border-radius:7px;border:2px solid {{ p.onBox.bd }};background:{{ p.onBox.bg }};color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;box-sizing:border-box">{{ p.onBox.mark }}</span><span style="font-size:14px;font-weight:600">Suggest this product</span></div>
+            <div onClick="{{ p.toggleCom }}" role="checkbox" style="display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer"><span style="width:22px;height:22px;border-radius:7px;border:2px solid {{ p.comBox.bd }};background:{{ p.comBox.bg }};color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;box-sizing:border-box">{{ p.comBox.mark }}</span><span style="font-size:14px;font-weight:600">I earn a commission</span></div>
+          </div>
+          <div onClick="{{ p.remove }}" role="button" style="align-self:flex-start;height:40px;padding:0 14px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer">Remove product</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:2200},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;notadmin&quot;,&quot;loading&quot;,&quot;error&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  static SEED = [
+    { id: 1, name: 'NeuroCal Magnesium Glycinate', desc: 'Gentle magnesium for evenings after stressful days.', link: 'https://neurocal.app/shop/magnesium', words: 'sleep, stress, magnesium', owner: 'our', supp: true, on: true, com: false },
+    { id: 2, name: 'Hearth amber reading bulb', desc: 'Warm, low-blue light for the hour before bed.', link: 'https://amzn.to/3hRth4b', words: 'late screens, bedtime', owner: 'aff', supp: false, on: true, com: true },
+    { id: 3, name: 'Nightshift blue-light glasses', desc: 'Filters blue light for late screen time.', link: 'https://amzn.to/3nSh1ft', words: 'late screens, screen time', owner: 'aff', supp: false, on: true, com: true },
+    { id: 4, name: 'Tidewell Omega-3', desc: 'Fish oil capsules, 1,000 mg EPA and DHA.', link: 'https://tidewell.co/omega-3', words: 'brain fog, focus', owner: 'other', supp: true, on: true, com: false },
+    { id: 5, name: 'NeuroCal Sleep Mask', desc: 'Contoured blackout mask.', link: 'https://neurocal.app/shop/mask', words: 'sleep, early light', owner: 'our', supp: false, on: true, com: false },
+    { id: 6, name: 'Steady Oats', desc: 'Steel-cut oats in single portions.', link: 'https://amzn.to/3st3ady', words: 'breakfast, glycemic load', owner: 'aff', supp: false, on: false, com: true }
+  ];
+  blank = { name: '', desc: '', link: '', words: '', owner: 'our', supp: false };
+  state = { items: Component.SEED, filter: 'all', q: '', f: { ...this.blank }, errs: {}, override: null };
+  componentDidUpdate(p) { if (p.view !== this.props.view) this.setState({ override: null }); }
+  upd = (id, patch) => this.setState(s => ({ items: s.items.map(p => p.id === id ? { ...p, ...patch } : p) }));
+  renderVals() {
+    const P = this.props, s = this.state, v = s.override || P.view || 'admin';
+    const toast = m => P.onToast && P.onToast(m);
+    const setF = k => e => this.setState({ f: { ...s.f, [k]: e.target.value }, errs: { ...s.errs, [k]: null } });
+    const box = on => on ? { bd: 'var(--primary)', bg: 'var(--primary)', mark: '✓' } : { bd: 'var(--line2)', bg: 'transparent', mark: '' };
+    const T = { our: { t: 'Our brand', bg: 'var(--primary-soft)', ink: 'var(--primary-ink)' }, aff: { t: 'Affiliate link', bg: 'var(--mid-soft)', ink: 'var(--mid)' }, other: { t: 'Other brand', bg: 'var(--page)', ink: 'var(--ink2)' } };
+    const match = { all: () => true, our: p => p.owner === 'our', aff: p => p.owner === 'aff', other: p => p.owner === 'other', off: p => !p.on };
+    const q = s.q.trim().toLowerCase();
+    const items = s.items.filter(match[s.filter]).filter(p => !q || (p.name + ' ' + p.words + ' ' + p.desc).toLowerCase().includes(q));
+    const add = () => {
+      const f = s.f, errs = {};
+      if (!f.name.trim()) errs.name = 'Give the product a name.';
+      if (f.owner !== 'our' && !/^https?:\/\/\S+\.\S+/.test(f.link.trim())) errs.link = 'Add a full link, starting with https://';
+      if (errs.name || errs.link) return this.setState({ errs });
+      const id = Date.now();
+      this.setState({ items: [{ id, ...f, name: f.name.trim(), link: f.link.trim() || 'https://neurocal.app/shop/' + id, words: f.words || '—', desc: f.desc || 'No description yet.', on: true, com: f.owner === 'aff' }, ...s.items], f: { ...this.blank }, errs: {}, filter: 'all', q: '' });
+      toast('Product added');
+    };
+    return {
+      notAdmin: v === 'notadmin', isLoading: v === 'loading', isError: v === 'error', isReady: v === 'admin',
+      back: () => P.onNav && P.onNav('settings'), toToday: () => P.onNav && P.onNav('today'),
+      retry: () => { this.setState({ override: 'loading' }); setTimeout(() => this.setState({ override: 'admin' }), 900); },
+      f: s.f, errs: s.errs, setName: setF('name'), setDesc: setF('desc'), setLink: setF('link'), setWords: setF('words'),
+      nameBorder: s.errs.name ? 'var(--warn)' : 'var(--line)', linkBorder: s.errs.link ? 'var(--warn)' : 'var(--line)',
+      owners: [['our', 'Our brand'], ['aff', 'Affiliate'], ['other', 'Other brand']].map(([k, t]) => ({ t, go: () => this.setState({ f: { ...s.f, owner: k } }), bg: s.f.owner === k ? 'var(--card)' : 'transparent', ink: s.f.owner === k ? 'var(--primary-ink)' : 'var(--ink2)' })),
+      suppBox: box(s.f.supp), toggleSupp: () => this.setState({ f: { ...s.f, supp: !s.f.supp } }), add,
+      filters: [['all', 'All'], ['our', 'Our brand'], ['aff', 'Affiliate'], ['other', 'Other brands'], ['off', 'Turned off']].map(([k, t]) => ({ t, n: s.items.filter(match[k]).length, go: () => this.setState({ filter: k }), bg: s.filter === k ? 'var(--primary)' : 'var(--card)', ink: s.filter === k ? 'var(--on-primary)' : 'var(--ink)', bd: s.filter === k ? 'var(--primary)' : 'var(--line)' })),
+      q: s.q, setQ: e => this.setState({ q: e.target.value }),
+      none: !items.length, noneText: q ? `No products match "${s.q.trim()}"` : 'No products here yet',
+      clear: () => this.setState({ q: '', filter: 'all' }),
+      items: items.map(p => ({
+        ...p, isOur: p.owner === 'our', op: p.on ? 1 : .7,
+        tags: [T[p.owner], ...(p.supp ? [{ t: 'Supplement', bg: 'var(--page)', ink: 'var(--ink2)' }] : []), ...(p.on ? [] : [{ t: 'Turned off', bg: 'var(--track)', ink: 'var(--ink2)' }])],
+        setLink: e => this.upd(p.id, { link: e.target.value }),
+        save: () => toast('Link saved'),
+        builtIn: () => { this.upd(p.id, { link: 'https://neurocal.app/shop/' + p.name.toLowerCase().replace(/^neurocal /, '').replace(/\s+/g, '-') }); toast('Using the built-in link'); },
+        onBox: box(p.on), comBox: box(p.com),
+        toggleOn: () => this.upd(p.id, { on: !p.on }), toggleCom: () => this.upd(p.id, { com: !p.com }),
+        remove: () => { this.setState({ items: s.items.filter(x => x.id !== p.id) }); toast('Product removed'); }
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

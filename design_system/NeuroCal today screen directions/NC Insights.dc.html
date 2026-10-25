@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet"></helmet>
+<div style="{{ root }}">
+<div style="display:flex;min-height:100%">
+<sc-if value="{{ isDesk }}" hint-placeholder-val="{{ false }}">
+  <div style="width:232px;flex:none;background:var(--block);color:var(--on-block);padding:28px 20px;display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:26px;background:var(--focus);position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:12px;height:12px;background:var(--energy)"></span></span><span style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+        <sc-if value="{{ n.active }}"><div style="background:var(--focus);color:var(--on-focus);font:700 15px 'Archivo',sans-serif;padding:12px 14px">{{ n.label }}</div></sc-if>
+        <sc-if value="{{ n.idle }}"><div style="color:var(--on-block);font:500 15px 'Archivo',sans-serif;padding:12px 14px;opacity:.82">{{ n.label }}</div></sc-if>
+      </sc-for>
+    </div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 15px 'Archivo',sans-serif;padding:14px">Log a meal</div>
+    <div style="margin-top:auto;font:500 14px/1.4 'Archivo',sans-serif">Maya Okafor<div style="color:var(--block-ink2);font-weight:400;font-size:13px">2,250 kcal a day</div></div>
+  </div>
+</sc-if>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+  <sc-if value="{{ isPhone }}" hint-placeholder-val="{{ true }}"><div style="display:flex;justify-content:space-between;padding:16px 30px 0;font:600 15px 'Archivo',sans-serif"><span>14:20</span><span style="font-size:12px">5G ▮▮▮</span></div></sc-if>
+  <div style="padding:{{ L.headPad }};display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+    <div><div style="font:500 15px 'Archivo',sans-serif;color:var(--ink2)">{{ sub }}</div><div style="font:900 44px/1 'Archivo',sans-serif;font-stretch:70%">{{ title }}</div></div>
+    <sc-if value="{{ v.week }}"><div style="display:flex;border:2px solid var(--ink);font:700 15px 'Archivo',sans-serif"><span style="padding:9px 14px;border-right:2px solid var(--ink)" aria-label="Previous week">←</span><span style="padding:9px 14px;color:var(--ink2)" aria-label="Next week">→</span></div></sc-if>
+  </div>
+
+<!-- ============ WEEK ============ -->
+<sc-if value="{{ v.week }}">
+  <div style="padding:{{ L.sidePad }};display:flex;flex-direction:column;gap:{{ L.gap }}">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px" role="tablist" aria-label="Pick a day">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+        <sc-if value="{{ d.sel }}"><div style="background:var(--focus);color:var(--on-focus);text-align:center;padding:8px 0 10px"><div style="font:600 12px 'Archivo',sans-serif">{{ d.dow }}</div><div style="font:900 24px/1 'Archivo',sans-serif;font-stretch:70%">{{ d.date }}</div></div></sc-if>
+        <sc-if value="{{ d.unsel }}"><div style="border:2px solid var(--line);text-align:center;padding:6px 0 8px"><div style="font:500 12px 'Archivo',sans-serif;color:var(--ink2)">{{ d.dow }}</div><div style="font:800 24px/1 'Archivo',sans-serif;font-stretch:70%">{{ d.date }}</div></div></sc-if>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:{{ L.chartCols }};gap:{{ L.chartGap }}">
+      <div style="background:var(--focus);color:var(--on-focus);padding:18px 18px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 15px 'Archivo',sans-serif">Focus score</span><span style="font:500 13px 'Archivo',sans-serif;color:var(--on-focus2)">Average 70</span></div>
+        <div style="position:relative;height:130px;margin-top:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end">
+          <div style="position:absolute;left:0;right:0;bottom:70%;border-top:2px dashed #fff"></div>
+          <span style="position:absolute;right:0;bottom:calc(70% + 4px);font:600 11px 'Archivo',sans-serif;background:var(--focus);padding:0 0 0 4px">70</span>
+          <sc-for list="{{ focusBars }}" as="b" hint-placeholder-count="7"><div style="height:{{ b.h }};background:{{ b.c }}"></div></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px;font:600 12px 'Archivo',sans-serif;text-align:center"><sc-for list="{{ focusBars }}" as="b" hint-placeholder-count="7"><span>{{ b.v }}</span></sc-for></div>
+      </div>
+      <div style="background:var(--energy);color:var(--on-bright);padding:18px 18px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 15px 'Archivo',sans-serif">Calories</span><span style="font:500 13px 'Archivo',sans-serif">Budget 2,250</span></div>
+        <div style="position:relative;height:130px;margin-top:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end">
+          <div style="position:absolute;left:0;right:0;bottom:75%;border-top:2px dashed var(--on-bright)"></div>
+          <sc-for list="{{ calBars }}" as="b" hint-placeholder-count="7"><div style="height:{{ b.h }};background:{{ b.c }}"></div></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px;font:600 12px 'Archivo',sans-serif;text-align:center"><sc-for list="{{ calBars }}" as="b" hint-placeholder-count="7"><span>{{ b.v }}</span></sc-for></div>
+        <div style="font:500 13px 'Archivo',sans-serif;margin-top:8px">Red: over budget on 3 days</div>
+      </div>
+      <div style="background:var(--sleep);color:#fff;padding:18px 18px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 15px 'Archivo',sans-serif">Sleep</span><span style="font:500 13px 'Archivo',sans-serif;opacity:.9">Goal 7 h 30</span></div>
+        <div style="position:relative;height:130px;margin-top:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end">
+          <div style="position:absolute;left:0;right:0;bottom:75%;border-top:2px dashed #fff"></div>
+          <sc-for list="{{ sleepBars }}" as="b" hint-placeholder-count="7"><div style="height:{{ b.h }};background:{{ b.c }}"></div></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:6px;font:600 12px 'Archivo',sans-serif;text-align:center"><sc-for list="{{ sleepBars }}" as="b" hint-placeholder-count="7"><span>{{ b.v }}</span></sc-for></div>
+      </div>
+    </div>
+    <div>
+      <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%;margin-bottom:8px">Every value</div>
+      <div style="overflow-x:auto;border-top:2px solid var(--ink)">
+        <div style="min-width:760px;display:grid;grid-template-columns:72px repeat(8,1fr);font:400 14px 'Archivo',sans-serif">
+          <sc-for list="{{ tableHead }}" as="h" hint-placeholder-count="9"><span style="font:600 12px/1.25 'Archivo',sans-serif;color:var(--ink2);padding:10px 8px 10px 0;border-bottom:2px solid var(--ink)">{{ h }}</span></sc-for>
+          <sc-for list="{{ tableCells }}" as="c" hint-placeholder-count="63"><span style="padding:11px 8px 11px 0;border-bottom:1px solid var(--line);font-weight:{{ c.w }};color:{{ c.col }};background:{{ c.bg }}">{{ c.t }}</span></sc-for>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%">What could help</div>
+      <div style="font:400 14px/1.45 'Archivo',sans-serif;color:var(--ink2);margin:4px 0 10px;text-wrap:pretty">Based on this week. We mark anything we earn from.</div>
+      <div style="display:grid;grid-template-columns:{{ L.helpCols }};gap:0 24px;border-top:2px solid var(--ink)">
+        <sc-for list="{{ help }}" as="h" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:{{ L.helpInner }};gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:start">
+            <sc-if value="{{ h.img }}"><div style="width:64px;height:64px;background:repeating-linear-gradient(135deg,var(--track) 0 5px,var(--raised) 5px 10px)"></div></sc-if>
+            <sc-if value="{{ h.noimg }}"><div style="width:64px;height:64px;background:var(--focus);color:var(--on-focus);display:flex;align-items:center;justify-content:center;font:900 22px 'Archivo',sans-serif;font-stretch:70%">{{ h.time }}</div></sc-if>
+            <div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px">
+                <span style="font:500 13px 'Archivo',sans-serif;color:var(--ink2)">{{ h.kind }}</span>
+                <sc-if value="{{ h.aff }}"><span style="font:700 12px 'Archivo',sans-serif;border:1.5px solid var(--ink);padding:2px 6px">Affiliate link</span></sc-if>
+                <sc-if value="{{ h.own }}"><span style="font:700 12px 'Archivo',sans-serif;background:var(--ink);color:var(--page);padding:3.5px 7.5px">Our brand</span></sc-if>
+              </div>
+              <div style="font:700 16px/1.3 'Archivo',sans-serif">{{ h.name }}</div>
+              <div style="font:400 14px/1.45 'Archivo',sans-serif;color:var(--ink2);margin-top:2px;text-wrap:pretty">{{ h.why }}</div>
+              <sc-if value="{{ h.price }}"><div style="font:700 14px 'Archivo',sans-serif;margin-top:6px;color:var(--focus-ink);text-decoration:underline;text-underline-offset:3px">{{ h.price }}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ============ SLEEP ============ -->
+<sc-if value="{{ v.sleep }}">
+  <div style="padding:{{ L.sidePad }};display:grid;grid-template-columns:{{ L.sleepCols }};gap:{{ L.gap }};align-items:start">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--ink)">
+        <div style="padding:10px 12px;background:var(--sleep);color:#fff"><div style="font:600 12px 'Archivo',sans-serif">Average sleep</div><div style="font:900 26px 'Archivo',sans-serif;font-stretch:65%">7 h 25</div></div>
+        <div style="padding:10px 12px;border-left:2px solid var(--ink)"><div style="font:600 12px 'Archivo',sans-serif;color:var(--energy-ink)">Last meal, avg</div><div style="font:900 26px 'Archivo',sans-serif;font-stretch:65%">21:01</div></div>
+        <div style="padding:10px 12px;border-left:2px solid var(--ink)"><div style="font:600 12px 'Archivo',sans-serif;color:var(--ink2)">Screens after 22:00</div><div style="font:900 26px 'Archivo',sans-serif;font-stretch:65%">64 min</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font:500 13px 'Archivo',sans-serif;color:var(--ink2)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:10px;background:var(--sleep)"></span>Asleep</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:4px;height:14px;background:var(--energy-ink)"></span>Last meal</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:10px;background:repeating-linear-gradient(135deg,var(--ink2) 0 2px,transparent 2px 5px)"></span>Screens after 22:00</span>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:56px 1fr 46px;gap:8px;font:600 11px 'Archivo',sans-serif;color:var(--ink2)"><span></span><div style="position:relative;height:16px"><sc-for list="{{ ticks }}" as="t" hint-placeholder-count="7"><span style="position:absolute;left:{{ t.x }};transform:translateX({{ t.tx }})">{{ t.l }}</span></sc-for></div><span></span></div>
+        <sc-for list="{{ nights }}" as="n" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:56px 1fr 46px;gap:8px;align-items:center;padding:5px 0">
+            <span style="font:700 14px 'Archivo',sans-serif">{{ n.day }}</span>
+            <div style="position:relative;height:30px;background:var(--raised)">
+              <sc-for list="{{ ticks }}" as="t"><span style="position:absolute;top:0;bottom:0;left:{{ t.x }};width:1px;background:var(--line)"></span></sc-for>
+              <span style="position:absolute;top:4px;bottom:4px;left:{{ n.scrX }};width:{{ n.scrW }};background:repeating-linear-gradient(135deg,var(--ink2) 0 2px,transparent 2px 5px)"></span>
+              <span style="position:absolute;top:0;bottom:0;left:{{ n.sX }};width:{{ n.sW }};background:var(--sleep)"></span>
+              <span style="position:absolute;top:-3px;bottom:-3px;left:{{ n.mX }};width:4px;margin-left:-2px;background:var(--energy-ink)"></span>
+            </div>
+            <span style="font:600 13px 'Archivo',sans-serif;text-align:right;color:var(--sleep-ink)">{{ n.dur }}</span>
+          </div>
+        </sc-for>
+        <div style="display:grid;grid-template-columns:56px 1fr 46px;gap:8px;font:500 12px 'Archivo',sans-serif;color:var(--ink2);margin-top:4px"><span></span><span>Each row is the evening of that day into the next morning.</span><span></span></div>
+      </div>
+    </div>
+    <div>
+      <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%;margin-bottom:8px">What we noticed</div>
+      <div style="border-top:2px solid var(--ink)">
+        <sc-for list="{{ insights }}" as="i" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:30px 1fr;gap:8px;padding:14px 0;border-bottom:1px solid var(--line)"><span style="font:900 22px/1 'Archivo',sans-serif;font-stretch:70%;color:var(--sleep-ink)">{{ i.n }}</span><span style="font:400 16px/1.45 'Archivo',sans-serif;text-wrap:pretty">{{ i.t }}</span></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><div style="background:var(--sleep);color:#fff;font:800 16px 'Archivo',sans-serif;padding:15px 18px">Log sleep</div><div style="border:2px solid var(--ink);font:800 16px 'Archivo',sans-serif;padding:13px 18px">Log screen time</div></div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ============ SETTINGS ============ -->
+<sc-if value="{{ v.settings }}">
+  <div style="padding:{{ L.sidePad }};display:grid;grid-template-columns:{{ L.setCols }};gap:{{ L.gap }};align-items:start">
+    <div style="background:var(--focus);color:var(--on-focus);padding:20px 22px">
+      <div style="display:flex;align-items:center;gap:14px"><div style="width:56px;height:56px;background:#fff;color:var(--focus);display:flex;align-items:center;justify-content:center;font:900 26px 'Archivo',sans-serif;font-stretch:70%">MO</div><div><div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%">Maya Okafor</div><div style="font:400 14px 'Archivo',sans-serif;color:var(--on-focus2)">maya.okafor@gmail.com</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px;border-top:2px solid #fff;padding-top:14px;font:400 14px/1.4 'Archivo',sans-serif">
+        <div><div style="color:var(--on-focus2);font-size:12px">Daily calories</div><b style="font-weight:700">2,250 kcal</b></div>
+        <div><div style="color:var(--on-focus2);font-size:12px">Protein · carbs · fat</div><b style="font-weight:700">140 · 250 · 75 g</b></div>
+        <div><div style="color:var(--on-focus2);font-size:12px">Eats</div><b style="font-weight:700">Pescatarian, no dairy</b></div>
+        <div><div style="color:var(--on-focus2);font-size:12px">Time zone</div><b style="font-weight:700">London (GMT+1)</b></div>
+      </div>
+      <div style="margin-top:16px;font:700 15px 'Archivo',sans-serif;text-decoration:underline;text-underline-offset:3px">Edit profile and targets</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div><div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%;margin-bottom:10px">Appearance</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--ink);font:600 15px 'Archivo',sans-serif;text-align:center" role="radiogroup">
+          <sc-for list="{{ appearance }}" as="a" hint-placeholder-count="3">
+            <sc-if value="{{ a.on }}"><span style="padding:12px 0;background:var(--ink);color:var(--page)">{{ a.label }}</span></sc-if>
+            <sc-if value="{{ a.off }}"><span style="padding:12px 0">{{ a.label }}</span></sc-if>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border-top:2px solid var(--ink);padding-top:16px">
+        <div><div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%">Install the app</div><div style="font:400 14px/1.45 'Archivo',sans-serif;color:var(--ink2);text-wrap:pretty">Put NeuroCal on your home screen. It opens faster and works offline.</div></div>
+        <div style="border:2px solid var(--ink);font:800 15px 'Archivo',sans-serif;padding:12px 16px">Install</div>
+      </div>
+      <div style="border-top:2px solid var(--ink)">
+        <div style="font:800 20px 'Archivo',sans-serif;font-stretch:80%;padding:16px 0 4px">Account</div>
+        <sc-for list="{{ account }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);font:600 16px 'Archivo',sans-serif;color:{{ r.c }}"><span>{{ r.label }}</span><span style="font-weight:400;color:var(--ink2)">→</span></div>
+        </sc-for>
+      </div>
+      <div style="border:2px solid var(--ink);font:800 17px 'Archivo',sans-serif;padding:16px 18px;text-align:center">Sign out</div>
+      <div style="font:400 13px 'Archivo',sans-serif;color:var(--ink2)">NeuroCal 2.4.0 · Signed in since 3 March 2026</div>
+    </div>
+  </div>
+</sc-if>
+
+  <sc-if value="{{ isPhone }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:14px 0 26px;margin-top:24px;border-top:1px solid var(--line);font:600 12px 'Archivo',sans-serif;text-align:center;color:var(--ink2)">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+        <sc-if value="{{ n.active }}"><span style="color:var(--ink);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px">{{ n.label }}</span></sc-if>
+        <sc-if value="{{ n.idle }}"><span>{{ n.label }}</span></sc-if>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1600},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;week&quot;,&quot;sleep&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;week&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#FFFFFF','--raised':'#F2F2F5','--ink':'#0E0E10','--ink2':'#55556A','--line':'#DADAE0','--track':'#EBEBF0','--block':'#0E0E10','--on-block':'#FFFFFF','--block-ink2':'#C9C9D4','--focus':'#3530F0','--focus-ink':'#3530F0','--on-focus':'#FFFFFF','--on-focus2':'#E2E1FF','--sleep':'#7A1FA2','--sleep-ink':'#7A1FA2','--energy':'#FFB000','--energy-ink':'#8A5A00','--protein':'#00A86B','--protein-ink':'#007A4D','--fat':'#FF6FA0','--fat-ink':'#B0245A','--warn':'#D81F14','--warn-ink':'#C41D13','--on-bright':'#0E0E10','--scrim':'rgba(14,14,16,.5)'},
+    dark:{'--page':'#121217','--raised':'#1C1C23','--ink':'#F4F4F7','--ink2':'#A8A8B8','--line':'#34343F','--track':'#2A2A33','--block':'#24242C','--on-block':'#F4F4F7','--block-ink2':'#B4B4C2','--focus':'#4440FF','--focus-ink':'#A9A7FF','--on-focus':'#FFFFFF','--on-focus2':'#E2E1FF','--sleep':'#9B3FCC','--sleep-ink':'#D58BF5','--energy':'#FFB000','--energy-ink':'#FFC740','--protein':'#1FC283','--protein-ink':'#3DDC97','--fat':'#FF6FA0','--fat-ink':'#FF8FB6','--warn':'#D81F14','--warn-ink':'#FF7A6E','--on-bright':'#0E0E10','--scrim':'rgba(0,0,0,.62)'}
+  };
+  renderVals() {
+    const th = this.props.theme === 'dark' ? 'dark' : 'light';
+    const desk = this.props.device === 'desktop';
+    const sc = this.props.screen || 'week';
+    const v = {week:sc==='week', sleep:sc==='sleep', settings:sc==='settings'};
+    const L = desk
+      ? {headPad:'28px 32px 24px', sidePad:'0 32px 40px', gap:'28px', chartCols:'repeat(3,1fr)', chartGap:'16px', helpCols:'1fr 1fr', helpInner:'64px 1fr', sleepCols:'1.6fr 1fr', setCols:'380px 1fr'}
+      : {headPad:'20px 22px 16px', sidePad:'0 22px', gap:'24px', chartCols:'1fr', chartGap:'8px', helpCols:'1fr', helpInner:'64px 1fr', sleepCols:'1fr', setCols:'1fr'};
+    const dows = ['Fri','Sat','Sun','Mon','Tue','Wed','Thu'], dates = [26,27,28,29,30,1,2];
+    const days = dows.map((d,i)=>({dow:d, date:dates[i], sel:i===6, unsel:i!==6}));
+    const focus=[61,58,72,80,77,66,74], cal=[2410,2780,2050,2190,2240,2520,1240], sl=[7.25,6.67,7.92,8.17,7.5,7.08,7.2];
+    const fmtH = h => { const H=Math.floor(h), M=Math.round((h-H)*60); return `${H}:${String(M).padStart(2,'0')}`; };
+    const focusBars = focus.map((f,i)=>({h:f+'%', v:f, c: i===6?'#fff':'rgba(255,255,255,.55)'}));
+    const calBars = cal.map((c,i)=>({h:(c/3000*100)+'%', v: i===6 ? '1.2k*' : (c/1000).toFixed(1)+'k', c: c>2250 ? 'var(--warn)' : (i===6?'repeating-linear-gradient(135deg,#0E0E10 0 3px,transparent 3px 6px)':'#0E0E10')}));
+    const sleepBars = sl.map((s,i)=>({h:(s/10*100)+'%', v:fmtH(s), c: i===6?'#fff':'rgba(255,255,255,.55)'}));
+    const P=[132,98,141,150,138,120,78], C=[268,330,210,236,244,301,142], F=[82,104,70,72,76,92,41];
+    const last=['21:50','22:30','19:30','19:45','20:15','22:40','—'], scr=['100 min','150 min','20 min','30 min','45 min','60 min','—'];
+    const tableHead=['Day','Focus','Calories','Protein','Carbs','Fat','Sleep','Last meal','Screens after 22:00'];
+    const tableCells=[];
+    dows.forEach((d,i)=>{
+      const sel = i===6, bg = sel ? 'var(--raised)' : 'transparent';
+      const cell=(t,o={})=>tableCells.push({t, w:o.w||400, col:o.col||'var(--ink)', bg});
+      cell(`${d} ${dates[i]}`,{w:700}); cell(String(focus[i]),{w:700,col:'var(--focus-ink)'});
+      cell(cal[i].toLocaleString('en-GB')+(i===6?' so far':''),{col: cal[i]>2250?'var(--warn-ink)':'var(--ink)', w: cal[i]>2250?700:400});
+      cell(P[i]+' g'); cell(C[i]+' g'); cell(F[i]+' g'); cell(fmtH(sl[i]).replace(':',' h ')); cell(last[i],{col: (last[i]>'21:30'&&last[i]!=='—')?'var(--warn-ink)':'var(--ink)'}); cell(scr[i]);
+    });
+    const help=[
+      {kind:'Routine', name:'Finish dinner by 20:30', why:'Your three best Focus days this week all followed an early dinner.', time:'20:30'},
+      {kind:'Supplement', name:'Magnesium glycinate, 120 capsules', why:'Linked to falling asleep faster. Pure Encapsulations, sold by Boots.', price:'£27.50 at Boots', aff:true, img:true},
+      {kind:'Food', name:'NeuroCal slow-release oats, 8 sachets', why:'Low glycemic load breakfast, 22 g protein a bowl.', price:'£16.00 at neurocal.app', own:true, img:true},
+      {kind:'Routine', name:'Phone on charge outside the bedroom', why:'Screens after 22:00 cost you about 40 minutes of sleep on 3 nights.', time:'22:30'}
+    ].map(h=>({aff:false, own:false, price:'', img:false, ...h, noimg:!h.img}));
+    const x = h => ((h-18)/18*100).toFixed(1)+'%';
+    const w = (a,b) => ((b-a)/18*100).toFixed(1)+'%';
+    const N=[['Thu 25',20,23.25,23.5,30.75,'7:15'],['Fri 26',21.83,23.67,23.92,30.58,'6:40'],['Sat 27',22.5,24.5,24.75,32.67,'7:55'],['Sun 28',19.5,22.33,22.83,31,'8:10'],['Mon 29',19.75,22.5,23,30.5,'7:30'],['Tue 30',20.25,22.75,23.33,30.42,'7:05'],['Wed 1',22.67,23,23.17,30.37,'7:12']];
+    const nights = N.map(n=>({day:n[0], mX:x(n[1]), scrX:x(22), scrW:w(22,n[2]), sX:x(n[3]), sW:w(n[3],n[4]), dur:n[5]}));
+    const ticks = [['18:00',0],['21:00',3],['00:00',6],['03:00',9],['06:00',12],['09:00',15],['12:00',18]].map(([l,h],i,a)=>({l: desk ? l : l.slice(0,2), x:(h/18*100).toFixed(1)+'%', tx: i===0?'0':(i===a.length-1?'-100%':'-50%')}));
+    const insights=[
+      {n:'1', t:'On the 3 nights you ate after 21:30, you fell asleep 52 minutes later on average.'},
+      {n:'2', t:'Sunday and Monday were your longest nights. Screens were off by 22:30 both times.'},
+      {n:'3', t:'Your Focus Score was 9 points higher the morning after a dinner before 20:30.'}
+    ];
+    const nav = ['Today','This week','Sleep','Settings'].map((l,i)=>({label:l, active:(sc==='week'&&i===1)||(sc==='sleep'&&i===2)||(sc==='settings'&&i===3), idle:!((sc==='week'&&i===1)||(sc==='sleep'&&i===2)||(sc==='settings'&&i===3))}));
+    const appearance = ['Light','Dark','Match device'].map(l=>({label:l, on:l.toLowerCase()===th, off:l.toLowerCase()!==th}));
+    const account = [{label:'Change email',c:'var(--ink)'},{label:'Change password',c:'var(--ink)'},{label:'Download my data',c:'var(--ink)'},{label:'Delete account',c:'var(--warn-ink)'}];
+    const titles = {week:['This week','26 September – 2 October'], sleep:['Sleep and evenings','Last 7 nights, 18:00 to 12:00'], settings:['Settings','Maya Okafor']};
+    return {
+      root:{...Component.T[th], background:'var(--page)', color:'var(--ink)', fontFamily:"'Archivo',sans-serif", width:'100%', minHeight: desk?'820px':'auto'},
+      isDesk:desk, isPhone:!desk, L, v, title:titles[sc][0], sub:titles[sc][1],
+      days, focusBars, calBars, sleepBars, tableHead, tableCells, help, nights, ticks, insights, nav, appearance, account
+    };
+  }
+}
+</script>
+</body>
+</html>

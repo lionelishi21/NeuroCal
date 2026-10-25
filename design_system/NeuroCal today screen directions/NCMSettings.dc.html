@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding-top:50px;min-height:844px;box-sizing:border-box;display:flex;flex-direction:column;padding-bottom:32px">
+  <div style="display:flex;align-items:center;gap:4px;padding:8px 16px 0 6px">
+    <div onClick="{{ back }}" role="button" aria-label="Back to Today" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;border-radius:50%" style-hover="background:var(--track)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+    <div style="font-size:22px;font-weight:800;letter-spacing:-.4px">Settings</div>
+  </div>
+
+  <div style="padding:18px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Profile</div>
+  <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800">SR</div>
+      <div style="flex:1;min-width:0"><div style="font-size:17px;font-weight:800">Sam Rivera</div><div style="font-size:13px;color:var(--ink2)">Europe/London · GMT+1</div></div>
+    </div>
+    <sc-for list="{{ profile }}" as="p" hint-placeholder-count="4">
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:12px 16px;border-top:1px solid var(--line)"><span style="font-size:13px;font-weight:600;color:var(--ink2)">{{ p.k }}</span><span style="font-size:14px;font-weight:600;line-height:1.4">{{ p.v }}</span></div>
+    </sc-for>
+    <div style="padding:12px 16px 16px;border-top:1px solid var(--line)">
+      <a href="NeuroCal Onboarding v2.dc.html" style="height:44px;border-radius:999px;border:1.5px solid var(--line2);color:var(--primary-ink);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;text-decoration:none">Edit profile</a>
+    </div>
+  </div>
+
+  <div style="padding:22px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Appearance</div>
+  <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px" role="radiogroup" aria-label="Appearance">
+    <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+      <div onClick="{{ m.go }}" role="radio" style="height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;background:{{ m.bg }};color:{{ m.ink }}">{{ m.t }}</div>
+    </sc-for>
+  </div>
+
+  <div style="padding:22px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Install the app</div>
+  <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px">
+    <sc-if value="{{ isIphone }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:14px;line-height:1.45;color:var(--ink2)">Add NeuroCal to your home screen in Safari:</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <sc-for list="{{ iosSteps }}" as="st" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:center"><span style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ st.n }}</span><span style="font-size:14px;line-height:1.4">{{ st.a }}<b style="font-weight:700">{{ st.b }}</b>{{ st.c }}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isOther }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:14px;line-height:1.45;color:var(--ink2)">Open NeuroCal from your home screen, with no browser bar.</div>
+      <div onClick="{{ install }}" role="button" style="height:48px;margin-top:12px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ installLabel }}</div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:22px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Admin</div>
+    <div onClick="{{ toAdmin }}" role="button" style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;min-height:56px;padding:0 12px 0 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+      <span style="font-size:15px;font-weight:700">Manage products</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+    </div>
+  </sc-if>
+
+  <div style="padding:22px 20px 8px;font-size:13px;font-weight:700;color:var(--ink2)">Account</div>
+  <div style="margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 12px 14px 16px;display:flex;align-items:center;gap:12px">
+    <div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--ink2)">Signed in as</div><div style="font-size:15px;font-weight:700;overflow-wrap:anywhere">sam.rivera@gmail.com</div></div>
+    <div onClick="{{ signOut }}" role="button" style="height:44px;padding:0 16px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-size:14px;font-weight:700;display:flex;align-items:center;cursor:pointer">Sign out</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1300},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;,&quot;auto&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;isAdmin&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;platform&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;iphone&quot;,&quot;android&quot;],&quot;default&quot;:&quot;iphone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onTheme&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k:string)=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;},&quot;onSignOut&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { installed: false };
+  renderVals() {
+    const P = this.props, mode = P.mode || 'light';
+    return {
+      back: () => P.onNav && P.onNav('today'),
+      toAdmin: () => P.onNav && P.onNav('admin'),
+      profile: [{ k: 'Diet', v: 'Mediterranean, no shellfish' }, { k: 'Goals', v: 'Steadier afternoons, better sleep' }, { k: 'Calories', v: '2,200 kcal a day' }, { k: 'Macros', v: 'Protein 140 g · Carbs 220 g · Fat 75 g' }],
+      modes: [['light', 'Light'], ['dark', 'Dark'], ['auto', 'Match phone']].map(([k, t]) => ({ t, go: () => P.onTheme && P.onTheme(k), bg: mode === k ? 'var(--primary)' : 'transparent', ink: mode === k ? 'var(--on-primary)' : 'var(--ink)' })),
+      isIphone: P.platform === 'iphone', isOther: P.platform !== 'iphone',
+      iosSteps: [{ n: 1, a: 'Tap ', b: 'Share', c: ' at the bottom of the screen.' }, { n: 2, a: 'Scroll and tap ', b: 'Add to Home Screen', c: '.' }, { n: 3, a: 'Tap ', b: 'Add', c: ' in the top corner.' }],
+      installLabel: this.state.installed ? 'Installed' : 'Install the app',
+      install: () => { if (this.state.installed) return; this.setState({ installed: true }); P.onToast && P.onToast('NeuroCal installed'); },
+      isAdmin: !!P.isAdmin,
+      signOut: () => P.onSignOut ? P.onSignOut() : P.onToast && P.onToast('Signed out')
+    };
+  }
+}
+</script>
+</body>
+</html>

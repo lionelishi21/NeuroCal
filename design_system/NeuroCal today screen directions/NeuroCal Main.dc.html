@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}input,textarea,button,select{font-family:inherit}input::placeholder,textarea::placeholder{color:#8A90A6}@keyframes ncpulse{0%,100%{opacity:1}50%{opacity:.5}}@keyframes ncspin{to{transform:rotate(360deg)}}@keyframes ncscan{0%{top:10%}50%{top:86%}100%{top:10%}}@keyframes ncup{from{transform:translateY(100%)}to{transform:none}}@keyframes ncfade{from{opacity:0}to{opacity:1}}@keyframes ncrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes ncscr{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}@keyframes ncgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes ncdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes ncpop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}@keyframes ncglow{0%,100%{box-shadow:0 0 0 0 rgba(106,79,219,.35)}50%{box-shadow:0 0 0 10px rgba(106,79,219,0)}}@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}@keyframes nctoast{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;gap:32px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:40px 24px;box-sizing:border-box">
+  <div style="{{ phone }}">
+    <div style="position:absolute;top:0;left:0;right:0;z-index:5;height:46px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:15px;font-weight:600;background:var(--page)"><span>15:27</span><span style="font-size:12px">5G ▮▮▮ 80</span></div>
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}"><nav aria-label="Main" style="position:absolute;left:0;right:0;bottom:0;z-index:6;height:84px;box-sizing:border-box;padding:6px 8px 22px;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr))">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+        <div onClick="{{ t.go }}" role="tab" aria-selected="{{ t.sel }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:{{ t.ink }}">
+          <span style="width:56px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;transition:background .25s,transform .25s cubic-bezier(.3,1.4,.5,1);background:{{ t.pill }};transform:{{ t.scale }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg></span>
+          <span style="font-size:11px;font-weight:700">{{ t.t }}</span>
+        </div>
+      </sc-for>
+    </nav></sc-if>
+    <div ref="{{ scroller }}" style="position:absolute;top:0;left:0;right:0;bottom:{{ scrollBottom }};overflow-y:auto;scrollbar-width:none">
+      <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}"><div style="animation:ncfade .3s ease both"><dc-import name="NCMToday" view="{{ views.today }}" on-nav="{{ nav }}" on-sheet="{{ openSheet }}" on-toast="{{ toast }}" hint-size="100%,844px"></dc-import></div></sc-if>
+      <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ false }}"><div style="animation:ncrise .35s cubic-bezier(.2,.8,.2,1) both"><dc-import name="NCMWeek" view="{{ views.week }}" on-nav="{{ nav }}" on-toast="{{ toast }}" hint-size="100%,844px"></dc-import></div></sc-if>
+      <sc-if value="{{ isSleep }}" hint-placeholder-val="{{ false }}"><div style="animation:ncrise .35s cubic-bezier(.2,.8,.2,1) both"><dc-import name="NCMSleep" view="{{ views.sleep }}" on-nav="{{ nav }}" on-sheet="{{ openSheet }}" hint-size="100%,844px"></dc-import></div></sc-if>
+      <sc-if value="{{ isMore }}" hint-placeholder-val="{{ false }}"><div style="animation:ncscr .35s cubic-bezier(.2,.8,.2,1) both"><dc-import name="NCMMore" screen="{{ scr }}" meal="{{ detailMeal }}" on-nav="{{ nav }}" on-sheet="{{ openSheet }}" on-toast="{{ toast }}" hint-size="100%,844px"></dc-import></div></sc-if>
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}"><dc-import name="NCMSettings" mode="{{ mode }}" is-admin="{{ isAdmin }}" platform="{{ platform }}" on-theme="{{ setMode }}" on-nav="{{ nav }}" on-toast="{{ toast }}" on-sign-out="{{ signOut }}" hint-size="100%,844px"></dc-import></sc-if>
+      <sc-if value="{{ isAdminScr }}" hint-placeholder-val="{{ false }}"><dc-import name="NCMAdmin" view="{{ adminView }}" on-nav="{{ nav }}" on-toast="{{ toast }}" hint-size="100%,844px"></dc-import></sc-if>
+    </div>
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:20;background:rgba(8,10,20,.5);animation:ncfade .25s ease"></div>
+      <div role="dialog" aria-modal="true" style="position:absolute;left:0;right:0;bottom:0;z-index:21;max-height:90%;overflow-y:auto;scrollbar-width:none;background:var(--card);border-radius:28px 28px 0 0;animation:ncup .32s cubic-bezier(.2,.9,.3,1)">
+        <dc-import name="NCMSheets" sheet="{{ sheet.name }}" meal-state="{{ sheet.meal }}" sleep-state="{{ sheet.sleep }}" on-close="{{ closeSheet }}" on-toast="{{ toast }}" on-offline="{{ savedOffline }}" hint-size="100%,420px"></dc-import>
+      </div>
+    </sc-if>
+    <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="position:absolute;top:54px;left:16px;right:16px;z-index:30;min-height:52px;border-radius:16px;background:var(--toast);color:var(--toast-ink);display:flex;align-items:center;gap:10px;padding:0 16px;font-size:14px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:nctoast .3s cubic-bezier(.2,.9,.3,1)"><span style="width:22px;height:22px;border-radius:50%;flex:none;background:{{ toastDot }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">{{ toastIcon }}</span>{{ toastMsg }}</div>
+    </sc-if>
+  </div>
+
+  <div style="width:300px;background:#fff;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 10px rgba(18,24,41,.06)">
+    <div style="font-size:17px;font-weight:800">Review</div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276">Screen</div>
+    <div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ screens }}" as="x" hint-placeholder-count="5"><div onClick="{{ x.go }}" style="height:38px;border-radius:10px;padding:0 12px;display:flex;align-items:center;font-size:14px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    <sc-if value="{{ hasStates }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:12px;font-weight:700;color:#5B6276">State</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ states }}" as="x" hint-placeholder-count="4"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    </sc-if>
+    <sc-if value="{{ isSettings }}">
+      <div style="font-size:12px;font-weight:700;color:#5B6276">Settings options</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ setOpts }}" as="x"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    </sc-if>
+    <div style="font-size:12px;font-weight:700;color:#5B6276;margin-top:4px">Bottom sheets</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ sheets }}" as="x" hint-placeholder-count="4"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276">A · Log a meal states</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ mealStates }}" as="x" hint-placeholder-count="9"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276">C · Log sleep states</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ sleepStates }}" as="x"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276;margin-top:4px">Theme</div>
+    <div style="display:flex;gap:6px"><sc-for list="{{ themes }}" as="x"><div onClick="{{ x.go }}" style="height:32px;border-radius:999px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ x.bg }};color:{{ x.ink }}">{{ x.t }}</div></sc-for></div>
+  </div>
+
+  <div style="width:340px;background:#fff;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 10px rgba(18,24,41,.06)">
+    <div style="font-size:17px;font-weight:800">Shared pieces</div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276">App icon, logo and wordmark</div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div style="width:84px;height:84px;border-radius:20px;background:linear-gradient(145deg,#6A4FDB,#3E3AA8);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(106,79,219,.35)"><svg width="50" height="50" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#5FE0D8"></circle></svg></div>
+      <div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(145deg,#6A4FDB,#3E3AA8);display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#5FE0D8"></circle></svg></div>
+      <svg width="34" height="34" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#6A4FDB" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#159C98"></circle></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;padding:14px;border-radius:14px;background:#F3F4FA"><svg width="28" height="28" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#6A4FDB" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#159C98"></circle></svg><span style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#121829">NeuroCal</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:14px;border-radius:14px;background:#0E1325"><svg width="28" height="28" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#9D85FA" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#3CC7BF"></circle></svg><span style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#EEF0F7">NeuroCal</span></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276;margin-top:4px">Toasts</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <sc-for list="{{ toastSamples }}" as="t" hint-placeholder-count="4">
+        <div onClick="{{ t.go }}" style="min-height:46px;border-radius:14px;background:#121829;color:#F3F4FA;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:13px;font-weight:700;cursor:pointer"><span style="width:20px;height:20px;border-radius:50%;background:{{ t.dot }};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff">{{ t.icon }}</span>{{ t.m }}</div>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:#5B6276">Tap one to play it on the phone.</div>
+    <div style="font-size:12px;font-weight:700;color:#5B6276;margin-top:4px">List states (used by every list)</div>
+    <div style="border:1.5px dashed #CFD3E2;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start"><div style="font-size:14px;font-weight:700">Empty</div><div style="font-size:13px;line-height:1.4;color:#5B6276">One line on what goes here, then the action that fills it.</div><div style="height:36px;padding:0 14px;border-radius:999px;background:#EEEAFD;color:#5B3FD0;font-size:13px;font-weight:700;display:flex;align-items:center">+ Log a meal</div></div>
+    <div style="border:1px solid #E3E5EF;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px"><div style="font-size:14px;font-weight:700">Loading</div><div style="height:14px;border-radius:7px;background:#E1E4EE;width:80%;animation:ncpulse 1.2s ease-in-out infinite"></div><div style="height:14px;border-radius:7px;background:#E1E4EE;width:60%;animation:ncpulse 1.2s ease-in-out .15s infinite"></div><div style="height:14px;border-radius:7px;background:#E1E4EE;width:70%;animation:ncpulse 1.2s ease-in-out .3s infinite"></div></div>
+    <div style="border:1px solid #E3E5EF;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start"><div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#FBE6E2;color:#C2412D;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center">!</span><span style="font-size:14px;font-weight:700">Failed to load</span></div><div style="font-size:13px;line-height:1.4;color:#5B6276">Say what failed, reassure nothing's lost, offer one retry.</div><div style="height:36px;padding:0 14px;border-radius:999px;background:#6A4FDB;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center">Try again</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#F3F4FA','--card':'#FFFFFF','--ink':'#121829','--ink2':'#5B6276','--ink3':'#676D82','--line':'#E3E5EF','--line2':'#CFD3E2','--track':'#E1E4EE','--primary':'#6A4FDB','--primary-ink':'#5B3FD0','--primary-soft':'#EEEAFD','--on-primary':'#FFFFFF','--primary-glow':'rgba(106,79,219,.28)','--bar2':'#C9C0F5','--teal':'#159C98','--teal-ink':'#0E7A77','--good':'#178A63','--good-bar':'#1E9E74','--mid':'#9A6200','--mid-bar':'#E09A2B','--mid-soft':'#FCF1DE','--warn':'#C2412D','--warn-soft':'#FBE6E2','--toast':'#121829','--toast-ink':'#F3F4FA'},
+    dark:{'--page':'#0E1325','--card':'#161C31','--ink':'#EEF0F7','--ink2':'#A3A9BD','--ink3':'#8A90A6','--line':'#262D45','--line2':'#353D58','--track':'#2A3149','--primary':'#9D85FA','--primary-ink':'#B4A2FF','--primary-soft':'#2A2550','--on-primary':'#14102B','--primary-glow':'rgba(0,0,0,.4)','--bar2':'#463D80','--teal':'#3CC7BF','--teal-ink':'#5FD6CF','--good':'#4FD1A1','--good-bar':'#3CC08D','--mid':'#F2B85A','--mid-bar':'#E6A33A','--mid-soft':'#3A2E17','--warn':'#FF8A73','--warn-soft':'#3D1F1B','--toast':'#EEF0F7','--toast-ink':'#121829'}
+  };
+  state = { scr: 'today', views: { today: 'populated', week: 'populated', sleep: 'populated', admin: 'admin' }, mode: 'light', isAdmin: true, platform: 'iphone', sheet: null, toast: null };
+  scroller = React.createRef();
+  componentWillUnmount() { clearTimeout(this.tt); }
+  toast = (m, kind) => {
+    const k = kind || (/couldn|failed/i.test(m) ? 'err' : /signed out|opens|removed/i.test(m) ? 'info' : 'ok');
+    clearTimeout(this.tt); this.setState({ toast: { m, k } }); this.tt = setTimeout(() => this.setState({ toast: null }), 2600);
+  };
+  nav = (k, d) => {
+    const scr = k === 'help' ? 'week' : k;
+    this.setState({ scr, sheet: null, ...(k === 'meal' ? { detailMeal: d || null } : {}) }, () => setTimeout(() => { const el = this.scroller.current; if (!el) return; const h = k === 'help' && el.querySelector('#nc-help'); el.scrollTop = h ? h.offsetTop - 50 : 0; }, 80));
+  };
+  openSheet = (name, extra) => this.setState({ sheet: { name, meal: 'pick', sleep: 'ok', ...(extra || {}) } });
+  closeSheet = () => this.setState({ sheet: null });
+  savedOffline = () => { this.setState(s => ({ views: { ...s.views, today: 'offline' }, scr: 'today' })); this.toast('Saved on this phone. We\u2019ll upload it later.', 'info'); };
+  setMode = m => this.setState({ mode: m });
+  signOut = () => this.toast('Signed out', 'info');
+  renderVals() {
+    const s = this.state, on = c => c ? { bg: '#6A4FDB', ink: '#fff' } : { bg: '#F0F1F6', ink: '#121829' };
+    const dark = s.mode === 'dark' || (s.mode === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    const SV = {
+      today: [['populated', 'Populated'], ['noscore', 'No score yet'], ['nomeals', 'No meals yet'], ['loading', 'Loading'], ['error', 'Failed to load'], ['over', 'Over budget'], ['offline', 'Saved offline']],
+      week: [['populated', 'Populated'], ['sparse', 'Two days logged'], ['loading', 'Loading'], ['error', 'Failed to load']],
+      sleep: [['populated', 'Populated'], ['empty', 'No sleep logged yet'], ['loading', 'Loading'], ['error', 'Failed to load']],
+      admin: [['admin', 'Admin'], ['notadmin', 'Not an admin'], ['loading', 'Loading'], ['error', 'Failed to load']]
+    }[s.scr];
+    const T = { ok: ['var(--teal)', '✓'], info: ['#7C8296', 'i'], err: ['#C2412D', '!'] }[s.toast ? s.toast.k : 'ok'];
+    const sh = s.sheet;
+    const setSheet = patch => this.setState({ sheet: { name: 'meal', meal: 'pick', sleep: 'ok', ...(sh || {}), ...patch } });
+    return {
+      phone: { ...Component.T[dark ? 'dark' : 'light'], position: 'relative', width: 390, height: 844, borderRadius: 50, overflow: 'hidden', background: 'var(--page)', color: 'var(--ink)', boxShadow: '0 0 0 10px #0B0E1A, 0 30px 80px rgba(18,24,41,.28)', flex: 'none' },
+      scroller: this.scroller, nav: this.nav, openSheet: this.openSheet, closeSheet: this.closeSheet, toast: this.toast, savedOffline: this.savedOffline, setMode: this.setMode, signOut: this.signOut,
+      isMore: ['onboarding', 'score', 'meal', 'insights', 'streaks', 'notifs'].includes(s.scr), scr: s.scr, detailMeal: s.detailMeal || null,
+      showTabs: s.scr !== 'onboarding', scrollBottom: s.scr === 'onboarding' ? '0px' : '84px',
+      isToday: s.scr === 'today', isWeek: s.scr === 'week', isSleep: s.scr === 'sleep', isSettings: s.scr === 'settings', isAdminScr: s.scr === 'admin',
+      views: s.views, adminView: s.isAdmin ? s.views.admin : 'notadmin', mode: s.mode, isAdmin: s.isAdmin, platform: s.platform,
+      sheetOpen: !!sh, sheet: sh || { name: 'meal', meal: 'pick', sleep: 'ok' },
+      toastOn: !!s.toast, toastMsg: s.toast ? s.toast.m : '', toastDot: T[0], toastIcon: T[1],
+      screens: [['today', '8 · Today'], ['week', '9 · This week'], ['sleep', '10 · Sleep and evenings'], ['settings', '11 · Settings'], ['admin', '12 · Manage products'], ['onboarding', 'New · Onboarding'], ['score', 'New · Focus Score detail'], ['meal', 'New · Meal detail'], ['insights', 'New · Insights'], ['streaks', 'New · Streaks'], ['notifs', 'New · Notifications']].map(([k, t]) => ({ t, ...on(s.scr === k), go: () => this.nav(k) })),
+      hasStates: !!SV, states: (SV || []).map(([k, t]) => ({ t, ...on(s.views[s.scr] === k), go: () => this.setState({ views: { ...s.views, [s.scr]: k }, ...(s.scr === 'admin' && k !== 'notadmin' ? { isAdmin: true } : {}) }) })),
+      setOpts: [
+        { t: 'Admin', ...on(s.isAdmin), go: () => this.setState({ isAdmin: true }) }, { t: 'Not admin', ...on(!s.isAdmin), go: () => this.setState({ isAdmin: false }) },
+        { t: 'iPhone', ...on(s.platform === 'iphone'), go: () => this.setState({ platform: 'iphone' }) }, { t: 'Android / desktop', ...on(s.platform !== 'iphone'), go: () => this.setState({ platform: 'android' }) }
+      ],
+      sheets: [['meal', 'A · Log a meal'], ['checkin', 'B · Check in'], ['sleep', 'C · Log sleep'], ['screen', 'D · Screen time']].map(([k, t]) => ({ t, ...on(sh && sh.name === k), go: () => this.openSheet(k) })),
+      mealStates: [['pick', 'Take or choose'], ['reading', 'Reading'], ['items', 'Detected items'], ['dark', 'Too dark'], ['blurry', 'Blurry'], ['nofood', 'No food found'], ['big', 'Over 8 MB'], ['failsave', 'Failed to save'], ['offline', 'Saved offline']].map(([k, t]) => ({ t, ...on(sh && sh.name === 'meal' && sh.meal === k), go: () => setSheet({ name: 'meal', meal: k }) })),
+      sleepStates: [['ok', 'Normal'], ['future', "Wake-up hasn't happened"]].map(([k, t]) => ({ t, ...on(sh && sh.name === 'sleep' && sh.sleep === k), go: () => setSheet({ name: 'sleep', sleep: k }) })),
+      tabs: [
+        ['today', 'Today', 'M4 11l8-6.5 8 6.5V20h-5v-5.5H9V20H4z'],
+        ['week', 'This week', 'M5 20V12M12 20V5M19 20v-9'],
+        ['sleep', 'Sleep', 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'],
+        ['settings', 'Settings', 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6']
+      ].map(([k, t, d]) => { const sel = s.scr === k || (k === 'settings' && s.scr === 'admin') || (k === 'today' && ['score', 'meal', 'insights', 'streaks', 'notifs'].includes(s.scr)); return { t, d, sel, go: () => this.nav(k), ink: sel ? 'var(--primary-ink)' : 'var(--ink2)', pill: sel ? 'var(--primary-soft)' : 'transparent', scale: sel ? 'scale(1)' : 'scale(.9)' }; }),
+      themes: [['light', 'Light'], ['dark', 'Dark']].map(([k, t]) => ({ t, ...on(s.mode === k), go: () => this.setState({ mode: k }) })),
+      toastSamples: [['Meal logged', 'ok'], ['Check-in saved', 'ok'], ['Signed out', 'info'], ["Couldn't save. Try again.", 'err']].map(([m, k]) => { const x = { ok: ['#159C98', '✓'], info: ['#7C8296', 'i'], err: ['#C2412D', '!'] }[k]; return { m, dot: x[0], icon: x[1], go: () => this.toast(m, k) }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

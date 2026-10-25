@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#DCDFEA}*{box-sizing:border-box}a{color:#5B3FD0}a:hover{color:#3F2AA8}input,textarea,button{font-family:inherit}@keyframes ncspin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;gap:36px;padding:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap;font-family:'Plus Jakarta Sans',sans-serif;background:#DCDFEA;color:#121829">
+
+  <div style="width:250px;flex:none;background:#FFFFFF;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:18px;position:sticky;top:28px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="28" height="28" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#6A4FDB" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#159C98"></circle></svg>
+      <div><div style="font:800 15px 'Plus Jakarta Sans',sans-serif">NeuroCal</div><div style="font:500 12px 'Plus Jakarta Sans',sans-serif;color:#5B6276">Main screens · review</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="font:700 11px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7C8296;margin-bottom:4px">Screen</div>
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="10">
+        <button onClick="{{ n.go }}" style="text-align:left;border:0;cursor:pointer;padding:9px 12px;border-radius:10px;font:600 14px 'Plus Jakarta Sans',sans-serif;background:{{ n.bg }};color:{{ n.ink }}">{{ n.label }}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ hasStates }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:700 11px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7C8296;margin-bottom:4px">State</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ states }}" as="s" hint-placeholder-count="5">
+            <button onClick="{{ s.go }}" style="border:1px solid {{ s.bd }};background:{{ s.bg }};color:{{ s.ink }};border-radius:999px;padding:6px 11px;font:600 12.5px 'Plus Jakarta Sans',sans-serif;cursor:pointer">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font:700 11px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7C8296;margin-bottom:4px">Theme</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#F3F4FA">
+        <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2"><button onClick="{{ t.go }}" style="height:34px;border:0;border-radius:9px;cursor:pointer;font:600 13px 'Plus Jakarta Sans',sans-serif;background:{{ t.bg }};color:#121829;box-shadow:{{ t.sh }}">{{ t.label }}</button></sc-for>
+      </div>
+    </div>
+    <div style="font:400 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#5B6276">Everything inside the phone works too: links, sheets, ticks and toasts.</div>
+  </div>
+
+  <sc-if value="{{ showPhone }}" hint-placeholder-val="{{ true }}">
+  <div style="{{ phone }}">
+    <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 30px;font:600 15px var(--f)"><span>15:27</span><span style="font-size:12px">5G ▮▮▮ 75</span></div>
+    <div ref="{{ scroller }}" style="position:absolute;top:44px;left:0;right:0;bottom:0;overflow-y:auto;display:flex;flex-direction:column">
+
+      <!-- 8 TODAY -->
+      <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;flex:1">
+        <div style="padding:8px 16px 0;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <svg width="30" height="30" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="var(--teal)"></circle></svg>
+              <div style="min-width:0"><div style="font:800 22px/1.15 var(--f);letter-spacing:-.3px">Good afternoon, Alex</div><div style="font:500 13px var(--f);color:var(--ink2)">Thursday 2 October</div></div>
+            </div>
+            <button onClick="{{ goSettings }}" aria-label="Settings" style="width:44px;height:44px;flex:none;border:0;background:none;color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"></path></svg></button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onClick="{{ goWeek }}" style="height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px var(--f);cursor:pointer">This week</button>
+            <button onClick="{{ goSleep }}" style="height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px var(--f);cursor:pointer">Sleep</button>
+            <button onClick="{{ goSettings }}" style="height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px var(--f);cursor:pointer">Settings</button>
+          </div>
+
+          <sc-if value="{{ t.loading }}">
+            <div aria-label="Loading" style="display:flex;flex-direction:column;gap:14px">
+              <div style="height:250px;border-radius:24px;background:var(--skel)"></div>
+              <div style="height:120px;border-radius:20px;background:var(--skel)"></div>
+              <div style="height:70px;border-radius:20px;background:var(--skel)"></div>
+              <div style="font:500 13px var(--f);color:var(--ink2);text-align:center">Loading your day…</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ t.error }}">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+              <div style="font:700 17px var(--f)">Couldn't load today</div>
+              <div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">Check your connection. Anything you log now stays on this phone until it syncs.</div>
+              <button onClick="{{ retryToday }}" style="height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);cursor:pointer">Try again</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ t.ready }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ t.pending }}">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:16px;background:var(--mid-soft)">
+                <div style="flex:1;min-width:0"><div style="font:700 14px var(--f)">{{ t.pendingTitle }}</div><div style="font:400 13px/1.4 var(--f);color:var(--ink2)">It'll sync when you're back online.</div></div>
+                <button onClick="{{ syncNow }}" style="height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 14px var(--f);cursor:pointer;flex:none">Try now</button>
+              </div>
+            </sc-if>
+
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:grid;grid-template-columns:104px minmax(0,1fr);gap:16px;align-items:center">
+                <div style="position:relative;width:104px;height:104px">
+                  <svg width="104" height="104" viewBox="0 0 120 120"><defs><linearGradient id="ncg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient></defs>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="var(--track)" stroke-width="10" stroke-dasharray="{{ t.trackDash }}"></circle>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="url(#ncg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="{{ t.dash }}" transform="rotate(-90 60 60)"></circle>
+                  </svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <div style="font:800 34px/1 var(--f);letter-spacing:-1px;color:{{ t.scoreInk }}">{{ t.scoreText }}</div>
+                    <div style="font:500 11px var(--f);color:var(--ink2);margin-top:2px">{{ t.scoreSub }}</div>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                  <div style="font:600 13px var(--f);color:var(--primary-ink)">Focus Score</div>
+                  <div style="font:700 20px/1.2 var(--f)">{{ t.title }}</div>
+                  <div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">{{ t.explain }}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ t.inputs }}" as="f" hint-placeholder-count="4">
+                  <div style="background:var(--page);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-height:84px">
+                    <div style="font:500 12px var(--f);color:var(--ink2)">{{ f.name }}</div>
+                    <sc-if value="{{ f.has }}">
+                      <div style="font:700 15px var(--f);color:{{ f.ink }}">{{ f.value }}</div>
+                      <div style="height:4px;border-radius:2px;background:var(--track)"><div style="height:4px;border-radius:2px;width:{{ f.pct }};background:{{ f.bar }}"></div></div>
+                      <div style="font:400 11.5px var(--f);color:var(--ink3)">{{ f.sub }}</div>
+                    </sc-if>
+                    <sc-if value="{{ f.missing }}"><button onClick="{{ f.act }}" style="height:44px;align-self:flex-start;padding:0 14px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 13.5px var(--f);cursor:pointer">+ Log</button></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <button onClick="{{ openSleepSheet }}" style="height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Log sleep</button>
+                <button onClick="{{ goHelps }}" style="height:44px;padding:0 10px;border:0;background:none;color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">See what helps →</button>
+              </div>
+            </div>
+
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:800 22px var(--f);letter-spacing:-.3px;color:{{ c.leftInk }}">{{ c.left }}</span><span style="font:500 13px var(--f);color:var(--ink2)">{{ c.eaten }}</span></div>
+              <div style="height:8px;border-radius:4px;background:var(--track)"><div style="height:8px;border-radius:4px;width:{{ c.pct }};background:{{ c.bar }}"></div></div>
+              <sc-if value="{{ c.over }}"><div style="font:400 13px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">You're past your 2,200 kcal target. No need to make it up tomorrow; your target stays the same.</div></sc-if>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+                <sc-for list="{{ c.macros }}" as="m" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+                    <div style="font:500 12px var(--f);color:var(--ink2)">{{ m.k }}</div>
+                    <div style="font:700 14px var(--f)">{{ m.v }}</div>
+                    <div style="height:4px;border-radius:2px;background:var(--track)"><div style="height:4px;border-radius:2px;width:{{ m.pct }};background:{{ m.bar }}"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 14px 14px 16px;display:flex;align-items:center;gap:12px">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                <div style="font:500 12px var(--f);color:var(--ink2)">{{ feel.label }}</div>
+                <sc-if value="{{ feel.has }}"><div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ feel.moods }}" as="md"><span style="padding:4px 10px;border-radius:999px;background:var(--teal-soft);color:var(--teal-ink);font:700 13px var(--f)">{{ md.name }}</span></sc-for></div></sc-if>
+                <sc-if value="{{ feel.none }}"><div style="font:600 15px var(--f)">No check-in yet today</div></sc-if>
+              </div>
+              <button onClick="{{ openCheck }}" style="height:44px;padding:0 16px;flex:none;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 14px var(--f);cursor:pointer">Check in</button>
+            </div>
+
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font:700 17px var(--f)">What to eat next</span><button onClick="{{ moreIdeas }}" style="height:44px;margin:-10px -6px -10px 0;padding:0 6px;border:0;background:none;color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">More ideas</button></div>
+              <div style="font:700 18px/1.25 var(--f)">{{ rec.name }}</div>
+              <div style="font:500 13px var(--f);color:var(--ink2)">{{ rec.meta }}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ rec.macros }}" as="x" hint-placeholder-count="3"><span style="padding:4px 10px;border-radius:8px;background:var(--page);font:600 12.5px var(--f);color:var(--ink2)">{{ x.name }}</span></sc-for></div>
+              <div style="padding:10px 12px;border-radius:12px;background:var(--primary-soft);font:400 13.5px/1.45 var(--f);color:var(--ink);text-wrap:pretty"><b style="color:var(--primary-ink)">Why it fits: </b>{{ rec.why }}</div>
+              <div style="font:500 12px var(--f);color:var(--ink3)">{{ rec.source }}</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 17px var(--f)">Meals today</span><span style="font:500 13px var(--f);color:var(--ink2)">{{ t.mealCount }}</span></div>
+              <sc-if value="{{ t.noMeals }}">
+                <div style="border:1.5px dashed var(--line2);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                  <div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">Nothing logged yet. Snap your first meal and NeuroCal will read it against your sleep and stress.</div>
+                  <button onClick="{{ openMeal }}" style="height:44px;padding:0 16px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Log a meal</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ t.hasMeals }}" hint-placeholder-val="{{ true }}">
+                <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+                  <sc-for list="{{ t.meals }}" as="m" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;padding:12px 8px 8px 14px;border-top:{{ m.border }};align-items:start">
+                      <span style="font:600 13px var(--f);color:var(--ink2);padding-top:2px">{{ m.time }}</span>
+                      <div style="min-width:0;display:flex;flex-direction:column;gap:3px">
+                        <div style="font:600 12px var(--f);color:var(--ink2)">{{ m.type }}</div>
+                        <div style="font:600 15px/1.3 var(--f)">{{ m.items }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <sc-if value="{{ m.high }}"><span style="padding:2px 8px;border-radius:6px;background:var(--mid-soft);color:var(--mid);font:700 11.5px var(--f)">High glycemic load</span></sc-if>
+                          <sc-if value="{{ m.pending }}"><span style="padding:2px 8px;border-radius:6px;background:var(--page);color:var(--ink2);font:700 11.5px var(--f)">Waiting to sync</span></sc-if>
+                        </div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:flex-end">
+                        <span style="font:700 14px var(--f);padding:2px 6px 0 0">{{ m.kcal }}</span>
+                        <button onClick="{{ m.remove }}" style="height:44px;padding:0 6px;border:0;background:none;color:var(--ink2);font:600 13px var(--f);cursor:pointer;text-decoration:underline;text-underline-offset:3px">Remove</button>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+        <div style="position:sticky;bottom:0;margin-top:auto;padding:18px 16px 22px;background:linear-gradient(to bottom,transparent,var(--page) 35%);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px">
+          <button onClick="{{ openMeal }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;gap:10px;font:700 17px var(--f);box-shadow:0 8px 24px var(--primary-glow);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" stroke-linejoin="round"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Log a meal</button>
+          <button onClick="{{ openCheck }}" style="height:56px;padding:0 20px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 16px var(--f);cursor:pointer">Check in</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- 9 THIS WEEK -->
+      <sc-if value="{{ isWeek }}">
+      <div style="display:flex;flex-direction:column">
+        <div style="padding:2px 12px 0 6px"><button onClick="{{ goToday }}" style="height:44px;padding:0 10px;border:0;background:none;color:var(--primary-ink);font:600 15px var(--f);display:flex;align-items:center;gap:2px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Today</button></div>
+        <div style="padding:2px 20px 0"><div style="font:800 26px/1.1 var(--f);letter-spacing:-.4px">This week</div><div style="font:500 13px var(--f);color:var(--ink2);margin-top:2px">26 September to 2 October</div></div>
+        <div style="padding:16px 16px 28px;display:flex;flex-direction:column;gap:14px">
+          <sc-if value="{{ w.loading }}"><div style="display:flex;flex-direction:column;gap:14px"><div style="height:150px;border-radius:20px;background:var(--skel)"></div><div style="height:56px;border-radius:14px;background:var(--skel)"></div><div style="height:190px;border-radius:20px;background:var(--skel)"></div><div style="font:500 13px var(--f);color:var(--ink2);text-align:center">Loading your week…</div></div></sc-if>
+          <sc-if value="{{ w.error }}"><div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><div style="font:700 17px var(--f)">Couldn't load your week</div><div style="font:400 14px/1.45 var(--f);color:var(--ink2)">Check your connection and try again.</div><button onClick="{{ retryWeek }}" style="height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);cursor:pointer">Try again</button></div></sc-if>
+          <sc-if value="{{ w.empty }}"><div style="border:1.5px dashed var(--line2);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><div style="font:700 17px var(--f)">Not enough days yet</div><div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">Log meals and sleep for three days and your week will show up here, with what could help.</div><button onClick="{{ openMeal }}" style="height:44px;padding:0 16px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Log a meal</button></div></sc-if>
+
+          <sc-if value="{{ w.ready }}" hint-placeholder-val="{{ true }}">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="font:700 15px var(--f)">{{ w.selLong }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ w.readout }}" as="r" hint-placeholder-count="4"><div style="background:var(--page);border-radius:14px;padding:10px 12px"><div style="font:500 12px var(--f);color:var(--ink2)">{{ r.k }}</div><div style="font:800 20px var(--f);letter-spacing:-.3px;margin-top:2px">{{ r.v }}</div><div style="font:500 12px var(--f);color:var(--ink3)">{{ r.s }}</div></div></sc-for>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">
+              <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.pick }}" style="height:56px;border-radius:14px;border:1px solid {{ d.bd }};background:{{ d.bg }};color:{{ d.ink }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:0"><span style="font:600 11px var(--f)">{{ d.short }}</span><span style="font:800 16px var(--f)">{{ d.num }}</span></button></sc-for>
+            </div>
+            <sc-for list="{{ w.charts }}" as="ch" hint-placeholder-count="3">
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 15px var(--f)">{{ ch.title }}</span><span style="font:500 12.5px var(--f);color:var(--ink2)">{{ ch.note }}</span></div>
+                <div style="position:relative;height:112px;margin-top:6px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end">
+                  <sc-for list="{{ ch.bars }}" as="b"><button onClick="{{ b.pick }}" aria-label="{{ b.label }}" style="height:100%;border:0;background:none;padding:0;display:flex;align-items:flex-end;cursor:pointer"><div style="width:100%;height:{{ b.h }};border-radius:6px 6px 3px 3px;background:{{ b.bg }}"></div></button></sc-for>
+                  <sc-if value="{{ ch.line }}"><div style="position:absolute;left:0;right:0;bottom:{{ ch.lineAt }};border-top:1.5px dashed var(--ink2);pointer-events:none"><span style="position:absolute;right:0;top:-19px;font:700 11px var(--f);color:var(--ink2);background:var(--card);padding:0 4px">{{ ch.lineLabel }}</span></div></sc-if>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px"><sc-for list="{{ ch.bars }}" as="b"><span style="text-align:center;font:600 11px var(--f);color:{{ b.labInk }}">{{ b.val }}</span></sc-for></div>
+              </div>
+            </sc-for>
+
+            <div ref="{{ helpsRef }}" style="display:flex;flex-direction:column;gap:12px;padding-top:8px">
+              <div style="font:800 21px var(--f);letter-spacing:-.3px">What could help</div>
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                <div style="font:600 13px var(--f);color:var(--primary-ink)">This week's weak points</div>
+                <sc-for list="{{ weak }}" as="x" hint-placeholder-count="3"><div style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:10px"><span style="width:8px;height:8px;border-radius:50%;background:var(--mid-bar);margin-top:6px"></span><div><div style="font:600 15px var(--f)">{{ x.t }}</div><div style="font:400 13px/1.4 var(--f);color:var(--ink2)">{{ x.s }}</div></div></div></sc-for>
+              </div>
+              <sc-for list="{{ routines }}" as="r" hint-placeholder-count="2">
+                <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div><div style="font:700 12px var(--f);color:var(--teal-ink)">Routine</div><div style="font:700 17px var(--f);margin-top:2px">{{ r.name }}</div><div style="font:400 13px/1.45 var(--f);color:var(--ink2);margin-top:2px;text-wrap:pretty">{{ r.why }}</div></div>
+                  <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ r.steps }}" as="st"><div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;font:400 14px/1.4 var(--f)"><span style="width:26px;height:26px;border-radius:50%;background:var(--page);font:700 12px var(--f);display:flex;align-items:center;justify-content:center">{{ st.n }}</span><span style="padding-top:3px">{{ st.t }}</span></div></sc-for></div>
+                </div>
+              </sc-for>
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+                <div style="padding:14px 16px 4px;font:600 13px var(--f);color:var(--primary-ink)">Products that might help</div>
+                <sc-for list="{{ w.products }}" as="p" hint-placeholder-count="3">
+                  <div style="padding:12px 16px;border-top:{{ p.border }};display:flex;flex-direction:column;gap:5px">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ p.labels }}" as="l"><span style="padding:2px 8px;border-radius:6px;font:700 11.5px var(--f);background:{{ l.bg }};color:{{ l.ink }}">{{ l.name }}</span></sc-for></div>
+                    <div style="font:700 15px var(--f)">{{ p.name }}</div>
+                    <div style="font:400 13px/1.4 var(--f);color:var(--ink2)">{{ p.desc }}</div>
+                    <a href="{{ p.link }}" target="_blank" rel="noopener sponsored" style="font:700 14px var(--f);color:var(--primary-ink);text-decoration:none;padding:6px 0">View product →</a>
+                  </div>
+                </sc-for>
+                <div style="padding:12px 16px 14px;border-top:1px solid var(--line);background:var(--page);font:400 12.5px/1.5 var(--f);color:var(--ink2);display:flex;flex-direction:column;gap:6px">
+                  <span><b style="color:var(--ink)">About these links.</b> We earn a commission if you buy through an affiliate link. "Our brand" products are made by NeuroCal. Neither changes what we suggest.</span>
+                  <span><b style="color:var(--ink)">Supplements.</b> Check with your doctor before starting one, especially if you're pregnant or take medication.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;padding-top:8px">
+              <div style="font:700 17px var(--f)">Every day</div>
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:16px;overflow-x:auto">
+                <div style="min-width:560px">
+                  <div style="display:grid;grid-template-columns:70px 50px 66px 62px 66px 70px minmax(0,1fr);gap:6px;padding:10px 14px;font:700 11.5px var(--f);color:var(--ink2);border-bottom:1px solid var(--line)"><span>Day</span><span>Focus</span><span>Calories</span><span>Protein</span><span>Sleep</span><span>Last meal</span><span>Feeling</span></div>
+                  <sc-for list="{{ w.rows }}" as="r" hint-placeholder-count="7">
+                    <div onClick="{{ r.pick }}" style="display:grid;grid-template-columns:70px 50px 66px 62px 66px 70px minmax(0,1fr);gap:6px;padding:11px 14px;font:500 13px var(--f);border-top:{{ r.border }};background:{{ r.bg }};cursor:pointer"><span style="font-weight:700">{{ r.day }}</span><span>{{ r.focus }}</span><span>{{ r.kcal }}</span><span>{{ r.prot }}</span><span>{{ r.sleep }}</span><span style="color:{{ r.lastInk }}">{{ r.last }}</span><span>{{ r.feel }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- 10 SLEEP -->
+      <sc-if value="{{ isSleep }}">
+      <div style="display:flex;flex-direction:column;flex:1">
+        <div style="padding:2px 12px 0 6px"><button onClick="{{ goToday }}" style="height:44px;padding:0 10px;border:0;background:none;color:var(--primary-ink);font:600 15px var(--f);display:flex;align-items:center;gap:2px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Today</button></div>
+        <div style="padding:2px 20px 0"><div style="font:800 26px/1.1 var(--f);letter-spacing:-.4px">Sleep and evenings</div><div style="font:500 13px var(--f);color:var(--ink2);margin-top:2px">Last seven nights</div></div>
+        <div style="padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ sl.summary }}" as="x" hint-placeholder-count="3"><div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px"><div style="font:800 19px var(--f);letter-spacing:-.3px">{{ x.v }}</div><div style="font:500 12px/1.3 var(--f);color:var(--ink2);margin-top:3px">{{ x.k }}</div></div></sc-for>
+          </div>
+          <sc-if value="{{ sl.empty }}">
+            <div style="border:1.5px dashed var(--line2);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+              <div style="font:700 17px var(--f)">No sleep logged yet</div>
+              <div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">Log when you went to bed and woke up. After a few nights you'll see how late meals and screens line up with your sleep.</div>
+              <button onClick="{{ openSleepSheet }}" style="height:44px;padding:0 16px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 14px var(--f);cursor:pointer">Log last night</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sl.ready }}" hint-placeholder-val="{{ true }}">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 15px var(--f)">Seven nights</span><span style="font:500 12.5px var(--f);color:var(--ink2)">6pm to noon</span></div>
+              <div style="display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px">
+                <span></span>
+                <div style="position:relative;height:14px"><sc-for list="{{ sl.axis }}" as="a"><span style="position:absolute;left:{{ a.left }};transform:{{ a.tx }};font:600 10.5px var(--f);color:var(--ink3)">{{ a.t }}</span></sc-for></div>
+              </div>
+              <sc-for list="{{ sl.nights }}" as="n" hint-placeholder-count="7">
+                <div style="display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px;align-items:center">
+                  <span style="font:600 12px var(--f);color:var(--ink2)">{{ n.short }}</span>
+                  <div style="position:relative;height:24px;background:var(--page);border-radius:6px">
+                    <div style="position:absolute;top:0;bottom:0;left:16.667%;border-left:1.5px dashed var(--bad)"></div>
+                    <div style="position:absolute;top:5px;height:14px;border-radius:7px;left:{{ n.sleepL }};width:{{ n.sleepW }};background:var(--primary)"></div>
+                    <div style="position:absolute;top:9px;height:6px;border-radius:3px;left:22.222%;width:{{ n.scrW }};background:var(--mid-bar)"></div>
+                    <div style="position:absolute;top:6px;width:12px;height:12px;border-radius:50%;left:{{ n.mealL }};transform:translateX(-50%);background:var(--teal);border:2px solid var(--card)"></div>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 14px;padding-top:6px;font:500 12px var(--f);color:var(--ink2)">
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:8px;border-radius:4px;background:var(--primary)"></span>Asleep</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--teal)"></span>Last meal</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:5px;border-radius:3px;background:var(--mid-bar)"></span>Screens after 10pm</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:0;height:12px;border-left:1.5px dashed var(--bad)"></span>9pm</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ sl.insights }}" as="x" hint-placeholder-count="3"><div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font:400 14.5px/1.45 var(--f);text-wrap:pretty">{{ x.t }}</div></sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font:700 17px var(--f)">Every night</div>
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:16px;overflow-x:auto">
+                <div style="min-width:470px">
+                  <div style="display:grid;grid-template-columns:78px 54px 54px 64px 70px minmax(0,1fr);gap:6px;padding:10px 14px;font:700 11.5px var(--f);color:var(--ink2);border-bottom:1px solid var(--line)"><span>Night</span><span>Bed</span><span>Woke</span><span>Sleep</span><span>Last meal</span><span>Screens</span></div>
+                  <sc-for list="{{ sl.nights }}" as="n" hint-placeholder-count="7"><div style="display:grid;grid-template-columns:78px 54px 54px 64px 70px minmax(0,1fr);gap:6px;padding:11px 14px;font:500 13px var(--f);border-top:{{ n.border }}"><span style="font-weight:700">{{ n.label }}</span><span>{{ n.bed }}</span><span>{{ n.wake }}</span><span>{{ n.dur }}</span><span style="color:{{ n.mealInk }}">{{ n.meal }}</span><span>{{ n.scr }}</span></div></sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="position:sticky;bottom:0;margin-top:auto;padding:18px 16px 22px;background:linear-gradient(to bottom,transparent,var(--page) 35%);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onClick="{{ openSleepSheet }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 16px var(--f);box-shadow:0 8px 24px var(--primary-glow);cursor:pointer">Log sleep</button>
+          <button onClick="{{ openScreen }}" style="height:56px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 16px var(--f);cursor:pointer">Log screen time</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- 11 SETTINGS -->
+      <sc-if value="{{ isSettings }}">
+      <div style="display:flex;flex-direction:column">
+        <div style="padding:2px 12px 0 6px"><button onClick="{{ goToday }}" style="height:44px;padding:0 10px;border:0;background:none;color:var(--primary-ink);font:600 15px var(--f);display:flex;align-items:center;gap:2px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Today</button></div>
+        <div style="padding:2px 20px 0;font:800 26px/1.1 var(--f);letter-spacing:-.4px">Settings</div>
+        <div style="padding:16px 16px 28px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden">
+            <div style="display:flex;gap:12px;padding:16px;align-items:center"><div style="width:48px;height:48px;border-radius:50%;background:var(--primary-soft);color:var(--primary-ink);font:800 18px var(--f);display:flex;align-items:center;justify-content:center">A</div><div><div style="font:700 17px var(--f)">Alex Morgan</div><div style="font:500 13px var(--f);color:var(--ink2)">Your profile</div></div></div>
+            <sc-for list="{{ profile }}" as="p" hint-placeholder-count="6"><div style="display:flex;justify-content:space-between;gap:16px;padding:12px 16px;border-top:1px solid var(--line)"><span style="font:500 14px var(--f);color:var(--ink2);flex:none">{{ p.k }}</span><span style="font:600 14px/1.4 var(--f);text-align:right">{{ p.v }}</span></div></sc-for>
+            <div style="padding:12px 16px 16px;border-top:1px solid var(--line)"><button onClick="{{ editProfile }}" style="width:100%;height:48px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 15px var(--f);cursor:pointer">Edit profile</button></div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:68px">
+            <div><div style="font:600 15px var(--f)">Dark appearance</div><div style="font:400 13px var(--f);color:var(--ink2)">Easier on the eyes at night</div></div>
+            <button role="switch" aria-checked="{{ sw.on }}" aria-label="Dark appearance" onClick="{{ toggleTheme }}" style="width:52px;height:32px;flex:none;border-radius:16px;border:0;background:{{ sw.bg }};position:relative;cursor:pointer;padding:0"><span style="position:absolute;top:3px;left:{{ sw.left }};width:26px;height:26px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span></button>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <div style="font:700 15px var(--f)">Install the app</div>
+            <sc-if value="{{ set.android }}" hint-placeholder-val="{{ true }}">
+              <div style="font:400 13.5px/1.45 var(--f);color:var(--ink2)">Add NeuroCal to your home screen. It opens full screen and keeps working offline.</div>
+              <button onClick="{{ install }}" style="height:48px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);cursor:pointer">Install NeuroCal</button>
+            </sc-if>
+            <sc-if value="{{ set.iphone }}">
+              <div style="font:400 13.5px/1.45 var(--f);color:var(--ink2)">On iPhone, add it from Safari:</div>
+              <sc-for list="{{ iosSteps }}" as="st"><div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;font:400 14px/1.4 var(--f)"><span style="width:26px;height:26px;border-radius:50%;background:var(--page);font:700 12px var(--f);display:flex;align-items:center;justify-content:center">{{ st.n }}</span><span style="padding-top:3px">{{ st.t }}</span></div></sc-for>
+            </sc-if>
+          </div>
+          <sc-if value="{{ set.admin }}">
+            <button onClick="{{ goProducts }}" style="width:100%;min-height:68px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 12px 12px 16px;display:flex;justify-content:space-between;align-items:center;text-align:left;cursor:pointer;color:var(--ink)"><span><span style="display:block;font:600 15px var(--f)">Manage products</span><span style="display:block;font:400 13px var(--f);color:var(--ink2)">Admin only</span></span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink3)"><path d="M9 5l7 7-7 7"></path></svg></button>
+          </sc-if>
+          <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div><div style="font:500 13px var(--f);color:var(--ink2)">Signed in as</div><div style="font:600 15px var(--f);margin-top:2px">alex.morgan@gmail.com</div></div>
+            <button onClick="{{ signOut }}" style="height:48px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--bad);font:700 15px var(--f);cursor:pointer">Sign out</button>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- 12 MANAGE PRODUCTS -->
+      <sc-if value="{{ isProducts }}">
+      <div style="display:flex;flex-direction:column">
+        <div style="padding:2px 12px 0 6px"><button onClick="{{ goSettings }}" style="height:44px;padding:0 10px;border:0;background:none;color:var(--primary-ink);font:600 15px var(--f);display:flex;align-items:center;gap:2px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Settings</button></div>
+        <div style="padding:2px 20px 0;font:800 26px/1.1 var(--f);letter-spacing:-.4px">Manage products</div>
+        <div style="padding:16px 16px 28px;display:flex;flex-direction:column;gap:14px">
+          <sc-if value="{{ pr.notAdmin }}">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+              <div style="width:44px;height:44px;border-radius:12px;background:var(--page);display:flex;align-items:center;justify-content:center;color:var(--ink2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></div>
+              <div style="font:700 17px var(--f)">This page is for admins</div>
+              <div style="font:400 14px/1.45 var(--f);color:var(--ink2);text-wrap:pretty">Your account can't manage products. If that's wrong, ask the NeuroCal team to give you admin access.</div>
+              <button onClick="{{ goToday }}" style="height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);cursor:pointer">Back to Today</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ pr.admin }}" hint-placeholder-val="{{ true }}">
+            <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="font:700 17px var(--f)">Add a product</div>
+              <sc-for list="{{ pf.fields }}" as="f" hint-placeholder-count="4">
+                <label style="display:flex;flex-direction:column;gap:5px"><span style="font:600 12.5px var(--f);color:var(--ink2)">{{ f.label }}</span>
+                  <sc-if value="{{ f.notArea }}"><input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" style="height:48px;border:1.5px solid var(--line2);border-radius:12px;padding:0 14px;background:var(--card);color:var(--ink);font:500 15px var(--f);width:100%"></sc-if>
+                  <sc-if value="{{ f.area }}"><textarea value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" rows="2" style="border:1.5px solid var(--line2);border-radius:12px;padding:12px 14px;background:var(--card);color:var(--ink);font:500 15px/1.4 var(--f);width:100%;resize:vertical"></textarea></sc-if>
+                </label>
+              </sc-for>
+              <div style="display:flex;flex-direction:column;gap:5px"><span style="font:600 12.5px var(--f);color:var(--ink2)">Whose product is it?</span>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--page)"><sc-for list="{{ pf.owners }}" as="o"><button onClick="{{ o.pick }}" style="height:44px;border:0;border-radius:10px;background:{{ o.bg }};color:{{ o.ink }};box-shadow:{{ o.sh }};font:700 13px var(--f);cursor:pointer">{{ o.name }}</button></sc-for></div>
+              </div>
+              <button onClick="{{ pf.toggleSupp }}" style="display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:none;padding:0;color:var(--ink);font:600 14.5px var(--f);cursor:pointer;text-align:left"><span style="width:22px;height:22px;flex:none;border-radius:6px;border:2px solid {{ pf.suppBd }};background:{{ pf.suppBg }};display:flex;align-items:center;justify-content:center;color:var(--on-primary)"><sc-if value="{{ pf.supp }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if></span>It's a supplement (shows the check-with-your-doctor note)</button>
+              <button onClick="{{ addProduct }}" style="height:48px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);cursor:pointer">Add product</button>
+            </div>
+
+            <div style="display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:0 16px 2px">
+              <sc-for list="{{ pr.chips }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" style="height:40px;flex:none;padding:0 12px;border-radius:999px;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.ink }};font:700 13px var(--f);display:flex;align-items:center;gap:6px;cursor:pointer">{{ c.name }}<span style="font-weight:600;opacity:.75">{{ c.n }}</span></button></sc-for>
+            </div>
+            <label style="position:relative;display:block"><span style="position:absolute;left:14px;top:14px;color:var(--ink3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></span><input value="{{ search }}" onChange="{{ onSearch }}" placeholder="Search products" aria-label="Search products" style="height:48px;border:1.5px solid var(--line2);border-radius:12px;padding:0 14px 0 42px;background:var(--card);color:var(--ink);font:500 15px var(--f);width:100%"></label>
+
+            <sc-if value="{{ pr.none }}"><div style="border:1.5px dashed var(--line2);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><div style="font:700 16px var(--f)">No products match</div><div style="font:400 14px/1.45 var(--f);color:var(--ink2)">Try another word or filter.</div><button onClick="{{ clearSearch }}" style="height:44px;padding:0 16px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Clear search</button></div></sc-if>
+            <sc-for list="{{ pr.list }}" as="p" hint-placeholder-count="3">
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ p.labels }}" as="l"><span style="padding:2px 8px;border-radius:6px;font:700 11.5px var(--f);background:{{ l.bg }};color:{{ l.ink }}">{{ l.name }}</span></sc-for></div>
+                <div><div style="font:700 16px var(--f)">{{ p.name }}</div><div style="font:400 13.5px/1.45 var(--f);color:var(--ink2);margin-top:2px">{{ p.desc }}</div></div>
+                <div style="display:flex;flex-direction:column;gap:5px"><span style="font:600 12.5px var(--f);color:var(--ink2)">Link</span>
+                  <div style="display:flex;gap:8px"><input value="{{ p.draft }}" onChange="{{ p.onLink }}" placeholder="https://" aria-label="Product link" style="height:48px;min-width:0;flex:1;border:1.5px solid var(--line2);border-radius:12px;padding:0 12px;background:var(--card);color:var(--ink);font:500 14px var(--f)"><button onClick="{{ p.save }}" style="height:48px;flex:none;padding:0 14px;border:0;border-radius:12px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Save link</button></div>
+                </div>
+                <button onClick="{{ p.useBuiltIn }}" style="align-self:flex-start;height:40px;padding:0;border:0;background:none;color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Use the built-in link</button>
+                <button onClick="{{ p.toggleSuggest }}" style="display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:none;padding:0;color:var(--ink);font:600 14.5px var(--f);cursor:pointer"><span style="width:22px;height:22px;flex:none;border-radius:6px;border:2px solid {{ p.sBd }};background:{{ p.sBg }};display:flex;align-items:center;justify-content:center;color:var(--on-primary)"><sc-if value="{{ p.suggest }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if></span>Suggest this product</button>
+                <button onClick="{{ p.toggleCommission }}" style="display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:none;padding:0;color:var(--ink);font:600 14.5px var(--f);cursor:pointer"><span style="width:22px;height:22px;flex:none;border-radius:6px;border:2px solid {{ p.cBd }};background:{{ p.cBg }};display:flex;align-items:center;justify-content:center;color:var(--on-primary)"><sc-if value="{{ p.commission }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if></span>I earn a commission</button>
+                <div style="border-top:1px solid var(--line);padding-top:4px"><button onClick="{{ p.remove }}" style="height:44px;padding:0;border:0;background:none;color:var(--bad);font:700 14px var(--f);cursor:pointer">Remove product</button></div>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+
+    <!-- BOTTOM SHEETS -->
+    <sc-if value="{{ sheetOpen }}">
+      <div style="position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end">
+        <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(8,10,22,.5)"></div>
+        <div style="position:relative;background:var(--card);border-radius:28px 28px 0 0;max-height:92%;overflow-y:auto;padding:8px 20px 26px;display:flex;flex-direction:column;gap:14px">
+          <div style="width:40px;height:5px;border-radius:3px;background:var(--line2);align-self:center"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:800 21px var(--f);letter-spacing:-.3px">{{ sheetTitle }}</span><button onClick="{{ closeSheet }}" aria-label="Close" style="width:44px;height:44px;margin-right:-10px;border:0;background:none;color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+
+          <sc-if value="{{ sh.meal }}">
+            <sc-if value="{{ m.vPick }}">
+              <sc-if value="{{ m.tooBig }}"><div style="padding:12px 14px;border-radius:14px;background:var(--bad-soft);font:400 13.5px/1.45 var(--f)"><b style="color:var(--bad)">That photo is over 8 MB.</b> Choose a smaller one, or take a new photo.</div></sc-if>
+              <div style="font:400 14px/1.45 var(--f);color:var(--ink2)">Snap your plate and NeuroCal will read it. You can fix anything it gets wrong.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <button onClick="{{ pickPhoto }}" style="height:120px;border-radius:18px;border:0;background:var(--primary);color:var(--on-primary);font:700 15px var(--f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" stroke-linejoin="round"></path><circle cx="12" cy="13" r="3.5"></circle></svg>Take a photo</button>
+                <button onClick="{{ pickPhoto }}" style="height:120px;border-radius:18px;border:0;background:var(--primary-soft);color:var(--primary-ink);font:700 15px var(--f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M20 15l-4.5-4.5L7 19"></path></svg>Choose a photo</button>
+              </div>
+              <button onClick="{{ handOnly }}" style="height:44px;border:0;background:none;color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Add items by hand instead</button>
+            </sc-if>
+            <sc-if value="{{ m.vPrev }}">
+              <div style="height:220px;border-radius:18px;overflow:hidden;background:{{ m.photoBg }};display:flex;align-items:center;justify-content:center"><span style="padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.45);color:#FFFFFF;font:600 13px var(--f)">{{ m.photoLabel }}</span></div>
+              <sc-if value="{{ m.err }}"><div style="padding:12px 14px;border-radius:14px;background:var(--bad-soft);font:400 13.5px/1.45 var(--f)"><b style="color:var(--bad)">{{ m.errTitle }}</b> {{ m.errBody }}</div></sc-if>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <button onClick="{{ differentPhoto }}" style="height:52px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 14.5px var(--f);cursor:pointer">Use a different photo</button>
+                <sc-if value="{{ m.canRead }}"><button onClick="{{ readPlate }}" style="height:52px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 14.5px var(--f);cursor:pointer">Read my plate</button></sc-if>
+                <sc-if value="{{ m.noFood }}"><button onClick="{{ handOnly }}" style="height:52px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 14.5px var(--f);cursor:pointer">Add by hand</button></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.vAn }}">
+              <div style="position:relative;height:220px;border-radius:18px;overflow:hidden;background:repeating-linear-gradient(45deg,#B9A58C 0 12px,#AE987D 12px 24px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+                <div style="position:absolute;inset:0;background:rgba(10,12,24,.45)"></div>
+                <div style="position:relative">{{ spinner }}</div>
+                <div style="position:relative;color:#FFFFFF;font:700 16px var(--f)">Reading your plate…</div>
+              </div>
+              <div style="font:400 13.5px var(--f);color:var(--ink2);text-align:center">Usually takes a few seconds.</div>
+            </sc-if>
+            <sc-if value="{{ m.vDet }}">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div style="width:56px;height:56px;flex:none;border-radius:12px;background:repeating-linear-gradient(45deg,#B9A58C 0 8px,#AE987D 8px 16px)"></div>
+                <div><div style="font:700 15px var(--f)">{{ m.foundTitle }}</div><div style="font:400 13px var(--f);color:var(--ink2)">{{ m.foundSub }}</div></div>
+              </div>
+              <sc-if value="{{ m.hasItems }}">
+                <div style="border:1px solid var(--line);border-radius:16px;overflow:hidden">
+                  <sc-for list="{{ m.items }}" as="it" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:6px;align-items:center;padding:8px 14px 8px 4px;border-top:{{ it.border }}">
+                      <button onClick="{{ it.toggle }}" aria-label="{{ it.aria }}" style="width:44px;height:44px;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0"><span style="width:22px;height:22px;border-radius:6px;border:2px solid {{ it.boxBd }};background:{{ it.boxBg }};display:flex;align-items:center;justify-content:center;color:var(--on-primary)"><sc-if value="{{ it.on }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if></span></button>
+                      <div style="min-width:0;display:flex;flex-direction:column;gap:4px;opacity:{{ it.op }}">
+                        <div style="font:600 15px var(--f)">{{ it.name }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="font:500 13px var(--f);color:var(--ink2)">{{ it.portion }}</span><span style="padding:1px 7px;border-radius:6px;background:{{ it.glBg }};color:{{ it.glInk }};font:700 11.5px var(--f)">{{ it.glLabel }}</span><sc-if value="{{ it.guess }}"><span style="padding:0 7px;border-radius:6px;border:1px dashed var(--line2);color:var(--ink2);font:600 11.5px var(--f)">best guess</span></sc-if></div>
+                      </div>
+                      <span style="font:700 14px var(--f);opacity:{{ it.op }}">{{ it.kcalText }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.handClosed }}"><button onClick="{{ openHand }}" style="height:48px;border:1.5px dashed var(--line2);border-radius:14px;background:none;color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">+ Add an item by hand</button></sc-if>
+              <sc-if value="{{ m.handOpen }}">
+                <div style="border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px">
+                  <div style="font:700 15px var(--f)">Add an item by hand</div>
+                  <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px">
+                    <sc-for list="{{ m.handFields }}" as="hf" hint-placeholder-count="6"><label style="display:flex;flex-direction:column;gap:4px;grid-column:{{ hf.span }};min-width:0"><span style="font:600 12px var(--f);color:var(--ink2)">{{ hf.label }}</span><input value="{{ hf.value }}" onChange="{{ hf.onChange }}" placeholder="{{ hf.ph }}" style="height:46px;min-width:0;width:100%;border:1.5px solid var(--line2);border-radius:12px;padding:0 12px;background:var(--card);color:var(--ink);font:500 15px var(--f)"></label></sc-for>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button onClick="{{ closeHand }}" style="height:46px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);font:700 14px var(--f);cursor:pointer">Cancel</button><button onClick="{{ addHand }}" style="height:46px;border:0;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);cursor:pointer">Add item</button></div>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px var(--f);color:var(--ink2)">Meal type</span>
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--page)"><sc-for list="{{ m.types }}" as="ty" hint-placeholder-count="4"><button onClick="{{ ty.pick }}" style="height:44px;border:0;border-radius:10px;background:{{ ty.bg }};color:{{ ty.ink }};box-shadow:{{ ty.sh }};font:700 13px var(--f);cursor:pointer">{{ ty.name }}</button></sc-for></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px"><sc-for list="{{ m.totals }}" as="x" hint-placeholder-count="4"><div style="background:var(--page);border-radius:12px;padding:10px 4px;text-align:center"><div style="font:800 17px var(--f)">{{ x.v }}</div><div style="font:500 11.5px var(--f);color:var(--ink2)">{{ x.k }}</div></div></sc-for></div>
+              <sc-if value="{{ m.highGL }}"><div style="padding:12px 14px;border-radius:14px;background:var(--mid-soft);font:400 13.5px/1.45 var(--f);text-wrap:pretty"><b style="color:var(--mid)">High glycemic load.</b> {{ m.glNote }}</div></sc-if>
+              <sc-if value="{{ m.failed }}"><div style="padding:12px 14px;border-radius:14px;background:var(--bad-soft);font:400 13.5px/1.45 var(--f)"><b style="color:var(--bad)">Couldn't save this meal.</b> Check your connection and try again. Nothing's been lost.</div></sc-if>
+              <sc-if value="{{ m.offline }}">
+                <div style="padding:12px 14px;border-radius:14px;background:var(--good-soft);font:400 13.5px/1.45 var(--f)"><b style="color:var(--good)">Saved on this phone.</b> You're offline, so it'll sync when you reconnect.</div>
+                <button onClick="{{ offlineDone }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 17px var(--f);cursor:pointer">Done</button>
+              </sc-if>
+              <sc-if value="{{ m.showLog }}"><button onClick="{{ logMeal }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 17px var(--f);box-shadow:0 8px 24px var(--primary-glow);cursor:pointer;opacity:{{ m.logOp }}">{{ m.logLabel }}</button></sc-if>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ sh.check }}">
+            <div style="font:400 14px var(--f);color:var(--ink2)">How do you feel right now? Choose any.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ ck.moods }}" as="md" hint-placeholder-count="7"><button onClick="{{ md.toggle }}" aria-pressed="{{ md.on }}" style="height:44px;padding:0 16px;border-radius:999px;border:1.5px solid {{ md.bd }};background:{{ md.bg }};color:{{ md.ink }};font:700 14.5px var(--f);cursor:pointer">{{ md.name }}</button></sc-for></div>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px var(--f);color:var(--ink2)">Note (optional)</span><textarea value="{{ note }}" onChange="{{ onNote }}" rows="3" placeholder="Slept badly, big meeting at 10…" style="border:1.5px solid var(--line2);border-radius:12px;padding:12px 14px;background:var(--card);color:var(--ink);font:500 15px/1.4 var(--f);width:100%;resize:vertical"></textarea></label>
+            <button onClick="{{ saveCheck }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 17px var(--f);cursor:pointer;opacity:{{ ck.op }}">Save check-in</button>
+          </sc-if>
+
+          <sc-if value="{{ sh.sleep }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px var(--f);color:var(--ink2)">Went to bed</span><input type="time" value="{{ bed }}" onChange="{{ onBed }}" style="height:56px;border:1.5px solid var(--line2);border-radius:14px;padding:0 14px;background:var(--card);color:var(--ink);font:700 20px var(--f);width:100%"></label>
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px var(--f);color:var(--ink2)">Woke up</span><input type="time" value="{{ wake }}" onChange="{{ onWake }}" style="height:56px;border:1.5px solid {{ sl.wakeBd }};border-radius:14px;padding:0 14px;background:var(--card);color:var(--ink);font:700 20px var(--f);width:100%"></label>
+            </div>
+            <div style="padding:14px 16px;border-radius:14px;background:var(--page);display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 14px var(--f);color:var(--ink2)">You slept</span><span style="font:800 24px var(--f);letter-spacing:-.3px">{{ sl.dur }}</span></div>
+            <sc-if value="{{ sl.future }}"><div style="padding:12px 14px;border-radius:14px;background:var(--bad-soft);font:400 13.5px/1.45 var(--f)"><b style="color:var(--bad)">That wake-up time hasn't happened yet.</b> It's 15:27 now. Check the time, or log tonight's sleep tomorrow morning.</div></sc-if>
+            <button onClick="{{ logSleep }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 17px var(--f);cursor:pointer;opacity:{{ sl.op }}">Log sleep</button>
+          </sc-if>
+
+          <sc-if value="{{ sh.screen }}">
+            <div style="font:400 14px var(--f);color:var(--ink2)">Minutes on screens after 10pm last night.</div>
+            <div style="display:flex;align-items:center;gap:12px"><input type="number" min="0" value="{{ screenMins }}" onChange="{{ onMins }}" aria-label="Minutes" style="height:64px;width:120px;border:1.5px solid var(--line2);border-radius:14px;background:var(--card);color:var(--ink);font:800 28px var(--f);text-align:center"><span style="font:600 15px var(--f);color:var(--ink2)">minutes</span></div>
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px"><sc-for list="{{ quick }}" as="q" hint-placeholder-count="5"><button onClick="{{ q.pick }}" style="height:44px;border-radius:12px;border:1.5px solid {{ q.bd }};background:{{ q.bg }};color:{{ q.ink }};font:700 14px var(--f);cursor:pointer">{{ q.name }}</button></sc-for></div>
+            <button onClick="{{ logScreen }}" style="height:56px;border:0;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 17px var(--f);cursor:pointer">Log screen time</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toastOn }}">
+      <div role="status" style="position:absolute;left:16px;right:16px;bottom:100px;z-index:40;display:flex;justify-content:center;pointer-events:none"><div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f);box-shadow:0 10px 30px rgba(0,0,0,.25)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>{{ toast }}</div></div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- SHARED PIECES -->
+  <sc-if value="{{ showShared }}">
+  <div style="{{ board }}">
+    <div style="font:800 26px var(--f);letter-spacing:-.4px">Shared pieces</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 13px var(--f);color:var(--ink2);letter-spacing:.06em;text-transform:uppercase">App icon, logo and wordmark</div>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px">
+        <div style="width:108px;height:108px;border-radius:26px;background:#1A1442;display:flex;align-items:center;justify-content:center"><svg width="64" height="64" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#3CC7BF"></circle></svg></div>
+        <div style="width:64px;height:64px;border-radius:16px;background:#1A1442;display:flex;align-items:center;justify-content:center"><svg width="38" height="38" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#3CC7BF"></circle></svg></div>
+        <div style="width:40px;height:40px;border-radius:10px;background:#1A1442;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="#3CC7BF"></circle></svg></div>
+        <div style="width:1px;align-self:stretch;background:var(--line)"></div>
+        <div style="display:flex;align-items:center;gap:10px"><svg width="40" height="40" viewBox="0 0 28 28"><path d="M20.5 7.5 A9.5 9.5 0 1 0 20.5 20.5" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23.5" cy="14" r="2.2" fill="var(--teal)"></circle></svg><span style="font:800 30px var(--f);letter-spacing:-.6px">NeuroCal</span></div>
+        <span style="font:800 30px var(--f);letter-spacing:-.6px;color:var(--primary-ink)">NeuroCal</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 13px var(--f);color:var(--ink2);letter-spacing:.06em;text-transform:uppercase">Toasts</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Meal logged</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Signed out</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Check-in saved</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Saved offline</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 8px 8px 18px;border-radius:14px;background:var(--toast);color:var(--toast-ink);font:600 14.5px var(--f)">Couldn't save. Check your connection.<span style="padding:8px 12px;border-radius:10px;font-weight:700;color:var(--toast-act)">Retry</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:700 13px var(--f);color:var(--ink2);letter-spacing:.06em;text-transform:uppercase">List states (used by every list)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 13px var(--f);color:var(--ink2)">Empty</span><div style="border:1.5px dashed var(--line2);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><div style="font:700 16px var(--f)">Nothing here yet</div><div style="font:400 14px/1.45 var(--f);color:var(--ink2)">Say what goes here and the one action that fills it.</div><span style="height:44px;padding:0 16px;border-radius:999px;background:var(--primary-soft);color:var(--primary-ink);font:700 14px var(--f);display:flex;align-items:center">Log a meal</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 13px var(--f);color:var(--ink2)">Loading</span><div style="background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden"><div style="display:grid;grid-template-columns:40px minmax(0,1fr) 54px;gap:12px;padding:14px;align-items:center"><span style="height:12px;border-radius:6px;background:var(--skel)"></span><span style="height:14px;border-radius:7px;background:var(--skel)"></span><span style="height:12px;border-radius:6px;background:var(--skel)"></span></div><div style="display:grid;grid-template-columns:40px minmax(0,1fr) 54px;gap:12px;padding:14px;align-items:center;border-top:1px solid var(--line)"><span style="height:12px;border-radius:6px;background:var(--skel)"></span><span style="height:14px;width:70%;border-radius:7px;background:var(--skel)"></span><span style="height:12px;border-radius:6px;background:var(--skel)"></span></div><div style="display:grid;grid-template-columns:40px minmax(0,1fr) 54px;gap:12px;padding:14px;align-items:center;border-top:1px solid var(--line)"><span style="height:12px;border-radius:6px;background:var(--skel)"></span><span style="height:14px;width:85%;border-radius:7px;background:var(--skel)"></span><span style="height:12px;border-radius:6px;background:var(--skel)"></span></div></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 13px var(--f);color:var(--ink2)">Failed to load</span><div style="background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><div style="font:700 16px var(--f)">Couldn't load this</div><div style="font:400 14px/1.45 var(--f);color:var(--ink2)">Check your connection and try again.</div><span style="height:44px;padding:0 18px;border-radius:999px;background:var(--primary);color:var(--on-primary);font:700 14px var(--f);display:flex;align-items:center">Try again</span></div></div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#F3F4FA','--card':'#FFFFFF','--ink':'#121829','--ink2':'#5B6276','--ink3':'#7C8296','--line':'#E3E5EF','--line2':'#CFD3E2','--track':'#E1E4EE','--skel':'#E6E8F1','--bar':'#D9D3F8','--primary':'#6A4FDB','--primary-ink':'#5B3FD0','--primary-soft':'#EEEAFD','--on-primary':'#FFFFFF','--primary-glow':'rgba(106,79,219,.28)','--teal':'#159C98','--teal-soft':'#DDF3F1','--teal-ink':'#0E7471','--good':'#178A63','--good-bar':'#1E9E74','--good-soft':'#E3F4EC','--mid':'#9A6200','--mid-bar':'#E09A2B','--mid-soft':'#FCF1DE','--bad':'#B83A27','--bad-soft':'#FBE9E5','--toast':'#1B2033','--toast-ink':'#FFFFFF','--toast-act':'#B4A2FF'},
+    dark:{'--page':'#0E1325','--card':'#161C31','--ink':'#EEF0F7','--ink2':'#A3A9BD','--ink3':'#8A90A6','--line':'#262D45','--line2':'#353D58','--track':'#2A3149','--skel':'#20263D','--bar':'#3A3570','--primary':'#9D85FA','--primary-ink':'#B4A2FF','--primary-soft':'#2A2550','--on-primary':'#14102B','--primary-glow':'rgba(0,0,0,.4)','--teal':'#3CC7BF','--teal-soft':'#173634','--teal-ink':'#5FD9D1','--good':'#4FD1A1','--good-bar':'#3CC08D','--good-soft':'#173329','--mid':'#F2B85A','--mid-bar':'#E6A33A','--mid-soft':'#3A2E17','--bad':'#FF8A75','--bad-soft':'#3A1E22','--toast':'#EEF0F7','--toast-ink':'#121829','--toast-act':'#5B3FD0'}
+  };
+  static NAV = [['today','8 · Today'],['week','9 · This week'],['sleep','10 · Sleep and evenings'],['settings','11 · Settings'],['products','12 · Manage products'],['s:meal','A · Log a meal'],['s:check','B · Check in'],['s:sleep','C · Log sleep'],['s:screen','D · Log screen time'],['shared','Shared pieces']];
+  static SS = {
+    today:[['normal','Populated'],['noScore','No score yet'],['noMeals','No meals yet'],['loading','Loading'],['error','Failed to load'],['over','Over budget'],['offline','Saved offline']],
+    week:[['normal','Populated'],['loading','Loading'],['error','Failed to load'],['empty','Not enough data']],
+    sleep:[['normal','Populated'],['empty','No sleep yet']],
+    settings:[['member','Member'],['admin','Admin'],['iphone','On iPhone']],
+    products:[['admin','Admin'],['notAdmin','Not an admin'],['empty','No matches']],
+    's:meal':[['pick','Choose photo'],['preview','Preview'],['analysing','Reading plate'],['detected','Detected items'],['dark','Too dark'],['blurry','Blurry'],['nofood','No food found'],['toobig','Over 8 MB'],['saveFailed','Failed to save'],['offline','Saved offline']],
+    's:sleep':[['normal','Normal'],['future','Wake-up not yet']]
+  };
+  static MEALS = () => [
+    {id:1,time:'07:40',type:'Breakfast',items:'Greek yoghurt, blueberries, oats',kcal:420,p:24,c:58,f:11,high:false},
+    {id:2,time:'10:30',type:'Snack',items:'Flat white, banana',kcal:210,p:8,c:38,f:5,high:false},
+    {id:3,time:'13:05',type:'Lunch',items:'Chicken wrap, fries',kcal:610,p:46,c:46,f:25,high:true}];
+  static DINNER = {id:4,time:'19:20',type:'Dinner',items:'Lasagne, garlic bread',kcal:1180,p:52,c:118,f:54,high:true};
+  static PENDING = {id:5,time:'15:05',type:'Snack',items:'Apple, almonds',kcal:220,p:6,c:22,f:13,high:false,pending:true};
+  static ITEMS = () => [
+    {id:1,name:'Grilled chicken',portion:'140 g',kcal:230,p:43,c:0,f:6,gl:'Low',on:true,guess:false},
+    {id:2,name:'White rice',portion:'About 120 g',kcal:156,p:3,c:34,f:0,gl:'High',on:true,guess:true},
+    {id:3,name:'Roasted peppers',portion:'80 g',kcal:44,p:1,c:7,f:2,gl:'Low',on:true,guess:false}];
+  static PRODUCTS = () => [
+    {id:1,name:'Magnesium glycinate, 200 mg',desc:'Gentle evening magnesium. Our own formula, third-party tested.',owner:'ours',supp:true,link:'https://neurocal.app/shop/magnesium',builtIn:'https://neurocal.app/shop/magnesium',suggest:true,commission:false,words:'sleep, evening, magnesium'},
+    {id:2,name:'Amber-lens evening glasses',desc:'Blocks most blue light from screens after sunset.',owner:'aff',supp:false,link:'https://example-shop.com/amber?ref=nc',builtIn:'https://example-shop.com/amber',suggest:true,commission:true,words:'screens, light, evening'},
+    {id:3,name:'Sunrise alarm lamp',desc:'Brightens slowly over 30 minutes before your alarm.',owner:'aff',supp:false,link:'',builtIn:'https://example-shop.com/sunrise',suggest:true,commission:true,words:'waking, morning, sleep'},
+    {id:4,name:'Omega-3 fish oil',desc:'1,000 mg EPA and DHA per serving.',owner:'other',supp:true,link:'',builtIn:'https://example-brand.com/omega3',suggest:false,commission:false,words:'focus, fish oil'}];
+  static DAYS = [
+    {s:'Fri',num:26,long:'Friday 26 September',focus:68,kcal:2050,prot:112,sleep:440,last:'22:40',feel:'Sharp'},
+    {s:'Sat',num:27,long:'Saturday 27 September',focus:54,kcal:2480,prot:84,sleep:430,last:'21:30',feel:'Low energy'},
+    {s:'Sun',num:28,long:'Sunday 28 September',focus:61,kcal:2310,prot:96,sleep:410,last:'19:45',feel:'Calm'},
+    {s:'Mon',num:29,long:'Monday 29 September',focus:72,kcal:2120,prot:121,sleep:460,last:'21:50',feel:'Sharp'},
+    {s:'Tue',num:30,long:'Tuesday 30 September',focus:58,kcal:2390,prot:90,sleep:385,last:'22:55',feel:'Wired'},
+    {s:'Wed',num:1,long:'Wednesday 1 October',focus:49,kcal:2560,prot:78,sleep:355,last:'22:40',feel:'Brain fog'},
+    {s:'Thu',num:2,long:'Thursday 2 October · today',focus:74,kcal:1240,prot:78,sleep:432,last:'13:05',feel:'Calm'}];
+  static NIGHTS = [['Thu','Thu 25 Sep','22:50','06:10','19:40',20],['Fri','Fri 26','00:30','07:40','22:40',75],['Sat','Sat 27','23:50','06:40','21:30',45],['Sun','Sun 28','22:40','06:20','19:45',0],['Mon','Mon 29','23:55','06:20','21:50',60],['Tue','Tue 30','00:50','06:45','22:55',90],['Wed','Wed 1 Oct','23:40','06:52','22:40',30]];
+  static RECIPES = [
+    {name:'Salmon, lentils and greens',min:25,kcal:540,p:42,c:38,f:22,source:'From The Low-GI Kitchen, page 84',why:"Low glycemic load and high protein. Eat it by 19:30 and tonight won't drag tomorrow's score."},
+    {name:'Chickpea and spinach stew',min:30,kcal:480,p:24,c:56,f:16,source:'From NeuroCal recipes',why:'Slow carbs and fibre keep your energy level through the evening, without a spike.'},
+    {name:'Turkey and avocado rice bowl',min:20,kcal:610,p:45,c:52,f:24,source:'From Weeknight Protein, page 112',why:"Closes most of today's 62 g protein gap in one meal."}];
+  static LIGHT = {name:'Miso soup with tofu',min:10,kcal:160,p:12,c:9,f:7,source:'From NeuroCal recipes',why:"You're over for today. If you're still hungry, this is light and won't spike before bed."};
+  static MOODS = ['Sharp','Low focus','Brain fog','Low energy','Wired','Stressed','Calm'];
+  static NOW = 927;
+  static toMin(s){const [h,m]=(s||'0:0').split(':').map(Number);return (h||0)*60+(m||0);}
+  static fmtH(m){return `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`;}
+  static clk(s){const [h,m]=s.split(':').map(Number);return ((h<12?h+24:h)-18+m/60)/18*100;}
+  static tick(on){return {bg:on?'var(--primary)':'transparent',bd:on?'var(--primary)':'var(--line2)'};}
+  static n(x){return Number(x).toLocaleString('en-GB');}
+
+  scroller = React.createRef();
+  helpsRef = React.createRef();
+  state = {
+    screen:'today', theme:this.props.theme==='dark'?'dark':'light',
+    todayState:'normal', weekState:'normal', sleepState:'normal', settingsState:'admin', productsState:'admin',
+    sheet:null, mealStep:'pick', items:Component.ITEMS(), handOpen:false, hand:{food:'',portion:'',kcal:'',p:'',c:'',f:''}, mealType:'Lunch',
+    moods:[], note:'', bed:'23:40', wake:'06:52', screenMins:'30', day:6, toast:null,
+    meals:Component.MEALS(), feel:{moods:['Calm'],time:'14:10'}, recipe:0,
+    products:Component.PRODUCTS(), drafts:{}, pFilter:'all', search:'',
+    pf:{name:'',desc:'',link:'',words:'',owner:'ours',supp:false}
+  };
+  componentWillUnmount(){clearTimeout(this.tt);clearTimeout(this.at);}
+  toastMsg = msg => {clearTimeout(this.tt);this.setState({toast:msg});this.tt=setTimeout(()=>this.setState({toast:null}),2400);};
+  top = () => {const el=this.scroller.current;if(el) el.scrollTop=0;};
+  go = screen => {clearTimeout(this.at);this.setState({screen,sheet:null},this.top);};
+  open = sheet => {
+    clearTimeout(this.at);
+    const r={meal:{mealStep:'pick',items:Component.ITEMS(),handOpen:false,mealType:'Lunch'},check:{moods:[],note:''},sleep:{bed:'23:40',wake:'06:52'},screen:{screenMins:'30'}}[sheet];
+    this.setState({sheet,...r});
+  };
+  close = () => {clearTimeout(this.at);this.setState({sheet:null});};
+  setToday = v => {
+    const M=Component.MEALS();
+    this.setState({todayState:v,meals:v==='noMeals'?[]:v==='over'?[...M,{...Component.DINNER}]:v==='offline'?[...M,{...Component.PENDING}]:M,feel:v==='noMeals'?null:{moods:['Calm'],time:'14:10'}});
+  };
+  navGo = k => {
+    if(k.startsWith('s:')){ if(this.state.screen!=='today') this.go('today'); this.open(k.slice(2)); }
+    else this.go(k);
+  };
+  panelState = (k,v) => {
+    if(k==='today') return this.setToday(v);
+    if(k==='products') return this.setState({productsState:v,search:v==='empty'?'kombucha':'',pFilter:'all'});
+    if(k==='s:meal'){clearTimeout(this.at);return this.setState({mealStep:v,items:v==='nofood'?[]:Component.ITEMS(),handOpen:false});}
+    if(k==='s:sleep') return this.setState({bed:'23:40',wake:v==='future'?'16:10':'06:52'});
+    this.setState({[k+'State']:v});
+  };
+  isFuture(){const w=Component.toMin(this.state.wake),b=Component.toMin(this.state.bed);return w>Component.NOW&&w<b;}
+  upd = (id,o) => this.setState(s=>({products:s.products.map(p=>p.id===id?{...p,...o}:p)}));
+  labels(p,admin){
+    const L=[];
+    if(p.owner==='ours') L.push({name:'Our brand',bg:'var(--primary-soft)',ink:'var(--primary-ink)'});
+    if(p.owner==='aff') L.push({name:'Affiliate link',bg:'var(--teal-soft)',ink:'var(--teal-ink)'});
+    if(p.owner==='other'&&admin) L.push({name:'Other brand',bg:'var(--page)',ink:'var(--ink2)'});
+    if(p.supp) L.push({name:'Supplement',bg:'var(--mid-soft)',ink:'var(--mid)'});
+    if(admin&&!p.suggest) L.push({name:'Turned off',bg:'var(--bad-soft)',ink:'var(--bad)'});
+    return L;
+  }
+  mealTotals(){const on=this.state.items.filter(i=>i.on);return on.reduce((a,i)=>({kcal:a.kcal+i.kcal,p:a.p+i.p,c:a.c+i.c,f:a.f+i.f}),{kcal:0,p:0,c:0,f:0});}
+  logMeal = () => {
+    const s=this.state, on=s.items.filter(i=>i.on);
+    if(!on.length) return;
+    const t=this.mealTotals(), names=on.map(i=>i.name.toLowerCase()).join(', ');
+    const meal={id:Date.now(),time:'15:27',type:s.mealType,items:names.charAt(0).toUpperCase()+names.slice(1),...t,high:on.some(i=>i.gl==='High')};
+    return meal;
+  };
+
+  renderVals(){
+    const C=Component, s=this.state, th=s.theme, n=C.n;
+    const key=s.sheet?'s:'+s.sheet:s.screen;
+    const nav=C.NAV.map(([k,label])=>({label,bg:k===key?'#EEEAFD':'transparent',ink:k===key?'#5B3FD0':'#121829',go:()=>this.navGo(k)}));
+    const future=this.isFuture();
+    const cur={today:s.todayState,week:s.weekState,sleep:s.sleepState,settings:s.settingsState,products:s.productsState,'s:meal':s.mealStep,'s:sleep':future?'future':'normal'}[key];
+    const states=(C.SS[key]||[]).map(([v,label])=>{const on=v===cur;return {label,bg:on?'#5B3FD0':'#FFFFFF',ink:on?'#FFFFFF':'#121829',bd:on?'#5B3FD0':'#CFD3E2',go:()=>this.panelState(key,v)};});
+    const themes=['light','dark'].map(k=>({label:k==='light'?'Light':'Dark',bg:th===k?'#FFFFFF':'transparent',sh:th===k?'0 1px 3px rgba(0,0,0,.12)':'none',go:()=>this.setState({theme:k})}));
+    const vars={...C.T[th],'--f':"'Plus Jakarta Sans',sans-serif"};
+
+    // Today
+    const ts=s.todayState, loading=ts==='loading', error=ts==='error', noScore=ts==='noScore';
+    const G=(v,p,sub)=>({has:true,value:v,pct:p,sub,ink:'var(--good)',bar:'var(--good-bar)'}), Md=(v,p,sub)=>({has:true,value:v,pct:p,sub,ink:'var(--mid)',bar:'var(--mid-bar)'});
+    const inputs=[
+      {name:'Sleep',...(noScore?{missing:true,act:()=>this.open('sleep')}:G('7h 12m','82%','Last night'))},
+      {name:'Evening timing',...Md('Late','40%','Dinner at 22:40')},
+      {name:'Glycemic load',...Md('Medium','58%',"Yesterday's food")},
+      {name:'Stress',...G('Low','80%','2 check-ins today')}];
+    const CIRC=326.7, score=noScore?null:74;
+    const tot=s.meals.reduce((a,m)=>({kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}),{kcal:0,p:0,c:0,f:0});
+    const left=2200-tot.kcal, over=left<0, pend=s.meals.filter(m=>m.pending).length;
+    const t={
+      loading,error,ready:!loading&&!error,pending:pend>0,pendingTitle:pend===1?'1 meal saved offline':`${pend} meals saved offline`,
+      dash:score==null?`0 ${CIRC}`:`${CIRC*score/100} ${CIRC}`,trackDash:score==null?'4 7':'none',
+      scoreText:score==null?'–':String(score),scoreSub:score==null?'':'of 100',scoreInk:score==null?'var(--ink3)':'var(--ink)',
+      title:score==null?'No score yet':'Good',
+      explain:score==null?"Log last night's sleep to get today's score. Sleep is the biggest of the four inputs.":"Steady until about 16:00. Last night's 22:40 dinner is the biggest drag; good sleep and low stress are holding it up.",
+      inputs,
+      meals:s.meals.map((m,i)=>({...m,kcal:n(m.kcal)+' kcal',border:i?'1px solid var(--line)':'0',remove:()=>{this.setState(x=>({meals:x.meals.filter(y=>y.id!==m.id)}));this.toastMsg('Meal removed');}})),
+      noMeals:!s.meals.length,hasMeals:!!s.meals.length,mealCount:s.meals.length?`${s.meals.length} logged`:''
+    };
+    const c={
+      left:over?`${n(-left)} kcal over`:`${n(left)} kcal left`,leftInk:over?'var(--bad)':'var(--ink)',
+      eaten:tot.kcal?`${n(tot.kcal)} of 2,200 eaten`:'Nothing eaten yet',pct:Math.min(100,tot.kcal/2200*100)+'%',bar:over?'var(--bad)':'var(--primary)',over,
+      macros:[['Protein',tot.p,140],['Carbs',tot.c,220],['Fat',tot.f,75]].map(([k,v,tg])=>({k,v:`${v} / ${tg} g`,pct:Math.min(100,v/tg*100)+'%',bar:v>tg?'var(--mid-bar)':'var(--teal)'}))
+    };
+    const feel=s.feel?{has:true,none:false,label:`You said you feel · ${s.feel.time}`,moods:s.feel.moods.map(name=>({name}))}:{has:false,none:true,label:'How you feel',moods:[]};
+    const R=over?C.LIGHT:C.RECIPES[s.recipe%C.RECIPES.length];
+    const rec={...R,meta:`${R.min} min · ${R.kcal} kcal`,macros:[{name:`${R.p} g protein`},{name:`${R.c} g carbs`},{name:`${R.f} g fat`}]};
+
+    // Week
+    const D=C.DAYS, sel=D[s.day], ws=s.weekState;
+    const pickDay=i=>()=>this.setState({day:i});
+    const mk=(title,note,fn,valf,line,lineLabel)=>({title,note,line:line!=null,lineAt:(line||0)+'%',lineLabel:lineLabel||'',bars:D.map((d,i)=>({h:Math.max(3,fn(d))+'%',bg:i===s.day?'var(--primary)':'var(--bar)',val:valf(d),labInk:i===s.day?'var(--ink)':'var(--ink3)',label:`${d.long}: ${valf(d)}`,pick:pickDay(i)}))});
+    const wprod=s.products.filter(p=>p.suggest).map((p,i)=>({name:p.name,desc:p.desc,link:p.link||p.builtIn,labels:this.labels(p,false),border:i?'1px solid var(--line)':'0'}));
+    const w={
+      loading:ws==='loading',error:ws==='error',empty:ws==='empty',ready:ws==='normal',
+      selLong:sel.long,
+      readout:[{k:'Focus Score',v:String(sel.focus),s:'of 100'},{k:'Calories',v:n(sel.kcal),s:s.day===6?'so far, of 2,200':'of 2,200 target'},{k:'Sleep',v:C.fmtH(sel.sleep),s:'the night before'},{k:'Last meal',v:sel.last,s:C.toMin(sel.last)>=1260?'after 9pm':'before 9pm'}],
+      days:D.map((d,i)=>({short:d.s,num:String(d.num),bg:i===s.day?'var(--primary)':'var(--card)',ink:i===s.day?'var(--on-primary)':'var(--ink)',bd:i===s.day?'var(--primary)':'var(--line)',pick:pickDay(i)})),
+      charts:[mk('Focus Score','out of 100',d=>d.focus,d=>String(d.focus)),mk('Calories','dashed line is your target',d=>Math.min(100,d.kcal/2800*100),d=>(d.kcal/1000).toFixed(1)+'k',78.57,'2,200'),mk('Sleep','hours',d=>d.sleep/600*100,d=>(d.sleep/60).toFixed(1),80,'8h')],
+      products:wprod,
+      rows:D.map((d,i)=>({day:`${d.s} ${d.num}`,focus:String(d.focus),kcal:n(d.kcal),prot:d.prot+' g',sleep:C.fmtH(d.sleep),last:d.last,lastInk:C.toMin(d.last)>=1260?'var(--mid)':'var(--ink)',feel:d.feel,border:i?'1px solid var(--line)':'0',bg:i===s.day?'var(--primary-soft)':'transparent',pick:pickDay(i)}))
+    };
+    const weak=[{t:'Late last meals on 5 of 7 days',s:'Your Focus Score was 11 points lower, on average, the morning after.'},{t:'Under 7 hours of sleep on 3 nights',s:'Monday, Tuesday and Saturday nights.'},{t:'Over your calorie target on 4 days',s:'Mostly from evening meals.'}];
+    const routines=[
+      {name:'Kitchen closes at 20:30',why:'You scored higher the morning after finishing dinner before 21:00.',steps:['Eat dinner by 20:00.',"If you're hungry later, have herbal tea or a small protein snack.","Brush your teeth at 20:30 as your 'kitchen closed' cue."]},
+      {name:'Screens down by 22:00',why:'After 45+ minutes of screens past 10pm, you slept 49 minutes less.',steps:['Set a 21:45 reminder to charge your phone outside the bedroom.','Switch lamps to warm light.','Read or stretch for 20 minutes before bed.']}
+    ].map(r=>({...r,steps:r.steps.map((t,i)=>({n:String(i+1),t}))}));
+
+    // Sleep
+    const slEmpty=s.sleepState==='empty';
+    const nights=C.NIGHTS.map(([short,label,bed,wake,meal,scr],i)=>{const a=C.clk(bed),b=C.clk(wake),dur=(C.toMin(wake)-C.toMin(bed)+1440)%1440;return {short,label,bed,wake,meal,dm:dur,dur:C.fmtH(dur),scr:scr?scr+' min':'None',sleepL:a+'%',sleepW:(b-a)+'%',mealL:C.clk(meal)+'%',scrW:(scr/60/18*100)+'%',mealInk:C.toMin(meal)>=1260?'var(--mid)':'var(--ink)',border:i?'1px solid var(--line)':'0'};});
+    const avg=Math.round(nights.reduce((a,x)=>a+x.dm,0)/nights.length), lateN=C.NIGHTS.filter(x=>C.toMin(x[4])>=1260).length;
+    const sdur=(C.toMin(s.wake)-C.toMin(s.bed)+1440)%1440;
+    const sl={
+      empty:slEmpty,ready:!slEmpty,
+      summary:slEmpty?[{v:'–',k:'Average sleep'},{v:'–',k:'Usual bedtime'},{v:'–',k:'Nights eaten after 9pm'}]:[{v:C.fmtH(avg),k:'Average sleep'},{v:'23:50',k:'Usual bedtime'},{v:`${lateN} of 7`,k:'Nights eaten after 9pm'}],
+      axis:[['18',0],['21',16.667],['00',33.333],['03',50],['06',66.667],['09',83.333],['12',100]].map(([t,l])=>({t,left:l+'%',tx:l===0?'none':l===100?'translateX(-100%)':'translateX(-50%)'})),
+      nights,
+      insights:[{t:'You ate after 9pm on 5 of 7 nights. On those nights you went to bed about 80 minutes later.'},{t:'After 45 minutes or more of screens past 10pm, you slept 49 minutes less: 6h 35m against 7h 24m.'},{t:'Your two longest sleeps, Sunday and Thursday, both started before 23:00.'}],
+      dur:C.fmtH(sdur),future,wakeBd:future?'var(--bad)':'var(--line2)',op:future?.45:1
+    };
+
+    // Settings
+    const ss=s.settingsState;
+    const set={admin:ss!=='member',iphone:ss==='iphone',android:ss!=='iphone'};
+    const profile=[['Time zone','Europe/London'],['Diet','Mediterranean'],['Goals','Steadier focus, better sleep'],['Daily calories','2,200 kcal'],['Macros','140 g protein · 220 g carbs · 75 g fat']].map(([k,v])=>({k,v}));
+    const iosSteps=['Tap the Share button at the bottom of Safari.','Scroll down and tap Add to Home Screen.','Tap Add. NeuroCal appears on your home screen.'].map((t,i)=>({n:String(i+1),t}));
+    const dark=th==='dark';
+
+    // Products
+    const P=s.products, q=s.search.trim().toLowerCase();
+    const cnt={all:P.length,ours:P.filter(p=>p.owner==='ours').length,aff:P.filter(p=>p.owner==='aff').length,other:P.filter(p=>p.owner==='other').length,off:P.filter(p=>!p.suggest).length};
+    const plist=P.filter(p=>(s.pFilter==='all'||(s.pFilter==='off'?!p.suggest:p.owner===s.pFilter))&&(!q||(p.name+' '+p.desc+' '+(p.words||'')).toLowerCase().includes(q))).map(p=>{
+      const draft=s.drafts[p.id]!=null?s.drafts[p.id]:p.link, st=C.tick(p.suggest), cm=C.tick(p.commission);
+      return {name:p.name,desc:p.desc,labels:this.labels(p,true),draft,
+        onLink:e=>{const v=e.target.value;this.setState(x=>({drafts:{...x.drafts,[p.id]:v}}));},
+        save:()=>{this.upd(p.id,{link:draft});this.toastMsg('Link saved');},
+        useBuiltIn:()=>{this.upd(p.id,{link:p.builtIn});this.setState(x=>({drafts:{...x.drafts,[p.id]:p.builtIn}}));this.toastMsg('Using the built-in link');},
+        suggest:p.suggest,sBg:st.bg,sBd:st.bd,commission:p.commission,cBg:cm.bg,cBd:cm.bd,
+        toggleSuggest:()=>this.upd(p.id,{suggest:!p.suggest}),toggleCommission:()=>this.upd(p.id,{commission:!p.commission}),
+        remove:()=>{this.setState(x=>({products:x.products.filter(y=>y.id!==p.id)}));this.toastMsg('Product removed');}};
+    });
+    const pr={admin:s.productsState!=='notAdmin',notAdmin:s.productsState==='notAdmin',list:plist,none:!plist.length,
+      chips:[['all','All'],['ours','Our brand'],['aff','Affiliate'],['other','Other brands'],['off','Turned off']].map(([k,name])=>{const on=k===s.pFilter;return {name,n:String(cnt[k]),bg:on?'var(--ink)':'var(--card)',ink:on?'var(--page)':'var(--ink)',bd:on?'var(--ink)':'var(--line)',pick:()=>this.setState({pFilter:k})};})};
+    const pfSet=k=>e=>{const v=e.target.value;this.setState(x=>({pf:{...x.pf,[k]:v}}));};
+    const sp=C.tick(s.pf.supp);
+    const pf={
+      fields:[['name','Name','Magnesium glycinate, 200 mg'],['desc','Description','One or two lines people will see',true],['link','Link','https://'],['words','Words to suggest it for','sleep, evening, magnesium']].map(([k,label,ph,area])=>({label,ph,value:s.pf[k],onChange:pfSet(k),area:!!area,notArea:!area})),
+      owners:[['ours','Our brand'],['aff','Affiliate'],['other','Other brand']].map(([k,name])=>{const on=s.pf.owner===k;return {name,bg:on?'var(--card)':'transparent',ink:on?'var(--ink)':'var(--ink2)',sh:on?'0 1px 3px rgba(0,0,0,.12)':'none',pick:()=>this.setState(x=>({pf:{...x.pf,owner:k}}))};}),
+      supp:s.pf.supp,suppBg:sp.bg,suppBd:sp.bd,toggleSupp:()=>this.setState(x=>({pf:{...x.pf,supp:!x.pf.supp}}))
+    };
+
+    // Meal sheet
+    const ms=s.mealStep, mt=this.mealTotals(), onItems=s.items.filter(i=>i.on);
+    const ERR={dark:['Too dark to read.','Try again near a window, or turn on the flash.'],blurry:['This photo is blurry.','Hold still for a second, or tap the plate to focus.'],nofood:["We couldn't find any food.",'Try a closer photo of the plate, or add it by hand.']};
+    const highs=onItems.filter(i=>i.gl==='High').map(i=>i.name);
+    const hf=k=>e=>{const v=e.target.value;this.setState(x=>({hand:{...x.hand,[k]:v}}));};
+    const m={
+      vPick:['pick','toobig'].includes(ms),tooBig:ms==='toobig',
+      vPrev:['preview','dark','blurry','nofood'].includes(ms),vAn:ms==='analysing',vDet:['detected','saveFailed','offline'].includes(ms),
+      photoBg:ms==='dark'?'repeating-linear-gradient(45deg,#1E1A15 0 12px,#191611 12px 24px)':ms==='nofood'?'repeating-linear-gradient(45deg,#C8CCD6 0 12px,#BEC2CD 12px 24px)':'repeating-linear-gradient(45deg,#B9A58C 0 12px,#AE987D 12px 24px)',
+      photoLabel:{preview:'Your meal photo',dark:'Photo: too dark',blurry:'Photo: blurry',nofood:'Photo: desk, no plate'}[ms]||'Your meal photo',
+      err:!!ERR[ms],errTitle:(ERR[ms]||[])[0]||'',errBody:(ERR[ms]||[])[1]||'',canRead:['preview','dark','blurry'].includes(ms),noFood:ms==='nofood',
+      foundTitle:s.items.length?`${s.items.length} item${s.items.length>1?'s':''} found`:'Add what you ate',
+      foundSub:s.items.length?"Untick anything that isn't on your plate.":'Add each item by hand below.',
+      hasItems:!!s.items.length,
+      items:s.items.map((it,i)=>{const tk=C.tick(it.on),gl={Low:['var(--good-soft)','var(--good)'],Medium:['var(--mid-soft)','var(--mid)'],High:['var(--mid-soft)','var(--mid)']}[it.gl]||['var(--page)','var(--ink2)'];return {name:it.name,portion:it.portion,guess:it.guess,on:it.on,border:i?'1px solid var(--line)':'0',boxBg:tk.bg,boxBd:tk.bd,op:it.on?1:.45,glBg:gl[0],glInk:gl[1],glLabel:it.gl?`${it.gl} GL`:'GL unknown',kcalText:it.kcal+' kcal',aria:(it.on?'Untick ':'Tick ')+it.name,toggle:()=>this.setState(x=>({items:x.items.map(y=>y.id===it.id?{...y,on:!y.on}:y)}))};}),
+      handOpen:s.handOpen,handClosed:!s.handOpen,
+      handFields:[['food','Food','Avocado toast','span 6'],['portion','Portion','1 slice','span 3'],['kcal','Calories','250','span 3'],['p','Protein g','optional','span 2'],['c','Carbs g','optional','span 2'],['f','Fat g','optional','span 2']].map(([k,label,ph,span])=>({label,ph,span,value:s.hand[k],onChange:hf(k)})),
+      types:['Breakfast','Lunch','Dinner','Snack'].map(name=>{const on=s.mealType===name;return {name,bg:on?'var(--card)':'transparent',ink:on?'var(--ink)':'var(--ink2)',sh:on?'0 1px 3px rgba(0,0,0,.12)':'none',pick:()=>this.setState({mealType:name})};}),
+      totals:[{v:n(mt.kcal),k:'kcal'},{v:mt.p+' g',k:'protein'},{v:mt.c+' g',k:'carbs'},{v:mt.f+' g',k:'fat'}],
+      highGL:highs.length>0,glNote:`${highs.join(' and ')} ${highs.length>1?'are':'is'} high glycemic load. Eating it with protein, and before 20:00, softens the effect on tonight's sleep.`,
+      failed:ms==='saveFailed',offline:ms==='offline',showLog:ms==='detected'||ms==='saveFailed',
+      logLabel:ms==='saveFailed'?`Try again, ${n(mt.kcal)} kcal`:`Log meal, ${n(mt.kcal)} kcal`,logOp:onItems.length?1:.45
+    };
+    const ck={op:s.moods.length?1:.45,moods:C.MOODS.map(name=>{const on=s.moods.includes(name);return {name,on:String(on),bg:on?'var(--primary)':'var(--card)',ink:on?'var(--on-primary)':'var(--ink)',bd:on?'var(--primary)':'var(--line2)',toggle:()=>this.setState(x=>({moods:x.moods.includes(name)?x.moods.filter(y=>y!==name):[...x.moods,name]}))};})};
+    const quick=[['0','None'],['15','15'],['30','30'],['60','60'],['90','90']].map(([v,name])=>{const on=s.screenMins===v;return {name,bg:on?'var(--primary)':'var(--card)',ink:on?'var(--on-primary)':'var(--ink)',bd:on?'var(--primary)':'var(--line2)',pick:()=>this.setState({screenMins:v})};});
+
+    const finishMeal=(pending)=>{const meal=this.logMeal();if(!meal) return;this.setState(x=>({meals:[...x.meals,{...meal,pending:!!pending}],todayState:x.todayState==='noMeals'?'normal':x.todayState,sheet:null}));this.toastMsg(pending?'Saved offline':'Meal logged');};
+
+    return {
+      nav,states,hasStates:states.length>0,themes,
+      showPhone:s.screen!=='shared',showShared:s.screen==='shared',
+      phone:{...vars,width:390,height:844,flex:'none',margin:10,borderRadius:46,overflow:'hidden',position:'relative',background:'var(--page)',color:'var(--ink)',fontFamily:'var(--f)',boxShadow:'0 0 0 10px #10131F, 0 30px 80px rgba(20,24,50,.3)'},
+      board:{...vars,width:'100%',maxWidth:980,flex:'1 1 600px',borderRadius:24,padding:28,background:'var(--page)',color:'var(--ink)',fontFamily:'var(--f)',display:'flex',flexDirection:'column',gap:28},
+      scroller:this.scroller,helpsRef:this.helpsRef,
+      isToday:s.screen==='today',isWeek:s.screen==='week',isSleep:s.screen==='sleep',isSettings:s.screen==='settings',isProducts:s.screen==='products',
+      goToday:()=>this.go('today'),goWeek:()=>this.go('week'),goSleep:()=>this.go('sleep'),goSettings:()=>this.go('settings'),goProducts:()=>this.go('products'),
+      goHelps:()=>this.setState({screen:'week',weekState:'normal',sheet:null},()=>{const el=this.scroller.current,h=this.helpsRef.current;if(el&&h) el.scrollTop=h.offsetTop-8;}),
+      t,c,feel,rec,w,weak,routines,sl,set,profile,iosSteps,pr,pf,m,ck,quick,
+      retryToday:()=>this.setToday('normal'),retryWeek:()=>this.setState({weekState:'normal'}),
+      syncNow:()=>{this.setState(x=>({meals:x.meals.map(y=>({...y,pending:false})),todayState:'normal'}));this.toastMsg('Meal synced');},
+      moreIdeas:()=>this.setState(x=>({recipe:x.recipe+1})),
+      openMeal:()=>this.open('meal'),openCheck:()=>this.open('check'),openSleepSheet:()=>this.open('sleep'),openScreen:()=>this.open('screen'),
+      sheetOpen:!!s.sheet,closeSheet:this.close,sheetTitle:{meal:'Log a meal',check:'Check in',sleep:'Log sleep',screen:'Log screen time'}[s.sheet]||'',
+      sh:{meal:s.sheet==='meal',check:s.sheet==='check',sleep:s.sheet==='sleep',screen:s.sheet==='screen'},
+      spinner:React.createElement('div',{style:{width:40,height:40,borderRadius:'50%',border:'4px solid rgba(255,255,255,.35)',borderTopColor:'#FFFFFF',animation:'ncspin .9s linear infinite'}}),
+      pickPhoto:()=>this.setState({mealStep:'preview'}),differentPhoto:()=>this.setState({mealStep:'pick'}),
+      readPlate:()=>{clearTimeout(this.at);this.setState({mealStep:'analysing',items:C.ITEMS()});this.at=setTimeout(()=>this.setState({mealStep:'detected'}),1800);},
+      handOnly:()=>this.setState({mealStep:'detected',items:[],handOpen:true}),
+      openHand:()=>this.setState({handOpen:true}),closeHand:()=>this.setState({handOpen:false}),
+      addHand:()=>{const h=s.hand;if(!h.food.trim()||!(+h.kcal>0)) return this.toastMsg('Add a food and its calories');this.setState(x=>({items:[...x.items,{id:Date.now(),name:h.food.trim(),portion:h.portion||'1 portion',kcal:Math.round(+h.kcal),p:+h.p||0,c:+h.c||0,f:+h.f||0,gl:null,on:true,guess:false}],hand:{food:'',portion:'',kcal:'',p:'',c:'',f:''},handOpen:false}));},
+      logMeal:()=>finishMeal(false),offlineDone:()=>{const meal=this.logMeal();if(!meal) return;this.setState(x=>({meals:[...x.meals,{...meal,pending:true}],todayState:'offline',sheet:null}));this.toastMsg('Saved offline');},
+      note:s.note,onNote:e=>this.setState({note:e.target.value}),
+      saveCheck:()=>{if(!s.moods.length) return;this.setState(x=>({feel:{moods:x.moods,time:'15:27'},sheet:null}));this.toastMsg('Check-in saved');},
+      bed:s.bed,wake:s.wake,onBed:e=>this.setState({bed:e.target.value}),onWake:e=>this.setState({wake:e.target.value}),
+      logSleep:()=>{if(future) return;this.setState(x=>({sheet:null,todayState:x.todayState==='noScore'?'normal':x.todayState,sleepState:'normal'}));this.toastMsg('Sleep logged');},
+      screenMins:s.screenMins,onMins:e=>this.setState({screenMins:e.target.value}),
+      logScreen:()=>{this.setState({sheet:null});this.toastMsg('Screen time logged');},
+      sw:{on:String(dark),bg:dark?'var(--primary)':'var(--line2)',left:dark?'23px':'3px'},
+      toggleTheme:()=>this.setState({theme:dark?'light':'dark'}),
+      editProfile:()=>this.toastMsg('Opens the profile setup'),install:()=>this.toastMsg('NeuroCal installed'),signOut:()=>this.toastMsg('Signed out'),
+      search:s.search,onSearch:e=>this.setState({search:e.target.value}),clearSearch:()=>this.setState({search:'',pFilter:'all'}),
+      addProduct:()=>{const f=s.pf;if(!f.name.trim()) return this.toastMsg('Give the product a name');this.setState(x=>({products:[{id:Date.now(),name:f.name.trim(),desc:f.desc.trim(),owner:f.owner,supp:f.supp,link:f.link.trim(),builtIn:f.link.trim(),suggest:true,commission:f.owner==='aff',words:f.words},...x.products],pf:{name:'',desc:'',link:'',words:'',owner:'ours',supp:false}}));this.toastMsg('Product added');},
+      toastOn:!!s.toast,toast:s.toast||''
+    };
+  }
+}
+</script>
+</body>
+</html>

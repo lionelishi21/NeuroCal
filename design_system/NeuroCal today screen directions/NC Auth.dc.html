@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet"></helmet>
+<div style="{{ root }}">
+<div style="display:grid;grid-template-columns:{{ L.cols }};min-height:{{ L.minH }}">
+  <div style="background:var(--focus);color:var(--on-focus);display:flex;flex-direction:column;padding:{{ L.fieldPad }}">
+    <sc-if value="{{ isPhone }}" hint-placeholder-val="{{ true }}"><div style="display:flex;justify-content:space-between;padding:0 8px 18px;font:600 15px 'Archivo',sans-serif"><span>09:02</span><span style="font-size:12px">5G ▮▮▮</span></div></sc-if>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:26px;background:#fff;position:relative;display:block"><span style="position:absolute;right:0;bottom:0;width:12px;height:12px;background:var(--energy)"></span></span><span style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">NeuroCal</span></div>
+    <sc-if value="{{ isAuthGroup }}">
+      <div style="margin-top:{{ L.heroGap }};font:900 {{ L.hero }}/0.88 'Archivo',sans-serif;font-stretch:62%;letter-spacing:-1px;text-wrap:balance">Eat for the mind you need.</div>
+      <div style="margin-top:16px;font:400 16px/1.45 'Archivo',sans-serif;color:var(--on-focus2);max-width:400px;text-wrap:pretty">Log meals, sleep and how you feel. Get a Focus Score each morning and know what to eat next.</div>
+    </sc-if>
+    <sc-if value="{{ isOnboard }}">
+      <sc-if value="{{ isPhone }}">
+        <div style="margin-top:22px;display:flex;justify-content:space-between;font:600 14px 'Archivo',sans-serif"><span>{{ stepLabel }}</span><sc-if value="{{ showBack }}"><span style="text-decoration:underline;text-underline-offset:3px">Back</span></sc-if></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px">
+          <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4"><sc-if value="{{ st.reached }}"><span style="height:6px;background:#fff"></span></sc-if><sc-if value="{{ st.ahead }}"><span style="height:6px;background:rgba(255,255,255,.3)"></span></sc-if></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isDesk }}">
+        <div style="margin-top:80px;font:900 72px/0.9 'Archivo',sans-serif;font-stretch:62%">Set up NeuroCal</div>
+        <div style="margin-top:36px;display:flex;flex-direction:column;border-top:2px solid #fff;max-width:380px">
+          <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:36px 1fr auto;align-items:center;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.4);font:600 17px 'Archivo',sans-serif">
+              <span style="font:800 15px 'Archivo',sans-serif">{{ st.n }}</span><span>{{ st.label }}</span>
+              <span style="font:500 14px 'Archivo',sans-serif;color:var(--on-focus2)">{{ st.state }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+  </div>
+
+  <div style="padding:{{ L.formPad }};display:flex;flex-direction:column;justify-content:{{ L.formJustify }}">
+  <div style="width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px">
+
+  <sc-if value="{{ v.signin }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">Sign in</div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Email</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 14px;font:400 16px 'Archivo',sans-serif">maya.okafor@gmail.com</div></div>
+    <div><div style="display:flex;justify-content:space-between;font:600 14px 'Archivo',sans-serif;margin-bottom:8px"><span>Password</span><span style="color:var(--focus-ink);text-decoration:underline;text-underline-offset:3px">Forgot password?</span></div><div style="height:52px;box-sizing:border-box;border:2px solid var(--focus-ink);outline:3px solid var(--focus-ink);outline-offset:2px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:400 16px 'Archivo',sans-serif"><span style="letter-spacing:3px">••••••••••••</span><span style="font:600 14px 'Archivo',sans-serif">Show</span></div></div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Sign in</div>
+    <div style="display:flex;align-items:center;gap:12px;font:500 13px 'Archivo',sans-serif;color:var(--ink2)"><span style="flex:1;height:1px;background:var(--line)"></span>or<span style="flex:1;height:1px;background:var(--line)"></span></div>
+    <div style="border:2px solid var(--ink);font:700 16px 'Archivo',sans-serif;padding:15px 20px">Continue with Apple</div>
+    <div style="border:2px solid var(--ink);font:700 16px 'Archivo',sans-serif;padding:15px 20px">Continue with Google</div>
+    <div style="font:400 15px 'Archivo',sans-serif">New to NeuroCal? <span style="font-weight:700;color:var(--focus-ink);text-decoration:underline;text-underline-offset:3px">Create account</span></div>
+  </sc-if>
+
+  <sc-if value="{{ v.create }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">Create account</div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Email</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 14px;font:400 16px 'Archivo',sans-serif">maya.okafor@gmail.com</div></div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Password</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--warn);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:400 16px 'Archivo',sans-serif"><span>focus2026</span><span style="font:600 14px 'Archivo',sans-serif">Hide</span></div>
+      <div style="display:flex;gap:8px;margin-top:8px;font:500 14px/1.4 'Archivo',sans-serif;color:var(--warn-ink)"><span style="flex:none;width:18px;height:18px;background:var(--warn);color:#fff;font:800 13px/18px 'Archivo',sans-serif;text-align:center">!</span>This password is 9 characters. Use at least 10 so it's harder to guess.</div></div>
+    <div style="display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font:400 15px/1.4 'Archivo',sans-serif"><span style="width:24px;height:24px;background:var(--focus);display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.4"></path></svg></span><span>I agree to the <u>terms</u> and <u>privacy policy</u></span></div>
+    <div style="display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font:400 15px/1.4 'Archivo',sans-serif"><span style="width:24px;height:24px;box-sizing:border-box;border:2px solid var(--ink)"></span><span>Send me a weekly focus summary by email</span></div>
+    <div style="background:var(--track);color:var(--ink2);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Create account</div>
+    <div style="font:400 15px 'Archivo',sans-serif">Already have an account? <span style="font-weight:700;color:var(--focus-ink);text-decoration:underline;text-underline-offset:3px">Sign in</span></div>
+  </sc-if>
+
+  <sc-if value="{{ v.code }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">Confirm your email</div>
+    <div style="font:400 16px/1.5 'Archivo',sans-serif;text-wrap:pretty">We sent a 6-digit code to <b style="font-weight:700">maya.okafor@gmail.com</b>. It works for 10 minutes.</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+      <span style="height:64px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 32px 'Archivo',sans-serif;font-stretch:70%">4</span>
+      <span style="height:64px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 32px 'Archivo',sans-serif;font-stretch:70%">8</span>
+      <span style="height:64px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font:900 32px 'Archivo',sans-serif;font-stretch:70%">2</span>
+      <span style="height:64px;border:2px solid var(--focus-ink);outline:3px solid var(--focus-ink);outline-offset:2px;display:flex;align-items:center;justify-content:center"><span style="width:2px;height:30px;background:var(--ink)"></span></span>
+      <span style="height:64px;border:2px solid var(--line)"></span>
+      <span style="height:64px;border:2px solid var(--line)"></span>
+    </div>
+    <div style="font:400 15px 'Archivo',sans-serif;color:var(--ink2)">No email? You can send a new code in 0:42.</div>
+    <div style="background:var(--track);color:var(--ink2);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Confirm email</div>
+    <div style="font:700 15px 'Archivo',sans-serif;color:var(--focus-ink);text-decoration:underline;text-underline-offset:3px">Use a different email</div>
+  </sc-if>
+
+  <sc-if value="{{ v.ob1 }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">What should we call you?</div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">First name</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 14px;font:400 16px 'Archivo',sans-serif">Maya</div></div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Time zone</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:400 16px 'Archivo',sans-serif"><span>London (GMT+1)</span><svg width="14" height="9" viewBox="0 0 14 9"><path d="M1 1l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2"></path></svg></div><div style="font:400 14px 'Archivo',sans-serif;color:var(--ink2);margin-top:6px">Taken from your device. We use it to time your evenings.</div></div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Continue</div>
+  </sc-if>
+
+  <sc-if value="{{ v.ob2 }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">How do you eat?</div>
+    <div style="display:flex;flex-direction:column;border-top:2px solid var(--ink)" role="radiogroup">
+      <sc-for list="{{ diets }}" as="d" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);font:600 16px 'Archivo',sans-serif">
+          <sc-if value="{{ d.on }}"><span style="width:24px;height:24px;border-radius:50%;box-sizing:border-box;border:2px solid var(--focus-ink);display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;border-radius:50%;background:var(--focus-ink)"></span></span></sc-if>
+          <sc-if value="{{ d.off }}"><span style="width:24px;height:24px;border-radius:50%;box-sizing:border-box;border:2px solid var(--ink)"></span></sc-if>
+          <span>{{ d.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Anything you avoid?</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ avoid }}" as="a" hint-placeholder-count="6">
+          <sc-if value="{{ a.on }}"><span style="background:var(--focus);color:var(--on-focus);border:2px solid var(--focus);font:700 15px 'Archivo',sans-serif;padding:9px 13px">{{ a.label }}</span></sc-if>
+          <sc-if value="{{ a.off }}"><span style="border:2px solid var(--ink);font:600 15px 'Archivo',sans-serif;padding:9px 13px">{{ a.label }}</span></sc-if>
+        </sc-for>
+      </div></div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Meals on a usual day</div><div style="display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--ink);font:600 15px 'Archivo',sans-serif;text-align:center"><span style="padding:11px 0;border-right:2px solid var(--ink)">2</span><span style="padding:11px 0;border-right:2px solid var(--ink);background:var(--ink);color:var(--page)">3</span><span style="padding:11px 0;border-right:2px solid var(--ink)">4</span><span style="padding:11px 0">5 or more</span></div></div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Continue</div>
+  </sc-if>
+
+  <sc-if value="{{ v.ob3 }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">What are you working towards?</div>
+    <div style="font:400 15px 'Archivo',sans-serif;color:var(--ink2)">Pick as many as you like.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ goals }}" as="g" hint-placeholder-count="6">
+        <sc-if value="{{ g.on }}"><span style="background:var(--focus);color:var(--on-focus);border:2px solid var(--focus);font:700 16px 'Archivo',sans-serif;padding:12px 15px">{{ g.label }}</span></sc-if>
+        <sc-if value="{{ g.off }}"><span style="border:2px solid var(--ink);font:600 16px 'Archivo',sans-serif;padding:12px 15px">{{ g.label }}</span></sc-if>
+      </sc-for>
+    </div>
+    <div><div style="font:600 14px 'Archivo',sans-serif;margin-bottom:8px">Most days I'm…</div><div style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--ink);font:600 15px 'Archivo',sans-serif;text-align:center"><span style="padding:12px 0;border-right:2px solid var(--ink);background:var(--ink);color:var(--page)">At a desk</span><span style="padding:12px 0;border-right:2px solid var(--ink)">Studying</span><span style="padding:12px 0">Training</span></div></div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Continue</div>
+  </sc-if>
+
+  <sc-if value="{{ v.ob4 }}">
+    <div style="font:900 40px/1 'Archivo',sans-serif;font-stretch:70%">Your daily targets</div>
+    <div style="font:400 15px/1.5 'Archivo',sans-serif;color:var(--ink2);text-wrap:pretty">Worked out from 34 years, 168 cm, 64 kg and light exercise. Change them any time in Settings.</div>
+    <div style="background:var(--energy);color:var(--on-bright);padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><div><div style="font:600 14px 'Archivo',sans-serif">Calories</div><div style="font:900 48px/0.95 'Archivo',sans-serif;font-stretch:62%">2,250 <span style="font-size:18px;font-stretch:100%;font-weight:600">kcal</span></div></div><div style="display:flex;gap:6px"><span style="width:44px;height:44px;border:2px solid var(--on-bright);display:flex;align-items:center;justify-content:center;font:700 22px 'Archivo',sans-serif">−</span><span style="width:44px;height:44px;border:2px solid var(--on-bright);display:flex;align-items:center;justify-content:center;font:700 22px 'Archivo',sans-serif">+</span></div></div>
+    <div style="display:flex;height:14px"><span style="width:25%;background:var(--protein)"></span><span style="width:45%;background:var(--energy)"></span><span style="width:30%;background:var(--fat)"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div><div style="font:600 14px 'Archivo',sans-serif;color:var(--protein-ink);margin-bottom:6px">Protein</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 12px;font:700 18px 'Archivo',sans-serif">140 g</div><div style="font:400 13px 'Archivo',sans-serif;color:var(--ink2);margin-top:4px">25%</div></div>
+      <div><div style="font:600 14px 'Archivo',sans-serif;color:var(--energy-ink);margin-bottom:6px">Carbs</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 12px;font:700 18px 'Archivo',sans-serif">250 g</div><div style="font:400 13px 'Archivo',sans-serif;color:var(--ink2);margin-top:4px">45%</div></div>
+      <div><div style="font:600 14px 'Archivo',sans-serif;color:var(--fat-ink);margin-bottom:6px">Fat</div><div style="height:52px;box-sizing:border-box;border:2px solid var(--ink);display:flex;align-items:center;padding:0 12px;font:700 18px 'Archivo',sans-serif">75 g</div><div style="font:400 13px 'Archivo',sans-serif;color:var(--ink2);margin-top:4px">30%</div></div>
+    </div>
+    <div style="background:var(--focus);color:var(--on-focus);font:800 18px 'Archivo',sans-serif;padding:18px 20px">Finish setup</div>
+  </sc-if>
+
+  </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phone&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;phone&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;create&quot;,&quot;code&quot;,&quot;ob1&quot;,&quot;ob2&quot;,&quot;ob3&quot;,&quot;ob4&quot;],&quot;default&quot;:&quot;signin&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  static T = {
+    light:{'--page':'#FFFFFF','--raised':'#F2F2F5','--ink':'#0E0E10','--ink2':'#55556A','--line':'#DADAE0','--track':'#EBEBF0','--block':'#0E0E10','--on-block':'#FFFFFF','--block-ink2':'#C9C9D4','--focus':'#3530F0','--focus-ink':'#3530F0','--on-focus':'#FFFFFF','--on-focus2':'#E2E1FF','--sleep':'#7A1FA2','--sleep-ink':'#7A1FA2','--energy':'#FFB000','--energy-ink':'#8A5A00','--protein':'#00A86B','--protein-ink':'#007A4D','--fat':'#FF6FA0','--fat-ink':'#B0245A','--warn':'#D81F14','--warn-ink':'#C41D13','--on-bright':'#0E0E10','--scrim':'rgba(14,14,16,.5)'},
+    dark:{'--page':'#121217','--raised':'#1C1C23','--ink':'#F4F4F7','--ink2':'#A8A8B8','--line':'#34343F','--track':'#2A2A33','--block':'#24242C','--on-block':'#F4F4F7','--block-ink2':'#B4B4C2','--focus':'#4440FF','--focus-ink':'#A9A7FF','--on-focus':'#FFFFFF','--on-focus2':'#E2E1FF','--sleep':'#9B3FCC','--sleep-ink':'#D58BF5','--energy':'#FFB000','--energy-ink':'#FFC740','--protein':'#1FC283','--protein-ink':'#3DDC97','--fat':'#FF6FA0','--fat-ink':'#FF8FB6','--warn':'#D81F14','--warn-ink':'#FF7A6E','--on-bright':'#0E0E10','--scrim':'rgba(0,0,0,.62)'}
+  };
+  renderVals() {
+    const th = this.props.theme === 'dark' ? 'dark' : 'light';
+    const desk = this.props.device === 'desktop';
+    const sc = this.props.screen || 'signin';
+    const v = {}; ['signin','create','code','ob1','ob2','ob3','ob4'].forEach(k => v[k] = sc === k);
+    const onboard = sc.startsWith('ob');
+    const stepN = onboard ? +sc.slice(2) : 0;
+    const L = desk
+      ? {cols:'1fr 1fr', minH:'820px', fieldPad:'48px 56px', heroGap:'120px', hero:'120px', formPad:'72px 80px', formJustify:'center'}
+      : {cols:'1fr', minH:'auto', fieldPad:'16px 22px 24px', heroGap:'28px', hero:'64px', formPad:'26px 22px 40px', formJustify:'flex-start'};
+    const labels = ['Name and time zone','How you eat','Goals','Daily targets'];
+    const steps = labels.map((l,i)=>({n:i+1, label:l, reached:i<stepN, ahead:i>=stepN, state: i+1<stepN?'Done':(i+1===stepN?'Now':'')}));
+    const mk = (arr, sel) => arr.map(l=>({label:l, on:sel.includes(l), off:!sel.includes(l)}));
+    return {
+      root:{...Component.T[th], background:'var(--page)', color:'var(--ink)', fontFamily:"'Archivo',sans-serif", width:'100%'},
+      isDesk:desk, isPhone:!desk, L, v, isAuthGroup:!onboard, isOnboard:onboard, steps,
+      stepLabel:`Step ${stepN} of 4`, showBack: stepN>1,
+      diets: mk(['No restrictions','Vegetarian','Vegan','Pescatarian','Halal'], ['Pescatarian']),
+      avoid: mk(['Dairy','Gluten','Peanuts','Tree nuts','Shellfish','Eggs','Soy'], ['Dairy']),
+      goals: mk(['Sharper mornings','No afternoon slump','Sleep better','Lose weight','Build muscle','Train for an event'], ['Sharper mornings','No afternoon slump','Sleep better'])
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}</style>
+</helmet>
+<div style="padding:56px 64px 8px;display:flex;flex-direction:column;gap:10px;max-width:900px">
+  <div style="font:800 44px/1.05 'Plus Jakarta Sans',sans-serif;letter-spacing:-1px">NeuroCal · your design, optimised</div>
+  <div style="font:400 16px/1.55 'Plus Jakarta Sans',sans-serif;color:#4A5165;text-wrap:pretty">Same colours, type and tone as the current app. The changes are about hierarchy, empty states and getting the next action on screen. Phones show the full scroll length; the Log a meal bar is sticky.</div>
+</div>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+  <section style="padding:40px 64px 24px" data-screen-label="{{ r.label }}" id="{{ r.id }}">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:20px"><a href="#{{ r.id }}" style="font:700 12px ui-monospace,monospace;background:#121829;color:#fff;padding:3px 8px;border-radius:5px;text-decoration:none">{{ r.id }}</a><span style="font:700 22px 'Plus Jakarta Sans',sans-serif">{{ r.label }}</span></div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ r.frames }}" as="f">
+        <div style="display:flex;flex-direction:column;gap:10px;flex:none">
+          <div style="width:390px;border-radius:40px;overflow:hidden;box-shadow:0 0 0 8px #1d1f26,0 24px 50px rgba(0,0,0,.18);margin:8px">
+            <sc-if value="{{ r.today }}"><dc-import name="NC Today v2" theme="{{ f }}" state="{{ r.state }}" hint-size="390px,1000px"></dc-import></sc-if>
+            <sc-if value="{{ r.auth }}"><dc-import name="NC Auth v2" theme="{{ f }}" screen="{{ r.screen }}" hint-size="390px,844px"></dc-import></sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:340px;display:flex;flex-direction:column;gap:12px;padding-top:12px">
+        <div style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#5B3FD0;text-transform:uppercase;letter-spacing:.6px">What changed</div>
+        <sc-for list="{{ r.notes }}" as="n">
+          <div style="display:grid;grid-template-columns:24px 1fr;gap:8px;font:400 15px/1.5 'Plus Jakarta Sans',sans-serif;color:#2A3043;text-wrap:pretty"><span style="font:700 13px 'Plus Jakarta Sans',sans-serif;color:#7C8296;padding-top:2px">{{ n.i }}</span><span>{{ n.t }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</sc-for>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const N = a => a.map((t,i)=>({i:String(i+1).padStart(2,'0'),t}));
+    const R = (id,label,kind,frames,o,notes)=>({id,label,today:kind==='today',auth:kind==='auth',frames,state:'',screen:'',...o,notes:N(notes)});
+    return { rows:[
+      R('1a','Today · your current data','today',['light','dark'],{state:'partial'},[
+        'The score ring shrinks from a full screen to a 116 px card. The first screen now shows the score, why it is that number, and what to do about it.',
+        'The insight card and the loose "Check in" link merge into the score card, so the explanation and the action sit next to the number.',
+        'The 2 × 2 grid becomes a list. Missing signals get an inline "+ Log" button instead of a large grey "No data". Glycemic load says it builds from meals, because you can\'t log it directly.',
+        'Stress shows a word ("Moderate") and an amber bar. "75" on a green bar could mean high stress or good.',
+        '"1 of 4 signals" shows how complete the score is.',
+        'The calorie card is a plain bar and is no longer hidden behind the Log a meal button. The tiny ring is gone.',
+        'Meals: the repeated "Snack / snack" label is fixed, times use 24-hour format, and the bin icon moves into a ⋯ menu so a meal can\'t be deleted by accident.',
+        'The settings icon is a gear, which is easier to recognise than sliders. The date sits under "Today".'
+      ]),
+      R('1b','Today · first open','today',['light'],{state:'empty'},[
+        'With no score yet, the ring is dashed and empty. It doesn\'t look like a 0.',
+        'Two clear first actions: Log sleep (primary) and Check in.',
+        'The empty meals list tells the user what happens after they snap a meal.'
+      ]),
+      R('1c','Today · full day','today',['light'],{state:'full'},[
+        'With every signal in, the card just explains the score. No button is needed.',
+        'Each factor is coloured by its effect on the score: green helps, amber drags.',
+        'Macros appear under the calorie bar once there is food to count.'
+      ]),
+      R('2a','Sign in','auth',['light','dark'],{screen:'signin'},[
+        'The Match device / Light / Dark switch moves to Settings, defaulting to Match device. It no longer competes with the headline.',
+        'Fields have visible labels instead of placeholders only, plus a Show button on the password field.',
+        'Forgot password? is added. It was missing.'
+      ]),
+      R('2b','Create account','auth',['dark'],{screen:'create'},[
+        'The password rule updates as you type ("7 so far"), so it no longer reads as an error before you start.',
+        'The focused field gets a visible focus ring.',
+        'The layout matches Sign in, so switching between the two screens doesn\'t jump.'
+      ])
+    ]};
+  }
+}
+</script>
+</body>
+</html>

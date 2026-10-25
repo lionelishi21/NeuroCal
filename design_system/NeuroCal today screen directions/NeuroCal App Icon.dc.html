@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E4E6EE;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#121829}a{color:#5B3FD0}a:hover{color:#3E27A3}</style>
+</helmet>
+<section style="padding:56px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:14px;font-weight:800;color:#5B3FD0;letter-spacing:.06em;text-transform:uppercase">Turn 1</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.4px">NeuroCal app icon: three directions</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="1a" style="background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:20px;width:568px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:12px"><span style="height:28px;padding:0 10px;border-radius:8px;background:#121829;color:#FFFFFF;font-size:14px;font-weight:800;display:flex;align-items:center">1a</span><span style="font-size:18px;font-weight:800">Spark in open ring</span></div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="1">
+          <svg width="{{ s.size }}" height="{{ s.size }}" viewBox="0 0 1024 1024" style="display:block;border-radius:{{ s.radius }}">
+            <defs>
+              <linearGradient id="a-g" x1="242" y1="242" x2="782" y2="782" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient>
+              <radialGradient id="a-h" cx="512" cy="512" r="300" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F63D9" stop-opacity=".32"></stop><stop offset="1" stop-color="#4F63D9" stop-opacity="0"></stop></radialGradient>
+              <filter id="a-f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="18" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+            </defs>
+            <rect width="1024" height="1024" fill="#0E1325"></rect>
+            <circle cx="512" cy="512" r="300" fill="url(#a-h)"></circle>
+            <g filter="url(#a-f)">
+              <path d="M626.1 267.3 A270 270 0 1 1 397.9 267.3" stroke="url(#a-g)" stroke-width="68" stroke-linecap="round" fill="none"></path>
+              <path d="M512 352 Q538 486 672 512 Q538 538 512 672 Q486 538 352 512 Q486 486 512 352 Z" fill="url(#a-g)"></path>
+            </g>
+            <circle cx="512" cy="232" r="30" fill="#E09A2B"></circle>
+          </svg>
+        </sc-for>
+      </div>
+      <div style="font-size:15px;line-height:1.45;color:#5B6276;text-wrap:pretty">The Focus Score ring, left open at the top. A neural spark sits at the centre and amber energy fills the gap.</div>
+    </div>
+
+    <div id="1b" style="background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:20px;width:568px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:12px"><span style="height:28px;padding:0 10px;border-radius:8px;background:#121829;color:#FFFFFF;font-size:14px;font-weight:800;display:flex;align-items:center">1b</span><span style="font-size:18px;font-weight:800">Neuron node</span></div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="1">
+          <svg width="{{ s.size }}" height="{{ s.size }}" viewBox="0 0 1024 1024" style="display:block;border-radius:{{ s.radius }}">
+            <defs>
+              <linearGradient id="b-g" x1="300" y1="240" x2="724" y2="800" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient>
+              <radialGradient id="b-h" cx="512" cy="520" r="320" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#159C98" stop-opacity=".26"></stop><stop offset="1" stop-color="#159C98" stop-opacity="0"></stop></radialGradient>
+              <filter id="b-f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="18" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+            </defs>
+            <rect width="1024" height="1024" fill="#0E1325"></rect>
+            <circle cx="512" cy="530" r="320" fill="url(#b-h)"></circle>
+            <g filter="url(#b-f)" fill="url(#b-g)">
+              <path d="M512 540 V290 M512 540 L295.5 665 M512 540 L728.5 665" stroke="url(#b-g)" stroke-width="56" stroke-linecap="round"></path>
+              <circle cx="512" cy="540" r="104"></circle>
+              <circle cx="512" cy="282" r="62"></circle>
+              <circle cx="288" cy="669" r="62"></circle>
+              <circle cx="736" cy="669" r="62"></circle>
+            </g>
+            <circle cx="512" cy="540" r="40" fill="#E09A2B"></circle>
+          </svg>
+        </sc-for>
+      </div>
+      <div style="font-size:15px;line-height:1.45;color:#5B6276;text-wrap:pretty">A simple three-arm neuron, balanced like a molecule. The amber core is the energy at its centre.</div>
+    </div>
+
+    <div id="1c" style="background:#FFFFFF;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:20px;width:568px;box-sizing:border-box">
+      <div style="display:flex;align-items:center;gap:12px"><span style="height:28px;padding:0 10px;border-radius:8px;background:#121829;color:#FFFFFF;font-size:14px;font-weight:800;display:flex;align-items:center">1c</span><span style="font-size:18px;font-weight:800">Synapse focus</span></div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="1">
+          <svg width="{{ s.size }}" height="{{ s.size }}" viewBox="0 0 1024 1024" style="display:block;border-radius:{{ s.radius }}">
+            <defs>
+              <linearGradient id="c-g" x1="242" y1="512" x2="782" y2="512" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F63D9"></stop><stop offset="1" stop-color="#159C98"></stop></linearGradient>
+              <radialGradient id="c-h" cx="512" cy="512" r="260" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E09A2B" stop-opacity=".22"></stop><stop offset=".5" stop-color="#4F63D9" stop-opacity=".18"></stop><stop offset="1" stop-color="#4F63D9" stop-opacity="0"></stop></radialGradient>
+              <filter id="c-f" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="18" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+            </defs>
+            <rect width="1024" height="1024" fill="#0E1325"></rect>
+            <circle cx="512" cy="512" r="260" fill="url(#c-h)"></circle>
+            <g filter="url(#c-f)">
+              <path d="M440.2 772.9 A270 270 0 0 1 440.2 251.1" stroke="url(#c-g)" stroke-width="68" stroke-linecap="round" fill="none"></path>
+              <path d="M583.8 251.1 A270 270 0 0 1 583.8 772.9" stroke="url(#c-g)" stroke-width="68" stroke-linecap="round" fill="none"></path>
+              <circle cx="512" cy="512" r="112" fill="url(#c-g)"></circle>
+            </g>
+            <circle cx="512" cy="512" r="44" fill="#E09A2B"></circle>
+          </svg>
+        </sc-for>
+      </div>
+      <div style="font-size:15px;line-height:1.45;color:#5B6276;text-wrap:pretty">Two arcs meet like a synapse around a bright core. It reads as both focus and a signal firing.</div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return { sizes: [
+      { size: 512, radius: '0' },
+      { size: 120, radius: '27px' },
+      { size: 60, radius: '13.5px' },
+      { size: 40, radius: '9px' }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

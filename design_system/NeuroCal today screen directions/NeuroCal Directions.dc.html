@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Archivo:wdth,wght@62..125,400..900&family=Lexend:wght@300..700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E6E6E3;font-family:system-ui,sans-serif;color:#1a1a1a}a{color:#2747D0}a:hover{color:#152c94}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:12px;scroll-margin-top:16px;width:390px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 13px/1.3 system-ui,sans-serif;color:#1a1a1a}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:28px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55)}</style>
+</helmet>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Three directions for the Today screen</span></div>
+<p style="margin:0 0 28px;max-width:760px;font:14px/1.55 system-ui,sans-serif;color:#444;text-wrap:pretty">Same content in each: Thursday 2 October, 14:20. Phone width, light theme, full scroll length. Under each phone: the six meaning colours in light and dark, and the fonts (all Google Fonts, SIL Open Font Licence, free for commercial apps). None uses a near-black canvas, cream with a serif, or a grid of matching rounded cards.</p>
+<div class="dv-opts">
+
+<!-- ============ 1a LEDGER ============ -->
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Ledger — numbers first, ruled like a lab notebook</div>
+<div style="width:390px;border-radius:44px;overflow:hidden;background:#EEF0EC;box-shadow:0 0 0 10px #1d1f1e,0 30px 60px rgba(0,0,0,.25);font-family:'IBM Plex Sans',sans-serif;color:#151A17;margin:10px 0 18px">
+  <div style="display:flex;justify-content:space-between;padding:16px 30px 0;font:600 15px 'IBM Plex Sans',sans-serif"><span>14:20</span><span style="font-size:12px">5G ▮▮▮</span></div>
+  <div style="padding:22px 24px 0;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #CBD0CA;padding-bottom:14px">
+    <div style="font:600 22px/1.2 'IBM Plex Sans',sans-serif">Today</div>
+    <div style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58">Thu 2 Oct</div>
+  </div>
+  <div style="padding:22px 24px 20px;border-bottom:1px solid #CBD0CA">
+    <div style="font:500 14px 'IBM Plex Sans',sans-serif;color:#565E58">Focus score</div>
+    <div style="display:flex;align-items:flex-end;gap:10px;margin-top:2px">
+      <div style="font:500 112px/0.9 'IBM Plex Mono',monospace;color:#2747D0;letter-spacing:-6px">74</div>
+      <div style="font:400 18px 'IBM Plex Mono',monospace;color:#565E58;padding-bottom:10px">/ 100</div>
+    </div>
+    <svg width="342" height="34" viewBox="0 0 342 34" style="display:block;margin-top:14px">
+      <line x1="0" y1="10" x2="342" y2="10" stroke="#CBD0CA" stroke-width="2"></line>
+      <line x1="0" y1="10" x2="253" y2="10" stroke="#2747D0" stroke-width="2"></line>
+      <g stroke="#9AA29C" stroke-width="1"><line x1="0.5" y1="4" x2="0.5" y2="16"></line><line x1="34" y1="7" x2="34" y2="13"></line><line x1="68" y1="7" x2="68" y2="13"></line><line x1="103" y1="7" x2="103" y2="13"></line><line x1="137" y1="7" x2="137" y2="13"></line><line x1="171" y1="4" x2="171" y2="16"></line><line x1="205" y1="7" x2="205" y2="13"></line><line x1="239" y1="7" x2="239" y2="13"></line><line x1="274" y1="7" x2="274" y2="13"></line><line x1="308" y1="7" x2="308" y2="13"></line><line x1="341.5" y1="4" x2="341.5" y2="16"></line></g>
+      <rect x="249" y="1" width="8" height="18" fill="#2747D0"></rect>
+      <text x="0" y="32" font-family="IBM Plex Mono" font-size="11" fill="#565E58">0</text><text x="164" y="32" font-family="IBM Plex Mono" font-size="11" fill="#565E58">50</text><text x="320" y="32" font-family="IBM Plex Mono" font-size="11" fill="#565E58">100</text>
+    </svg>
+    <p style="margin:12px 0 0;font:400 15px/1.5 'IBM Plex Sans',sans-serif;text-wrap:pretty">Steady until about 16:00. A late dinner last night is holding you back most.</p>
+  </div>
+  <div style="padding:6px 24px 10px;border-bottom:1px solid #CBD0CA">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-bottom:1px dashed #CBD0CA"><span style="font-size:15px">Sleep</span><span style="font:500 14px 'IBM Plex Mono',monospace">7 h 12 m</span><div style="grid-column:1/3;height:4px;background:#DDE1DB"><div style="width:82%;height:4px;background:#6A47B8"></div></div></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-bottom:1px dashed #CBD0CA"><span style="font-size:15px">Evening timing</span><span style="font:500 14px 'IBM Plex Mono',monospace">last ate 22:40</span><div style="grid-column:1/3;height:4px;background:#DDE1DB"><div style="width:48%;height:4px;background:#C42B23"></div></div></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-bottom:1px dashed #CBD0CA"><span style="font-size:15px">Glycemic load</span><span style="font:500 14px 'IBM Plex Mono',monospace">moderate · 68</span><div style="grid-column:1/3;height:4px;background:#DDE1DB"><div style="width:68%;height:4px;background:#B76E00"></div></div></div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0"><span style="font-size:15px">Stress</span><span style="font:500 14px 'IBM Plex Mono',monospace">low · checked in 09:10</span><div style="grid-column:1/3;height:4px;background:#DDE1DB"><div style="width:80%;height:4px;background:#2747D0"></div></div></div>
+  </div>
+  <div style="padding:20px 24px;border-bottom:1px solid #CBD0CA">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 14px 'IBM Plex Sans',sans-serif;color:#565E58">Calories left</span><span style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58">1,240 of 2,250 eaten</span></div>
+    <div style="font:500 48px/1.1 'IBM Plex Mono',monospace;color:#B76E00;letter-spacing:-2px;margin:4px 0 14px">1,010<span style="font-size:16px;letter-spacing:0;color:#565E58"> kcal</span></div>
+    <div style="display:grid;grid-template-columns:64px 1fr 92px;gap:10px 12px;align-items:center;font-size:14px">
+      <span>Protein</span><div style="height:10px;background:#DDE1DB"><div style="width:56%;height:10px;background:#13805A"></div></div><span style="font:400 13px 'IBM Plex Mono',monospace;text-align:right">78 / 140 g</span>
+      <span>Carbs</span><div style="height:10px;background:#DDE1DB"><div style="width:57%;height:10px;background:#B76E00"></div></div><span style="font:400 13px 'IBM Plex Mono',monospace;text-align:right">142 / 250 g</span>
+      <span>Fat</span><div style="height:10px;background:#DDE1DB"><div style="width:55%;height:10px;background:#B3407A"></div></div><span style="font:400 13px 'IBM Plex Mono',monospace;text-align:right">41 / 75 g</span>
+    </div>
+  </div>
+  <div style="padding:20px 24px;border-bottom:1px solid #CBD0CA">
+    <div style="font:500 14px 'IBM Plex Sans',sans-serif;color:#565E58;margin-bottom:12px">Eat next · around 16:30</div>
+    <div style="display:grid;grid-template-columns:96px 1fr;gap:14px">
+      <div style="height:96px;background:repeating-linear-gradient(135deg,#DDE1DB 0 6px,#E7EAE5 6px 12px);display:flex;align-items:center;justify-content:center;font:400 10px 'IBM Plex Mono',monospace;color:#565E58">recipe photo</div>
+      <div><div style="font:600 17px/1.3 'IBM Plex Sans',sans-serif">Salmon, quinoa and spinach bowl</div><div style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58;margin-top:4px">540 kcal · P 38 · C 46 · F 21</div></div>
+    </div>
+    <p style="margin:14px 0 0;padding-left:12px;border-left:2px solid #2747D0;font:400 14px/1.5 'IBM Plex Sans',sans-serif;color:#151A17;text-wrap:pretty"><span style="color:#2747D0;font-weight:600">Why this fits:</span> lunch was carb-heavy. Protein and omega-3 now keep your blood sugar flat through your 17:00 meeting.</p>
+  </div>
+  <div style="padding:20px 24px 8px">
+    <div style="font:500 14px 'IBM Plex Sans',sans-serif;color:#565E58;margin-bottom:6px">Meals today</div>
+    <div style="display:grid;grid-template-columns:52px 1fr auto;gap:0 12px;font-size:15px">
+      <span style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58;padding:12px 0">07:40</span><div style="padding:12px 0;border-bottom:1px dashed #CBD0CA"><div>Greek yoghurt, blueberries and oats</div><div style="font-size:13px;color:#565E58">Breakfast</div></div><span style="font:400 13px 'IBM Plex Mono',monospace;padding:12px 0;border-bottom:1px dashed #CBD0CA">420</span>
+      <span style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58;padding:12px 0">10:30</span><div style="padding:12px 0;border-bottom:1px dashed #CBD0CA"><div>Flat white and a banana</div><div style="font-size:13px;color:#565E58">Snack</div></div><span style="font:400 13px 'IBM Plex Mono',monospace;padding:12px 0;border-bottom:1px dashed #CBD0CA">210</span>
+      <span style="font:400 13px 'IBM Plex Mono',monospace;color:#565E58;padding:12px 0">13:05</span><div style="padding:12px 0"><div>Chicken shawarma wrap with fries</div><div style="font-size:13px;color:#C42B23">Lunch · high glycemic load</div></div><span style="font:400 13px 'IBM Plex Mono',monospace;padding:12px 0">610</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 24px 16px;border-top:1px solid #CBD0CA;background:#F8F9F6">
+    <div style="background:#2747D0;color:#fff;font:600 16px 'IBM Plex Sans',sans-serif;text-align:center;padding:15px 0;border-radius:4px">Log a meal</div>
+    <div style="border:1.5px solid #151A17;font:600 16px 'IBM Plex Sans',sans-serif;text-align:center;padding:13.5px 0;border-radius:4px">Check in</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);background:#F8F9F6;border-top:1px solid #CBD0CA;padding:10px 0 26px;font:500 12px 'IBM Plex Sans',sans-serif;text-align:center;color:#565E58"><span style="color:#2747D0;font-weight:600">Today</span><span>This week</span><span>Sleep</span><span>Settings</span></div>
+</div>
+<div style="font:13px/1.5 system-ui,sans-serif;color:#333;text-wrap:pretty"><b>Idea:</b> the app as a precise, honest record. No panels — hairline rules, dashed sub-rules and monospaced numbers do the structuring. Colour appears only where data is. Square-ish corners (4 px).</div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font:10px/1.3 ui-monospace,monospace;color:#555">
+  <div><div style="height:28px;background:#2747D0"></div><div style="height:16px;background:#8FA3FF"></div>Focus</div>
+  <div><div style="height:28px;background:#6A47B8"></div><div style="height:16px;background:#B9A2F2"></div>Sleep</div>
+  <div><div style="height:28px;background:#B76E00"></div><div style="height:16px;background:#F0B44A"></div>Energy</div>
+  <div><div style="height:28px;background:#13805A"></div><div style="height:16px;background:#5FD3A0"></div>Protein</div>
+  <div><div style="height:28px;background:#B3407A"></div><div style="height:16px;background:#F08DBE"></div>Fat</div>
+  <div><div style="height:28px;background:#C42B23"></div><div style="height:16px;background:#FF8A7E"></div>Warning</div>
+</div>
+<div style="font:12px/1.5 system-ui,sans-serif;color:#555">Top row light, bottom row dark (on #141816 graphite-green). Fonts: IBM Plex Sans + IBM Plex Mono.</div>
+</div>
+
+<!-- ============ 1b SIGNAL ============ -->
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Signal — flat colour fields, poster type</div>
+<div style="width:390px;border-radius:44px;overflow:hidden;background:#FFFFFF;box-shadow:0 0 0 10px #1d1f1e,0 30px 60px rgba(0,0,0,.25);font-family:'Archivo',sans-serif;color:#0E0E10;margin:10px 0 18px">
+  <div style="background:#3530F0;color:#fff">
+    <div style="display:flex;justify-content:space-between;padding:16px 30px 0;font:600 15px 'Archivo',sans-serif"><span>14:20</span><span style="font-size:12px">5G ▮▮▮</span></div>
+    <div style="padding:20px 22px 0;display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 17px 'Archivo',sans-serif">Thursday 2 October</span><span style="font:500 14px 'Archivo',sans-serif;color:#D9D8FF">Focus score</span></div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px">
+      <div style="font:900 196px/0.82 'Archivo',sans-serif;font-stretch:62%;letter-spacing:-6px;margin-left:-6px">74</div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:12px;width:150px">
+        <div style="font:700 15px/1.25 'Archivo',sans-serif;text-wrap:pretty">Steady until about 16:00</div>
+        <div style="font:400 13px/1.35 'Archivo',sans-serif;color:#E2E1FF;text-wrap:pretty">Last night's late dinner is the biggest drag.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;border-top:2px solid #fff">
+      <div style="padding:10px 10px 14px 22px;border-right:1px solid rgba(255,255,255,.45)"><div style="font:500 12px 'Archivo',sans-serif;color:#E2E1FF">Sleep</div><div style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">7h 12</div><div style="height:6px;background:rgba(255,255,255,.3);margin-top:6px"><div style="width:82%;height:6px;background:#fff"></div></div></div>
+      <div style="padding:10px 10px 14px;border-right:1px solid rgba(255,255,255,.45)"><div style="font:500 12px 'Archivo',sans-serif;color:#E2E1FF">Evening</div><div style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">22:40</div><div style="height:6px;background:rgba(255,255,255,.3);margin-top:6px"><div style="width:48%;height:6px;background:#FFB000"></div></div></div>
+      <div style="padding:10px 10px 14px;border-right:1px solid rgba(255,255,255,.45)"><div style="font:500 12px 'Archivo',sans-serif;color:#E2E1FF">Glycemic</div><div style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">68</div><div style="height:6px;background:rgba(255,255,255,.3);margin-top:6px"><div style="width:68%;height:6px;background:#fff"></div></div></div>
+      <div style="padding:10px 18px 14px 10px"><div style="font:500 12px 'Archivo',sans-serif;color:#E2E1FF">Stress</div><div style="font:800 22px 'Archivo',sans-serif;font-stretch:75%">Low</div><div style="height:6px;background:rgba(255,255,255,.3);margin-top:6px"><div style="width:80%;height:6px;background:#fff"></div></div></div>
+    </div>
+  </div>
+  <div style="background:#FFB000;padding:18px 22px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font:600 14px 'Archivo',sans-serif">Calories left</div><div style="font:900 64px/0.9 'Archivo',sans-serif;font-stretch:62%;letter-spacing:-1px">1,010</div></div><div style="font:500 13px/1.35 'Archivo',sans-serif;text-align:right">1,240 eaten<br>of 2,250 kcal</div></div>
+  </div>
+  <div style="padding:16px 22px 18px;display:grid;gap:12px;border-bottom:2px solid #0E0E10">
+    <div><div style="display:flex;justify-content:space-between;font:600 14px 'Archivo',sans-serif"><span>Protein</span><span style="font-weight:500">78 / 140 g</span></div><div style="height:12px;background:#EEEEF2;margin-top:5px"><div style="width:56%;height:12px;background:#00A86B"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font:600 14px 'Archivo',sans-serif"><span>Carbs</span><span style="font-weight:500">142 / 250 g</span></div><div style="height:12px;background:#EEEEF2;margin-top:5px"><div style="width:57%;height:12px;background:#FFB000"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font:600 14px 'Archivo',sans-serif"><span>Fat</span><span style="font-weight:500">41 / 75 g</span></div><div style="height:12px;background:#EEEEF2;margin-top:5px"><div style="width:55%;height:12px;background:#FF6FA0"></div></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 132px;background:#0E0E10;color:#fff">
+    <div style="padding:18px 16px 18px 22px"><div style="font:600 13px 'Archivo',sans-serif;color:#B9B8FF">Eat next · 16:30</div><div style="font:800 22px/1.1 'Archivo',sans-serif;font-stretch:80%;margin:6px 0 8px">Salmon, quinoa and spinach bowl</div><div style="font:400 13px/1.45 'Archivo',sans-serif;color:#D5D5DC;text-wrap:pretty">Lunch ran high in carbs. 38 g of protein now keeps your 17:00 meeting sharp.</div><div style="font:600 13px 'Archivo',sans-serif;margin-top:10px">540 kcal</div></div>
+    <div style="background:repeating-linear-gradient(135deg,#26262C 0 6px,#1A1A1F 6px 12px);display:flex;align-items:center;justify-content:center;font:400 10px ui-monospace,monospace;color:#8C8C96">recipe photo</div>
+  </div>
+  <div style="padding:18px 22px 6px">
+    <div style="font:800 22px 'Archivo',sans-serif;font-stretch:80%;margin-bottom:6px">Meals today</div>
+    <div style="display:grid;grid-template-columns:14px 50px 1fr auto;gap:0 10px;align-items:center;font-size:15px">
+      <span style="width:12px;height:12px;background:#FFB000"></span><span style="font:700 14px 'Archivo',sans-serif;padding:12px 0">07:40</span><span style="padding:12px 0;border-bottom:1px solid #DADAE0">Yoghurt, blueberries, oats</span><span style="font:600 14px 'Archivo',sans-serif;padding:12px 0;border-bottom:1px solid #DADAE0">420</span>
+      <span style="width:12px;height:12px;background:#FFB000"></span><span style="font:700 14px 'Archivo',sans-serif;padding:12px 0">10:30</span><span style="padding:12px 0;border-bottom:1px solid #DADAE0">Flat white and a banana</span><span style="font:600 14px 'Archivo',sans-serif;padding:12px 0;border-bottom:1px solid #DADAE0">210</span>
+      <span style="width:12px;height:12px;background:#E5261B"></span><span style="font:700 14px 'Archivo',sans-serif;padding:12px 0">13:05</span><span style="padding:12px 0">Chicken shawarma wrap, fries <span style="display:block;font-size:13px;color:#C41D13;font-weight:600">High glycemic load</span></span><span style="font:600 14px 'Archivo',sans-serif;padding:12px 0">610</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;margin-top:10px">
+    <div style="background:#3530F0;color:#fff;font:800 18px 'Archivo',sans-serif;padding:20px 22px">Log a meal</div>
+    <div style="background:#0E0E10;color:#fff;font:800 18px 'Archivo',sans-serif;padding:20px 22px">Check in</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:12px 0 26px;font:600 12px 'Archivo',sans-serif;text-align:center;color:#5A5A66"><span style="color:#0E0E10;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px">Today</span><span>This week</span><span>Sleep</span><span>Settings</span></div>
+</div>
+<div style="font:13px/1.5 system-ui,sans-serif;color:#333;text-wrap:pretty"><b>Idea:</b> each concept owns a full-width colour field, like a transit poster. The screen reads top to bottom as mind → body → next step. Condensed numerals at poster scale; zero corner radius; no shadows.</div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font:10px/1.3 ui-monospace,monospace;color:#555">
+  <div><div style="height:28px;background:#3530F0"></div><div style="height:16px;background:#8C89FF"></div>Focus</div>
+  <div><div style="height:28px;background:#7A1FA2"></div><div style="height:16px;background:#D58BF5"></div>Sleep</div>
+  <div><div style="height:28px;background:#FFB000"></div><div style="height:16px;background:#FFC740"></div>Energy</div>
+  <div><div style="height:28px;background:#00A86B"></div><div style="height:16px;background:#3DDC97"></div>Protein</div>
+  <div><div style="height:28px;background:#FF6FA0"></div><div style="height:16px;background:#FF8FB6"></div>Fat</div>
+  <div><div style="height:28px;background:#E5261B"></div><div style="height:16px;background:#FF6A5C"></div>Warning</div>
+</div>
+<div style="font:12px/1.5 system-ui,sans-serif;color:#555">Bright fields carry dark ink; deep fields carry white. Dark theme keeps the fields and swaps white for #16161C. Font: Archivo (variable width, 62–125%).</div>
+</div>
+
+<!-- ============ 1c CIRCADIAN ============ -->
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Circadian — the day drawn as a 24-hour clock</div>
+<div style="width:390px;border-radius:44px;overflow:hidden;background:#F2F1F8;box-shadow:0 0 0 10px #1d1f1e,0 30px 60px rgba(0,0,0,.25);font-family:'Lexend',sans-serif;color:#1C1A2E;margin:10px 0 18px">
+  <div style="display:flex;justify-content:space-between;padding:16px 30px 0;font:500 15px 'Lexend',sans-serif"><span>14:20</span><span style="font-size:12px">5G ▮▮▮</span></div>
+  <div style="padding:18px 24px 0;display:flex;justify-content:space-between;align-items:center"><div><div style="font:300 14px 'Lexend',sans-serif;color:#5D5A73">Thursday 2 October</div><div style="font:500 26px/1.2 'Lexend',sans-serif">Good afternoon, Maya</div></div></div>
+  <div style="position:relative;width:300px;height:300px;margin:18px auto 0">
+    <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0">
+      <circle cx="150" cy="150" r="120" fill="none" stroke="#DCDAE8" stroke-width="14"></circle>
+      <path d="M124.0 32.8 A120 120 0 0 1 269.4 161.5" fill="none" stroke="#3F3A9E" stroke-width="14" stroke-linecap="round"></path>
+      <path d="M269.4 161.5 A120 120 0 0 1 81.2 248.3" fill="none" stroke="#1677C8" stroke-opacity=".28" stroke-width="14"></path>
+      <path d="M81.2 248.3 A120 120 0 0 1 39.1 195.9" fill="none" stroke="#1677C8" stroke-width="3" stroke-dasharray="3 5"></path>
+      <circle cx="258.8" cy="200.7" r="9" fill="#E39A12" stroke="#F2F1F8" stroke-width="3"></circle>
+      <circle cx="195.9" cy="260.9" r="7" fill="#E39A12" stroke="#F2F1F8" stroke-width="3"></circle>
+      <circle cx="116.4" cy="265.2" r="10" fill="#D23B2A" stroke="#F2F1F8" stroke-width="3"></circle>
+      <circle cx="39.1" cy="195.9" r="9" fill="#F2F1F8" stroke="#1677C8" stroke-width="2.5" stroke-dasharray="3 3"></circle>
+      <circle cx="81.2" cy="248.3" r="5" fill="#1C1A2E"></circle>
+      <line x1="81.2" y1="248.3" x2="66" y2="267" stroke="#1C1A2E" stroke-width="1.5"></line>
+      <text x="150" y="16" text-anchor="middle" font-family="Lexend" font-size="11" fill="#5D5A73">00</text>
+      <text x="294" y="154" text-anchor="end" font-family="Lexend" font-size="11" fill="#5D5A73">06</text>
+      <text x="150" y="296" text-anchor="middle" font-family="Lexend" font-size="11" fill="#5D5A73">12</text>
+      <text x="6" y="154" font-family="Lexend" font-size="11" fill="#5D5A73">18</text>
+      <text x="52" y="282" font-family="Lexend" font-size="11" fill="#1C1A2E">now</text>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      <div style="font:400 13px 'Lexend',sans-serif;color:#5D5A73">Focus score</div>
+      <div style="font:600 84px/1 'Lexend',sans-serif;color:#0F5E9E;letter-spacing:-3px">74</div>
+      <div style="font:400 13px/1.35 'Lexend',sans-serif;color:#1C1A2E;width:150px;text-wrap:pretty">Steady until about 16:00</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font:400 12px 'Lexend',sans-serif;color:#5D5A73;margin:6px 24px 0">
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:6px;border-radius:3px;background:#3F3A9E"></span>Slept 23:10–06:22</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:4px;background:#E39A12"></span>Meals</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:4px;border:1.5px dashed #1677C8"></span>Eat next</span>
+  </div>
+  <div style="margin:20px 16px 0;background:#fff;border-radius:28px;padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px 18px">
+    <div><div style="display:flex;justify-content:space-between;font:400 13px 'Lexend',sans-serif"><span>Sleep</span><b style="font-weight:500">7 h 12 m</b></div><div style="height:8px;border-radius:4px;background:#ECEAF4;margin-top:6px"><div style="width:82%;height:8px;border-radius:4px;background:#3F3A9E"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font:400 13px 'Lexend',sans-serif"><span>Evening</span><b style="font-weight:500;color:#B52E1F">ate 22:40</b></div><div style="height:8px;border-radius:4px;background:#ECEAF4;margin-top:6px"><div style="width:48%;height:8px;border-radius:4px;background:#D23B2A"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font:400 13px 'Lexend',sans-serif"><span>Glycemic load</span><b style="font-weight:500">68</b></div><div style="height:8px;border-radius:4px;background:#ECEAF4;margin-top:6px"><div style="width:68%;height:8px;border-radius:4px;background:#E39A12"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;font:400 13px 'Lexend',sans-serif"><span>Stress</span><b style="font-weight:500">Low</b></div><div style="height:8px;border-radius:4px;background:#ECEAF4;margin-top:6px"><div style="width:80%;height:8px;border-radius:4px;background:#1677C8"></div></div></div>
+  </div>
+  <div style="padding:24px 24px 0">
+    <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 40px/1 'Lexend',sans-serif;color:#8F5A00;letter-spacing:-1px">1,010</span><span style="font:400 15px 'Lexend',sans-serif;color:#5D5A73">kcal left of 2,250</span></div>
+    <div style="display:flex;gap:4px;margin-top:14px;height:40px">
+      <div style="flex:140;background:#E4F1E6;border-radius:20px 6px 6px 20px;position:relative;overflow:hidden"><div style="position:absolute;inset:0 44% 0 0;background:#3E9B4F"></div><span style="position:relative;display:block;padding:11px 14px;font:500 13px 'Lexend',sans-serif;color:#fff">78 g</span></div>
+      <div style="flex:250;background:#FBEED5;border-radius:6px;position:relative;overflow:hidden"><div style="position:absolute;inset:0 43% 0 0;background:#E39A12"></div><span style="position:relative;display:block;padding:11px 14px;font:500 13px 'Lexend',sans-serif;color:#1C1A2E">142 g</span></div>
+      <div style="flex:75;background:#FAE3EA;border-radius:6px 20px 20px 6px;position:relative;overflow:hidden"><div style="position:absolute;inset:0 45% 0 0;background:#E06C8E"></div><span style="position:relative;display:block;padding:11px 10px;font:500 13px 'Lexend',sans-serif;color:#1C1A2E">41 g</span></div>
+    </div>
+    <div style="display:flex;gap:4px;font:400 12px 'Lexend',sans-serif;color:#5D5A73;margin-top:6px"><span style="flex:140">Protein of 140</span><span style="flex:250">Carbs of 250</span><span style="flex:75">Fat of 75</span></div>
+  </div>
+  <div style="margin:24px 16px 0;background:#fff;border-radius:28px;overflow:hidden">
+    <div style="height:120px;background:repeating-linear-gradient(135deg,#ECEAF4 0 6px,#F6F5FA 6px 12px);display:flex;align-items:center;justify-content:center;font:400 10px ui-monospace,monospace;color:#5D5A73">recipe photo</div>
+    <div style="padding:16px 20px 20px">
+      <div style="font:400 13px 'Lexend',sans-serif;color:#0F5E9E">Eat next · around 16:30</div>
+      <div style="font:500 19px/1.3 'Lexend',sans-serif;margin:4px 0 8px">Salmon, quinoa and spinach bowl</div>
+      <div style="font:300 14px/1.55 'Lexend',sans-serif;color:#1C1A2E;text-wrap:pretty">Lunch landed early in your afternoon dip. Protein and omega-3 now keep you level through your 17:00 meeting.</div>
+      <div style="font:400 13px 'Lexend',sans-serif;color:#5D5A73;margin-top:10px">540 kcal · 38 g protein · 25 min</div>
+    </div>
+  </div>
+  <div style="padding:24px 24px 0">
+    <div style="font:500 17px 'Lexend',sans-serif;margin-bottom:8px">Meals today</div>
+    <div style="display:grid;grid-template-columns:44px 14px 1fr auto;gap:0 10px;align-items:start;font:400 14px/1.35 'Lexend',sans-serif">
+      <span style="color:#5D5A73;padding:10px 0">07:40</span><span style="width:10px;height:10px;border-radius:5px;background:#E39A12;margin-top:14px"></span><span style="padding:10px 0">Greek yoghurt, blueberries and oats</span><span style="padding:10px 0;color:#5D5A73">420</span>
+      <span style="color:#5D5A73;padding:10px 0">10:30</span><span style="width:10px;height:10px;border-radius:5px;background:#E39A12;margin-top:14px"></span><span style="padding:10px 0">Flat white and a banana</span><span style="padding:10px 0;color:#5D5A73">210</span>
+      <span style="color:#5D5A73;padding:10px 0">13:05</span><span style="width:10px;height:10px;border-radius:5px;background:#D23B2A;margin-top:14px"></span><span style="padding:10px 0">Chicken shawarma wrap with fries<span style="display:block;font-size:12px;color:#B52E1F">High glycemic load</span></span><span style="padding:10px 0;color:#5D5A73">610</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;padding:20px 16px 14px">
+    <div style="flex:1;background:#1677C8;color:#fff;font:500 16px 'Lexend',sans-serif;text-align:center;padding:16px 0;border-radius:999px">Log a meal</div>
+    <div style="flex:1;background:#fff;color:#1C1A2E;font:500 16px 'Lexend',sans-serif;text-align:center;padding:16px 0;border-radius:999px;box-shadow:inset 0 0 0 1.5px #1C1A2E">Check in</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);padding:10px 0 26px;font:400 12px 'Lexend',sans-serif;text-align:center;color:#5D5A73"><span style="color:#0F5E9E;font-weight:500">Today</span><span>This week</span><span>Sleep</span><span>Settings</span></div>
+</div>
+<div style="font:13px/1.5 system-ui,sans-serif;color:#333;text-wrap:pretty"><b>Idea:</b> focus follows the body clock, so the clock is the home screen. Sleep, meals, now and the next suggested meal sit on one 24-hour ring around the score. Lexend was designed to improve reading ease — a quiet nod to "neuro".</div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font:10px/1.3 ui-monospace,monospace;color:#555">
+  <div><div style="height:28px;background:#1677C8"></div><div style="height:16px;background:#6CB6F5"></div>Focus</div>
+  <div><div style="height:28px;background:#3F3A9E"></div><div style="height:16px;background:#A9A4F5"></div>Sleep</div>
+  <div><div style="height:28px;background:#E39A12"></div><div style="height:16px;background:#F5BC52"></div>Energy</div>
+  <div><div style="height:28px;background:#3E9B4F"></div><div style="height:16px;background:#7FD18C"></div>Protein</div>
+  <div><div style="height:28px;background:#E06C8E"></div><div style="height:16px;background:#F59AB5"></div>Fat</div>
+  <div><div style="height:28px;background:#D23B2A"></div><div style="height:16px;background:#FF7A68"></div>Warning</div>
+</div>
+<div style="font:12px/1.5 system-ui,sans-serif;color:#555">Dark theme on a deep dusk #17162A, not black. Font: Lexend (300–700).</div>
+</div>
+
+</div>
+<p class="dv-next">Reply with a pick, e.g. "go with <a class="dv-oid" href="#1c">1c</a>" · "<a class="dv-oid" href="#1a">1a</a> but with the colour fields of <a class="dv-oid" href="#1b">1b</a>" · "show <a class="dv-oid" href="#1b">1b</a> in dark first"</p>
+</section>
+</x-dc>
+</body>
+</html>

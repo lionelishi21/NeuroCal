@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding:8px 20px 28px;display:flex;flex-direction:column;gap:14px">
+  <div style="width:40px;height:5px;border-radius:3px;background:var(--line2);align-self:center"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div style="font-size:21px;font-weight:800;letter-spacing:-.3px">{{ title }}</div>
+    <div onClick="{{ close }}" role="button" aria-label="Close" style="width:44px;height:44px;margin-right:-10px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink2);cursor:pointer" style-hover="background:var(--track)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+  </div>
+
+  <sc-if value="{{ isMeal }}" hint-placeholder-val="{{ false }}">
+    <input type="file" accept="image/*" capture="environment" ref="{{ camRef }}" onChange="{{ onFile }}" style="display:none"></input>
+    <input type="file" accept="image/*" ref="{{ libRef }}" onChange="{{ onFile }}" style="display:none"></input>
+
+    <sc-if value="{{ showPick }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ err }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-if value="{{ err.preview }}"><div style="height:170px;border-radius:20px;background:{{ err.bg }};display:flex;align-items:flex-end;padding:12px;box-sizing:border-box;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);filter:{{ err.filter }}">Your photo</div></sc-if>
+          <div style="background:var(--warn-soft);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px"><div style="font-size:15px;font-weight:800;color:var(--warn)">{{ err.t }}</div><div style="font-size:14px;line-height:1.45;color:var(--ink)">{{ err.b }}</div></div>
+        </div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+        <div onClick="{{ takePhoto }}" role="button" style="height:120px;border-radius:20px;background:var(--primary);color:var(--on-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;cursor:pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" stroke-linejoin="round"></path><circle cx="12" cy="13" r="3.5"></circle></svg>{{ takeLabel }}</div>
+        <div onClick="{{ choosePhoto }}" role="button" style="height:120px;border-radius:20px;background:var(--primary-soft);color:var(--primary-ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;cursor:pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M20 16l-5-5-8 8.5"></path></svg>Choose a photo</div>
+      </div>
+      <div style="font-size:13px;line-height:1.45;color:var(--ink2);text-align:center">Photos up to 8 MB. Get the whole plate in, from above.</div>
+      <div onClick="{{ manualOnly }}" role="button" style="height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer">Add an item by hand instead</div>
+    </sc-if>
+
+    <sc-if value="{{ showReading }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;height:260px;border-radius:24px;overflow:hidden;background:{{ photoBg }}">
+        <sc-if value="{{ photoUrl }}"><img src="{{ photoUrl }}" alt="Your meal photo" style="width:100%;height:100%;object-fit:cover;display:block"></img></sc-if>
+        <div style="position:absolute;inset:0;background:rgba(14,19,37,.25)"></div>
+        <div style="position:absolute;left:16px;right:16px;height:3px;border-radius:2px;background:#3CC7BF;box-shadow:0 0 16px #3CC7BF;animation:ncscan 2s ease-in-out infinite"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:700" role="status"><span style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--primary-soft);border-top-color:var(--primary);animation:ncspin .8s linear infinite"></span>Reading your plate…</div>
+    </sc-if>
+
+    <sc-if value="{{ showItems }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ hasPhoto }}">
+        <div style="position:relative;height:130px;border-radius:20px;overflow:hidden;background:{{ photoBg }}">
+          <sc-if value="{{ photoUrl }}"><img src="{{ photoUrl }}" alt="Your meal photo" style="width:100%;height:100%;object-fit:cover;display:block"></img></sc-if>
+          <div onClick="{{ retake }}" role="button" style="position:absolute;right:10px;bottom:10px;height:36px;padding:0 12px;border-radius:999px;background:rgba(14,19,37,.72);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;cursor:pointer">Use a different photo</div>
+        </div>
+      </sc-if>
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:15px;font-weight:700">{{ itemsTitle }}</span><span style="font-size:12px;color:var(--ink2)">Untick anything we got wrong</span></div>
+      <div style="border:1px solid var(--line);border-radius:18px;overflow:hidden">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+          <div onClick="{{ it.toggle }}" role="checkbox" style="display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 14px;min-height:56px;box-sizing:border-box;border-top:{{ it.border }};cursor:pointer;opacity:{{ it.op }}">
+            <span style="width:22px;height:22px;border-radius:7px;border:2px solid {{ it.box.bd }};background:{{ it.box.bg }};color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;box-sizing:border-box">{{ it.box.mark }}</span>
+            <div style="min-width:0"><div style="font-size:15px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap">{{ it.name }}<sc-if value="{{ it.guess }}"><span style="height:20px;padding:0 7px;border-radius:6px;background:var(--page);color:var(--ink2);font-size:11px;font-weight:700;display:flex;align-items:center">Best guess</span></sc-if></div><div style="font-size:12px;color:var(--ink2);margin-top:2px">{{ it.portion }} · <span style="color:{{ it.glInk }};font-weight:600">{{ it.glText }}</span></div></div>
+            <span style="font-size:14px;font-weight:700">{{ it.kcalText }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ manualClosed }}"><div onClick="{{ openManual }}" role="button" style="height:44px;border-radius:14px;border:1.5px dashed var(--line2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--primary-ink);cursor:pointer">+ Add an item by hand</div></sc-if>
+      <sc-if value="{{ manualOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--page);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:14px;font-weight:700">Add an item by hand</div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px">
+            <input value="{{ m.food }}" onChange="{{ setFood }}" placeholder="Food" aria-label="Food" style="height:46px;border-radius:12px;border:1.5px solid {{ foodBd }};background:var(--card);color:var(--ink);padding:0 12px;font-size:15px;outline:none;min-width:0"></input>
+            <input value="{{ m.portion }}" onChange="{{ setPortion }}" placeholder="Portion" aria-label="Portion" style="height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:0 12px;font-size:15px;outline:none;min-width:0"></input>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+            <input value="{{ m.kcal }}" onChange="{{ setKcal }}" inputmode="numeric" placeholder="kcal" aria-label="Calories" style="height:46px;border-radius:12px;border:1.5px solid {{ kcalBd }};background:var(--card);color:var(--ink);padding:0 10px;font-size:15px;outline:none;min-width:0"></input>
+            <input value="{{ m.p }}" onChange="{{ setP }}" inputmode="numeric" placeholder="Protein" aria-label="Protein grams, optional" style="height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:0 8px;font-size:13px;outline:none;min-width:0"></input>
+            <input value="{{ m.c }}" onChange="{{ setC }}" inputmode="numeric" placeholder="Carbs" aria-label="Carbs grams, optional" style="height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:0 8px;font-size:13px;outline:none;min-width:0"></input>
+            <input value="{{ m.f }}" onChange="{{ setFat }}" inputmode="numeric" placeholder="Fat" aria-label="Fat grams, optional" style="height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:0 8px;font-size:13px;outline:none;min-width:0"></input>
+          </div>
+          <div style="font-size:12px;color:{{ manualHintInk }}">{{ manualHint }}</div>
+          <div style="display:flex;gap:8px"><div onClick="{{ addManual }}" role="button" style="flex:1;height:44px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">Add item</div><div onClick="{{ closeManual }}" role="button" style="height:44px;padding:0 16px;border-radius:999px;color:var(--ink2);font-size:14px;font-weight:700;display:flex;align-items:center;cursor:pointer">Cancel</div></div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;font-weight:700">Meal</span>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--page);border-radius:14px;padding:4px" role="radiogroup"><sc-for list="{{ types }}" as="t" hint-placeholder-count="4"><div onClick="{{ t.go }}" role="radio" style="height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;background:{{ t.bg }};color:{{ t.ink }}">{{ t.t }}</div></sc-for></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;background:var(--page);border-radius:16px;padding:12px">
+        <sc-for list="{{ totals }}" as="t" hint-placeholder-count="4"><div style="text-align:center"><div style="font-size:17px;font-weight:800">{{ t.v }}</div><div style="font-size:11px;font-weight:600;color:var(--ink2)">{{ t.k }}</div></div></sc-for>
+      </div>
+      <sc-if value="{{ hiNote }}"><div style="background:var(--mid-soft);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.45;color:var(--ink)"><b style="color:var(--mid);font-weight:800">High glycemic load. </b>{{ hiNote }}</div></sc-if>
+      <sc-if value="{{ saveErr }}"><div style="background:var(--warn-soft);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.45;color:var(--ink)" role="alert"><b style="color:var(--warn);font-weight:800">Couldn't save your meal. </b>Check your connection and try again. Nothing's been lost.</div></sc-if>
+      <div onClick="{{ logMeal }}" role="button" style="height:56px;border-radius:999px;background:{{ logBg }};color:var(--on-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;box-shadow:0 8px 24px var(--primary-glow)"><sc-if value="{{ saving }}"><span style="width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:ncspin .8s linear infinite"></span></sc-if>{{ logLabel }}</div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isCheckin }}" hint-placeholder-val="{{ false }}">
+    <div style="font-size:14px;color:var(--ink2)">How do you feel right now? Pick any.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ feels }}" as="f" hint-placeholder-count="7"><div onClick="{{ f.go }}" role="checkbox" style="height:44px;padding:0 16px;border-radius:999px;display:flex;align-items:center;font-size:15px;font-weight:700;cursor:pointer;background:{{ f.bg }};color:{{ f.ink }};border:1.5px solid {{ f.bd }}">{{ f.t }}</div></sc-for></div>
+    <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Note <span style="font-weight:400;color:var(--ink2)">(optional)</span></span><textarea value="{{ note }}" onChange="{{ setNote }}" rows="3" placeholder="e.g. Rough meeting, skipped lunch" style="border-radius:14px;border:1.5px solid var(--line);background:var(--page);color:var(--ink);padding:12px 14px;font-size:15px;outline:none;resize:none"></textarea></label>
+    <div onClick="{{ saveCheckin }}" role="button" style="height:56px;border-radius:999px;background:{{ ciBg }};color:var(--on-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">Save check-in</div>
+  </sc-if>
+
+  <sc-if value="{{ isSleep }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Went to bed</span><input type="time" value="{{ bed }}" onChange="{{ setBed }}" style="height:56px;border-radius:16px;border:1.5px solid var(--line);background:var(--page);color:var(--ink);padding:0 14px;font-size:20px;font-weight:700;outline:none;min-width:0"></input></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Woke up</span><input type="time" value="{{ wake }}" onChange="{{ setWake }}" style="height:56px;border-radius:16px;border:1.5px solid {{ wakeBd }};background:var(--page);color:var(--ink);padding:0 14px;font-size:20px;font-weight:700;outline:none;min-width:0"></input></label>
+    </div>
+    <sc-if value="{{ future }}"><div role="alert" style="background:var(--warn-soft);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45"><b style="color:var(--warn);font-weight:800">That wake-up time hasn't happened yet. </b>It's 15:27 now. Pick a time from this morning.</div></sc-if>
+    <sc-if value="{{ notFuture }}"><div style="background:var(--primary-soft);border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600;color:var(--primary-ink)">You slept</span><span style="font-size:22px;font-weight:800;color:var(--primary-ink)">{{ dur }}</span></div></sc-if>
+    <div onClick="{{ logSleep }}" role="button" style="height:56px;border-radius:999px;background:{{ slBg }};color:var(--on-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">Log sleep</div>
+  </sc-if>
+
+  <sc-if value="{{ isScreen }}" hint-placeholder-val="{{ false }}">
+    <div style="font-size:14px;line-height:1.45;color:var(--ink2)">Minutes on screens after 22:00 last night.</div>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px"><sc-for list="{{ picks }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.go }}" role="radio" style="height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer;background:{{ p.bg }};color:{{ p.ink }};border:1.5px solid {{ p.bd }}">{{ p.t }}</div></sc-for></div>
+    <label style="display:flex;align-items:center;gap:10px;background:var(--page);border-radius:16px;padding:0 16px;height:56px"><input value="{{ mins }}" onChange="{{ setMins }}" inputmode="numeric" aria-label="Minutes" style="width:80px;border:0;background:transparent;color:var(--ink);font-size:22px;font-weight:800;outline:none"></input><span style="font-size:15px;color:var(--ink2)">minutes</span></label>
+    <div onClick="{{ logScreen }}" role="button" style="height:56px;border-radius:999px;background:var(--primary);color:var(--on-primary);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer">Log screen time</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:900},&quot;sheet&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;meal&quot;,&quot;checkin&quot;,&quot;sleep&quot;,&quot;screen&quot;],&quot;default&quot;:&quot;meal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mealState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pick&quot;,&quot;reading&quot;,&quot;items&quot;,&quot;dark&quot;,&quot;blurry&quot;,&quot;nofood&quot;,&quot;big&quot;,&quot;failsave&quot;,&quot;offline&quot;],&quot;default&quot;:&quot;items&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;sleepState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ok&quot;,&quot;future&quot;],&quot;default&quot;:&quot;ok&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;},&quot;onToast&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(m:string)=&gt;void&quot;},&quot;onOffline&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;()=&gt;void&quot;}}">
+class Component extends DCLogic {
+  static ITEMS = [
+    { id: 1, name: 'Grilled salmon', portion: '120 g', kcal: 250, p: 27, c: 0, f: 15, gl: 'low', on: true },
+    { id: 2, name: 'Jasmine rice', portion: '120 g cooked', kcal: 155, p: 3, c: 34, f: 0, gl: 'high', on: true },
+    { id: 3, name: 'Broccoli', portion: '80 g', kcal: 25, p: 2, c: 4, f: 0, gl: 'low', on: true },
+    { id: 4, name: 'Teriyaki sauce', portion: '1 tbsp', kcal: 40, p: 1, c: 8, f: 0, gl: 'medium', on: false, guess: true }
+  ];
+  camRef = React.createRef(); libRef = React.createRef();
+  blankM = { food: '', portion: '', kcal: '', p: '', c: '', f: '' };
+  init(P = this.props) {
+    const ms = P.mealState || 'pick';
+    const errStates = ['dark', 'blurry', 'nofood', 'big'];
+    return {
+      step: errStates.includes(ms) ? 'pick' : ms === 'reading' ? 'reading' : ['items', 'failsave', 'offline'].includes(ms) ? 'items' : 'pick',
+      err: errStates.includes(ms) ? ms : null, saveErr: false, failNext: ms === 'failsave', offlineNext: ms === 'offline', saving: false,
+      items: Component.ITEMS.map(x => ({ ...x })), hasPhoto: ms !== 'manual', photoUrl: null, manual: false, m: { ...this.blankM }, mErr: false, type: 'lunch',
+      feels: [], note: '', bed: '23:10', wake: P.sleepState === 'future' ? '16:30' : '07:05', mins: '30'
+    };
+  }
+  state = this.init();
+  componentDidMount() { if (this.state.step === 'reading') this.read(); }
+  componentDidUpdate(p) { if (p.sheet !== this.props.sheet || p.mealState !== this.props.mealState || p.sleepState !== this.props.sleepState) this.setState(this.init(), () => { if (this.state.step === 'reading') this.read(); }); }
+  componentWillUnmount() { clearTimeout(this.rt); }
+  read() { clearTimeout(this.rt); this.rt = setTimeout(() => this.setState({ step: 'items', hasPhoto: true }), 1800); }
+  onFile = e => {
+    const file = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) return this.setState({ step: 'pick', err: 'big' });
+    this.setState({ photoUrl: URL.createObjectURL(file), step: 'reading', err: null }, () => this.read());
+  };
+  renderVals() {
+    const P = this.props, s = this.state, k = P.sheet || 'meal';
+    const close = () => P.onClose && P.onClose(), toast = m => P.onToast && P.onToast(m);
+    const box = on => on ? { bd: 'var(--primary)', bg: 'var(--primary)', mark: '✓' } : { bd: 'var(--line2)', bg: 'transparent', mark: '' };
+    const on = s.items.filter(i => i.on), sum = f => on.reduce((a, i) => a + (+i[f] || 0), 0);
+    const kcal = sum('kcal'), hi = on.filter(i => i.gl === 'high');
+    const ERR = {
+      dark: { t: 'This photo is too dark', b: 'Turn on a light or move nearer a window, then take it again.', preview: true, bg: '#1A1712', filter: 'none' },
+      blurry: { t: 'This photo is blurry', b: 'Hold the phone still for a second and tap to focus on the plate.', preview: true, bg: 'linear-gradient(135deg,#C9A27A,#7E9A6A)', filter: 'blur(3px)' },
+      nofood: { t: "We couldn't find food in this photo", b: 'Make sure the plate fills most of the frame, or add the items by hand.', preview: true, bg: 'linear-gradient(135deg,#8B93A8,#B9BFCC)', filter: 'none' },
+      big: { t: 'This photo is over 8 MB', b: 'Choose a smaller photo, or take a new one with the camera.', preview: false }
+    };
+    const fmtMin = m => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+    const toMin = t => { const [h, mm] = (t || '0:0').split(':').map(Number); return h * 60 + mm; };
+    const future = toMin(s.wake) > toMin('15:27');
+    let d = toMin(s.wake) - toMin(s.bed); if (d <= 0) d += 1440;
+    const setM = f => e => this.setState({ m: { ...s.m, [f]: e.target.value }, mErr: false });
+    const logMeal = () => {
+      if (!on.length || s.saving) return;
+      if (s.offlineNext) { close(); P.onOffline ? P.onOffline() : toast('Saved on this phone'); return; }
+      this.setState({ saving: true, saveErr: false });
+      setTimeout(() => {
+        if (s.failNext) return this.setState({ saving: false, saveErr: true, failNext: false });
+        close(); toast('Meal logged');
+      }, 800);
+    };
+    return {
+      title: { meal: 'Log a meal', checkin: 'Check in', sleep: 'Log sleep', screen: 'Log screen time' }[k],
+      close, isMeal: k === 'meal', isCheckin: k === 'checkin', isSleep: k === 'sleep', isScreen: k === 'screen',
+      camRef: this.camRef, libRef: this.libRef, onFile: this.onFile,
+      showPick: s.step === 'pick', showReading: s.step === 'reading', showItems: s.step === 'items',
+      err: s.err ? ERR[s.err] : null, takeLabel: s.err ? 'Take it again' : 'Take a photo',
+      takePhoto: () => this.camRef.current && this.camRef.current.click(),
+      choosePhoto: () => this.libRef.current && this.libRef.current.click(),
+      manualOnly: () => this.setState({ step: 'items', items: [], hasPhoto: false, manual: true, err: null }),
+      photoUrl: s.photoUrl, photoBg: 'linear-gradient(135deg,#D9B48A 0%,#C77E4F 40%,#6E8F5A 100%)', hasPhoto: s.hasPhoto,
+      retake: () => this.setState({ step: 'pick', photoUrl: null, err: null }),
+      itemsTitle: s.hasPhoto ? `We found ${s.items.length} items` : 'Your items',
+      items: s.items.map((it, n) => ({ ...it, border: n ? '1px solid var(--line)' : '0', op: it.on ? 1 : .6, box: box(it.on), kcalText: it.kcal + ' kcal', glText: { low: 'Low glycemic load', medium: 'Medium glycemic load', high: 'High glycemic load', none: 'Glycemic load unknown' }[it.gl], glInk: it.gl === 'high' ? 'var(--mid)' : 'var(--ink2)', toggle: () => this.setState({ items: s.items.map(x => x.id === it.id ? { ...x, on: !x.on } : x) }) })),
+      manualOpen: s.manual, manualClosed: !s.manual, openManual: () => this.setState({ manual: true }), closeManual: () => this.setState({ manual: false, m: { ...this.blankM }, mErr: false }),
+      m: s.m, setFood: setM('food'), setPortion: setM('portion'), setKcal: setM('kcal'), setP: setM('p'), setC: setM('c'), setFat: setM('f'),
+      foodBd: s.mErr && !s.m.food.trim() ? 'var(--warn)' : 'var(--line)', kcalBd: s.mErr && !(+s.m.kcal > 0) ? 'var(--warn)' : 'var(--line)',
+      manualHint: s.mErr ? 'Add a food name and its calories.' : 'Protein, carbs and fat are optional, in grams.', manualHintInk: s.mErr ? 'var(--warn)' : 'var(--ink2)',
+      addManual: () => {
+        if (!s.m.food.trim() || !(+s.m.kcal > 0)) return this.setState({ mErr: true });
+        this.setState({ items: [...s.items, { id: Date.now(), name: s.m.food.trim(), portion: s.m.portion || '1 portion', kcal: +s.m.kcal, p: +s.m.p || 0, c: +s.m.c || 0, f: +s.m.f || 0, gl: 'none', on: true }], m: { ...this.blankM }, manual: false });
+      },
+      types: [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snack']].map(([key, t]) => ({ t, go: () => this.setState({ type: key }), bg: s.type === key ? 'var(--card)' : 'transparent', ink: s.type === key ? 'var(--primary-ink)' : 'var(--ink2)' })),
+      totals: [{ v: kcal, k: 'kcal' }, { v: sum('p') + ' g', k: 'protein' }, { v: sum('c') + ' g', k: 'carbs' }, { v: sum('f') + ' g', k: 'fat' }],
+      hiNote: hi.length ? `${hi.map(i => i.name).join(', ')} may bring a dip in 1 to 2 hours. A 10-minute walk after eating helps.` : null,
+      saveErr: s.saveErr, saving: s.saving,
+      logLabel: s.saving ? 'Saving…' : s.saveErr ? 'Try again' : on.length ? `Log meal, ${kcal} kcal` : 'Tick at least one item',
+      logBg: on.length ? 'var(--primary)' : 'var(--ink3)', logMeal,
+      feels: ['Sharp', 'Low focus', 'Brain fog', 'Low energy', 'Wired', 'Stressed', 'Calm'].map(t => { const sel = s.feels.includes(t); return { t, bg: sel ? 'var(--primary)' : 'var(--card)', ink: sel ? 'var(--on-primary)' : 'var(--ink)', bd: sel ? 'var(--primary)' : 'var(--line2)', go: () => this.setState({ feels: sel ? s.feels.filter(x => x !== t) : [...s.feels, t] }) }; }),
+      note: s.note, setNote: e => this.setState({ note: e.target.value }),
+      ciBg: s.feels.length ? 'var(--primary)' : 'var(--ink3)',
+      saveCheckin: () => { if (!s.feels.length) return; close(); toast('Check-in saved'); },
+      bed: s.bed, wake: s.wake, setBed: e => this.setState({ bed: e.target.value }), setWake: e => this.setState({ wake: e.target.value }),
+      future, notFuture: !future, wakeBd: future ? 'var(--warn)' : 'var(--line)', dur: fmtMin(d), slBg: future ? 'var(--ink3)' : 'var(--primary)',
+      logSleep: () => { if (future) return; close(); toast('Sleep logged'); },
+      picks: [[0, 'None'], [15, '15'], [30, '30'], [60, '60'], [90, '90']].map(([n, t]) => { const sel = +s.mins === n && s.mins !== ''; return { t, go: () => this.setState({ mins: String(n) }), bg: sel ? 'var(--primary)' : 'var(--card)', ink: sel ? 'var(--on-primary)' : 'var(--ink)', bd: sel ? 'var(--primary)' : 'var(--line2)' }; }),
+      mins: s.mins, setMins: e => this.setState({ mins: e.target.value.replace(/\D/g, '').slice(0, 3) }),
+      logScreen: () => { close(); toast('Screen time logged'); }
+    };
+  }
+}
+</script>
+</body>
+</html>
