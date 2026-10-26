@@ -315,16 +315,16 @@ void main() {
     // (3.5 − 1) × 75 kg × 0.75 h in the mock, as on the API.
     expect(find.text('Exercise logged · 141 kcal burned'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('45 min · 141 kcal burned'), 200);
-    expect(find.text('Walk · 45 min · moderate'), findsOneWidget);
+    expect(find.textContaining('45 min · moderate'), findsOneWidget);
 
     // Clear of the tab bar before tapping.
-    await tester.ensureVisible(find.text('Walk · 45 min · moderate'));
-    await Scrollable.ensureVisible(tester.element(find.text('Walk · 45 min · moderate')), alignment: 0.5);
+    await tester.ensureVisible(find.textContaining('45 min · moderate'));
+    await Scrollable.ensureVisible(tester.element(find.textContaining('45 min · moderate')), alignment: 0.5);
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('Remove walk'));
     await tester.pumpAndSettle();
     expect(find.text('Exercise removed'), findsOneWidget);
-    expect(find.text('Walk · 45 min · moderate'), findsNothing);
+    expect(find.textContaining('45 min · moderate'), findsNothing);
   });
 
   testWidgets('the pantry: add items, get recipes marked by what you have, and log one', (tester) async {
@@ -804,7 +804,8 @@ void main() {
 
     // A minute at least: (2.0 − 1) × 75 kg × 1/60 h in the mock.
     expect(find.text('Exercise logged · 1 kcal burned'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Calf pump · 1 min · light'), 200);
+    await tester.scrollUntilVisible(find.textContaining('1 min · light'), 200);
+    expect(find.text('Calf pump'), findsWidgets);
   });
 
   testWidgets('Up next: one step with the button that does it, and the next one appears by itself', (tester) async {

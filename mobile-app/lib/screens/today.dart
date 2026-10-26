@@ -1531,22 +1531,22 @@ class _SuggestionsState extends State<_Suggestions> {
             runSpacing: 6,
             children: [
               for (final (grams, label) in chips)
+                // One run of text, so with large type a chip wraps instead of running off the card.
                 Container(
-                  height: 28,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  constraints: const BoxConstraints(minHeight: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(color: c.mist, borderRadius: BorderRadius.circular(Radii.pill)),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${grams.round()} g ',
-                        style: const TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        label,
-                        style: const TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${grams.round()} g ',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        TextSpan(text: label),
+                      ],
+                    ),
+                    style: const TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -1619,6 +1619,30 @@ class _SuggestionsState extends State<_Suggestions> {
   }
 }
 
+/// A small × that removes a logged meal or exercise: quieter than a word on every row, and still a
+/// full-size tap target.
+class _RemoveButton extends StatelessWidget {
+  const _RemoveButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: label,
+    excludeSemantics: true,
+    child: SizedBox.square(
+      dimension: 48,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
+        icon: Icon(Icons.close_rounded, size: 18, color: context.colors.inkFaint),
+      ),
+    ),
+  );
+}
+
 class _MealRow extends StatelessWidget {
   const _MealRow(this.meal, {required this.divider, required this.onRemove});
 
@@ -1665,6 +1689,10 @@ class _MealRow extends StatelessWidget {
                   name,
                   style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600, height: 1.3),
                 ),
+                Text(
+                  '${_kcal(meal.calories)} kcal',
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                ),
                 if (meal.highGlycemic)
                   Container(
                     margin: const EdgeInsets.only(top: 3),
@@ -1679,34 +1707,7 @@ class _MealRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Text(
-                  '${_kcal(meal.calories)} kcal',
-                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
-                ),
-              ),
-              Semantics(
-                button: true,
-                label: 'Remove $name',
-                excludeSemantics: true,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(Radii.pill),
-                  onTap: onRemove,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                    child: Text(
-                      'Remove',
-                      style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _RemoveButton(label: 'Remove $name', onPressed: onRemove),
         ],
       ),
     );
@@ -2179,49 +2180,52 @@ class _ExerciseCard extends StatelessWidget {
               SoftButton(label: '+ Log', semanticLabel: 'Log exercise', onPressed: onLog),
             ],
           ),
+          if (!empty) const SizedBox(height: Space.s2),
+          // Each under the card's icon: what it was in bold, how long, how hard and the calories below,
+          // and a small × to remove it.
           for (final e in day.exercises)
             Container(
-              margin: const EdgeInsets.only(top: Space.s2),
-              padding: const EdgeInsets.only(top: Space.s2),
+              padding: const EdgeInsets.symmetric(vertical: Space.s1),
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: c.rule)),
               ),
               child: Row(
-                spacing: 10,
+                spacing: Space.s3,
                 children: [
-                  Icon(exerciseIcon(e.kind), size: 20, color: c.inkSoft),
-                  Expanded(
-                    child: Text(
-                      '${e.kind.label} · ${e.minutes} min · ${e.intensity.label.toLowerCase()}',
-                      style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Text(
-                    '${e.kcal} kcal',
-                    style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
-                  ),
-                  Semantics(
-                    button: true,
-                    label: 'Remove ${e.kind.label.toLowerCase()}',
-                    excludeSemantics: true,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(Radii.pill),
-                      onTap: () => onRemove(e),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        child: Text(
-                          'Remove',
-                          style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
-                        ),
+                  SizedBox(
+                    width: 40,
+                    child: Center(
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: c.chlorophyllSoft, borderRadius: BorderRadius.circular(10)),
+                        child: Icon(exerciseIcon(e.kind), size: 18, color: c.chlorophyll),
                       ),
                     ),
                   ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          e.kind.label,
+                          style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          '${e.minutes} min · ${e.intensity.label.toLowerCase()} · ${e.kcal} kcal',
+                          style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _RemoveButton(label: 'Remove ${e.kind.label.toLowerCase()}', onPressed: () => onRemove(e)),
                 ],
               ),
             ),
           if (day.estimatedWeight && !empty)
             Padding(
-              padding: const EdgeInsets.only(top: Space.s2),
+              padding: const EdgeInsets.only(top: Space.s2, left: 52),
               child: Text(
                 'Calories assume 70 kg until you log your weight.',
                 style: TextStyle(fontSize: TextSize.xxs, color: c.inkFaint),
