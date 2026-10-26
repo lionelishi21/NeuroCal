@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../api/models.dart' show StackItem, StackTiming;
 import '../device_time_zone.dart';
 
 /// The day's check-in windows, set from when the person wakes up (onboarding's chronotype question).
@@ -61,6 +62,55 @@ const weeklyNudgeId = oneOffIds + 2;
 /// Tapping it opens the week (Progress) instead of the check-in.
 const weeklyPayload = 'week';
 
+/// Supplement nudges use ids from here: one per time of day per day ahead.
+const supplementNudgeIds = oneOffIds + 100;
+
+/// Tapping a supplement nudge opens the Stack.
+const stackPayload = 'stack';
+
+/// When each time of day nudges, in hours after waking: morning, lunch and evening. "Any time"
+/// supplements come with the morning ones.
+const _supplementHours = {StackTiming.morning: 0.75, StackTiming.withFood: 5.5, StackTiming.evening: 13.5};
+const _supplementTitles = {
+  StackTiming.morning: 'Morning supplements',
+  StackTiming.withFood: 'Supplements with lunch',
+  StackTiming.evening: 'Evening supplements',
+};
+
+/// One supplement nudge: [id] encodes the time of day and the day ahead, so it can be replaced.
+typedef SupplementNudge = ({int id, DateTime at, String title, String body});
+
+/// The supplement nudges from [now] for the next [days] days: one per time of day that has a
+/// supplement to remind about, naming them. Today's are left out once everything at that time is
+/// ticked, and times already past are left out.
+List<SupplementNudge> supplementNudgesFor({
+  required List<({String name, StackTiming timing, bool takenToday})> items,
+  required double wakeHour,
+  required DateTime now,
+  int days = 3,
+}) {
+  final out = <SupplementNudge>[];
+  for (final MapEntry(key: timing, value: hours) in _supplementHours.entries) {
+    final due = items.where((i) => (i.timing == StackTiming.any ? StackTiming.morning : i.timing) == timing).toList();
+    if (due.isEmpty) continue;
+    final names = due.map((i) => i.name).toList();
+    final listed = names.length == 1
+        ? names.first
+        : '${names.sublist(0, names.length - 1).join(', ')} and ${names.last}';
+    for (var d = 0; d < days; d++) {
+      final at = DateTime(now.year, now.month, now.day + d).add(Duration(minutes: ((wakeHour + hours) * 60).round()));
+      if (!at.isAfter(now) || (d == 0 && due.every((i) => i.takenToday))) continue;
+      out.add((
+        id: supplementNudgeIds + timing.index * 10 + d,
+        at: at,
+        title: _supplementTitles[timing]!,
+        body: '$listed. Tick ${names.length == 1 ? 'it' : 'them'} off in your Stack.',
+      ));
+    }
+  }
+  return out;
+}
+
 /// Every nudge from [now] for the next [days] days, for the windows switched on. Windows already
 /// checked in today ([doneToday]) get no more nudges today; times already past are left out.
 List<Nudge> nudgesFor({
@@ -109,6 +159,9 @@ abstract interface class Reminders {
 
   /// Bumped when the weekly nudge is tapped, so the app opens the week.
   ValueListenable<int> get openedWeek;
+
+  /// Bumped when a supplement nudge is tapped, so the app opens the Stack.
+  ValueListenable<int> get openedStack;
 
   /// Bumped when a reminder is tapped, so the app opens the check-in.
   ValueListenable<int> get opened;
@@ -229,6 +282,49 @@ class ReminderSettings extends ChangeNotifier {
   /// Bumped when the weekly nudge is tapped.
   ValueListenable<int> get openedWeek => _reminders.openedWeek;
 
+  /// Bumped when a supplement nudge is tapped.
+  ValueListenable<int> get openedStack => _reminders.openedStack;
+
+  static const _mutedKey = 'neurocal.supplements.muted';
+  static const _askedKey = 'neurocal.supplements.asked';
+
+  /// The stack last scheduled for, so switching one supplement's reminder can reschedule the rest.
+  List<StackItem> _stackItems = const [];
+
+  /// Whether a supplement's daily reminder is on; on unless switched off.
+  bool remindsAbout(String itemId) => !(_prefs.getStringList(_mutedKey) ?? const []).contains(itemId);
+
+  /// Switches one supplement's daily reminder on or off.
+  Future<void> setSupplementReminder(String itemId, bool on) async {
+    final muted = {...?_prefs.getStringList(_mutedKey)};
+    on ? muted.remove(itemId) : muted.add(itemId);
+    await _prefs.setStringList(_mutedKey, muted.toList());
+    await supplements(_stackItems);
+    notifyListeners();
+  }
+
+  /// Daily nudges to take the supplements in [items] that remind (all, unless switched off): asks for
+  /// permission once, the first time there's one to remind about, and replaces the earlier nudges.
+  Future<void> supplements(List<StackItem> items) async {
+    _stackItems = items;
+    final reminded = [
+      for (final i in items)
+        if (remindsAbout(i.id)) (name: i.name, timing: i.timing, takenToday: i.takenToday),
+    ];
+    if (reminded.isNotEmpty && _prefs.getBool(_askedKey) != true) {
+      await _prefs.setBool(_askedKey, true);
+      if (!await _reminders.requestPermission()) return;
+    }
+    final nudges = supplementNudgesFor(items: reminded, wakeHour: wakeHour, now: _now());
+    for (final timing in _supplementHours.keys) {
+      for (var d = 0; d < 3; d++) {
+        final id = supplementNudgeIds + timing.index * 10 + d;
+        final n = nudges.where((x) => x.id == id).firstOrNull;
+        await _reminders.oneOff(id, n?.at, title: n?.title ?? '', body: n?.body ?? '', payload: stackPayload);
+      }
+    }
+  }
+
   /// Signed out: no reminders for an account that isn't here.
   Future<void> clear() async {
     await _prefs.remove(_key);
@@ -236,6 +332,12 @@ class ReminderSettings extends ChangeNotifier {
     await _reminders.schedule(const []);
     await _reminders.oneOff(streakNudgeId, null);
     await _reminders.oneOff(weeklyNudgeId, null);
+    for (final timing in _supplementHours.keys) {
+      for (var d = 0; d < 3; d++) {
+        await _reminders.oneOff(supplementNudgeIds + timing.index * 10 + d, null);
+      }
+    }
+    _stackItems = const [];
     notifyListeners();
   }
 }
@@ -245,6 +347,7 @@ class DeviceReminders implements Reminders {
   final _plugin = FlutterLocalNotificationsPlugin();
   final _opened = ValueNotifier(0);
   final _openedWeek = ValueNotifier(0);
+  final _openedStack = ValueNotifier(0);
   Future<void>? _ready;
 
   static const _payload = 'check_in';
@@ -264,9 +367,13 @@ class DeviceReminders implements Reminders {
   @override
   ValueListenable<int> get openedWeek => _openedWeek;
 
+  @override
+  ValueListenable<int> get openedStack => _openedStack;
+
   void _tapped(String? payload) {
     if (payload == _payload) _opened.value++;
     if (payload == weeklyPayload) _openedWeek.value++;
+    if (payload == stackPayload) _openedStack.value++;
   }
 
   Future<void> _init() => _ready ??= () async {
@@ -354,6 +461,14 @@ class FakeReminders implements Reminders {
 
   /// As if the weekly nudge was tapped.
   void tapWeek() => _openedWeek.value++;
+
+  final _openedStack = ValueNotifier(0);
+
+  @override
+  ValueListenable<int> get openedStack => _openedStack;
+
+  /// As if a supplement nudge was tapped.
+  void tapStack() => _openedStack.value++;
 
   /// The windows with at least one nudge scheduled.
   Set<ReminderSlot> get windows => {for (final n in scheduled) n.slot};

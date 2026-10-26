@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/mock_api.dart';
+import 'package:neurocal/api/models.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/main.dart';
 import 'package:neurocal/reminders/reminders.dart';
@@ -42,6 +43,66 @@ void main() {
         nudgesFor(slots: ReminderSlot.values.toSet(), wakeHour: 7, now: DateTime(2026, 10, 15)).length,
         lessThanOrEqualTo(64),
       );
+    });
+  });
+
+  group('supplements', () {
+    StackItem item(String id, String name, StackTiming timing, {bool taken = false}) =>
+        StackItem(id: id, name: name, servingsPerDay: 1, timing: timing, startedOn: '2026-10-01', takenToday: taken);
+
+    test('one nudge per time of day, naming what to take; ticked-off times wait for tomorrow', () {
+      final nudges = supplementNudgesFor(
+        items: [
+          (name: 'Magnesium', timing: StackTiming.evening, takenToday: false),
+          (name: 'Creatine', timing: StackTiming.morning, takenToday: true),
+          (name: 'Vitamin D', timing: StackTiming.any, takenToday: true),
+        ],
+        wakeHour: 7,
+        now: DateTime(2026, 10, 15, 7, 30),
+        days: 2,
+      );
+      expect(
+        [for (final n in nudges) '${n.at.day} ${clock(n.at)} ${n.title}'],
+        [
+          '16 07:45 Morning supplements', // today's morning ones are all ticked
+          '15 20:30 Evening supplements',
+          '16 20:30 Evening supplements',
+        ],
+      );
+      expect(nudges.first.body, 'Creatine and Vitamin D. Tick them off in your Stack.');
+    });
+
+    test('asks once, schedules with a tap that opens the Stack, and each supplement can be switched off', () async {
+      SharedPreferences.setMockInitialValues({});
+      final device = FakeReminders();
+      final settings = ReminderSettings(
+        await SharedPreferences.getInstance(),
+        device,
+        now: () => DateTime(2026, 10, 15, 7),
+      );
+      final items = [item('a', 'Magnesium', StackTiming.evening), item('b', 'Creatine', StackTiming.morning)];
+      await settings.supplements(items);
+      expect(device.oneOffs.values.map((n) => n.title).toSet(), {'Morning supplements', 'Evening supplements'});
+      expect(device.oneOffs.values.every((n) => n.payload == stackPayload), isTrue);
+
+      await settings.setSupplementReminder('a', false);
+      expect(settings.remindsAbout('a'), isFalse);
+      expect(device.oneOffs.values.map((n) => n.title).toSet(), {'Morning supplements'});
+
+      await settings.clear();
+      expect(device.oneOffs.keys.where((id) => id >= supplementNudgeIds), isEmpty);
+    });
+
+    test('no permission, no nudges', () async {
+      SharedPreferences.setMockInitialValues({});
+      final device = FakeReminders(allowed: false);
+      final settings = ReminderSettings(
+        await SharedPreferences.getInstance(),
+        device,
+        now: () => DateTime(2026, 10, 15, 7),
+      );
+      await settings.supplements([item('a', 'Magnesium', StackTiming.evening)]);
+      expect(device.oneOffs, isEmpty);
     });
   });
 
@@ -146,6 +207,14 @@ void main() {
     device.tapWeek();
     await tester.pumpAndSettle();
     expect(find.text('This week'), findsWidgets);
+  });
+
+  testWidgets('tapping a supplement nudge opens the Stack', (tester) async {
+    final device = await pumpSignedIn(tester);
+    expect(find.text('Gadgets and practices'), findsNothing);
+    device.tapStack();
+    await tester.pumpAndSettle();
+    expect(find.text('Your stack'), findsOneWidget);
   });
 
   test('the streak nudge is set for 20:00 while a streak is at risk, and goes once today counts', () async {

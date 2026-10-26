@@ -258,6 +258,8 @@ class _TodayScreenState extends State<TodayScreen> {
         : Future<CoffeeDay?>.value(null);
     final prefsLoad = SharedPreferences.getInstance().then<SharedPreferences?>((p) => p).catchError((Object _) => null);
     final d = await _api.today(_date);
+    // Today's ticks decide which supplement nudges are still due.
+    if (_date == null) reminders?.supplements(d.stack?.items ?? const []).catchError((Object _) {});
     final days = await history;
     final weights = await weightsLoad;
     final lastWeighIn = weights?.entries.lastOrNull?.date;

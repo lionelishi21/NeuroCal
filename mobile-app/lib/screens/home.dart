@@ -29,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  static const _today = 0, _kitchen = 1, _progress = 2;
+  static const _today = 0, _kitchen = 1, _progress = 2, _stack = 3;
   var _tab = _today;
 
   @override
@@ -74,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _reminders?.opened.removeListener(_reminderTapped);
     _reminders?.openedWeek.removeListener(_weekTapped);
+    _reminders?.openedStack.removeListener(_stackTapped);
     _changes.dispose();
     super.dispose();
   }
@@ -87,9 +88,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (reminders != _reminders) {
       _reminders?.opened.removeListener(_reminderTapped);
       _reminders?.openedWeek.removeListener(_weekTapped);
+      _reminders?.openedStack.removeListener(_stackTapped);
       _reminders = reminders
         ?..opened.addListener(_reminderTapped)
-        ..openedWeek.addListener(_weekTapped);
+        ..openedWeek.addListener(_weekTapped)
+        ..openedStack.addListener(_stackTapped);
+      if (reminders != null && reminders.openedStack.value > _stackHandled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _stackTapped());
+      }
       reminders?.weekly().catchError((Object _) {});
       if (reminders != null && reminders.openedWeek.value > _weekHandled) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _weekTapped());
@@ -113,6 +119,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _weekHandled = reminders.openedWeek.value;
     AppScope.of(context).analytics.track('weekly_opened');
     setState(() => _tab = _progress);
+  }
+
+  /// Supplement nudge taps already acted on.
+  var _stackHandled = 0;
+
+  /// A supplement nudge was tapped: the Stack, to tick them off.
+  void _stackTapped() {
+    final reminders = _reminders;
+    if (!mounted || reminders == null || reminders.openedStack.value <= _stackHandled) return;
+    _stackHandled = reminders.openedStack.value;
+    setState(() => _tab = _stack);
   }
 
   /// A reminder was tapped: straight to the check-in on Today.

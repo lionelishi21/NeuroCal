@@ -15,6 +15,12 @@ const _order = [StackTiming.morning, StackTiming.withFood, StackTiming.evening, 
 List<StackItem> _sorted(List<StackItem> items) =>
     [...items]..sort((a, b) => _order.indexOf(a.timing).compareTo(_order.indexOf(b.timing)));
 
+String _nudgeTime(StackTiming t) => switch (t) {
+  StackTiming.withFood => 'at lunchtime',
+  StackTiming.evening => 'in the evening',
+  _ => 'in the morning',
+};
+
 String _dose(StackItem i) {
   final serving = i.servingSize == null ? '${i.servingsPerDay} a day' : '${i.servingsPerDay} × ${i.servingSize}';
   return '$serving · ${i.timing.label}';
@@ -735,6 +741,17 @@ class _EditStackItemState extends State<_EditStackItem> {
           onChanged: (v) => setState(() => _newBottle = v),
           title: const Text('I started a new bottle today'),
         ),
+        if (AppScope.of(context).reminders case final reminders?)
+          ListenableBuilder(
+            listenable: reminders,
+            builder: (context, _) => SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: reminders.remindsAbout(widget.item.id),
+              onChanged: (on) => reminders.setSupplementReminder(widget.item.id, on).catchError((Object _) {}),
+              title: const Text('Remind me each day'),
+              subtitle: Text('A nudge ${_nudgeTime(widget.item.timing)} until it’s ticked off'),
+            ),
+          ),
         if (_error != null) SheetNote(lead: "Couldn't save.", detail: _error!),
         SheetAction(
           label: _busy ? 'Saving…' : 'Save',
