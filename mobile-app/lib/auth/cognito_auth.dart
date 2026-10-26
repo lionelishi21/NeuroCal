@@ -16,11 +16,22 @@ const _codes = <String, (AuthErrorCode, String)>{
   'ExpiredCodeException': (AuthErrorCode.expiredCode, 'That code has expired. Send a new one.'),
   'LimitExceededException': (AuthErrorCode.tooManyAttempts, 'Too many attempts. Wait a few minutes, then try again.'),
   'TooManyRequestsException': (AuthErrorCode.tooManyAttempts, 'Too many attempts. Wait a few minutes, then try again.'),
+  'NetworkException': _offline,
 };
+
+const _offline = (AuthErrorCode.offline, 'No internet connection. Check your Wi-Fi or mobile data and try again.');
+
+/// What a failed connection looks like when it arrives wrapped in another exception.
+final _noConnection = RegExp(
+  r'SocketException|Failed host lookup|Network is unreachable|Connection (refused|reset|failed)|ClientException',
+);
 
 AuthFailure toAuthFailure(Object error) {
   final (code, message) =
-      _codes[error.runtimeType.toString()] ?? (AuthErrorCode.unknown, 'Something went wrong signing in. Try again.');
+      _codes[error.runtimeType.toString()] ??
+      (_noConnection.hasMatch(error.toString())
+          ? _offline
+          : (AuthErrorCode.unknown, 'Something went wrong signing in. Try again.'));
   return AuthFailure(code, message);
 }
 

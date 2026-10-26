@@ -11,6 +11,9 @@ enum AuthErrorCode {
   invalidCode,
   expiredCode,
   tooManyAttempts,
+
+  /// No connection to the sign-in service: the phone is offline.
+  offline,
   unknown,
 }
 
