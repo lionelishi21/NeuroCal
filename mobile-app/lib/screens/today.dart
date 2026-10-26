@@ -528,6 +528,7 @@ class _TodayScreenState extends State<TodayScreen> {
                     onLogSleep: () => widget.onCapture(Capture.sleep),
                     onLogScreens: () => widget.onCapture(Capture.screenTime),
                     onLogExercise: () => widget.onCapture(Capture.exercise),
+                    onBrainCheck: day.isToday ? () => widget.onCapture(Capture.brain) : null,
                     onShare: day.isToday && day.focus.score != null
                         ? () => showShareScore(
                             context,
@@ -876,6 +877,7 @@ class _FocusCard extends StatelessWidget {
     required this.onLogExercise,
     required this.onSetUpEnvironment,
     this.onShare,
+    this.onBrainCheck,
     this.state,
   });
 
@@ -891,6 +893,9 @@ class _FocusCard extends StatelessWidget {
   final VoidCallback onLogScreens;
   final VoidCallback onLogExercise;
   final VoidCallback onSetUpEnvironment;
+
+  /// Today only: a Brain speed check, which measures the day and moves the score.
+  final VoidCallback? onBrainCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -983,6 +988,17 @@ class _FocusCard extends StatelessWidget {
                             style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
                           ),
                         ),
+                        // No check yet today: one tap measures the day.
+                        if (onBrainCheck != null && focus.measured == null && score != null)
+                          SizedBox.square(
+                            dimension: 48,
+                            child: IconButton(
+                              tooltip: 'Measure today with a Brain speed check',
+                              padding: EdgeInsets.zero,
+                              onPressed: onBrainCheck,
+                              icon: Icon(Icons.bolt_rounded, size: 20, color: c.synapseInk),
+                            ),
+                          ),
                         if (onShare != null)
                           SizedBox.square(
                             dimension: 48,
@@ -1004,6 +1020,7 @@ class _FocusCard extends StatelessWidget {
                       focus.explanation,
                       style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
                     ),
+                    if (focus.measured case final m?) _MeasuredLine(m),
                     if (focus.tuned)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
@@ -1076,6 +1093,40 @@ const _inputWhy = {
 
 /// One of the six inputs as a small ring in its body system's colour: full and green from 0.75,
 /// amber below; a "+" when there's nothing yet and it can be logged.
+/// What today's Brain speed check did to the score: the measured layer on top of the inputs.
+class _MeasuredLine extends StatelessWidget {
+  const _MeasuredLine(this.m);
+
+  final MeasuredFocus m;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final (text, color) = m.usual == null
+        ? ('Brain speed ${m.brainScore} today · a few more checks set your usual', c.inkSoft)
+        : m.points > 0
+        ? ('Brain speed +${m.points} · sharper than your usual', c.chlorophyll)
+        : m.points < 0
+        ? ('Brain speed −${-m.points} · slower than your usual', c.glucoseInk)
+        : ('Brain speed at your usual · no change', c.inkSoft);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        spacing: 4,
+        children: [
+          Icon(Icons.bolt_rounded, size: 14, color: color),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Input extends StatelessWidget {
   const _Input({
     required this.name,

@@ -9,7 +9,10 @@ import {
   computeFocusComponents,
   fallbackExplanation,
   focusScoreFrom,
+  measuredFocus,
   personalWeights,
+  withMeasured,
+  type MeasuredFocus,
   withWeight,
   type FocusInputs,
   type FocusWeights,
@@ -63,7 +66,7 @@ export class GetFocusScoreUseCase {
 
     const { userId } = profile;
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
-    const [inputs, stored, tuning] = await Promise.all([
+    const [inputs, stored, tuning, measured] = await Promise.all([
       loadFocusInputs(
         { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, glucose: this.glucose, coffee: this.coffee },
         profile,
@@ -71,11 +74,18 @@ export class GetFocusScoreUseCase {
       ),
       this.scores.get(userId, date),
       this.weightsFor(profile, date),
+      this.measuredFor(profile, date),
     ]);
 
     const components = computeFocusComponents(inputs);
-    const score = focusScoreFrom(components, tuning.weights);
-    const tuned = { ...(tuning.tuned ? { tuned: true } : {}), ...(inputs.previousDayGlucose !== undefined ? { glycemicFromSensor: true } : {}) };
+    const foundation = focusScoreFrom(components, tuning.weights);
+    // The measured layer moves a score that exists; it doesn't make one on its own.
+    const score = foundation !== null && measured ? withMeasured(foundation, measured) : foundation;
+    const tuned = {
+      ...(tuning.tuned ? { tuned: true } : {}),
+      ...(inputs.previousDayGlucose !== undefined ? { glycemicFromSensor: true } : {}),
+      ...(foundation !== null && measured ? { foundation, measured } : {}),
+    };
 
     if (stored && stored.score === score && sameComponents(stored.components, components)) return { ...stored, ...tuned };
 
@@ -100,6 +110,20 @@ export class GetFocusScoreUseCase {
     // Diabetes: blood sugar counts for more, until the person's own Brain speed data says otherwise.
     const glycemic = glycemicWeightFor(conditionsOf(profile));
     return found.tuned || glycemic === null ? found : { weights: withWeight(found.weights, "glycemic", glycemic), tuned: false };
+  }
+
+  /** The day's latest Brain speed check against the checks before that day, or null without one. */
+  private async measuredFor(profile: Profile, date: string): Promise<MeasuredFocus | null> {
+    if (!this.brainChecks) return null;
+    const checks = await this.brainChecks.listSince(profile.userId, new Date(`${addDays(date, -57)}T00:00:00Z`));
+    const dayOf = (c: { takenAt: Date }) => localDateOf(c.takenAt, profile.timeZone);
+    // Newest first: the first check on the day is its latest.
+    const today = checks.find((c) => dayOf(c) === date);
+    if (!today) return null;
+    return measuredFocus(
+      today.score,
+      checks.filter((c) => dayOf(c) < date).map((c) => c.score),
+    );
   }
 
   private async personalWeightsFor(profile: Profile, date: string): Promise<{ weights: FocusWeights; tuned: boolean }> {

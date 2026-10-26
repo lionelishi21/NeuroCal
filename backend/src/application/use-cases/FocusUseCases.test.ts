@@ -107,6 +107,31 @@ describe("GetFocusScoreUseCase", () => {
     expect(await scores.get("u1", "2026-09-29")).toEqual(result);
   });
 
+  it("moves the score by today's Brain speed against the usual: half the difference, at most 10 points", async () => {
+    const brainChecks = new InMemoryBrainChecks();
+    const check = (score: number, at: string) =>
+      brainChecks.add("u1", { score, medianMs: 300, fastestMs: 250, lapses: 0, falseStarts: 0, trials: 12, takenAt: new Date(at), reactionTimesMs: [] });
+    await telemetry.upsertSleep("u1", [sleepNight]);
+    const useCase = new GetFocusScoreUseCase(profiles, meals, checkIns, telemetry, scores, new FakeExplainer(), clock, undefined, brainChecks);
+    const foundation = (await useCase.execute({ userId: "u1" })).score!;
+
+    // Two earlier checks: no usual yet, so today's check only starts one.
+    await check(70, "2026-09-26T15:00:00Z");
+    await check(72, "2026-09-27T15:00:00Z");
+    await check(90, "2026-09-29T14:00:00Z");
+    expect(await useCase.execute({ userId: "u1" })).toMatchObject({ score: foundation, foundation, measured: { brainScore: 90, usual: null, points: 0 } });
+
+    // A third earlier check makes a usual of 72: today's 90 is 18 sharper, worth 9 points.
+    await check(74, "2026-09-28T15:00:00Z");
+    expect(await useCase.execute({ userId: "u1" })).toMatchObject({ score: Math.min(100, foundation + 9), measured: { usual: 72, points: 9 } });
+
+    // A later, much slower check that day replaces it: the score drops, by 10 at most.
+    await check(30, "2026-09-29T18:00:00Z");
+    const slow = await useCase.execute({ userId: "u1" });
+    expect(slow).toMatchObject({ score: foundation - 10, foundation, measured: { brainScore: 30, points: -10 } });
+    expect((await scores.get("u1", "2026-09-29"))?.score).toBe(foundation - 10);
+  });
+
   it("reuses the stored explanation until the inputs change", async () => {
     await telemetry.upsertSleep("u1", [sleepNight]);
     const explainer = new FakeExplainer();

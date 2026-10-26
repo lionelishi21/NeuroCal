@@ -310,6 +310,15 @@ export const FocusScore = z.object({
   tuned: z.boolean().optional(),
   /** The blood-sugar input came from yesterday's glucose sensor rather than meals. */
   glycemicFromSensor: z.boolean().optional(),
+  /** The score from the inputs alone, before the day's Brain speed check moved it; with `measured`. */
+  foundation: z.number().int().min(0).max(100).optional(),
+  /**
+   * The day's latest Brain speed check against the person's usual (the median of earlier checks; null
+   * with fewer than three) and the points it moved the score: half the difference, at most 10 either way.
+   */
+  measured: z
+    .object({ brainScore: z.number().int().min(0).max(100), usual: z.number().int().min(0).max(100).nullable(), points: z.number().int().min(-10).max(10) })
+    .optional(),
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 

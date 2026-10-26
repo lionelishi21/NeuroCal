@@ -75,6 +75,7 @@ export const toFocusScore = (f: FocusScore): C.FocusScore => ({
   explanation: f.explanation,
   ...(f.tuned ? { tuned: true } : {}),
   ...(f.glycemicFromSensor ? { glycemicFromSensor: true } : {}),
+  ...(f.foundation !== undefined && f.measured ? { foundation: f.foundation, measured: f.measured } : {}),
 });
 
 const match = (similarity: number) => Math.round(similarity * 100) / 100;

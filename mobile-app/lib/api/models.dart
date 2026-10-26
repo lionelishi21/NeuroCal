@@ -202,6 +202,8 @@ class FocusScore {
     required this.explanation,
     this.tuned = false,
     this.glycemicFromSensor = false,
+    this.foundation,
+    this.measured,
   });
 
   final String date;
@@ -217,16 +219,34 @@ class FocusScore {
   /// The blood-sugar input came from yesterday's glucose sensor, not meals.
   final bool glycemicFromSensor;
 
+  /// The score from the inputs alone, before the day's Brain speed check moved it.
+  final int? foundation;
+
+  /// The day's Brain speed check against the usual (null with fewer than three earlier checks) and the
+  /// points it moved the score: half the difference, at most 10 either way.
+  final MeasuredFocus? measured;
+
   factory FocusScore.fromJson(Map<String, dynamic> j) => FocusScore(
     date: j['date'] as String,
     score: (j['score'] as num?)?.toInt(),
     components: FocusComponents.fromJson(j['components'] as Map<String, dynamic>),
     explanation: j['explanation'] as String,
     tuned: j['tuned'] == true,
-
     glycemicFromSensor: j['glycemicFromSensor'] == true,
+    foundation: (j['foundation'] as num?)?.toInt(),
+    measured: switch (j['measured']) {
+      {'brainScore': final num brain, 'points': final num points} => (
+        brainScore: brain.toInt(),
+        usual: (j['measured']['usual'] as num?)?.toInt(),
+        points: points.toInt(),
+      ),
+      _ => null,
+    },
   );
 }
+
+/// Today's Brain speed against the usual, and the points it moved the Focus Score.
+typedef MeasuredFocus = ({int brainScore, int? usual, int points});
 
 class BioState {
   const BioState({

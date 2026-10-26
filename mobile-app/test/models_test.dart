@@ -2,6 +2,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/models.dart';
 
 void main() {
+  test('a Focus Score carries its foundation and what today\'s Brain speed did to it', () {
+    final f = FocusScore.fromJson({
+      'date': '2026-10-26',
+      'score': 79,
+      'components': {'sleep': 0.8, 'timing': 1, 'glycemic': 0.7, 'stress': 0.75},
+      'explanation': 'x',
+      'foundation': 70,
+      'measured': {'brainScore': 90, 'usual': 72, 'points': 9},
+    });
+    expect(f.foundation, 70);
+    expect(f.measured, (brainScore: 90, usual: 72, points: 9));
+    final first = FocusScore.fromJson({
+      'date': '2026-10-26',
+      'score': 70,
+      'components': {'sleep': 0.8, 'timing': 1, 'glycemic': 0.7, 'stress': 0.75},
+      'explanation': 'x',
+      'foundation': 70,
+      'measured': {'brainScore': 90, 'usual': null, 'points': 0},
+    });
+    expect(first.measured?.usual, isNull);
+    expect(
+      FocusScore.fromJson({
+        'date': '2026-10-26',
+        'score': 70,
+        'components': {'sleep': null, 'timing': null, 'glycemic': null, 'stress': null},
+        'explanation': 'x',
+      }).measured,
+      isNull,
+    );
+  });
+
   test('flags use the contract wire names', () {
     expect(CognitiveFlag.brainFog.wire, 'brain_fog');
     expect(CognitiveFlag.lowEnergy.wire, 'low_energy');

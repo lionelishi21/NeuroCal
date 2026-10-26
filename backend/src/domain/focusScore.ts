@@ -1,3 +1,4 @@
+import { baselineOf } from "./brainCheck";
 import { isOnLocalDay, localDateOf, localTimeOf, previousDate } from "./localDay";
 import { mealCalories } from "./meal";
 import { type EnvironmentCheck, environmentSignal } from "./environment";
@@ -195,6 +196,35 @@ export function focusScoreFrom(components: FocusComponents, weightsFor: FocusWei
   }
   return weights === 0 ? null : Math.round((100 * weighted) / weights);
 }
+
+/**
+ * The measured layer: the foundation above predicts the day from its inputs; a Brain speed check that
+ * day measures it. The day's latest check moves the score by half its difference from the person's
+ * usual (the median of their earlier checks), at most 10 points either way. A check at the usual
+ * changes nothing, so checking never costs points by itself; before there are three earlier checks
+ * there's no usual and the check only starts one. This is how anything that really sharpens someone
+ * (a supplement, a habit) shows in their score: by what it does, not by being logged.
+ */
+export const MEASURED_MAX_POINTS = 10;
+
+export interface MeasuredFocus {
+  /** Today's latest Brain speed score. */
+  brainScore: number;
+  /** The median of earlier checks; null with fewer than three. */
+  usual: number | null;
+  /** Added to the foundation (negative when slower than usual). */
+  points: number;
+}
+
+/** [today]: the day's latest check; [earlier]: scores of checks before that day. */
+export function measuredFocus(today: number, earlier: number[]): MeasuredFocus {
+  const usual = baselineOf(earlier);
+  const points = usual === null ? 0 : Math.round(Math.max(-MEASURED_MAX_POINTS, Math.min(MEASURED_MAX_POINTS, (today - usual) / 2)));
+  return { brainScore: today, usual, points: points === 0 ? 0 : points };
+}
+
+/** The foundation moved by the measured points, kept within 0–100. */
+export const withMeasured = (foundation: number, measured: MeasuredFocus) => Math.max(0, Math.min(100, foundation + measured.points));
 
 /** Days of a score and a Brain speed check together before the weights are tuned to a person. */
 export const MIN_TUNING_DAYS = 14;

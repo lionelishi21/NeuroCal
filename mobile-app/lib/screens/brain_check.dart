@@ -196,8 +196,9 @@ class _BrainCheckScreenState extends State<BrainCheckScreen> {
             ),
             Text(
               widget.note ??
-                  'Do it at about the same time each day, sitting down, with notifications off. Your score is compared with your own usual, '
-                      "so you can see which days you're sharper. It's a self-check, not a medical test.",
+                  'Find a quiet spot and turn notifications off: noise and interruptions slow you and lower your result. '
+                      'It’s compared with your usual and moves today’s Focus Score by up to 10 points. '
+                      'A self-check, not a medical test.',
               style: TextStyle(fontSize: TextSize.sm, height: 1.45, color: c.inkSoft),
             ),
             const Spacer(),

@@ -177,6 +177,10 @@ export interface FocusScore {
   tuned?: boolean;
   /** The blood-sugar input came from yesterday's glucose sensor, not meals. Not stored. */
   glycemicFromSensor?: boolean;
+  /** The score from the inputs alone, before the day's Brain speed check moved it. Not stored. */
+  foundation?: number;
+  /** The day's Brain speed check against the person's usual, and the points it moved the score. Not stored. */
+  measured?: { brainScore: number; usual: number | null; points: number };
 }
 
 /** NeuroCal-authored habit protocol (ARCHITECTURE §3). Content lives in the repo, not generated. */

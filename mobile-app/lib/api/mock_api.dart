@@ -262,8 +262,31 @@ class MockNeuroCalApi implements NeuroCalApi {
     // The API's v1.1 weights (backend domain/focusScore.ts), renormalised when environment has no data.
     final weighted =
         0.3 * (sleep ?? 0) + 0.2 * timing + 0.15 * glycemic + 0.15 * stress + 0.1 * movement + 0.1 * (environment ?? 0);
-    final score = (100 * weighted / (1 - (sleep == null ? 0.3 : 0) - (environment == null ? 0.1 : 0))).round();
+    final foundation = (100 * weighted / (1 - (sleep == null ? 0.3 : 0) - (environment == null ? 0.1 : 0))).round();
+    // As the API: the day's latest Brain speed check moves the score by half its difference from the
+    // usual (the median of earlier checks, once there are three), at most 10 points.
+    bool sameDay(DateTime a) => a.year == day.year && a.month == day.month && a.day == day.day;
+    final today = _brainChecks.where((c) => sameDay(c.takenAt)).firstOrNull;
+    final earlier = [
+      for (final c in _brainChecks)
+        if (c.takenAt.isBefore(DateTime(day.year, day.month, day.day))) c.score,
+    ]..sort();
+    final usual = earlier.length >= 3
+        ? (earlier.length.isOdd
+              ? earlier[earlier.length ~/ 2]
+              : ((earlier[earlier.length ~/ 2 - 1] + earlier[earlier.length ~/ 2]) / 2).round())
+        : null;
+    final MeasuredFocus? measured = today == null
+        ? null
+        : (
+            brainScore: today.score,
+            usual: usual,
+            points: usual == null ? 0 : ((today.score - usual) / 2).clamp(-10, 10).round(),
+          );
+    final score = measured == null ? foundation : (foundation + measured.points).clamp(0, 100);
     return FocusScore(
+      foundation: measured == null ? null : foundation,
+      measured: measured,
       date: isoDate(day),
       score: score,
       components: FocusComponents(

@@ -4096,6 +4096,43 @@
           },
           "glycemicFromSensor": {
             "type": "boolean"
+          },
+          "foundation": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "measured": {
+            "type": "object",
+            "properties": {
+              "brainScore": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "usual": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "points": {
+                "type": "integer",
+                "minimum": -10,
+                "maximum": 10
+              }
+            },
+            "required": [
+              "brainScore",
+              "usual",
+              "points"
+            ]
           }
         },
         "required": [
