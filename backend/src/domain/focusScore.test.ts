@@ -64,6 +64,12 @@ describe("timingComponent", () => {
     expect(timingComponent(inputs)).toBeCloseTo(1 - 0.5 - 0.5 * 0.5);
   });
 
+  it("halves the cost of late screens when blue-blocking glasses were worn", () => {
+    const screens = { ...empty, screenTime: [{ windowStart: at("2026-09-29T04:00:00Z"), windowEnd: at("2026-09-29T06:00:00Z"), minutes: 120, source: "wearable" as const }] };
+    expect(timingComponent(screens)).toBeCloseTo(0.5);
+    expect(timingComponent({ ...screens, previousDayBlueBlocking: true })).toBeCloseTo(0.75);
+  });
+
   it("is perfect for an early dinner and no late screens", () => {
     expect(timingComponent({ ...empty, previousDayMeals: [meal("2026-09-28T23:30:00Z", 600)] })).toBe(1); // 18:30
   });

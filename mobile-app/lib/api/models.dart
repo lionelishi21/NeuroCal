@@ -2023,3 +2023,86 @@ class CoffeeDay {
     curfew: j['curfew'] as String,
   );
 }
+
+/// A gadget or practice (`SessionKind` in the contracts).
+enum SessionKind {
+  sauna('sauna'),
+  coldPlunge('cold_plunge'),
+  meditation('meditation'),
+  breathwork('breathwork'),
+  braintap('braintap'),
+  blueBlocking('blue_blocking'),
+  redLight('red_light');
+
+  const SessionKind(this.wire);
+  final String wire;
+
+  static SessionKind? fromWire(Object? wire) => values.where((k) => k.wire == wire).firstOrNull;
+}
+
+/// What a kind is for and what to expect; the same for everyone (`SessionKindInfo` in the contracts).
+typedef SessionKindInfo = ({
+  SessionKind kind,
+  String label,
+  SupplementPurpose purpose,
+  String evidence,
+  String expectation,
+  int usualMinutes,
+});
+
+/// One logged session.
+typedef LoggedSession = ({String id, SessionKind kind, DateTime takenAt, int? minutes});
+
+/// A kind used lately: the days after a session against the days without.
+typedef SessionInsight = ({SessionKind kind, int sessions, DateTime lastAt, SupplementExperiment experiment});
+
+/// Today's sessions, every kind, and what the ones used are doing (`SessionsResponse` in the contracts).
+class SessionsDay {
+  const SessionsDay({required this.date, this.sessions = const [], this.kinds = const [], this.insights = const []});
+
+  final String date;
+  final List<LoggedSession> sessions;
+  final List<SessionKindInfo> kinds;
+  final List<SessionInsight> insights;
+
+  SessionKindInfo? info(SessionKind kind) => kinds.where((k) => k.kind == kind).firstOrNull;
+
+  factory SessionsDay.fromJson(Map<String, dynamic> j) => SessionsDay(
+    date: j['date'] as String,
+    sessions: [
+      for (final s in j['sessions'] as List)
+        if (SessionKind.fromWire(s['kind']) case final kind?)
+          (
+            id: s['id'] as String,
+            kind: kind,
+            takenAt: DateTime.parse(s['takenAt'] as String).toLocal(),
+            minutes: (s['minutes'] as num?)?.toInt(),
+          ),
+    ],
+    kinds: [
+      for (final k in j['kinds'] as List)
+        if ((SessionKind.fromWire(k['kind']), SupplementPurpose.fromWire(k['purpose'])) case (
+          final kind?,
+          final purpose?,
+        ))
+          (
+            kind: kind,
+            label: k['label'] as String,
+            purpose: purpose,
+            evidence: k['evidence'] as String,
+            expectation: k['expectation'] as String,
+            usualMinutes: (k['usualMinutes'] as num).toInt(),
+          ),
+    ],
+    insights: [
+      for (final i in j['insights'] as List)
+        if (SessionKind.fromWire(i['kind']) case final kind?)
+          (
+            kind: kind,
+            sessions: (i['sessions'] as num).toInt(),
+            lastAt: DateTime.parse(i['lastAt'] as String).toLocal(),
+            experiment: SupplementExperiment.fromJson(i['experiment'] as Map<String, dynamic>),
+          ),
+    ],
+  );
+}

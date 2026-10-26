@@ -1,3 +1,4 @@
+import type { Session, SessionKind } from "../../domain/session";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
@@ -7,6 +8,7 @@ import type {
   IFocusScoreRepository,
   IFastPlanRepository,
   ICoffeeRepository,
+  ISessionRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -80,6 +82,7 @@ import {
   environmentLocations,
   fastPlans,
   coffeeCups,
+  sessions,
   exercises,
   knowledgeSources,
   knowledgeTechniques,
@@ -146,6 +149,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
       await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
       await tx.delete(coffeeCups).where(eq(coffeeCups.userId, userId));
+      await tx.delete(sessions).where(eq(sessions.userId, userId));
       await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
@@ -1206,6 +1210,33 @@ export class DrizzleFastPlanRepository implements IFastPlanRepository {
       return;
     }
     await this.db.insert(fastPlans).values({ userId, ...plan }).onConflictDoUpdate({ target: fastPlans.userId, set: plan });
+  }
+}
+
+export class DrizzleSessionRepository implements ISessionRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toSession(r: typeof sessions.$inferSelect): Session {
+    return { id: r.id, kind: r.kind as SessionKind, takenAt: r.takenAt, ...(r.minutes === null ? {} : { minutes: r.minutes }) };
+  }
+
+  async add(userId: string, s: Omit<Session, "id">) {
+    const [row] = await this.db.insert(sessions).values({ userId, kind: s.kind, takenAt: s.takenAt, minutes: s.minutes ?? null }).returning();
+    return DrizzleSessionRepository.toSession(row!);
+  }
+
+  async listBetween(userId: string, from: Date, to: Date) {
+    const rows = await this.db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.userId, userId), gte(sessions.takenAt, from), lt(sessions.takenAt, to)))
+      .orderBy(asc(sessions.takenAt));
+    return rows.map(DrizzleSessionRepository.toSession);
+  }
+
+  async delete(userId: string, id: string) {
+    const gone = await this.db.delete(sessions).where(and(eq(sessions.userId, userId), eq(sessions.id, id))).returning({ id: sessions.id });
+    return gone.length > 0;
   }
 }
 

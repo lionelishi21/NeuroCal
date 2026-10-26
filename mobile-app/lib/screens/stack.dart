@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'session_sheet.dart';
 import 'supplement_sheet.dart';
 
 const _order = [StackTiming.morning, StackTiming.withFood, StackTiming.evening, StackTiming.any];
@@ -191,6 +192,7 @@ class StackScreen extends StatefulWidget {
 
 class _StackScreenState extends State<StackScreen> {
   Future<SupplementStack>? _stack;
+  Future<SessionsDay>? _sessions;
 
   @override
   void initState() {
@@ -208,10 +210,12 @@ class _StackScreenState extends State<StackScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _stack ??= AppScope.of(context).api.stack();
+    _sessions ??= AppScope.of(context).api.sessions();
   }
 
   void _reload() => setState(() {
     _stack = AppScope.of(context).api.stack();
+    _sessions = AppScope.of(context).api.sessions();
   });
 
   Future<void> _add() async {
@@ -237,10 +241,12 @@ class _StackScreenState extends State<StackScreen> {
         padding: EdgeInsets.fromLTRB(Space.s4, tab ? Space.s4 : 0, Space.s4, Space.s6),
         children: [
           if (tab) ...[
-            const ScreenTitle('Your stack', detail: 'Your supplements and when to take them'),
+            const ScreenTitle('Your stack', detail: 'Your supplements, gadgets and practices'),
             const BlockTitle('Supplements'),
           ],
           ..._supplements(context, snapshot),
+          const BlockTitle('Gadgets and practices'),
+          _Practices(_sessions, onLog: () => showSessionSheet(context, onChanged: _reload)),
         ],
       ),
     );
@@ -332,6 +338,135 @@ class _StackScreenState extends State<StackScreen> {
         label: const Text('Scan a supplement to add'),
       ),
     ];
+  }
+}
+
+/// The gadgets and practices used lately, each tested against the days without, and a way to log one.
+class _Practices extends StatelessWidget {
+  const _Practices(this.day, {required this.onLog});
+
+  final Future<SessionsDay>? day;
+  final VoidCallback onLog;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return FutureBuilder(
+      future: day,
+      builder: (context, snapshot) {
+        final d = snapshot.data;
+        final log = OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: c.synapseInk,
+            side: BorderSide(color: c.ruleStrong, width: 1.5),
+          ),
+          onPressed: onLog,
+          icon: const Icon(Icons.spa_rounded, size: 20),
+          label: const Text('Log a session'),
+        );
+        if (d == null || d.insights.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: Space.s3,
+            children: [
+              Text(
+                'Log a sauna, cold plunge, meditation or blue-blocking glasses, and NeuroCal compares the days after with the days without.',
+                style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+              ),
+              log,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s3,
+          children: [
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final (i, insight) in d.insights.indexed)
+                    ListTile(
+                      shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                      leading: Icon(sessionIcon(insight.kind), color: c.ionInk),
+                      title: Text(
+                        d.info(insight.kind)?.label ?? insight.kind.wire,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 2,
+                        children: [
+                          Text('${insight.sessions} ${insight.sessions == 1 ? 'session' : 'sessions'} in 8 weeks'),
+                          ExperimentLine(insight.experiment),
+                        ],
+                      ),
+                      trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+                      onTap: () => showAppSheet<void>(
+                        context,
+                        title: d.info(insight.kind)?.label ?? insight.kind.wire,
+                        builder: (_) => _PracticeDetail(insight, d.info(insight.kind)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            log,
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// A practice's comparison and what to expect from it.
+class _PracticeDetail extends StatelessWidget {
+  const _PracticeDetail(this.insight, this.info);
+
+  final SessionInsight insight;
+  final SessionKindInfo? info;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final e = insight.experiment;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
+        const GroupLabel('Is it working?', top: 0),
+        ExperimentLine(e),
+        Text(e.summary, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+        if (info case final i?) ...[
+          const GroupLabel('What to expect', top: Space.s2),
+          Wrap(
+            spacing: Space.s2,
+            runSpacing: Space.s1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                'For ${i.purpose.label.toLowerCase()}',
+                style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+              ),
+              Tag(
+                Evidence.values.byName(i.evidence).label,
+                fill: i.evidence == 'strong' ? c.chlorophyllSoft : c.synapseSoft,
+                ink: i.evidence == 'strong' ? c.chlorophyll : c.synapseInk,
+              ),
+            ],
+          ),
+          Text(
+            i.expectation,
+            style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+          ),
+        ],
+        Text(
+          'Other changes, like sleep, stress and coffee, move these numbers too. A personal guide, not proof.',
+          style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkFaint),
+        ),
+      ],
+    );
   }
 }
 

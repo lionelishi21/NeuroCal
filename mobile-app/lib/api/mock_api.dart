@@ -630,6 +630,119 @@ class MockNeuroCalApi implements NeuroCalApi {
     _cups.removeWhere((c) => c.id == id);
   }
 
+  final _sessions = <LoggedSession>[];
+
+  /// As the API (backend domain/session.ts).
+  static const _sessionKinds = <SessionKindInfo>[
+    (
+      kind: SessionKind.sauna,
+      label: 'Sauna',
+      purpose: SupplementPurpose.sleep,
+      evidence: 'some',
+      expectation: 'Many people sleep more deeply the night after; regular use is linked to a healthier heart. Drink water and skip it after alcohol.',
+      usualMinutes: 20,
+    ),
+    (
+      kind: SessionKind.coldPlunge,
+      label: 'Cold plunge',
+      purpose: SupplementPurpose.energy,
+      evidence: 'early',
+      expectation: 'A sharp lift in alertness and mood for a few hours; longer-term effects are less clear. Start with 1 to 2 minutes, and not if you have a heart condition.',
+      usualMinutes: 3,
+    ),
+    (
+      kind: SessionKind.meditation,
+      label: 'Meditation',
+      purpose: SupplementPurpose.stress,
+      evidence: 'strong',
+      expectation: 'Lower stress and steadier attention with regular practice; ten minutes a day is enough to start.',
+      usualMinutes: 10,
+    ),
+    (
+      kind: SessionKind.breathwork,
+      label: 'Breathwork',
+      purpose: SupplementPurpose.stress,
+      evidence: 'some',
+      expectation:
+          'Slow breathing (about six breaths a minute) calms you within minutes and can lower stress over weeks.',
+      usualMinutes: 5,
+    ),
+    (
+      kind: SessionKind.braintap,
+      label: 'BrainTap',
+      purpose: SupplementPurpose.stress,
+      evidence: 'early',
+      expectation:
+          'Guided light-and-sound sessions for relaxing; small studies so far, so your own numbers matter most.',
+      usualMinutes: 20,
+    ),
+    (
+      kind: SessionKind.blueBlocking,
+      label: 'Blue-blocking glasses',
+      purpose: SupplementPurpose.sleep,
+      evidence: 'some',
+      expectation: 'Worn for the last hour or two before bed, they keep screens and bright rooms from delaying your sleep. They halve the cost of late screens in your score.',
+      usualMinutes: 120,
+    ),
+    (
+      kind: SessionKind.redLight,
+      label: 'Red light',
+      purpose: SupplementPurpose.sleep,
+      evidence: 'early',
+      expectation: 'Dim red light in the evening doesn’t hold back sleep the way white light does; claims beyond that are early.',
+      usualMinutes: 15,
+    ),
+  ];
+
+  @override
+  Future<SessionsDay> sessions() async {
+    await _wait();
+    final now = DateTime.now();
+    bool today(DateTime t) => t.year == now.year && t.month == now.month && t.day == now.day;
+    final used = {for (final s in _sessions) s.kind};
+    return SessionsDay(
+      date: isoDate(now),
+      sessions: [
+        for (final s in _sessions)
+          if (today(s.takenAt)) s,
+      ],
+      kinds: _sessionKinds,
+      insights: [
+        for (final kind in used)
+          (
+            kind: kind,
+            sessions: _sessions.where((s) => s.kind == kind).length,
+            lastAt: _sessions.lastWhere((s) => s.kind == kind).takenAt,
+            experiment: SupplementExperiment(
+              measure: switch (_sessionKinds.firstWhere((k) => k.kind == kind).purpose) {
+                SupplementPurpose.sleep => 'sleep',
+                SupplementPurpose.stress => 'stress',
+                _ => 'brain_speed',
+              },
+              day: 1,
+              onsetDays: 0,
+              verdict: 'too_early',
+              summary:
+                  'A few more days with ${_sessionKinds.firstWhere((k) => k.kind == kind).label.toLowerCase()}, and NeuroCal can compare them with days without.',
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<SessionsDay> logSession(SessionKind kind, {int? minutes}) async {
+    await _wait();
+    _sessions.add((id: 'ses${_sessions.length + 1}', kind: kind, takenAt: DateTime.now(), minutes: minutes));
+    return sessions();
+  }
+
+  @override
+  Future<void> deleteSession(String id) async {
+    await _wait();
+    _sessions.removeWhere((s) => s.id == id);
+  }
+
   /// As the API's catalog (backend partnerProducts.ts), two of them.
   @override
   Future<List<SuggestedProduct>> coffeeProducts() async {

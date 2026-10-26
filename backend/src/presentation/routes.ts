@@ -1,3 +1,5 @@
+import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
+import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
 import {
   AdminProduct,
   AdminProductList,
@@ -52,6 +54,8 @@ import {
   PlanFastRequest,
   CoffeeDay,
   CoffeeProducts,
+  LogSessionRequest,
+  SessionsResponse,
   LogCoffeeRequest,
   BetterChoiceRequest,
   BetterChoiceResponse,
@@ -176,6 +180,7 @@ export interface UseCases {
   scanFood: ScanFoodUseCase;
   betterChoice: BetterChoiceUseCase;
   coffee: CoffeeUseCases;
+  sessions: SessionUseCases;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -283,6 +288,16 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
   ...(item ? { item: toFoodItem(item) } : {}),
   ...(coffee ? { coffee } : {}),
   ...(coffeeFat ? { coffeeFat } : {}),
+});
+
+const toSessionDay = (d: SessionDayRecord) => ({
+  date: d.date,
+  sessions: d.sessions.map((s) => ({ ...s, takenAt: s.takenAt.toISOString() })),
+  kinds: SESSION_KINDS.map((kind) => {
+    const { label, purpose, evidence, expectation, usualMinutes } = SESSION_KIND[kind];
+    return { kind, label, purpose, evidence, expectation, usualMinutes };
+  }),
+  insights: d.insights.map((i) => ({ ...i, lastAt: i.lastAt.toISOString() })),
 });
 
 const toCoffeeDay = (d: CoffeeDayRecord) => ({
@@ -597,6 +612,28 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
     ["GET", /^\/coffee$/, async (req) => ok(CoffeeDay, toCoffeeDay(await uc.coffee.day(req.userId, date(req))))],
+    ["GET", /^\/sessions$/, async (req) => ok(SessionsResponse, toSessionDay(await uc.sessions.day(req.userId)))],
+    [
+      "POST",
+      /^\/sessions$/,
+      async (req) => {
+        const body = json(req, LogSessionRequest);
+        const day = await uc.sessions.log(req.userId, {
+          kind: body.kind,
+          ...(body.minutes ? { minutes: body.minutes } : {}),
+          ...(body.takenAt ? { takenAt: new Date(body.takenAt) } : {}),
+        });
+        return ok(SessionsResponse, toSessionDay(day), 201);
+      },
+    ],
+    [
+      "DELETE",
+      /^\/sessions\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.sessions.remove(req.userId, id!);
+        return { status: 204 };
+      },
+    ],
     [
       "GET",
       /^\/coffee\/products$/,

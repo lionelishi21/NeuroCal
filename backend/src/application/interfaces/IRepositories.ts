@@ -1,3 +1,4 @@
+import type { Session } from "../../domain/session";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import type {
@@ -109,6 +110,14 @@ export interface IFastPlanRepository {
 }
 
 /** The coffee log; scoped to one user. */
+/** Gadget and practice sessions, scoped to one user. */
+export interface ISessionRepository {
+  add(userId: string, session: Omit<Session, "id">): Promise<Session>;
+  /** Taken at or after `from` and before `to`, oldest first. */
+  listBetween(userId: string, from: Date, to: Date): Promise<Session[]>;
+  delete(userId: string, id: string): Promise<boolean>;
+}
+
 export interface ICoffeeRepository {
   add(userId: string, cup: Omit<CoffeeCup, "id">): Promise<CoffeeCup>;
   /** Cups taken in [from, to), oldest first. */

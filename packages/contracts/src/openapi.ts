@@ -155,6 +155,15 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   updateStackItem: { summary: "Change servings, timing or the bottle size", params: { id: "The stack item's id." } },
   deleteStackItem: { summary: "Remove a supplement from your stack", status: 204, params: { id: "The stack item's id." } },
   setStackTaken: { summary: "Tick a supplement as taken today", params: { id: "The stack item's id." } },
+  getSessions: {
+    summary: "Your gadget and practice sessions",
+    description: "Today's sessions, what each kind is for, and for each kind used in the last eight weeks the days after a session against the days without, on the measure that fits.",
+  },
+  logSession: {
+    summary: "Log a session",
+    description: "A sauna, cold plunge, meditation, breathwork, BrainTap, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
+  },
+  deleteSession: { summary: "Remove a session", status: 204, params: { id: "The session's id." } },
   setStackFeeling: {
     summary: "Say how a supplement makes you feel",
     description: "Asked at two and four weeks (the item's experiment says when); one answer a day, the latest kept.",

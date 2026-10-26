@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -28,6 +28,7 @@ import {
   FakePantryRecipes,
   InMemoryFastPlans,
   InMemoryCoffee,
+  InMemorySessions,
   FakeBetterChoice,
   FakeShoppingReviewer,
   FakeRecipeParser,
@@ -165,6 +166,7 @@ beforeEach(async () => {
     pantryRecipes: (pantryRecipes = new FakePantryRecipes()),
     fastPlans: new InMemoryFastPlans(),
     coffee: new InMemoryCoffee(),
+    sessions: new InMemorySessions(),
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
@@ -421,6 +423,21 @@ describe("API routes", () => {
     const scan = FoodScanResponse.parse((await call("GET", "/foods/barcode/0850000000024")).body);
     expect(scan.coffeeFat).toMatchObject({ addIn: "mct_c8_c10", good: false });
     expect(scan.coffee).toBeUndefined();
+  });
+
+  it("logs gadget sessions, lists every kind with what to expect, and tests the ones used", async () => {
+    const logged = await call("POST", "/sessions", { kind: "sauna", minutes: 20 });
+    expect(logged.status).toBe(201);
+    const day = SessionsResponse.parse(logged.body);
+    expect(day.sessions).toEqual([expect.objectContaining({ kind: "sauna", minutes: 20 })]);
+    expect(day.kinds.find((k) => k.kind === "blue_blocking")).toMatchObject({ label: "Blue-blocking glasses", purpose: "sleep", evidence: "some" });
+    expect(day.insights).toEqual([expect.objectContaining({ kind: "sauna", sessions: 1, experiment: expect.objectContaining({ measure: "sleep", verdict: "too_early" }) })]);
+
+    expect((await call("POST", "/sessions", { kind: "jacuzzi" })).status).toBe(400);
+    expect((await call("POST", "/sessions", { kind: "sauna", minutes: 0 })).status).toBe(400);
+    expect((await call("DELETE", `/sessions/${day.sessions[0]!.id}`)).status).toBe(204);
+    expect(SessionsResponse.parse((await call("GET", "/sessions")).body).sessions).toEqual([]);
+    expect((await call("DELETE", "/sessions/nope")).status).toBe(404);
   });
 
   it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {

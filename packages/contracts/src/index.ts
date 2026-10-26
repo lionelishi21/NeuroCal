@@ -1192,6 +1192,43 @@ export const StackItem = z.object({
 });
 export type StackItem = z.infer<typeof StackItem>;
 
+/** Gadgets and practices (backend domain/session.ts). */
+export const SessionKind = z.enum(["sauna", "cold_plunge", "meditation", "breathwork", "braintap", "blue_blocking", "red_light"]);
+
+export const LogSessionRequest = z.object({
+  kind: SessionKind,
+  minutes: z.number().int().min(1).max(600).optional(),
+  /** When it was; now when left out. Within the last two days. */
+  takenAt: IsoDateTime.optional(),
+});
+export type LogSessionRequest = z.infer<typeof LogSessionRequest>;
+
+export const Session = z.object({ id: Id, kind: SessionKind, takenAt: IsoDateTime, minutes: z.number().int().optional() });
+
+/** One kind: what it's for, the evidence and what to expect; the same for everyone. */
+export const SessionKindInfo = z.object({
+  kind: SessionKind,
+  label: z.string(),
+  purpose: Purpose,
+  evidence: z.enum(["strong", "some", "early"]),
+  expectation: z.string(),
+  usualMinutes: z.number().int(),
+});
+
+export const SessionsResponse = z.object({
+  date: IsoDate,
+  /** Today's sessions, oldest first. */
+  sessions: z.array(Session),
+  /** Every kind, for the logging sheet. */
+  kinds: z.array(SessionKindInfo),
+  /**
+   * Each kind used in the last eight weeks, most recent first: the days after a session against the
+   * days without, on the measure that fits ("before" is the days without, "since" the days with).
+   */
+  insights: z.array(z.object({ kind: SessionKind, sessions: z.number().int(), lastAt: IsoDateTime, experiment: SupplementExperiment })),
+});
+export type SessionsResponse = z.infer<typeof SessionsResponse>;
+
 /** "How does it make you feel?", asked at two and four weeks. */
 export const Feeling = z.enum(["better", "same", "worse"]);
 export const SetFeelingRequest = z.object({ feeling: Feeling });
@@ -1460,6 +1497,9 @@ export const endpoints = {
   /** Ticks (or unticks) a supplement as taken today. */
   setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
   setStackFeeling: { method: "PUT", path: "/stack/:id/feeling", body: SetFeelingRequest, response: SetFeelingRequest },
+  getSessions: { method: "GET", path: "/sessions", response: SessionsResponse },
+  logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
+  deleteSession: { method: "DELETE", path: "/sessions/:id" },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },

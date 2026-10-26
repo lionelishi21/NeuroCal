@@ -9,7 +9,7 @@ import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingPro
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
-import type { ICoffeeRepository, IFastPlanRepository,
+import type { ICoffeeRepository, ISessionRepository, IFastPlanRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -28,6 +28,7 @@ import type { IExerciseRepository } from "../application/interfaces/IExerciseRep
 import type { IPantryRecipeAssistant, IPantryRepository } from "../application/interfaces/IPantry";
 import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
+import { SessionUseCases } from "../application/use-cases/SessionUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
@@ -123,6 +124,7 @@ export interface Ports {
   environment: IEnvironmentRepository;
   fastPlans: IFastPlanRepository;
   coffee: ICoffeeRepository;
+  sessions: ISessionRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
   knowledge: IKnowledgeRepository;
@@ -192,8 +194,9 @@ export function buildUseCases(p: Ports): UseCases {
       allowedDomains: p.recipeDomains,
     }),
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
-    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose, p.coffee),
-    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment, p.coffee),
+    getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose, p.coffee, p.sessions),
+    getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment, p.coffee, p.sessions),
+    sessions: new SessionUseCases(p.profiles, p.sessions, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),
     markers: new MarkerUseCases(p.markers, p.clock),

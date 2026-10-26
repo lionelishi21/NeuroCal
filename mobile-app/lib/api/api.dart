@@ -45,6 +45,14 @@ abstract interface class NeuroCalApi {
 
   Future<void> deleteCoffee(String id);
 
+  /// Today's gadget and practice sessions, every kind, and what the ones used are doing.
+  Future<SessionsDay> sessions();
+
+  /// Logs a session now; returns the day with it.
+  Future<SessionsDay> logSession(SessionKind kind, {int? minutes});
+
+  Future<void> deleteSession(String id);
+
   /// What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine.
   Future<List<SuggestedProduct>> coffeeProducts();
 
@@ -344,6 +352,24 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<void> deleteCoffee(String id) async {
     _decode(await _client.delete(_uri('/coffee/$id'), headers: await _headers()));
+  }
+
+  @override
+  Future<SessionsDay> sessions() async => SessionsDay.fromJson(await _get('/sessions') as Map<String, dynamic>);
+
+  @override
+  Future<SessionsDay> logSession(SessionKind kind, {int? minutes}) async {
+    final res = await _client.post(
+      _uri('/sessions'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'kind': kind.wire, 'minutes': ?minutes}),
+    );
+    return SessionsDay.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteSession(String id) async {
+    _decode(await _client.delete(_uri('/sessions/$id'), headers: await _headers()));
   }
 
   @override

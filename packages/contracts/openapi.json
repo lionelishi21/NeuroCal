@@ -1206,6 +1206,83 @@
         }
       }
     },
+    "/sessions": {
+      "get": {
+        "operationId": "getSessions",
+        "summary": "Your gadget and practice sessions",
+        "description": "Today's sessions, what each kind is for, and for each kind used in the last eight weeks the days after a session against the days without, on the measure that fits.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logSession",
+        "summary": "Log a session",
+        "description": "A sauna, cold plunge, meditation, breathwork, BrainTap, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "delete": {
+        "operationId": "deleteSession",
+        "summary": "Remove a session",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The session's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/me/subscription": {
       "get": {
         "operationId": "getSubscription",
@@ -5102,6 +5179,26 @@
           "minutes"
         ]
       },
+      "LogSessionRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SessionKind"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "LogWeightRequest": {
         "type": "object",
         "properties": {
@@ -6202,6 +6299,139 @@
           "windowEnd",
           "minutes",
           "source"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionKind"
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "takenAt"
+        ]
+      },
+      "SessionKind": {
+        "type": "string",
+        "enum": [
+          "sauna",
+          "cold_plunge",
+          "meditation",
+          "breathwork",
+          "braintap",
+          "blue_blocking",
+          "red_light"
+        ]
+      },
+      "SessionKindInfo": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SessionKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "focus",
+              "energy",
+              "stress",
+              "long_term"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "some",
+              "early"
+            ]
+          },
+          "expectation": {
+            "type": "string"
+          },
+          "usualMinutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "purpose",
+          "evidence",
+          "expectation",
+          "usualMinutes"
+        ]
+      },
+      "SessionsResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionKindInfo"
+            }
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "$ref": "#/components/schemas/SessionKind"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "lastAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "experiment": {
+                  "$ref": "#/components/schemas/SupplementExperiment"
+                }
+              },
+              "required": [
+                "kind",
+                "sessions",
+                "lastAt",
+                "experiment"
+              ]
+            }
+          }
+        },
+        "required": [
+          "date",
+          "sessions",
+          "kinds",
+          "insights"
         ]
       },
       "SetEnvironmentLocationRequest": {

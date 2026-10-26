@@ -307,6 +307,21 @@ export const coffeeCups = pgTable(
   (t) => [index("coffee_cups_user_taken_at_idx").on(t.userId, t.takenAt)],
 );
 
+/** Gadget and practice sessions (domain/session.ts): a sauna, a cold plunge, meditation, blue-blocking glasses. */
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    kind: text("kind").notNull(),
+    takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
+    minutes: smallint("minutes"),
+  },
+  (t) => [index("sessions_user_taken_at_idx").on(t.userId, t.takenAt)],
+);
+
 /** A fast someone planned to run until a time; one at a time, removed when it's ended. */
 export const fastPlans = pgTable("fast_plans", {
   userId: uuid("user_id")

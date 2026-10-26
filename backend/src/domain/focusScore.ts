@@ -61,6 +61,8 @@ export interface FocusInputs {
   screenTime: ScreenTimeSample[];
   /** Caffeine after the curfew on the previous day; absent when no coffee was logged that day. */
   previousDayLateCaffeineMg?: number;
+  /** Blue-blocking glasses worn on the previous day (domain/session.ts): late screens cost half. */
+  previousDayBlueBlocking?: boolean;
   /** Check-ins on the previous day and on `date`. */
   checkIns: CheckIn[];
   /** Exercise on the previous day. */
@@ -138,7 +140,9 @@ export function timingComponent(inputs: FocusInputs): number | null {
   }
   // A cup of coffee after the curfew costs as much as an hour of late screens.
   const caffeine = 0.3 * clamp01((lateCaffeine ?? 0) / 95);
-  return clamp01(1 - clamp01(lateEating / 120) - 0.5 * clamp01(lateScreen / 120) - caffeine + (keptFast(inputs) ? FAST_KEPT_BONUS : 0));
+  // Blue-blocking glasses take the light that delays sleep out of the screens, so they cost half.
+  const screens = (inputs.previousDayBlueBlocking ? 0.25 : 0.5) * clamp01(lateScreen / 120);
+  return clamp01(1 - clamp01(lateEating / 120) - screens - caffeine + (keptFast(inputs) ? FAST_KEPT_BONUS : 0));
 }
 
 /** The overnight fast from the last meal of D−1 to the first meal of D reached the protocol's hours. */

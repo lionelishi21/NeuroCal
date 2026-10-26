@@ -31,6 +31,7 @@ import type { FocusComponents, FocusScore, Profile } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { IFocusExplainer } from "../interfaces/IFocusExplainer";
 import type { ICoffeeRepository,
+  ISessionRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -57,6 +58,7 @@ export class GetFocusScoreUseCase {
     private readonly environment?: EnvironmentInputs,
     private readonly glucose?: IGlucoseRepository,
     private readonly coffee?: ICoffeeRepository,
+    private readonly sessions?: ISessionRepository,
   ) {}
 
   async execute(input: { userId: string; date?: string }): Promise<FocusScore> {
@@ -68,7 +70,16 @@ export class GetFocusScoreUseCase {
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
     const [inputs, stored, tuning, measured] = await Promise.all([
       loadFocusInputs(
-        { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, glucose: this.glucose, coffee: this.coffee },
+        {
+          meals: this.meals,
+          checkIns: this.checkIns,
+          telemetry: this.telemetry,
+          exercises: this.exercises,
+          environment: this.environment,
+          glucose: this.glucose,
+          coffee: this.coffee,
+          sessions: this.sessions,
+        },
         profile,
         date,
       ),
@@ -171,6 +182,8 @@ export async function loadFocusInputs(
     /** Glucose-sensor days, when the person has a sensor. */
     glucose?: IGlucoseRepository | undefined;
     coffee?: ICoffeeRepository | undefined;
+    /** Gadget sessions: blue-blocking glasses the evening before halve the cost of late screens. */
+    sessions?: ISessionRepository | undefined;
   },
   profile: Profile,
   date: string,
@@ -198,6 +211,11 @@ export async function loadFocusInputs(
         (c) => localDateOf(c.takenAt, timeZone) === yesterday,
       )
     : [];
+  const blueBlocking = repos.sessions
+    ? (await repos.sessions.listBetween(userId, new Date(yesterdayNoon - 26 * 3_600_000), new Date(yesterdayNoon + 26 * 3_600_000))).some(
+        (s) => s.kind === "blue_blocking" && localDateOf(s.takenAt, timeZone) === yesterday,
+      )
+    : false;
   const wake = wakeHourOf(profile.bioProfile);
   const lateCaffeineMg = cups.filter((c) => afterCurfew(localTimeOf(c.takenAt, timeZone), wake)).reduce((s, c) => s + cupNutrition(c).caffeineMg, 0);
   const sensorDay = glucose[0];
@@ -219,5 +237,6 @@ export async function loadFocusInputs(
     ...(environment ? { environment } : {}),
     ...(sensorDay ? { previousDayGlucose: glucoseComponent(sensorDay, diabetic) } : {}),
     ...(cups.length ? { previousDayLateCaffeineMg: lateCaffeineMg } : {}),
+    ...(blueBlocking ? { previousDayBlueBlocking: true } : {}),
   };
 }
