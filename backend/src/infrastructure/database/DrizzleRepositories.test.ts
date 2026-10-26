@@ -318,7 +318,7 @@ describe("DrizzleStackRepository", () => {
   it("adds, updates, ticks and removes a user's own supplements only", async () => {
     const repo = new DrizzleStackRepository(db);
     const ingredients = [{ name: "Magnesium", amount: 200, unit: "mg", inBlend: false }];
-    const item = await repo.add(alice, { name: "Magnesium", ingredients, servingsPerDay: 1, timing: "evening", servingsPerContainer: 60, startedOn: "2026-10-01" });
+    const item = await repo.add(alice, { name: "Magnesium", ingredients, servingsPerDay: 1, timing: "evening", servingsPerContainer: 60, startedOn: "2026-10-01", addedOn: "2026-09-20" });
     expect(await repo.list(alice)).toEqual([item]);
     expect(await repo.list(bob)).toEqual([]);
 
@@ -335,6 +335,15 @@ describe("DrizzleStackRepository", () => {
     // Kept for the account-deletion test below.
     await repo.setTaken(alice, item.id, "2026-10-03", true);
     expect(await repo.delete(bob, item.id)).toBe(false);
+
+    // The experiment's inputs: doses since a day, and one feeling a day (the latest kept).
+    expect(item.addedOn).toBe("2026-09-20");
+    expect(await repo.dosesSince(alice, "2026-10-03")).toEqual([{ itemId: item.id, date: "2026-10-03" }]);
+    expect(await repo.dosesSince(bob, "2026-10-01")).toEqual([]);
+    expect(await repo.setFeeling(alice, item.id, "2026-10-04", "same")).toBe(true);
+    expect(await repo.setFeeling(alice, item.id, "2026-10-04", "better")).toBe(true);
+    expect(await repo.setFeeling(bob, item.id, "2026-10-04", "worse")).toBe(false);
+    expect(await repo.feelings(alice)).toEqual([{ itemId: item.id, date: "2026-10-04", feeling: "better" }]);
   });
 });
 

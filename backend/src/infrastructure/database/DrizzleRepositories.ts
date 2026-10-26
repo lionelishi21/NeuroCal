@@ -1,3 +1,4 @@
+import type { Feeling } from "../../domain/experiment";
 import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
@@ -92,6 +93,7 @@ import {
   screenTimeSamples,
   sleepSessions,
   stackDoses,
+  stackFeelings,
   stackItems,
   subscriptions,
   users,
@@ -696,6 +698,7 @@ export class DrizzleStackRepository implements IStackRepository {
       timing: row.timing as StackTiming,
       ...(row.servingsPerContainer ? { servingsPerContainer: row.servingsPerContainer } : {}),
       startedOn: row.startedOn,
+      addedOn: row.addedOn,
     };
   }
 
@@ -716,6 +719,7 @@ export class DrizzleStackRepository implements IStackRepository {
         timing: item.timing,
         servingsPerContainer: item.servingsPerContainer ?? null,
         startedOn: item.startedOn,
+        addedOn: item.addedOn,
       })
       .returning();
     if (!row) throw new Error("Stack insert returned no row");
@@ -760,6 +764,34 @@ export class DrizzleStackRepository implements IStackRepository {
     if (!item) return false;
     if (taken) await this.db.insert(stackDoses).values({ itemId: id, userId, date }).onConflictDoNothing();
     else await this.db.delete(stackDoses).where(and(eq(stackDoses.itemId, id), eq(stackDoses.date, date)));
+    return true;
+  }
+
+  async dosesSince(userId: string, since: string): Promise<{ itemId: string; date: string }[]> {
+    return this.db
+      .select({ itemId: stackDoses.itemId, date: stackDoses.date })
+      .from(stackDoses)
+      .where(and(eq(stackDoses.userId, userId), gte(stackDoses.date, since)));
+  }
+
+  async feelings(userId: string): Promise<{ itemId: string; date: string; feeling: Feeling }[]> {
+    const rows = await this.db
+      .select({ itemId: stackFeelings.itemId, date: stackFeelings.date, feeling: stackFeelings.feeling })
+      .from(stackFeelings)
+      .where(eq(stackFeelings.userId, userId));
+    return rows.map((r) => ({ ...r, feeling: r.feeling as Feeling }));
+  }
+
+  async setFeeling(userId: string, id: string, date: string, feeling: Feeling): Promise<boolean> {
+    const [item] = await this.db
+      .select({ id: stackItems.id })
+      .from(stackItems)
+      .where(and(eq(stackItems.id, id), eq(stackItems.userId, userId)));
+    if (!item) return false;
+    await this.db
+      .insert(stackFeelings)
+      .values({ itemId: id, userId, date, feeling })
+      .onConflictDoUpdate({ target: [stackFeelings.itemId, stackFeelings.date], set: { feeling } });
     return true;
   }
 }

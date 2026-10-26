@@ -15,6 +15,7 @@ import {
   FoodScanResponse,
   AddStackItemRequest,
   SetTakenRequest,
+  SetFeelingRequest,
   StackItem,
   StackResponse,
   Exercise,
@@ -583,6 +584,15 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         const { taken } = json(req, SetTakenRequest);
         await uc.stack.setTaken(req.userId, id!, taken);
         return ok(SetTakenRequest, { taken });
+      },
+    ],
+    [
+      "PUT",
+      /^\/stack\/([^/]+)\/feeling$/,
+      async (req, [id]) => {
+        const { feeling } = json(req, SetFeelingRequest);
+        await uc.stack.setFeeling(req.userId, id!, feeling);
+        return ok(SetFeelingRequest, { feeling });
       },
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],

@@ -119,6 +119,9 @@ abstract interface class NeuroCalApi {
   Future<void> removeFromStack(String id);
   Future<void> setTaken(String id, bool taken);
 
+  /// "How does it make you feel?", answered for today.
+  Future<void> setFeeling(String id, Feeling feeling);
+
   /// The food catalog, sorted by name. Fetched once and kept for the session.
   Future<List<CatalogFood>> foods();
 
@@ -558,6 +561,17 @@ class HttpNeuroCalApi implements NeuroCalApi {
         _uri('/stack/$id/taken'),
         headers: await _headers(json: true),
         body: jsonEncode({'taken': taken}),
+      ),
+    );
+  }
+
+  @override
+  Future<void> setFeeling(String id, Feeling feeling) async {
+    _decode(
+      await _client.put(
+        _uri('/stack/$id/feeling'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'feeling': feeling.name}),
       ),
     );
   }

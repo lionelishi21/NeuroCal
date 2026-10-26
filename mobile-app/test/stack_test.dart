@@ -8,6 +8,7 @@ import 'package:neurocal/billing/billing.dart';
 import 'package:neurocal/screens/stack.dart';
 import 'package:neurocal/theme/theme.dart';
 import 'package:neurocal/theme/theme_controller.dart';
+import 'package:neurocal/widgets/toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -68,4 +69,57 @@ void main() {
     await tester.pumpAndSettle();
     expect((await tester.runAsync(api.stack))!.items.firstWhere((i) => i.id == multi.id).takenToday, isTrue);
   });
+
+  testWidgets(
+    'each supplement runs as an experiment: what to expect, whether it works, and how it feels at two weeks',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 740);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({});
+      final api = MockNeuroCalApi()..latency = Duration.zero;
+      final magnesium = (await tester.runAsync(
+        () => api.addToStack(
+          name: 'Magnesium glycinate',
+          ingredients: const [(name: 'Magnesium', amount: 200, unit: 'mg', inBlend: false)],
+          servingsPerDay: 1,
+          timing: StackTiming.evening,
+        ),
+      ))!;
+      // Two weeks and a bit on it.
+      api.stackAddedOn[magnesium.id] = DateTime.now().subtract(const Duration(days: 15));
+      await tester.pumpWidget(
+        AppScope(
+          api: api,
+          auth: MockAuthClient(),
+          theme: ThemeController(await SharedPreferences.getInstance()),
+          timeZone: () async => 'Europe/London',
+          openLink: (_) async => true,
+          billing: MockBilling(active: true),
+          child: MaterialApp(
+            theme: buildTheme(Brightness.light),
+            builder: (context, child) => ToastHost(child: child!),
+            home: const StackScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Collecting your numbers'), findsOneWidget);
+      expect(find.text('2 weeks on Magnesium glycinate: how has it made you feel?'), findsOneWidget);
+      await tester.tap(find.text('Better'));
+      await tester.pumpAndSettle();
+      expect(find.text('Thanks, noted'), findsOneWidget);
+      expect(find.textContaining('how has it made you feel?'), findsNothing);
+
+      await tester.tap(find.text('Magnesium glycinate'));
+      await tester.pumpAndSettle();
+      expect(find.text('Is it working?'), findsOneWidget);
+      expect(find.textContaining('There aren’t enough nights of sleep from before you started'), findsOneWidget);
+      expect(find.text('You said it makes you feel: better.'), findsOneWidget);
+      expect(find.text('What to expect'), findsOneWidget);
+      expect(find.text('Some evidence'), findsOneWidget);
+      expect(find.text('Sleep · in about 14 days'), findsOneWidget);
+    },
+  );
 }

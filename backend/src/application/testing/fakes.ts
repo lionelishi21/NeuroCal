@@ -1,4 +1,5 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
+import type { Feeling } from "../../domain/experiment";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import type { Food } from "../../domain/foods";
@@ -520,6 +521,26 @@ export class InMemoryStack implements IStackRepository {
     if (!this.rows.some((r) => r.userId === userId && r.id === id)) return false;
     if (taken) this.doses.add(`${id}:${date}`);
     else this.doses.delete(`${id}:${date}`);
+    return true;
+  }
+  async dosesSince(userId: string, since: string) {
+    const mine = new Set(this.rows.filter((r) => r.userId === userId).map((r) => r.id));
+    return [...this.doses]
+      .map((k) => {
+        const [itemId, date] = k.split(":") as [string, string];
+        return { itemId, date };
+      })
+      .filter((d) => mine.has(d.itemId) && d.date >= since);
+  }
+  readonly feelingRows: { itemId: string; userId: string; date: string; feeling: Feeling }[] = [];
+  async feelings(userId: string) {
+    return this.feelingRows.filter((f) => f.userId === userId).map(({ userId: _, ...f }) => f);
+  }
+  async setFeeling(userId: string, id: string, date: string, feeling: Feeling) {
+    if (!this.rows.some((r) => r.userId === userId && r.id === id)) return false;
+    const i = this.feelingRows.findIndex((f) => f.itemId === id && f.date === date);
+    if (i >= 0) this.feelingRows.splice(i, 1);
+    this.feelingRows.push({ itemId: id, userId, date, feeling });
     return true;
   }
 }

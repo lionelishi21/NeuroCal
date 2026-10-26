@@ -1134,6 +1134,41 @@ export const StackTiming = z.enum(["morning", "with_food", "evening", "any"]);
 export type StackTiming = z.infer<typeof StackTiming>;
 
 /** A supplement in someone's stack. */
+const Purpose = z.enum(["sleep", "focus", "energy", "stress", "long_term"]);
+
+export const SupplementProfile = z.object({
+  /** What it's mostly for; null when no ingredient is known. long_term has no daily measure. */
+  purpose: Purpose.nullable(),
+  /** Days before the main effect can show. */
+  onsetDays: z.number().int().nonnegative(),
+  /** The known ingredients: what each is for, when, the evidence, and what to expect (never a promised percentage). */
+  ingredients: z.array(
+    z.object({ name: z.string(), purpose: Purpose, onsetDays: z.number().int().nonnegative(), evidence: z.enum(["strong", "some", "early"]), expectation: z.string() }),
+  ),
+});
+
+/** A supplement as a personal experiment: the four weeks before it against the time since it had a chance to work. */
+export const SupplementExperiment = z.object({
+  /** The daily number compared: Brain speed, or the sleep or stress part of the Focus Score; null for long-term ones. */
+  measure: z.enum(["brain_speed", "sleep", "stress"]).nullable(),
+  /** Days since it was added; 1 on the first day. */
+  day: z.number().int().min(1),
+  onsetDays: z.number().int().nonnegative(),
+  /** Means on a 0–100 scale and how many days each has. */
+  before: z.object({ mean: z.number(), days: z.number().int() }).nullable(),
+  since: z.object({ mean: z.number(), days: z.number().int() }).nullable(),
+  /** since − before, in points; null until there's a verdict. */
+  change: z.number().nullable(),
+  verdict: z.enum(["long_term", "building", "need_baseline", "too_early", "helping", "no_change", "worse"]),
+  /** Plain sentences for the person; show as is. */
+  summary: z.string(),
+  /** Days ticked as taken since it had time to work, out of the days since. */
+  taken: z.object({ days: z.number().int(), of: z.number().int() }).nullable(),
+  /** Ask "how does it make you feel?" now. */
+  askFeeling: z.boolean(),
+  feeling: z.enum(["better", "same", "worse"]).nullable(),
+});
+
 export const StackItem = z.object({
   id: Id,
   name: z.string().min(1),
@@ -1148,8 +1183,19 @@ export const StackItem = z.object({
   daysLeft: z.number().int().nonnegative().optional(),
   /** Ticked as taken today (the profile's local day). */
   takenToday: z.boolean(),
+  /** When it was first added (YYYY-MM-DD); a new bottle doesn't move it. Its experiment starts here. */
+  addedOn: IsoDate,
+  /** What it's for, from its known ingredients: purpose, how long until it can show, and what to expect. */
+  profile: SupplementProfile.optional(),
+  /** Whether it's working for this person, from their own data (backend domain/experiment.ts). */
+  experiment: SupplementExperiment.optional(),
 });
 export type StackItem = z.infer<typeof StackItem>;
+
+/** "How does it make you feel?", asked at two and four weeks. */
+export const Feeling = z.enum(["better", "same", "worse"]);
+export const SetFeelingRequest = z.object({ feeling: Feeling });
+export type SetFeelingRequest = z.infer<typeof SetFeelingRequest>;
 
 /** Something about the stack as a whole. Worded by the server; clients show `message` as is. */
 export const StackFlag = z.object({
@@ -1413,6 +1459,7 @@ export const endpoints = {
   deleteStackItem: { method: "DELETE", path: "/stack/:id" },
   /** Ticks (or unticks) a supplement as taken today. */
   setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
+  setStackFeeling: { method: "PUT", path: "/stack/:id/feeling", body: SetFeelingRequest, response: SetFeelingRequest },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },

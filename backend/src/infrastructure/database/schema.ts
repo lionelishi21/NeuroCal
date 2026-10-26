@@ -456,6 +456,8 @@ export const stackItems = pgTable(
     timing: text("timing").notNull(),
     servingsPerContainer: smallint("servings_per_container"),
     startedOn: date("started_on", { mode: "string" }).notNull(),
+    /** When it was first added; unlike started_on, a new bottle doesn't move it. Its experiment starts here. */
+    addedOn: date("added_on", { mode: "string" }).notNull().default(sql`current_date`),
     ...timestamps,
   },
   (t) => [index("stack_items_user_idx").on(t.userId), check("stack_items_servings_positive", sql`${t.servingsPerDay} between 1 and 6`)],
@@ -474,6 +476,22 @@ export const stackDoses = pgTable(
     date: date("date", { mode: "string" }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.itemId, t.date] }), index("stack_doses_user_date_idx").on(t.userId, t.date)],
+);
+
+/** How someone says a supplement makes them feel, asked at two and four weeks. One answer a day. */
+export const stackFeelings = pgTable(
+  "stack_feelings",
+  {
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => stackItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    date: date("date", { mode: "string" }).notNull(),
+    feeling: text("feeling").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.itemId, t.date] }), index("stack_feelings_user_idx").on(t.userId)],
 );
 
 /** One row per user: the subscription as last reported by RevenueCat. */

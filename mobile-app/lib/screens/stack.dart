@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../combos.dart' show Evidence;
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
@@ -290,14 +291,34 @@ class _StackScreenState extends State<StackScreen> {
           child: Column(
             children: [
               for (final (i, item) in _sorted(stack.items).indexed)
-                ListTile(
-                  shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
-                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text(
-                    [_dose(item), if (item.daysLeft != null) '${item.daysLeft} days left in the bottle'].join(' · '),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
                   ),
-                  trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
-                  onTap: () => _edit(item),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ListTile(
+                        title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: 2,
+                          children: [
+                            Text(
+                              [
+                                _dose(item),
+                                if (item.daysLeft != null) '${item.daysLeft} days left in the bottle',
+                              ].join(' · '),
+                            ),
+                            if (item.experiment case final e?) ExperimentLine(e),
+                          ],
+                        ),
+                        trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+                        onTap: () => _edit(item),
+                      ),
+                      if (item.experiment case final e? when e.askFeeling) _FeelingPrompt(item, onAnswered: _reload),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -311,6 +332,185 @@ class _StackScreenState extends State<StackScreen> {
         label: const Text('Scan a supplement to add'),
       ),
     ];
+  }
+}
+
+/// An experiment in a line: is it working yet, coloured by the answer.
+class ExperimentLine extends StatelessWidget {
+  const ExperimentLine(this.e, {super.key});
+
+  final SupplementExperiment e;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final change = e.change?.abs().round();
+    final (icon, color, text) = switch (e.verdict) {
+      'helping' => (Icons.trending_up_rounded, c.chlorophyll, 'Working: ${e.measureLabel} up $change'),
+      'worse' => (Icons.trending_down_rounded, c.beet, '${_cap(e.measureLabel)} down $change since starting'),
+      'no_change' => (Icons.trending_flat_rounded, c.inkSoft, 'No clear change yet'),
+      'building' => (Icons.hourglass_top_rounded, c.synapseInk, 'Building · day ${e.day} of about ${e.onsetDays}'),
+      'too_early' => (Icons.insights_rounded, c.inkSoft, 'A few more days of data to tell'),
+      'need_baseline' => (Icons.insights_rounded, c.inkSoft, 'Collecting your numbers'),
+      _ => (Icons.schedule_rounded, c.inkSoft, 'Long-term: no daily number'),
+    };
+    return Row(
+      spacing: 4,
+      children: [
+        Icon(icon, size: 15, color: color),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+/// "How has it made you feel?", asked at two weeks and four.
+class _FeelingPrompt extends StatefulWidget {
+  const _FeelingPrompt(this.item, {required this.onAnswered});
+
+  final StackItem item;
+  final VoidCallback onAnswered;
+
+  @override
+  State<_FeelingPrompt> createState() => _FeelingPromptState();
+}
+
+class _FeelingPromptState extends State<_FeelingPrompt> {
+  var _busy = false;
+
+  Future<void> _answer(Feeling f) async {
+    setState(() => _busy = true);
+    try {
+      await AppScope.of(context).api.setFeeling(widget.item.id, f);
+      if (!mounted) return;
+      showToast(context, 'Thanks, noted');
+      widget.onAnswered();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _busy = false);
+        showToast(context, "Couldn't save that. Try again.", ToastTone.problem);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final weeks = (widget.item.experiment!.day / 7).floor();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s3),
+      child: Container(
+        padding: const EdgeInsets.all(Space.s3),
+        decoration: BoxDecoration(color: c.synapseSoft, borderRadius: BorderRadius.circular(Radii.option)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s2,
+          children: [
+            Text(
+              '$weeks weeks on ${widget.item.name}: how has it made you feel?',
+              style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            ),
+            Wrap(
+              spacing: Space.s2,
+              runSpacing: Space.s2,
+              children: [
+                for (final f in Feeling.values)
+                  ChoicePill(label: f.label, selected: false, onTap: _busy ? () {} : () => _answer(f)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Is it working?" and what to expect from each known ingredient, at the top of the item's sheet.
+class _Working extends StatelessWidget {
+  const _Working(this.item);
+
+  final StackItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final e = item.experiment!;
+    final profile = item.profile;
+    String n(double v) => v.round().toString();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
+        const GroupLabel('Is it working?', top: 0),
+        ExperimentLine(e),
+        Text(e.summary, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+        if (e.before case final b?)
+          if (e.since case final s?)
+            Text(
+              '${_cap(e.measureLabel)}: ${n(b.mean)} before (${b.days} days), ${n(s.mean)} since (${s.days} days)',
+              style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+            ),
+        if (e.feeling case final f?)
+          Text(
+            'You said it makes you feel: ${f.label.toLowerCase()}.',
+            style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+          ),
+        if (profile != null && profile.ingredients.isNotEmpty) ...[
+          const GroupLabel('What to expect', top: Space.s2),
+          for (final i in profile.ingredients)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 3,
+              children: [
+                Wrap(
+                  spacing: Space.s2,
+                  runSpacing: Space.s1,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      i.name,
+                      style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+                    ),
+                    Tag(
+                      Evidence.values.byName(i.evidence).label,
+                      fill: i.evidence == 'strong' ? c.chlorophyllSoft : c.synapseSoft,
+                      ink: i.evidence == 'strong' ? c.chlorophyll : c.synapseInk,
+                    ),
+                  ],
+                ),
+                Text(
+                  '${i.purpose.label} · ${i.purpose == SupplementPurpose.longTerm
+                      ? 'over months'
+                      : i.onsetDays <= 1
+                      ? 'the same day'
+                      : 'in about ${i.onsetDays} days'}',
+                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
+                ),
+                Text(
+                  i.expectation,
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+                ),
+              ],
+            ),
+        ] else
+          Text(
+            'NeuroCal doesn’t know these ingredients yet, so it watches your Brain speed to see what it does for you.',
+            style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+          ),
+        Text(
+          'Other changes, like sleep, stress and coffee, move these numbers too. A personal guide, not proof.',
+          style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkFaint),
+        ),
+        Divider(height: Space.s4, color: c.rule),
+      ],
+    );
   }
 }
 
@@ -365,6 +565,7 @@ class _EditStackItemState extends State<_EditStackItem> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 14,
       children: [
+        if (widget.item.experiment != null) _Working(widget.item),
         const Text(
           'Servings a day',
           style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),

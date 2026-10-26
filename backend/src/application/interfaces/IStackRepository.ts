@@ -1,3 +1,4 @@
+import type { Feeling } from "../../domain/experiment";
 import type { StackItem } from "../../domain/stack";
 
 export type NewStackItem = Omit<StackItem, "id">;
@@ -15,4 +16,10 @@ export interface IStackRepository {
   takenOn(userId: string, date: string): Promise<Set<string>>;
   /** False when there is no such item for this user. */
   setTaken(userId: string, id: string, date: string, taken: boolean): Promise<boolean>;
+  /** Every dose ticked on or after `since`. */
+  dosesSince(userId: string, since: string): Promise<{ itemId: string; date: string }[]>;
+  /** Every "how does it make you feel" answer. */
+  feelings(userId: string): Promise<{ itemId: string; date: string; feeling: Feeling }[]>;
+  /** One answer a day, the latest kept; false when there is no such item for this user. */
+  setFeeling(userId: string, id: string, date: string, feeling: Feeling): Promise<boolean>;
 }

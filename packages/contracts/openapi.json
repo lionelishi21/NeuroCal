@@ -1163,6 +1163,49 @@
         }
       }
     },
+    "/stack/{id}/feeling": {
+      "put": {
+        "operationId": "setStackFeeling",
+        "summary": "Say how a supplement makes you feel",
+        "description": "Asked at two and four weeks (the item's experiment says when); one answer a day, the latest kept.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The stack item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFeelingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetFeelingRequest"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/me/subscription": {
       "get": {
         "operationId": "getSubscription",
@@ -3975,6 +4018,14 @@
           "planLimitHours"
         ]
       },
+      "Feeling": {
+        "type": "string",
+        "enum": [
+          "better",
+          "same",
+          "worse"
+        ]
+      },
       "FocusComponentName": {
         "type": "string",
         "enum": [
@@ -6172,6 +6223,17 @@
           "place"
         ]
       },
+      "SetFeelingRequest": {
+        "type": "object",
+        "properties": {
+          "feeling": {
+            "$ref": "#/components/schemas/Feeling"
+          }
+        },
+        "required": [
+          "feeling"
+        ]
+      },
       "SetTakenRequest": {
         "type": "object",
         "properties": {
@@ -6369,6 +6431,16 @@
           },
           "takenToday": {
             "type": "boolean"
+          },
+          "addedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/SupplementProfile"
+          },
+          "experiment": {
+            "$ref": "#/components/schemas/SupplementExperiment"
           }
         },
         "required": [
@@ -6378,7 +6450,8 @@
           "servingsPerDay",
           "timing",
           "startedOn",
-          "takenToday"
+          "takenToday",
+          "addedOn"
         ]
       },
       "StackResponse": {
@@ -6447,6 +6520,152 @@
           "active",
           "status",
           "willRenew"
+        ]
+      },
+      "SupplementExperiment": {
+        "type": "object",
+        "properties": {
+          "measure": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "brain_speed",
+                  "sleep",
+                  "stress"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "day": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "onsetDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mean": {
+                    "type": "number"
+                  },
+                  "days": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "mean",
+                  "days"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mean": {
+                    "type": "number"
+                  },
+                  "days": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "mean",
+                  "days"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "change": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "long_term",
+              "building",
+              "need_baseline",
+              "too_early",
+              "helping",
+              "no_change",
+              "worse"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "taken": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "days": {
+                    "type": "integer"
+                  },
+                  "of": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "days",
+                  "of"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "askFeeling": {
+            "type": "boolean"
+          },
+          "feeling": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "better",
+                  "same",
+                  "worse"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "measure",
+          "day",
+          "onsetDays",
+          "before",
+          "since",
+          "change",
+          "verdict",
+          "summary",
+          "taken",
+          "askFeeling",
+          "feeling"
         ]
       },
       "SupplementFlag": {
@@ -6558,6 +6777,80 @@
           "testing",
           "summary",
           "flags"
+        ]
+      },
+      "SupplementProfile": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "sleep",
+                  "focus",
+                  "energy",
+                  "stress",
+                  "long_term"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "onsetDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "purpose": {
+                  "type": "string",
+                  "enum": [
+                    "sleep",
+                    "focus",
+                    "energy",
+                    "stress",
+                    "long_term"
+                  ]
+                },
+                "onsetDays": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "evidence": {
+                  "type": "string",
+                  "enum": [
+                    "strong",
+                    "some",
+                    "early"
+                  ]
+                },
+                "expectation": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "purpose",
+                "onsetDays",
+                "evidence",
+                "expectation"
+              ]
+            }
+          }
+        },
+        "required": [
+          "purpose",
+          "onsetDays",
+          "ingredients"
         ]
       },
       "SupplementTestingMark": {

@@ -503,6 +503,14 @@ describe("API routes", () => {
       flags: [{ kind: "above_upper_limit", message: expect.stringContaining("65 mg of zinc a day") }],
     });
 
+    // Each item says what it's for and runs as an experiment from the day it was added.
+    const listed = StackResponse.parse(stack.body).items[0]!;
+    expect(listed).toMatchObject({ addedOn: "2026-09-29", profile: { purpose: "long_term", ingredients: [{ name: "Zinc" }] }, experiment: { verdict: "long_term", day: 1, askFeeling: false } });
+    expect((await call("PUT", `/stack/${id}/feeling`, { feeling: "better" })).body).toEqual({ feeling: "better" });
+    expect(StackResponse.parse((await call("GET", "/stack")).body).items[0]!.experiment).toMatchObject({ feeling: "better" });
+    expect((await call("PUT", `/stack/${id}/feeling`, { feeling: "amazing" })).status).toBe(400);
+    expect((await call("PUT", "/stack/nope/feeling", { feeling: "same" })).status).toBe(404);
+
     expect((await call("PUT", `/stack/${id}`, { servingsPerDay: 2, newBottle: true })).body).toMatchObject({ servingsPerDay: 2, daysLeft: 15 });
     expect((await call("PUT", "/stack/nope/taken", { taken: true })).status).toBe(404);
     expect((await call("POST", "/stack", { name: "", ingredients: [], servingsPerDay: 1, timing: "any" })).status).toBe(400);

@@ -644,6 +644,141 @@ SupplementIngredient ingredientFromJson(Map<String, dynamic> i) => (
   inBlend: i['inBlend'] as bool,
 );
 
+/// What a supplement is mostly for (`SupplementProfile.purpose` in the contracts).
+enum SupplementPurpose {
+  sleep('sleep', 'Sleep'),
+  focus('focus', 'Focus'),
+  energy('energy', 'Energy'),
+  stress('stress', 'Stress'),
+  longTerm('long_term', 'Long-term');
+
+  const SupplementPurpose(this.wire, this.label);
+  final String wire;
+  final String label;
+
+  static SupplementPurpose? fromWire(Object? wire) => values.where((p) => p.wire == wire).firstOrNull;
+}
+
+/// One known ingredient: what it's for, when it can show, the evidence ("strong", "some", "early") and
+/// what to expect.
+typedef IngredientProfile = ({
+  String name,
+  SupplementPurpose purpose,
+  int onsetDays,
+  String evidence,
+  String expectation,
+});
+
+/// What a stack item is for, from its known ingredients (`SupplementProfile` in the contracts).
+typedef SupplementProfile = ({SupplementPurpose? purpose, int onsetDays, List<IngredientProfile> ingredients});
+
+/// "How does it make you feel?"
+enum Feeling {
+  better('Better'),
+  same('Same'),
+  worse('Worse');
+
+  const Feeling(this.label);
+  final String label;
+
+  static Feeling? fromWire(Object? wire) => values.where((f) => f.name == wire).firstOrNull;
+}
+
+/// A supplement as a personal experiment: before it against since it had time to work
+/// (`SupplementExperiment` in the contracts).
+class SupplementExperiment {
+  const SupplementExperiment({
+    this.measure,
+    required this.day,
+    required this.onsetDays,
+    this.before,
+    this.since,
+    this.change,
+    required this.verdict,
+    required this.summary,
+    this.taken,
+    this.askFeeling = false,
+    this.feeling,
+  });
+
+  /// brain_speed, sleep or stress; null for long-term supplements.
+  final String? measure;
+  final int day;
+  final int onsetDays;
+  final ({double mean, int days})? before;
+  final ({double mean, int days})? since;
+  final double? change;
+
+  /// long_term, building, need_baseline, too_early, helping, no_change or worse.
+  final String verdict;
+
+  /// Written by the API; show as is.
+  final String summary;
+  final ({int days, int of})? taken;
+  final bool askFeeling;
+  final Feeling? feeling;
+
+  String get measureLabel => switch (measure) {
+    'sleep' => 'sleep score',
+    'stress' => 'stress score',
+    _ => 'Brain speed',
+  };
+
+  SupplementExperiment answered(Feeling f) => SupplementExperiment(
+    measure: measure,
+    day: day,
+    onsetDays: onsetDays,
+    before: before,
+    since: since,
+    change: change,
+    verdict: verdict,
+    summary: summary,
+    taken: taken,
+    feeling: f,
+  );
+
+  static ({double mean, int days})? _stat(Object? j) => switch (j) {
+    {'mean': final num mean, 'days': final num days} => (mean: mean.toDouble(), days: days.toInt()),
+    _ => null,
+  };
+
+  factory SupplementExperiment.fromJson(Map<String, dynamic> j) => SupplementExperiment(
+    measure: j['measure'] as String?,
+    day: (j['day'] as num).toInt(),
+    onsetDays: (j['onsetDays'] as num).toInt(),
+    before: _stat(j['before']),
+    since: _stat(j['since']),
+    change: (j['change'] as num?)?.toDouble(),
+    verdict: j['verdict'] as String,
+    summary: j['summary'] as String,
+    taken: switch (j['taken']) {
+      {'days': final num days, 'of': final num of} => (days: days.toInt(), of: of.toInt()),
+      _ => null,
+    },
+    askFeeling: j['askFeeling'] == true,
+    feeling: Feeling.fromWire(j['feeling']),
+  );
+}
+
+SupplementProfile? _profileFromJson(Object? j) => switch (j) {
+  {'onsetDays': final num onset, 'ingredients': final List ingredients} => (
+    purpose: SupplementPurpose.fromWire((j as Map)['purpose']),
+    onsetDays: onset.toInt(),
+    ingredients: [
+      for (final i in ingredients)
+        if (SupplementPurpose.fromWire(i['purpose']) case final purpose?)
+          (
+            name: i['name'] as String,
+            purpose: purpose,
+            onsetDays: (i['onsetDays'] as num).toInt(),
+            evidence: i['evidence'] as String,
+            expectation: i['expectation'] as String,
+          ),
+    ],
+  ),
+  _ => null,
+};
+
 /// A supplement someone takes (`StackItem` in the contracts).
 class StackItem {
   const StackItem({
@@ -657,6 +792,9 @@ class StackItem {
     required this.startedOn,
     this.daysLeft,
     this.takenToday = false,
+    this.addedOn,
+    this.profile,
+    this.experiment,
   });
 
   final String id;
@@ -672,9 +810,14 @@ class StackItem {
   final int? daysLeft;
   final bool takenToday;
 
+  /// When it was first added; its experiment starts here.
+  final String? addedOn;
+  final SupplementProfile? profile;
+  final SupplementExperiment? experiment;
+
   bool get runningLow => daysLeft != null && daysLeft! <= 7;
 
-  StackItem copyWith({bool? takenToday}) => StackItem(
+  StackItem copyWith({bool? takenToday, SupplementExperiment? experiment}) => StackItem(
     id: id,
     name: name,
     servingSize: servingSize,
@@ -685,6 +828,9 @@ class StackItem {
     startedOn: startedOn,
     daysLeft: daysLeft,
     takenToday: takenToday ?? this.takenToday,
+    addedOn: addedOn,
+    profile: profile,
+    experiment: experiment ?? this.experiment,
   );
 
   factory StackItem.fromJson(Map<String, dynamic> j) => StackItem(
@@ -698,6 +844,9 @@ class StackItem {
     startedOn: j['startedOn'] as String,
     daysLeft: (j['daysLeft'] as num?)?.toInt(),
     takenToday: j['takenToday'] as bool? ?? false,
+    addedOn: j['addedOn'] as String?,
+    profile: _profileFromJson(j['profile']),
+    experiment: j['experiment'] == null ? null : SupplementExperiment.fromJson(j['experiment'] as Map<String, dynamic>),
   );
 }
 

@@ -21,6 +21,8 @@ export interface StackItem {
   servingsPerContainer?: number;
   /** YYYY-MM-DD: when this bottle was started. */
   startedOn: string;
+  /** YYYY-MM-DD: when it was first added; a new bottle doesn't move it. */
+  addedOn: string;
 }
 
 export interface StackFlag {

@@ -1056,7 +1056,86 @@ class MockNeuroCalApi implements NeuroCalApi {
         ));
       }
     }
-    return SupplementStack(items: List.of(_stack), flags: flags);
+    return SupplementStack(items: [for (final item in _stack) _withExperiment(item)], flags: flags);
+  }
+
+  /// When each item was first added, by id; tests set it to see an experiment further along.
+  final stackAddedOn = <String, DateTime>{};
+  final _feelings = <String, Feeling>{};
+
+  /// A few known ingredients, as the API's (backend domain/experiment.ts).
+  static const _known = <String, IngredientProfile>{
+    'magnesium': (
+      name: 'Magnesium',
+      purpose: SupplementPurpose.sleep,
+      onsetDays: 14,
+      evidence: 'some',
+      expectation:
+          'May help you fall asleep and sleep more deeply, most of all if you’re low in magnesium. Give it two weeks.',
+    ),
+    'theanine': (
+      name: 'L-theanine',
+      purpose: SupplementPurpose.focus,
+      onsetDays: 1,
+      evidence: 'some',
+      expectation: 'Calmer focus within the hour, most noticeably alongside caffeine.',
+    ),
+    'creatine': (
+      name: 'Creatine',
+      purpose: SupplementPurpose.focus,
+      onsetDays: 21,
+      evidence: 'some',
+      expectation:
+          'Builds up over three to four weeks: more strength, and steadier thinking when you’re short of sleep.',
+    ),
+  };
+
+  /// The item's profile and an experiment still building or collecting numbers; the mock keeps no history.
+  StackItem _withExperiment(StackItem item) {
+    final texts = [item.name, for (final i in item.ingredients) i.name].map((t) => t.toLowerCase());
+    final found = [
+      for (final MapEntry(:key, :value) in _known.entries)
+        if (texts.any((t) => t.contains(key))) value,
+    ];
+    final purpose = found.firstOrNull?.purpose;
+    final onset = found.isEmpty ? 14 : found.map((f) => f.onsetDays).reduce((a, b) => a > b ? a : b);
+    final now = DateTime.now();
+    final added = stackAddedOn[item.id] ?? now;
+    final day =
+        DateTime(now.year, now.month, now.day).difference(DateTime(added.year, added.month, added.day)).inDays + 1;
+    final feeling = _feelings[item.id];
+    final measure = purpose == SupplementPurpose.sleep ? 'sleep' : 'brain_speed';
+    return StackItem(
+      id: item.id,
+      name: item.name,
+      servingSize: item.servingSize,
+      ingredients: item.ingredients,
+      servingsPerDay: item.servingsPerDay,
+      timing: item.timing,
+      servingsPerContainer: item.servingsPerContainer,
+      startedOn: item.startedOn,
+      daysLeft: item.daysLeft,
+      takenToday: item.takenToday,
+      addedOn: isoDate(added),
+      profile: (purpose: purpose, onsetDays: onset, ingredients: found),
+      experiment: SupplementExperiment(
+        measure: measure,
+        day: day,
+        onsetDays: onset,
+        verdict: day < onset ? 'building' : 'need_baseline',
+        summary: day < onset
+            ? 'Day $day of about $onset before ${item.name} can show. Keep taking it.'
+            : 'There aren’t enough ${measure == 'sleep' ? 'nights of sleep' : 'Brain speed checks'} from before you started ${item.name} to compare with. Keep logging: a week off it later would show the difference.',
+        askFeeling: day >= 14 && feeling == null,
+        feeling: feeling,
+      ),
+    );
+  }
+
+  @override
+  Future<void> setFeeling(String id, Feeling feeling) async {
+    await _wait();
+    _feelings[id] = feeling;
   }
 
   @override

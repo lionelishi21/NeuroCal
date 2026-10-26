@@ -172,7 +172,7 @@ export function buildUseCases(p: Ports): UseCases {
     getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee),
     coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock, p.catalog),
     getSubscription,
-    stack: new StackUseCases(p.profiles, p.stack, p.clock),
+    stack: new StackUseCases(p.profiles, p.stack, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
     getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock, environment),

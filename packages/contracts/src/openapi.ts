@@ -155,6 +155,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   updateStackItem: { summary: "Change servings, timing or the bottle size", params: { id: "The stack item's id." } },
   deleteStackItem: { summary: "Remove a supplement from your stack", status: 204, params: { id: "The stack item's id." } },
   setStackTaken: { summary: "Tick a supplement as taken today", params: { id: "The stack item's id." } },
+  setStackFeeling: {
+    summary: "Say how a supplement makes you feel",
+    description: "Asked at two and four weeks (the item's experiment says when); one answer a day, the latest kept.",
+    params: { id: "The stack item's id." },
+  },
   getFasting: {
     summary: "Where you are in your fast",
     description: "Worked out from logged meals: a fast runs from the last meal, and the eating window opens with the first meal after a full fast. The protocol comes from the bio-profile; people who answered the weight goal's safety question get 12:12 at most.",
