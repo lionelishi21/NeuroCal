@@ -81,6 +81,18 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   getPantry: { summary: "What's in your kitchen" },
   getMealPlan: { summary: "Your latest meal plan", description: "404 until a plan has been made." },
+  swapMeal: {
+    summary: "Swap one meal",
+    description: "A different meal of the same kind, about the same calories and macros, unlike the others in the plan; the day's totals and the shopping list are worked out again.",
+  },
+  getShoppingList: { summary: "Your shopping list", description: "Grouped by aisle in the order you'd walk a store, with the open items as text to share." },
+  addToShoppingList: {
+    summary: "Add to your shopping list",
+    description: "By hand or from a meal plan. An item already on the list stays one line: a ticked one comes back, and a missing amount fills in.",
+  },
+  updateShoppingItem: { summary: "Tick, rename or change the amount of an item", params: { id: "The item's id." } },
+  deleteShoppingItem: { summary: "Remove an item", params: { id: "The item's id." } },
+  finishShopping: { summary: "Done shopping", description: "The ticked items leave the list and go into your pantry, unless toPantry is false." },
   createMealPlan: {
     summary: "Make a meal plan",
     description: "1 to 3 days of meals sized to your calorie and macro targets, using your pantry first and fitting your fasting plan (one meal for OMAD, two for 16:8, else three). Meals come from Claude (schema-checked); calories use USDA catalog values where ingredients match. The shopping list combines everything not in your pantry. Replaces the last plan.",

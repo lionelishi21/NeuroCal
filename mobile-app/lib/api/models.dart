@@ -2143,3 +2143,63 @@ class LearnShelf {
     affiliate: j['affiliate'] == true,
   );
 }
+
+/// Where an item is in a store, in the order you'd walk it (`Aisle` in the contracts).
+enum Aisle {
+  produce('produce', 'Fruit and veg'),
+  meatFish('meat_fish', 'Meat and fish'),
+  dairyEggs('dairy_eggs', 'Dairy and eggs'),
+  bakery('bakery', 'Bakery'),
+  pantry('pantry', 'Cupboard'),
+  frozen('frozen', 'Frozen'),
+  drinks('drinks', 'Drinks'),
+  other('other', 'Other');
+
+  const Aisle(this.wire, this.label);
+  final String wire;
+  final String label;
+
+  static Aisle fromWire(Object? wire) => values.firstWhere((a) => a.wire == wire, orElse: () => Aisle.other);
+}
+
+/// One line on the shopping list.
+typedef ShoppingListItem = ({String id, String name, String? quantity, Aisle aisle, bool checked, bool fromPlan});
+
+/// The shopping list someone keeps (`ShoppingList` in the contracts).
+class ShoppingListData {
+  const ShoppingListData({this.items = const [], this.text = '', this.movedToPantry});
+
+  /// Aisle order, then the order they were added.
+  final List<ShoppingListItem> items;
+
+  /// What's still to buy, as text to share.
+  final String text;
+
+  /// After finishing: how many bought items went into the pantry.
+  final int? movedToPantry;
+
+  int get checked => items.where((i) => i.checked).length;
+
+  factory ShoppingListData.fromJson(Map<String, dynamic> j) => ShoppingListData(
+    items: [
+      for (final i in j['items'] as List)
+        (
+          id: i['id'] as String,
+          name: i['name'] as String,
+          quantity: i['quantity'] as String?,
+          aisle: Aisle.fromWire(i['aisle']),
+          checked: i['checked'] as bool,
+          fromPlan: i['source'] == 'plan',
+        ),
+    ],
+    text: j['text'] as String,
+    movedToPantry: (j['movedToPantry'] as num?)?.toInt(),
+  );
+}
+
+/// A plan's grams as a shopping amount, as the API rounds them ("about 340 g").
+String planQuantity(int grams) => grams >= 1000
+    ? 'about ${(grams / 100).round() / 10} kg'
+    : grams >= 100
+    ? 'about ${(grams / 10).round() * 10} g'
+    : 'about ${((grams / 5).round() * 5).clamp(5, 95)} g';

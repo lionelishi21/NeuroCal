@@ -31,6 +31,20 @@ abstract interface class NeuroCalApi {
   /// Makes a new plan for [days] (1–3), replacing the last.
   Future<MealPlan> createMealPlan(int days);
 
+  /// Swaps one meal of the latest plan ([day] from 1, [meal] from 0) for a different one of the same size.
+  Future<MealPlan> swapMeal(int day, int meal);
+
+  Future<ShoppingListData> shoppingList();
+
+  /// Adds items (one already on the list stays one line); [fromPlan] when they come from a meal plan.
+  Future<ShoppingListData> addToShoppingList(List<({String name, String? quantity})> items, {bool fromPlan = false});
+
+  Future<ShoppingListData> updateShoppingItem(String id, {bool? checked, String? name});
+  Future<ShoppingListData> deleteShoppingItem(String id);
+
+  /// Done shopping: ticked items leave the list, into the pantry when [toPantry].
+  Future<ShoppingListData> finishShopping({bool toPantry = true});
+
   /// Calories and macros per serving of a typed or pasted recipe.
   Future<RecipeAnalysis> analyzeRecipe(String text, {int? servings});
 
@@ -317,6 +331,62 @@ class HttpNeuroCalApi implements NeuroCalApi {
     if (res.statusCode == 404) return null;
     return MealPlan.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  @override
+  Future<MealPlan> swapMeal(int day, int meal) async => MealPlan.fromJson(
+    _decode(
+      await _client.post(
+        _uri('/meal-plan/swap'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'day': day, 'meal': meal}),
+      ),
+    ) as Map<String, dynamic>,
+  );
+
+  ShoppingListData _list(http.Response res) => ShoppingListData.fromJson(_decode(res) as Map<String, dynamic>);
+
+  @override
+  Future<ShoppingListData> shoppingList() async =>
+      ShoppingListData.fromJson(await _get('/shopping-list') as Map<String, dynamic>);
+
+  @override
+  Future<ShoppingListData> addToShoppingList(
+    List<({String name, String? quantity})> items, {
+    bool fromPlan = false,
+  }) async => _list(
+    await _client.post(
+      _uri('/shopping-list'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'items': [
+          for (final i in items) {'name': i.name, 'quantity': ?i.quantity},
+        ],
+        'source': fromPlan ? 'plan' : 'manual',
+      }),
+    ),
+  );
+
+  @override
+  Future<ShoppingListData> updateShoppingItem(String id, {bool? checked, String? name}) async => _list(
+    await _client.put(
+      _uri('/shopping-list/$id'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'checked': ?checked, 'name': ?name}),
+    ),
+  );
+
+  @override
+  Future<ShoppingListData> deleteShoppingItem(String id) async =>
+      _list(await _client.delete(_uri('/shopping-list/$id'), headers: await _headers()));
+
+  @override
+  Future<ShoppingListData> finishShopping({bool toPantry = true}) async => _list(
+    await _client.post(
+      _uri('/shopping-list/finish'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'toPantry': toPantry}),
+    ),
+  );
 
   @override
   Future<MealPlan> createMealPlan(int days) async => MealPlan.fromJson(

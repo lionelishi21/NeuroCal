@@ -113,6 +113,8 @@ Future<void> _shareOutside(Uint8List png, String text) => SharePlus.instance.sha
   ),
 );
 
+Future<void> _shareTextOutside(String text) => SharePlus.instance.share(ShareParams(text: text));
+
 Future<bool> _openOutside(Uri link) => launchUrl(link, mode: LaunchMode.externalApplication);
 
 /// The app's navigator, so pages opened on top (Me, a sheet) close when the session ends.
@@ -127,6 +129,7 @@ class NeuroCalApp extends StatelessWidget {
     this.timeZone = deviceTimeZone,
     this.openLink = _openOutside,
     this.shareImage = _shareOutside,
+    this.shareText = _shareTextOutside,
     this.analytics = const NoAnalytics(),
     this.billing,
     this.reminders,
@@ -142,6 +145,7 @@ class NeuroCalApp extends StatelessWidget {
   final Future<String?> Function() timeZone;
   final Future<bool> Function(Uri link) openLink;
   final Future<void> Function(Uint8List png, String text) shareImage;
+  final Future<void> Function(String text)? shareText;
   final Analytics analytics;
 
   /// Subscriptions; unlocked test billing when left out.
@@ -171,6 +175,7 @@ class NeuroCalApp extends StatelessWidget {
       timeZone: timeZone,
       openLink: openLink,
       shareImage: shareImage,
+      shareText: shareText,
       analytics: analytics,
       billing: billing ?? _unlocked,
       reminders: reminders,

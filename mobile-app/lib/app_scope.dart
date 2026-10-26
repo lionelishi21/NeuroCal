@@ -24,6 +24,7 @@ class AppScope extends InheritedWidget {
     required this.timeZone,
     required this.openLink,
     this.shareImage = _noShare,
+    this.shareText,
     this.analytics = const NoAnalytics(),
     required this.billing,
     this.reminders,
@@ -49,6 +50,9 @@ class AppScope extends InheritedWidget {
 
   /// Hands a PNG and a caption to the phone's share sheet.
   final Future<void> Function(Uint8List png, String text) shareImage;
+
+  /// Hands text to the phone's share sheet; null where there's none (tests): copy it instead.
+  final Future<void> Function(String text)? shareText;
   final Billing billing;
 
   /// Check-in reminders; null where notifications aren't set up (tests, previews).
@@ -76,6 +80,7 @@ class AppScope extends InheritedWidget {
       timeZone != oldWidget.timeZone ||
       openLink != oldWidget.openLink ||
       shareImage != oldWidget.shareImage ||
+      shareText != oldWidget.shareText ||
       analytics != oldWidget.analytics ||
       billing != oldWidget.billing ||
       reminders != oldWidget.reminders ||

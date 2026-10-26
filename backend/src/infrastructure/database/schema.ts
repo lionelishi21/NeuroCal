@@ -322,6 +322,24 @@ export const sessions = pgTable(
   (t) => [index("sessions_user_taken_at_idx").on(t.userId, t.takenAt)],
 );
 
+/** The shopping list someone keeps (domain/shoppingList.ts). */
+export const shoppingItems = pgTable(
+  "shopping_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    quantity: text("quantity"),
+    aisle: text("aisle").notNull(),
+    checked: boolean("checked").notNull().default(false),
+    source: text("source").notNull(),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("shopping_items_user_idx").on(t.userId)],
+);
+
 /** A fast someone planned to run until a time; one at a time, removed when it's ended. */
 export const fastPlans = pgTable("fast_plans", {
   userId: uuid("user_id")

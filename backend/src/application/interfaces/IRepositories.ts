@@ -1,3 +1,4 @@
+import type { ShoppingListItem } from "../../domain/shoppingList";
 import type { Session } from "../../domain/session";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
@@ -110,6 +111,17 @@ export interface IFastPlanRepository {
 }
 
 /** The coffee log; scoped to one user. */
+/** The shopping list, scoped to one user. */
+export interface IShoppingListRepository {
+  list(userId: string): Promise<ShoppingListItem[]>;
+  add(userId: string, items: Omit<ShoppingListItem, "id">[]): Promise<ShoppingListItem[]>;
+  /** Null when there is no such item for this user. */
+  update(userId: string, id: string, patch: Partial<Pick<ShoppingListItem, "checked" | "quantity" | "name" | "aisle">> & { quantity?: string | undefined }): Promise<ShoppingListItem | null>;
+  delete(userId: string, id: string): Promise<boolean>;
+  /** Removes the ticked items and returns them. */
+  deleteChecked(userId: string): Promise<ShoppingListItem[]>;
+}
+
 /** Gadget and practice sessions, scoped to one user. */
 export interface ISessionRepository {
   add(userId: string, session: Omit<Session, "id">): Promise<Session>;

@@ -878,6 +878,194 @@
         }
       }
     },
+    "/meal-plan/swap": {
+      "post": {
+        "operationId": "swapMeal",
+        "summary": "Swap one meal",
+        "description": "A different meal of the same kind, about the same calories and macros, unlike the others in the plan; the day's totals and the shopping list are worked out again.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/shopping-list": {
+      "get": {
+        "operationId": "getShoppingList",
+        "summary": "Your shopping list",
+        "description": "Grouped by aisle in the order you'd walk a store, with the open items as text to share.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "addToShoppingList",
+        "summary": "Add to your shopping list",
+        "description": "By hand or from a meal plan. An item already on the list stays one line: a ticked one comes back, and a missing amount fills in.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddToShoppingListRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/shopping-list/{id}": {
+      "put": {
+        "operationId": "updateShoppingItem",
+        "summary": "Tick, rename or change the amount of an item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShoppingItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteShoppingItem",
+        "summary": "Remove an item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/shopping-list/finish": {
+      "post": {
+        "operationId": "finishShopping",
+        "summary": "Done shopping",
+        "description": "The ticked items leave the list and go into your pantry, unless toPantry is false.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishShoppingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/recipes/analyze": {
       "post": {
         "operationId": "analyzeRecipe",
@@ -2561,6 +2749,42 @@
           "timing"
         ]
       },
+      "AddToShoppingListRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "quantity": {
+                  "type": "string",
+                  "maxLength": 40
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "plan"
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "AddTranscriptRequest": {
         "type": "object",
         "properties": {
@@ -2770,6 +2994,19 @@
           "joinedAt",
           "confirmed",
           "unsubscribed"
+        ]
+      },
+      "Aisle": {
+        "type": "string",
+        "enum": [
+          "produce",
+          "meat_fish",
+          "dairy_eggs",
+          "bakery",
+          "pantry",
+          "frozen",
+          "drinks",
+          "other"
         ]
       },
       "AnalyzeMealRequest": {
@@ -4124,6 +4361,14 @@
           "same",
           "worse"
         ]
+      },
+      "FinishShoppingRequest": {
+        "type": "object",
+        "properties": {
+          "toPantry": {
+            "type": "boolean"
+          }
+        }
       },
       "FocusComponentName": {
         "type": "string",
@@ -6549,6 +6794,59 @@
           "taken"
         ]
       },
+      "ShoppingList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                },
+                "aisle": {
+                  "$ref": "#/components/schemas/Aisle"
+                },
+                "checked": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "plan"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "aisle",
+                "checked",
+                "source"
+              ]
+            }
+          },
+          "text": {
+            "type": "string"
+          },
+          "movedToPantry": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "text"
+        ]
+      },
       "ShoppingReviewRequest": {
         "type": "object",
         "properties": {
@@ -7170,6 +7468,25 @@
           "other"
         ]
       },
+      "SwapMealRequest": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "meal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "day",
+          "meal"
+        ]
+      },
       "TelemetrySource": {
         "type": "string",
         "enum": [
@@ -7283,6 +7600,29 @@
             "items": {
               "$ref": "#/components/schemas/HealthCondition"
             }
+          }
+        }
+      },
+      "UpdateShoppingItemRequest": {
+        "type": "object",
+        "properties": {
+          "checked": {
+            "type": "boolean"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80
           }
         }
       },

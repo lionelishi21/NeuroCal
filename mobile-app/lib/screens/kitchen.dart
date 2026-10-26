@@ -136,8 +136,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
             const BlockTitle('Shop'),
             _LinkCard(
               icon: Icons.shopping_basket_outlined,
-              title: 'Review my shopping list',
-              detail: 'Cleaner swaps, and gadgets that help',
+              title: 'Shopping list',
+              detail: 'By aisle, ticked off as you shop, into your pantry',
               tone: _Tone.green,
               onTap: widget.onOpenShopping,
             ),

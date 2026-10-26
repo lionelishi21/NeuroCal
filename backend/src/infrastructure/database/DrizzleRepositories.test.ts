@@ -20,6 +20,7 @@ import {
   DrizzleGlucoseRepository,
   DrizzleEnvironmentRepository,
   DrizzleStackRepository,
+  DrizzleShoppingListRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
@@ -344,6 +345,24 @@ describe("DrizzleStackRepository", () => {
     expect(await repo.setFeeling(alice, item.id, "2026-10-04", "better")).toBe(true);
     expect(await repo.setFeeling(bob, item.id, "2026-10-04", "worse")).toBe(false);
     expect(await repo.feelings(alice)).toEqual([{ itemId: item.id, date: "2026-10-04", feeling: "better" }]);
+  });
+});
+
+describe("DrizzleShoppingListRepository", () => {
+  it("adds, ticks, renames and clears a user's own list only", async () => {
+    const repo = new DrizzleShoppingListRepository(db);
+    const addedAt = new Date("2026-10-26T10:00:00Z");
+    const [oats, eggs] = await repo.add(alice, [
+      { name: "Oats", aisle: "pantry", checked: false, source: "plan", addedAt, quantity: "about 340 g" },
+      { name: "Eggs", aisle: "dairy_eggs", checked: false, source: "manual", addedAt },
+    ]);
+    expect(await repo.list(bob)).toEqual([]);
+    expect(await repo.update(bob, oats!.id, { checked: true })).toBeNull();
+    expect(await repo.update(alice, oats!.id, { checked: true, quantity: undefined })).toEqual({ ...oats, checked: true, quantity: undefined });
+    expect(await repo.update(alice, eggs!.id, { name: "Free-range eggs" })).toMatchObject({ name: "Free-range eggs" });
+    expect((await repo.deleteChecked(alice)).map((i) => i.name)).toEqual(["Oats"]);
+    expect((await repo.list(alice)).map((i) => i.name)).toEqual(["Free-range eggs"]);
+    expect(await repo.delete(bob, eggs!.id)).toBe(false);
   });
 });
 

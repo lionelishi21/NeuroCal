@@ -475,6 +475,152 @@ class MockNeuroCalApi implements NeuroCalApi {
   MealPlan? _plan;
 
   @override
+  Future<MealPlan> swapMeal(int day, int meal) async {
+    await _wait();
+    final plan = _plan!;
+    final old = plan.days[day - 1].meals[meal];
+    final fresh = PlanMeal(
+      kind: old.kind,
+      title: 'Turkey, quinoa and roast peppers',
+      calories: old.calories,
+      macros: old.macros,
+      processing: FoodProcessing.whole,
+      ingredients: const [
+        (name: 'Turkey mince', quantity: '150 g', grams: 150, inPantry: false, fromCatalog: true),
+        (name: 'Quinoa', quantity: '1/2 cup', grams: 90, inPantry: true, fromCatalog: true),
+        (name: 'Red peppers', quantity: '2', grams: 240, inPantry: false, fromCatalog: true),
+      ],
+      steps: const ['Cook the quinoa.', 'Brown the turkey with the peppers.', 'Serve together.'],
+    );
+    return _plan = MealPlan(
+      createdAt: plan.createdAt,
+      days: [
+        for (final (i, d) in plan.days.indexed)
+          i != day - 1
+              ? d
+              : (
+                  day: d.day,
+                  meals: [for (final (j, m) in d.meals.indexed) j == meal ? fresh : m],
+                  calories: d.calories,
+                  macros: d.macros,
+                ),
+      ],
+      targetCalories: plan.targetCalories,
+      targetProteinG: plan.targetProteinG,
+      shoppingList: plan.shoppingList,
+    );
+  }
+
+  final _list = <ShoppingListItem>[];
+  var _listId = 1;
+
+  /// As the API (backend domain/shoppingList.ts), with a smaller set of words.
+  static Aisle _aisleOf(String name) {
+    final n = name.toLowerCase();
+    if (RegExp(r'frozen').hasMatch(n)) return Aisle.frozen;
+    if (RegExp(r'milk|yog|cheese|egg|butter').hasMatch(n)) return Aisle.dairyEggs;
+    if (RegExp(r'chicken|beef|salmon|turkey|fish|pork').hasMatch(n)) return Aisle.meatFish;
+    if (RegExp(r'bread|wrap').hasMatch(n)) return Aisle.bakery;
+    if (RegExp(r'spinach|broccoli|pepper|potato|berr|apple|banana|onion|garlic|tomato').hasMatch(n)) {
+      return Aisle.produce;
+    }
+    if (RegExp(r'rice|oat|quinoa|pasta|oil|nut|bean').hasMatch(n)) return Aisle.pantry;
+    return Aisle.other;
+  }
+
+  ShoppingListData _listData({int? moved}) {
+    final sorted = [..._list]..sort((a, b) => a.aisle.index.compareTo(b.aisle.index));
+    final open = sorted.where((i) => !i.checked);
+    final lines = <String>[];
+    Aisle? aisle;
+    for (final i in open) {
+      if (i.aisle != aisle) {
+        if (aisle != null) lines.add('');
+        aisle = i.aisle;
+        lines.add('${i.aisle.label}:');
+      }
+      lines.add('- ${i.name}${i.quantity == null ? '' : ' (${i.quantity})'}');
+    }
+    return ShoppingListData(items: sorted, text: lines.join('\n'), movedToPantry: moved);
+  }
+
+  @override
+  Future<ShoppingListData> shoppingList() async {
+    await _wait();
+    return _listData();
+  }
+
+  @override
+  Future<ShoppingListData> addToShoppingList(
+    List<({String name, String? quantity})> items, {
+    bool fromPlan = false,
+  }) async {
+    await _wait();
+    for (final e in items) {
+      final name = e.name.trim();
+      if (name.isEmpty) continue;
+      final i = _list.indexWhere((x) => _key(x.name) == _key(name));
+      if (i >= 0) {
+        final old = _list[i];
+        _list[i] = (
+          id: old.id,
+          name: old.name,
+          quantity: old.quantity ?? e.quantity,
+          aisle: old.aisle,
+          checked: false,
+          fromPlan: old.fromPlan,
+        );
+        continue;
+      }
+      _list.add((
+        id: 'li${_listId++}',
+        name: name,
+        quantity: e.quantity,
+        aisle: _aisleOf(name),
+        checked: false,
+        fromPlan: fromPlan,
+      ));
+    }
+    return _listData();
+  }
+
+  @override
+  Future<ShoppingListData> updateShoppingItem(String id, {bool? checked, String? name}) async {
+    await _wait();
+    final i = _list.indexWhere((x) => x.id == id);
+    if (i < 0) throw ApiException(404, 'That item isn’t on your list.');
+    final old = _list[i];
+    _list[i] = (
+      id: id,
+      name: name ?? old.name,
+      quantity: old.quantity,
+      aisle: name == null ? old.aisle : _aisleOf(name),
+      checked: checked ?? old.checked,
+      fromPlan: old.fromPlan,
+    );
+    return _listData();
+  }
+
+  @override
+  Future<ShoppingListData> deleteShoppingItem(String id) async {
+    await _wait();
+    _list.removeWhere((x) => x.id == id);
+    return _listData();
+  }
+
+  @override
+  Future<ShoppingListData> finishShopping({bool toPantry = true}) async {
+    await _wait();
+    final bought = [
+      for (final i in _list)
+        if (i.checked) i.name,
+    ];
+    _list.removeWhere((x) => x.checked);
+    if (toPantry && bought.isNotEmpty) await addToPantry(bought);
+    return _listData(moved: toPantry ? bought.length : 0);
+  }
+
+  @override
   Future<MealPlan?> mealPlan() async {
     await _wait();
     return _plan;

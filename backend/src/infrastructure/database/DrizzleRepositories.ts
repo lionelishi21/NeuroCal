@@ -1,3 +1,4 @@
+import type { Aisle, ShoppingListItem } from "../../domain/shoppingList";
 import type { Session, SessionKind } from "../../domain/session";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
@@ -9,6 +10,7 @@ import type {
   IFastPlanRepository,
   ICoffeeRepository,
   ISessionRepository,
+  IShoppingListRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -83,6 +85,7 @@ import {
   fastPlans,
   coffeeCups,
   sessions,
+  shoppingItems,
   exercises,
   knowledgeSources,
   knowledgeTechniques,
@@ -150,6 +153,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
       await tx.delete(coffeeCups).where(eq(coffeeCups.userId, userId));
       await tx.delete(sessions).where(eq(sessions.userId, userId));
+      await tx.delete(shoppingItems).where(eq(shoppingItems.userId, userId));
       await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
       await tx.delete(users).where(eq(users.id, userId));
@@ -1210,6 +1214,58 @@ export class DrizzleFastPlanRepository implements IFastPlanRepository {
       return;
     }
     await this.db.insert(fastPlans).values({ userId, ...plan }).onConflictDoUpdate({ target: fastPlans.userId, set: plan });
+  }
+}
+
+export class DrizzleShoppingListRepository implements IShoppingListRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toItem(r: typeof shoppingItems.$inferSelect): ShoppingListItem {
+    return {
+      id: r.id,
+      name: r.name,
+      ...(r.quantity === null ? {} : { quantity: r.quantity }),
+      aisle: r.aisle as Aisle,
+      checked: r.checked,
+      source: r.source as ShoppingListItem["source"],
+      addedAt: r.addedAt,
+    };
+  }
+
+  async list(userId: string) {
+    const rows = await this.db.select().from(shoppingItems).where(eq(shoppingItems.userId, userId)).orderBy(asc(shoppingItems.addedAt));
+    return rows.map(DrizzleShoppingListRepository.toItem);
+  }
+
+  async add(userId: string, items: Omit<ShoppingListItem, "id">[]) {
+    if (!items.length) return [];
+    const rows = await this.db
+      .insert(shoppingItems)
+      .values(items.map((i) => ({ userId, name: i.name, quantity: i.quantity ?? null, aisle: i.aisle, checked: i.checked, source: i.source, addedAt: i.addedAt })))
+      .returning();
+    return rows.map(DrizzleShoppingListRepository.toItem);
+  }
+
+  async update(userId: string, id: string, patch: Partial<Pick<ShoppingListItem, "checked" | "quantity" | "name" | "aisle">>) {
+    const set = {
+      ...(patch.checked !== undefined ? { checked: patch.checked } : {}),
+      ...("quantity" in patch ? { quantity: patch.quantity ?? null } : {}),
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.aisle !== undefined ? { aisle: patch.aisle } : {}),
+    };
+    const where = and(eq(shoppingItems.id, id), eq(shoppingItems.userId, userId));
+    const [row] = Object.keys(set).length ? await this.db.update(shoppingItems).set(set).where(where).returning() : await this.db.select().from(shoppingItems).where(where);
+    return row ? DrizzleShoppingListRepository.toItem(row) : null;
+  }
+
+  async delete(userId: string, id: string) {
+    const gone = await this.db.delete(shoppingItems).where(and(eq(shoppingItems.userId, userId), eq(shoppingItems.id, id))).returning({ id: shoppingItems.id });
+    return gone.length > 0;
+  }
+
+  async deleteChecked(userId: string) {
+    const rows = await this.db.delete(shoppingItems).where(and(eq(shoppingItems.userId, userId), eq(shoppingItems.checked, true))).returning();
+    return rows.map(DrizzleShoppingListRepository.toItem);
   }
 }
 

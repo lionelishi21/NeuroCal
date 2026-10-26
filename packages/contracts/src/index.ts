@@ -921,6 +921,50 @@ export type DeviceScanResponse = z.infer<typeof DeviceScanResponse>;
 export const CreateMealPlanRequest = z.object({ days: z.number().int().min(1).max(3) });
 export type CreateMealPlanRequest = z.infer<typeof CreateMealPlanRequest>;
 
+/** Swap one meal of the latest plan: [day] from 1, [meal] from 0. */
+export const SwapMealRequest = z.object({ day: z.number().int().min(1).max(3), meal: z.number().int().min(0).max(5) });
+export type SwapMealRequest = z.infer<typeof SwapMealRequest>;
+
+/** Where an item is in a store, in the order you'd walk it (backend domain/shoppingList.ts). */
+export const Aisle = z.enum(["produce", "meat_fish", "dairy_eggs", "bakery", "pantry", "frozen", "drinks", "other"]);
+
+/** The shopping list someone keeps. */
+export const ShoppingList = z.object({
+  /** Aisle order, then the order they were added. */
+  items: z.array(
+    z.object({
+      id: Id,
+      name: z.string(),
+      quantity: z.string().optional(),
+      aisle: Aisle,
+      checked: z.boolean(),
+      source: z.enum(["manual", "plan"]),
+    }),
+  ),
+  /** What's still to buy, as text to share, grouped by aisle. */
+  text: z.string(),
+  /** After finishing: how many bought items went into the pantry. */
+  movedToPantry: z.number().int().optional(),
+});
+export type ShoppingList = z.infer<typeof ShoppingList>;
+
+export const AddToShoppingListRequest = z.object({
+  items: z.array(z.object({ name: z.string().max(80), quantity: z.string().max(40).optional() })).min(1).max(100),
+  source: z.enum(["manual", "plan"]).optional(),
+});
+export type AddToShoppingListRequest = z.infer<typeof AddToShoppingListRequest>;
+
+export const UpdateShoppingItemRequest = z.object({
+  checked: z.boolean().optional(),
+  /** null clears it. */
+  quantity: z.string().max(40).nullable().optional(),
+  name: z.string().max(80).optional(),
+});
+export type UpdateShoppingItemRequest = z.infer<typeof UpdateShoppingItemRequest>;
+
+/** Done shopping: ticked items leave the list, into the pantry unless toPantry is false. */
+export const FinishShoppingRequest = z.object({ toPantry: z.boolean().optional() });
+
 const PlanIngredient = z.object({
   name: z.string(),
   quantity: z.string(),
@@ -1502,6 +1546,13 @@ export const endpoints = {
   getMealPlan: { method: "GET", path: "/meal-plan", response: MealPlanResponse },
   /** Makes a new plan (replacing the last) for 1–3 days. Paid. */
   createMealPlan: { method: "POST", path: "/meal-plan", body: CreateMealPlanRequest, response: MealPlanResponse },
+  /** Swaps one meal for a different one of the same kind and size. Paid. */
+  swapMeal: { method: "POST", path: "/meal-plan/swap", body: SwapMealRequest, response: MealPlanResponse },
+  getShoppingList: { method: "GET", path: "/shopping-list", response: ShoppingList },
+  addToShoppingList: { method: "POST", path: "/shopping-list", body: AddToShoppingListRequest, response: ShoppingList },
+  updateShoppingItem: { method: "PUT", path: "/shopping-list/:id", body: UpdateShoppingItemRequest, response: ShoppingList },
+  deleteShoppingItem: { method: "DELETE", path: "/shopping-list/:id", response: ShoppingList },
+  finishShopping: { method: "POST", path: "/shopping-list/finish", body: FinishShoppingRequest, response: ShoppingList },
   /** Calories and macros per serving of a typed or pasted recipe. Paid; nothing is saved. */
   analyzeRecipe: { method: "POST", path: "/recipes/analyze", body: AnalyzeRecipeRequest, response: RecipeAnalysis },
   /** Grades a shopping list item by item, with kitchen devices that would help. Paid; nothing is saved. */

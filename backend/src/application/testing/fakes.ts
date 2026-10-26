@@ -1,4 +1,5 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
+import type { ShoppingListItem } from "../../domain/shoppingList";
 import type { Session } from "../../domain/session";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeCup } from "../../domain/coffee";
@@ -73,6 +74,7 @@ import type {
   IFastPlanRepository,
   ICoffeeRepository,
   ISessionRepository,
+  IShoppingListRepository,
   IMealRepository,
   IProfileRepository,
   IRecommendationRepository,
@@ -861,7 +863,8 @@ export class FakeMealPlanner implements IMealPlanner {
     return Array.from({ length: context.days }, () =>
       context.meals.map((kind) => ({
         kind,
-        title: `Oats and berries (${kind})`,
+        // Asked for something unlike the plan's meals (a swap): a different dish.
+        title: context.avoid ? `Salmon and greens (${kind})` : `Oats and berries (${kind})`,
         ingredients: [
           { name: "Oats", quantity: "1/2 cup", grams: 40, catalogId: "oats", estimate: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }, processing: "whole" as const },
           { name: "Berries", quantity: "1 cup", grams: 150, catalogId: null, estimate: { calories: 80, proteinG: 1, carbsG: 18, fatG: 0 }, processing: "whole" as const },
@@ -1005,6 +1008,45 @@ export class InMemoryFastPlans implements IFastPlanRepository {
   async set(userId: string, plan: FastPlan | null) {
     if (plan) this.plans.set(userId, plan);
     else this.plans.delete(userId);
+  }
+}
+
+export class InMemoryShoppingList implements IShoppingListRepository {
+  readonly rows: (ShoppingListItem & { userId: string })[] = [];
+  private next = 1;
+  async list(userId: string) {
+    return this.rows.filter((r) => r.userId === userId).map(({ userId: _, ...i }) => i);
+  }
+  async add(userId: string, items: Omit<ShoppingListItem, "id">[]) {
+    return items.map((i) => {
+      const row = { ...i, id: `li-${this.next++}`, userId };
+      this.rows.push(row);
+      const { userId: _, ...saved } = row;
+      return saved;
+    });
+  }
+  async update(userId: string, id: string, patch: Partial<Pick<ShoppingListItem, "checked" | "quantity" | "name" | "aisle">>) {
+    const row = this.rows.find((r) => r.userId === userId && r.id === id);
+    if (!row) return null;
+    const { quantity, ...rest } = patch;
+    Object.assign(row, rest);
+    if ("quantity" in patch) {
+      if (quantity === undefined) delete row.quantity;
+      else row.quantity = quantity;
+    }
+    const { userId: _, ...item } = row;
+    return item;
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
+  }
+  async deleteChecked(userId: string) {
+    const gone = this.rows.filter((r) => r.userId === userId && r.checked);
+    for (const g of gone) this.rows.splice(this.rows.indexOf(g), 1);
+    return gone.map(({ userId: _, ...i }) => i);
   }
 }
 

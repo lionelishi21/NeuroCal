@@ -15,6 +15,8 @@ export interface MealPlanContext {
   catalog: { id: string; name: string; serving: string }[];
   /** Food rules from health conditions (domain/conditions.ts mealNotes); left out when there are none. */
   healthNotes?: string[];
+  /** Meal titles already in the plan, for swapping one: the new meal must be clearly different. */
+  avoid?: string[];
 }
 
 /** Proposes meals for the plan (an LLM; its output is schema-checked). */

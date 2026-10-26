@@ -1,3 +1,4 @@
+import type { ShoppingListUseCases, ShoppingListView } from "../application/use-cases/ShoppingListUseCases";
 import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
@@ -57,6 +58,11 @@ import {
   CoffeeProducts,
   LogSessionRequest,
   LearnResponse,
+  SwapMealRequest,
+  ShoppingList,
+  AddToShoppingListRequest,
+  UpdateShoppingItemRequest,
+  FinishShoppingRequest,
   SessionsResponse,
   LogCoffeeRequest,
   BetterChoiceRequest,
@@ -184,6 +190,7 @@ export interface UseCases {
   coffee: CoffeeUseCases;
   sessions: SessionUseCases;
   getLearn: GetLearnUseCase;
+  shoppingList: ShoppingListUseCases;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -346,6 +353,11 @@ const toKnowledgeSource = ({ source, techniques }: { source: SourceRecord; techn
 });
 const toExerciseDay = (d: ExerciseDayResult) => ({ ...d, exercises: d.exercises.map(toExercise) });
 const toMealPlan = ({ createdAt, ...plan }: MealPlan) => ({ ...plan, createdAt: createdAt.toISOString() });
+const toShoppingList = (v: ShoppingListView & { movedToPantry?: number }) => ({
+  items: v.items.map(({ addedAt: _, ...i }) => i),
+  text: v.text,
+  ...(v.movedToPantry === undefined ? {} : { movedToPantry: v.movedToPantry }),
+});
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
 const toCatalogFood = (food: Food) => {
@@ -529,6 +541,48 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return ok(MealPlanResponse, toMealPlan(await uc.mealPlans.create(req.userId, json(req, CreateMealPlanRequest).days)), 201);
       },
     ],
+    [
+      "POST",
+      /^\/meal-plan\/swap$/,
+      async (req) => {
+        await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
+        const { day, meal } = json(req, SwapMealRequest);
+        return ok(MealPlanResponse, toMealPlan(await uc.mealPlans.swap(req.userId, day, meal)));
+      },
+    ],
+    ["GET", /^\/shopping-list$/, async (req) => ok(ShoppingList, toShoppingList(await uc.shoppingList.get(req.userId)))],
+    [
+      "POST",
+      /^\/shopping-list$/,
+      async (req) => {
+        const body = json(req, AddToShoppingListRequest);
+        const entries = body.items.map((i) => ({ name: i.name, ...(i.quantity ? { quantity: i.quantity } : {}) }));
+        return ok(ShoppingList, toShoppingList(await uc.shoppingList.add(req.userId, entries, body.source ?? "manual")));
+      },
+    ],
+    [
+      "POST",
+      /^\/shopping-list\/finish$/,
+      async (req) => {
+        const { toPantry } = json(req, FinishShoppingRequest);
+        return ok(ShoppingList, toShoppingList(await uc.shoppingList.finish(req.userId, toPantry ?? true)));
+      },
+    ],
+    [
+      "PUT",
+      /^\/shopping-list\/([^/]+)$/,
+      async (req, [id]) => {
+        const b = json(req, UpdateShoppingItemRequest);
+        const patch = {
+          ...(b.checked !== undefined ? { checked: b.checked } : {}),
+          ...(b.quantity !== undefined ? { quantity: b.quantity } : {}),
+          ...(b.name !== undefined ? { name: b.name } : {}),
+        };
+        return ok(ShoppingList, toShoppingList(await uc.shoppingList.update(req.userId, id!, patch)));
+      },
+    ],
+    ["DELETE", /^\/shopping-list\/([^/]+)$/, async (req, [id]) => ok(ShoppingList, toShoppingList(await uc.shoppingList.remove(req.userId, id!)))],
     ["GET", /^\/environment$/, async (req) => ok(EnvironmentDay, await uc.environment.day(req.userId, date(req)))],
     [
       "PUT",

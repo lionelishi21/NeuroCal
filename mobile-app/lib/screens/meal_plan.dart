@@ -6,8 +6,18 @@ import '../app_scope.dart';
 import '../theme/tokens.dart';
 import '../widgets/meal_visual.dart';
 import '../widgets/sheet.dart';
+import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'cook_mode.dart';
+import 'shopping.dart';
+
+const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/// "Mon 27" for a plan's day [day] (from 1), counting from the day it was made.
+String planDayLabel(DateTime createdAt, int day) {
+  final d = DateTime(createdAt.year, createdAt.month, createdAt.day + day - 1);
+  return '${_weekdays[d.weekday - 1]} ${d.day}';
+}
 
 /// A few days of meals sized to your targets, from your pantry first and fitting your fasting plan, with
 /// a shopping list for the rest. [onLog] logs a planned meal.
@@ -27,8 +37,9 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   var _days = 3;
   var _day = 0;
 
-  /// Shopping items ticked off, for this plan only (kept while the screen is open).
-  final _bought = <String>{};
+  /// The meal being swapped, as (day index, meal index).
+  (int, int)? _swapping;
+  var _adding = false;
 
   NeuroCalApi get _api => AppScope.of(context).api;
 
@@ -49,7 +60,6 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       setState(() {
         _plan = Future.value(plan);
         _day = 0;
-        _bought.clear();
       });
     } on ApiException catch (e) {
       if (mounted) {
@@ -68,6 +78,51 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     }
   }
 
+  /// A different meal in the same slot, about the same size.
+  Future<void> _swap(int day, int meal) async {
+    setState(() => _swapping = (day, meal));
+    try {
+      final plan = await _api.swapMeal(day + 1, meal);
+      if (!mounted) return;
+      // A block, not an arrow: setState must not return the Future being stored.
+      setState(() {
+        _plan = Future.value(plan);
+      });
+      showToast(context, 'Meal swapped');
+    } on ApiException catch (e) {
+      if (mounted) {
+        showToast(
+          context,
+          e.status == 402 ? 'Swapping meals is part of your subscription.' : "Couldn't find another meal right now.",
+          ToastTone.problem,
+        );
+      }
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't swap the meal. Check your connection.", ToastTone.problem);
+    } finally {
+      if (mounted) setState(() => _swapping = null);
+    }
+  }
+
+  /// The plan's shopping onto the shopping list, with amounts.
+  Future<void> _addToList(MealPlan plan) async {
+    setState(() => _adding = true);
+    try {
+      await _api.addToShoppingList([
+        for (final s in plan.shoppingList) (name: s.name, quantity: planQuantity(s.grams)),
+      ], fromPlan: true);
+      if (!mounted) return;
+      showToast(context, '${plan.shoppingList.length} items added to your shopping list');
+      _openList();
+    } catch (_) {
+      if (mounted) showToast(context, "Couldn't add them to your list. Try again.", ToastTone.problem);
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
+
+  void _openList() => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ShoppingScreen()));
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -76,7 +131,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
       body: FutureBuilder(
         future: _plan,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          // A swap keeps showing the plan (and where you'd scrolled to) while the new one arrives.
+          if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
             return const Padding(
               padding: EdgeInsets.all(Space.s4),
               child: ScreenLoading(label: 'Loading your plan', heights: [120, 200]),
@@ -122,7 +178,11 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         children: [
           for (final (i, d) in plan.days.indexed)
             Expanded(
-              child: ChoicePill(label: 'Day ${d.day}', selected: i == _day, onTap: () => setState(() => _day = i)),
+              child: ChoicePill(
+                label: planDayLabel(plan.createdAt, d.day),
+                selected: i == _day,
+                onTap: () => setState(() => _day = i),
+              ),
             ),
         ],
       ),
@@ -149,53 +209,69 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${day.macros.proteinG.round()} g',
-                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  'protein of ${plan.targetProteinG.round()} g',
-                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-                ),
-              ],
-            ),
           ],
         ),
       ),
-      for (final meal in day.meals)
+      const SizedBox(height: Space.s2),
+      Row(
+        spacing: Space.s2,
+        children: [
+          _Macro('Protein', day.macros.proteinG, target: plan.targetProteinG),
+          _Macro('Carbs', day.macros.carbsG),
+          _Macro('Fat', day.macros.fatG),
+        ],
+      ),
+      for (final (i, meal) in day.meals.indexed)
         Padding(
           padding: const EdgeInsets.only(top: Space.s3),
-          child: _MealCard(meal, onLog: widget.onLog),
+          child: _MealCard(
+            meal,
+            onLog: widget.onLog,
+            swapping: _swapping == (_day, i),
+            onSwap: _swapping == null ? () => _swap(_day, i) : null,
+          ),
         ),
       if (plan.shoppingList.isNotEmpty) ...[
-        BlockTitle('Shopping list', note: '${plan.shoppingList.length} items'),
+        BlockTitle('To buy for this plan', note: '${plan.shoppingList.length} items'),
         AppCard(
-          padding: EdgeInsets.zero,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: Space.s2,
             children: [
-              for (final (i, item) in plan.shoppingList.indexed)
-                CheckboxListTile(
-                  value: _bought.contains(item.name),
-                  onChanged: (v) => setState(() => v == true ? _bought.add(item.name) : _bought.remove(item.name)),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
-                  title: Text(
-                    item.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      decoration: _bought.contains(item.name) ? TextDecoration.lineThrough : null,
-                      color: _bought.contains(item.name) ? c.inkSoft : c.ink,
+              for (final item in plan.shoppingList)
+                Row(
+                  spacing: Space.s2,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+                      ),
                     ),
-                  ),
-                  subtitle: Text('About ${item.grams} g · ${item.meals} ${item.meals == 1 ? 'meal' : 'meals'}'),
+                    Text(
+                      '${planQuantity(item.grams)} · ${item.meals} ${item.meals == 1 ? 'meal' : 'meals'}',
+                      style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                    ),
+                  ],
                 ),
+              const SizedBox(height: Space.s1),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: _adding ? null : () => _addToList(plan),
+                icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
+                label: Text(_adding ? 'Adding…' : 'Add to my shopping list'),
+              ),
             ],
           ),
         ),
-      ],
+      ] else
+        Padding(
+          padding: const EdgeInsets.only(top: Space.s3),
+          child: Text(
+            'Everything for this plan is already in your pantry.',
+            style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll),
+          ),
+        ),
       Padding(
         padding: const EdgeInsets.only(top: Space.s3),
         child: Text(
@@ -268,11 +344,48 @@ class _MakePlan extends StatelessWidget {
   }
 }
 
+/// One of the day's macros, against its target when there is one.
+class _Macro extends StatelessWidget {
+  const _Macro(this.label, this.grams, {this.target});
+
+  final String label;
+  final double grams;
+  final double? target;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: Space.s2),
+        decoration: BoxDecoration(color: c.paper, borderRadius: BorderRadius.circular(Radii.option)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${grams.round()} g',
+              style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              target == null ? label : '$label of ${target!.round()} g',
+              style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MealCard extends StatefulWidget {
-  const _MealCard(this.meal, {required this.onLog});
+  const _MealCard(this.meal, {required this.onLog, this.onSwap, this.swapping = false});
 
   final PlanMeal meal;
   final Future<void> Function(PlanMeal) onLog;
+
+  /// Null while another meal is being swapped.
+  final VoidCallback? onSwap;
+  final bool swapping;
 
   @override
   State<_MealCard> createState() => _MealCardState();
@@ -304,18 +417,10 @@ class _MealCardState extends State<_MealCard> {
             '${m.calories} kcal · ${m.macros.proteinG.round()} g protein',
             style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
           ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final i in m.ingredients)
-                Tag(
-                  i.inPantry ? '✓ ${i.name}' : '+ ${i.name}',
-                  fill: i.inPantry ? c.chlorophyllSoft : c.glucoseSoft,
-                  ink: i.inPantry ? c.chlorophyll : c.glucoseInk,
-                ),
-            ],
-          ),
+          if (m.ingredients.where((i) => i.inPantry).toList() case final have when have.isNotEmpty)
+            _Have(Icons.check_circle_rounded, 'In your kitchen', have.map((i) => i.name).join(', '), c.chlorophyll),
+          if (m.ingredients.where((i) => !i.inPantry).toList() case final need when need.isNotEmpty)
+            _Have(Icons.add_shopping_cart_rounded, 'To buy', need.map((i) => i.name).join(', '), c.glucoseInk),
           if (_open) ...[
             for (final i in m.ingredients)
               Text(
@@ -332,16 +437,22 @@ class _MealCardState extends State<_MealCard> {
             ],
             steps: m.steps,
           ),
-          Row(
+          Wrap(
+            spacing: Space.s1,
+            runSpacing: Space.s1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () => setState(() => _open = !_open),
-                    child: Text(_open ? 'Hide recipe' : 'Show recipe'),
-                  ),
-                ),
+              TextButton(
+                onPressed: () => setState(() => _open = !_open),
+                child: Text(_open ? 'Hide recipe' : 'Show recipe'),
+              ),
+              TextButton.icon(
+                onPressed: widget.onSwap,
+                icon: widget.swapping
+                    ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.autorenew_rounded, size: 18),
+                label: Text(widget.swapping ? 'Swapping…' : 'Swap'),
               ),
               SoftButton(label: 'Log it', semanticLabel: 'Log ${m.title}', onPressed: () => widget.onLog(m)),
             ],
@@ -350,4 +461,40 @@ class _MealCardState extends State<_MealCard> {
       ),
     );
   }
+}
+
+/// "In your kitchen: oats, berries" or "To buy: salmon".
+class _Have extends StatelessWidget {
+  const _Have(this.icon, this.label, this.items, this.color);
+
+  final IconData icon;
+  final String label;
+  final String items;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    spacing: 6,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(top: 1),
+        child: Icon(icon, size: 16, color: color),
+      ),
+      Expanded(
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '$label: ',
+                style: TextStyle(fontWeight: FontWeight.w700, color: color),
+              ),
+              TextSpan(text: items),
+            ],
+          ),
+          style: const TextStyle(fontSize: TextSize.xs, height: 1.35),
+        ),
+      ),
+    ],
+  );
 }

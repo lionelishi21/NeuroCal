@@ -9,7 +9,7 @@ import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingPro
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
-import type { ICoffeeRepository, ISessionRepository, IFastPlanRepository,
+import type { ICoffeeRepository, ISessionRepository, IShoppingListRepository, IFastPlanRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -30,6 +30,7 @@ import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCas
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import { SessionUseCases } from "../application/use-cases/SessionUseCases";
 import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
+import { ShoppingListUseCases } from "../application/use-cases/ShoppingListUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
@@ -126,6 +127,7 @@ export interface Ports {
   fastPlans: IFastPlanRepository;
   coffee: ICoffeeRepository;
   sessions: ISessionRepository;
+  shoppingList: IShoppingListRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
   knowledge: IKnowledgeRepository;
@@ -199,6 +201,7 @@ export function buildUseCases(p: Ports): UseCases {
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose, p.coffee, p.sessions),
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment, p.coffee, p.sessions),
+    shoppingList: new ShoppingListUseCases(p.shoppingList, p.pantry, p.clock),
     getLearn: new GetLearnUseCase(p.profiles, p.focusScores, p.stack, p.clock, p.amazonTag ? { amazonTag: p.amazonTag } : {}),
     sessions: new SessionUseCases(p.profiles, p.sessions, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
     adminProducts,

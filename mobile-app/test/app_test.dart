@@ -7,6 +7,7 @@ import 'package:neurocal/home_widget/focus_widget.dart';
 import 'package:neurocal/api/models.dart';
 import 'package:neurocal/auth/auth.dart';
 import 'package:neurocal/main.dart';
+import 'package:neurocal/screens/meal_plan.dart' show planDayLabel;
 import 'package:neurocal/widgets/meal_visual.dart';
 import 'package:neurocal/widgets/ui.dart';
 import 'package:neurocal/theme/theme_controller.dart';
@@ -362,24 +363,49 @@ void main() {
     expect(find.text('Salmon and spinach scramble'), findsWidgets);
   });
 
-  testWidgets('review a shopping list: swaps with cleaner choices, and the gadget the list calls for', (tester) async {
+  testWidgets('the shopping list: add by aisle, check it for swaps, tick off, and move what was bought to the pantry', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(tester, find.bySemanticsLabel('Review my shopping list: Cleaner swaps, and gadgets that help'));
-
-    await tester.enterText(find.widgetWithText(TextField, 'Your list'), 'Frozen fries\nSpinach\nFlavoured yogurt');
-    await tester.tap(find.text('Review my list'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Plain Greek yogurt with berries'),
-      300,
-      scrollable: find.byType(Scrollable).first,
+    await tapCentered(
+      tester,
+      find.bySemanticsLabel('Shopping list: By aisle, ticked off as you shop, into your pantry'),
     );
-    expect(find.text('3 items · 2 to swap'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Ninja air fryer'), 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Your list is empty'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Add an item'), 'Frozen fries, Spinach, Flavoured yogurt');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+    final list = find.byType(Scrollable).first;
+    // By aisle, in the order you'd walk a store.
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(top('Fruit and veg'), lessThan(top('Dairy and eggs')));
+    expect(top('Dairy and eggs'), lessThan(top('Frozen')));
+
+    await tester.tap(find.text('Check my list'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Plain Greek yogurt with berries'), 200, scrollable: list);
+    await tester.scrollUntilVisible(find.text('Ninja air fryer'), 300, scrollable: list);
     expect(find.text('For Frozen fries'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Spinach'), -300, scrollable: list);
+    final spinach = find.descendant(
+      of: find.ancestor(of: find.text('Spinach'), matching: find.byType(AppCard)),
+      matching: find.byType(Checkbox),
+    );
+    await tester.tap(spinach);
+    await tester.pumpAndSettle();
+    final done = find.text('Done shopping (1 bought)');
+    await tester.scrollUntilVisible(done, 300, scrollable: list);
+    await tester.tap(done);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move to my pantry'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 item moved to your pantry'), findsOneWidget);
+    expect(find.text('Spinach'), findsNothing);
   });
 
   testWidgets('work out a recipe: calories per serving, which ingredients are estimated, and log a serving', (
@@ -627,22 +653,67 @@ void main() {
 
     await tester.tap(find.text('Plan my meals'));
     await tester.pumpAndSettle();
-    expect(find.text('Day 3'), findsOneWidget);
+    // Days by name, from today.
+    expect(find.text(planDayLabel(DateTime.now(), 3)), findsOneWidget);
     expect(find.text('1750 kcal'), findsOneWidget);
     expect(find.text('450 under your 2200 kcal target'), findsOneWidget);
+    expect(find.text('Protein of 140 g'), findsOneWidget);
+    expect(find.text('Carbs'), findsOneWidget);
 
     final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('Brown rice'), 300, scrollable: list);
-    expect(find.text('About 480 g · 3 meals'), findsOneWidget);
-
-    final title = find.text('Salmon and spinach rice bowl');
-    await tester.scrollUntilVisible(title, -300, scrollable: list);
-    await Scrollable.ensureVisible(tester.element(title), alignment: 0.5);
+    // A meal says what's in the kitchen and what to buy, and can be swapped.
+    final title = find.text('Chicken, sweet potato and broccoli');
+    await tester.scrollUntilVisible(title, 300, scrollable: list);
+    final dinner = find.ancestor(of: title, matching: find.byType(AppCard));
+    expect(
+      find.descendant(
+        of: dinner,
+        matching: find.textContaining('Chicken breast, Sweet potato, Broccoli', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    final swap = find.descendant(of: dinner, matching: find.text('Swap'));
+    await Scrollable.ensureVisible(tester.element(swap), alignment: 0.5);
     await tester.pumpAndSettle();
-    final card = find.ancestor(of: title, matching: find.byType(AppCard));
-    await tester.tap(find.descendant(of: card, matching: find.text('Log it')));
+    await tester.tap(swap);
+    await tester.pumpAndSettle();
+    expect(find.text('Meal swapped'), findsOneWidget);
+    expect(find.text('Turkey, quinoa and roast peppers'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Brown rice'), 300, scrollable: list);
+    expect(find.text('about 480 g · 3 meals'), findsOneWidget);
+
+    final logIt = find.descendant(
+      of: find.ancestor(of: find.text('Salmon and spinach rice bowl'), matching: find.byType(AppCard)),
+      matching: find.text('Log it'),
+    );
+    await tester.scrollUntilVisible(logIt, -300, scrollable: list);
+    await Scrollable.ensureVisible(tester.element(logIt), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(logIt);
     await tester.pumpAndSettle();
     expect(find.text('Log a meal'), findsWidgets);
+  });
+
+  testWidgets('a meal plan goes onto the shopping list with its amounts', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
+    await tester.pumpAndSettle();
+    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+    await tester.tap(find.text('Plan my meals'));
+    await tester.pumpAndSettle();
+
+    final add = find.text('Add to my shopping list');
+    await tester.dragUntilVisible(add, find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(add);
+    await tester.pumpAndSettle();
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.text('Shopping list'), findsOneWidget);
+    expect(find.text('Brown rice'), findsOneWidget);
+    expect(find.text('about 480 g · for your meal plan'), findsOneWidget);
   });
 
   testWidgets('meal plan: a meal has its picture, cooks step by step and links to videos', (tester) async {

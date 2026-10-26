@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -29,6 +29,7 @@ import {
   InMemoryFastPlans,
   InMemoryCoffee,
   InMemorySessions,
+  InMemoryShoppingList,
   FakeBetterChoice,
   FakeShoppingReviewer,
   FakeRecipeParser,
@@ -167,6 +168,7 @@ beforeEach(async () => {
     fastPlans: new InMemoryFastPlans(),
     coffee: new InMemoryCoffee(),
     sessions: new InMemorySessions(),
+    shoppingList: new InMemoryShoppingList(),
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
@@ -825,6 +827,32 @@ describe("API routes", () => {
     expect(plan.shoppingList).toEqual([{ name: "Berries", grams: 900, meals: 6 }]);
     expect(MealPlanResponse.parse((await call("GET", "/meal-plan")).body).days).toHaveLength(2);
     expect((await call("POST", "/meal-plan", { days: 7 })).status).toBe(400);
+  });
+
+  it("swaps one meal for a different one, and works the day and the shopping list out again", async () => {
+    await call("POST", "/meal-plan", { days: 1 });
+    const swapped = await call("POST", "/meal-plan/swap", { day: 1, meal: 2 });
+    expect(swapped.status).toBe(200);
+    const plan = MealPlanResponse.parse(swapped.body);
+    expect(plan.days[0]!.meals.map((m) => m.title)).toEqual(["Oats and berries (breakfast)", "Oats and berries (lunch)", "Salmon and greens (dinner)"]);
+    expect(plan.shoppingList.find((i) => i.name === "Berries")).toMatchObject({ meals: 3 });
+    expect((await call("POST", "/meal-plan/swap", { day: 3, meal: 0 })).status).toBe(404);
+  });
+
+  it("keeps a shopping list: add, tick, share, and finish into the pantry", async () => {
+    const added = ShoppingList.parse((await call("POST", "/shopping-list", { items: [{ name: "Spinach" }, { name: "Salmon", quantity: "2 fillets" }] })).body);
+    expect(added.items.map((i) => [i.name, i.aisle])).toEqual([
+      ["Spinach", "produce"],
+      ["Salmon", "meat_fish"],
+    ]);
+    expect(added.text).toBe("Fruit and veg:\n- Spinach\n\nMeat and fish:\n- Salmon (2 fillets)");
+    const spinach = added.items[0]!.id;
+    expect(ShoppingList.parse((await call("PUT", `/shopping-list/${spinach}`, { checked: true })).body).items[0]).toMatchObject({ checked: true });
+    const done = ShoppingList.parse((await call("POST", "/shopping-list/finish", {})).body);
+    expect(done).toMatchObject({ movedToPantry: 1, items: [{ name: "Salmon" }] });
+    expect((await call("GET", "/pantry")).body).toMatchObject({ items: expect.arrayContaining([expect.objectContaining({ name: "Spinach" })]) });
+    expect((await call("DELETE", `/shopping-list/${spinach}`)).status).toBe(404);
+    expect((await call("POST", "/shopping-list", { items: [] })).status).toBe(400);
   });
 
   it("GET /level returns the level from the last 28 days with every habit and how close it is", async () => {
