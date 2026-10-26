@@ -1,5 +1,5 @@
 import { InvalidError } from "../../domain/errors";
-import { MAX_REACTION_MS, MAX_TRIALS, MIN_REACTION_MS, MIN_TRIALS, baselineOf, scoreCheck } from "../../domain/brainCheck";
+import { type LevelChange, MAX_REACTION_MS, MAX_TRIALS, MIN_REACTION_MS, MIN_TRIALS, baselineOf, levelChangeOf, scoreCheck } from "../../domain/brainCheck";
 import type { IBrainCheckRepository, SavedBrainCheck } from "../interfaces/IBrainCheckRepository";
 import type { IClock } from "../interfaces/IClock";
 
@@ -22,11 +22,19 @@ export class BrainCheckUseCases {
     return this.checks.add(userId, { ...scoreCheck(rts, input.falseStarts), takenAt: this.clock.now(), reactionTimesMs: rts.map(Math.round) });
   }
 
-  async history(userId: string, days = 30): Promise<{ checks: SavedBrainCheck[]; baselineScore?: number }> {
+  async history(userId: string, days = 30): Promise<{ checks: SavedBrainCheck[]; baselineScore?: number; newLevel?: LevelChange }> {
     if (!Number.isInteger(days) || days < 1 || days > 365) throw new InvalidError("Ask for 1 to 365 days.");
-    const checks = await this.checks.listSince(userId, new Date(this.clock.now().getTime() - days * DAY_MS));
+    const now = this.clock.now();
+    // Enough to see a level change (eight weeks) and, usually, the very first check.
+    const LOOK_BACK = 120;
+    const all = await this.checks.listSince(userId, new Date(now.getTime() - Math.max(days, LOOK_BACK) * DAY_MS));
+    const checks = all.filter((c) => c.takenAt.getTime() >= now.getTime() - days * DAY_MS);
     // "Your usual" leaves out the latest check, so it can be compared with it.
     const baseline = baselineOf(checks.slice(1).map((c) => c.score));
-    return { checks, ...(baseline === null ? {} : { baselineScore: baseline }) };
+    // Newest first: the oldest is the first ever unless the window cut into earlier checks.
+    const oldest = all.at(-1)?.takenAt;
+    const firstEver = oldest && oldest.getTime() > now.getTime() - (LOOK_BACK - 7) * DAY_MS ? oldest : undefined;
+    const level = levelChangeOf(all, now, firstEver);
+    return { checks, ...(baseline === null ? {} : { baselineScore: baseline }), ...(level ? { newLevel: level } : {}) };
   }
 }

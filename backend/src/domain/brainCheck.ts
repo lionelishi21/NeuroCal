@@ -64,3 +64,54 @@ export function scoreCheck(reactionTimesMs: number[], falseStarts: number): Brai
 export function baselineOf(scores: number[]): number | null {
   return scores.length >= 3 ? Math.round(median(scores)) : null;
 }
+
+/**
+ * A new level: when someone's usual has moved and stayed moved, as after starting a nootropic that kept
+ * working, or a run of better sleep. The last four weeks' median against the four weeks before; a
+ * change of at least LEVEL_CHANGE points counts once at least two of the recent weeks sit past halfway
+ * to it. The first week of checks is left out: people can be a little slow while they get used to it.
+ * The daily score compares each check with the usual, so the new level becomes the new normal there;
+ * this is where the change itself is shown.
+ */
+export const LEVEL_CHANGE = 5;
+const WEEK_MS = 7 * 86_400_000;
+const MIN_WINDOW_CHECKS = 5;
+
+export interface LevelChange {
+  direction: "up" | "down";
+  /** The usual before, and now. */
+  from: number;
+  to: number;
+  /** Start of the earliest recent week at the new level. */
+  since: Date;
+  /** Recent weeks in a row, up to four, at the new level. */
+  weeksHeld: number;
+}
+
+/** [checks]: any order; [firstEver]: when the person's very first check was, if known. */
+export function levelChangeOf(checks: { takenAt: Date; score: number }[], now: Date, firstEver?: Date): LevelChange | null {
+  const practiceUntil = firstEver ? firstEver.getTime() + WEEK_MS : -Infinity;
+  const counted = checks.filter((c) => c.takenAt.getTime() >= practiceUntil);
+  const t = now.getTime();
+  const recent = counted.filter((c) => c.takenAt.getTime() > t - 4 * WEEK_MS);
+  const prior = counted.filter((c) => c.takenAt.getTime() <= t - 4 * WEEK_MS && c.takenAt.getTime() > t - 8 * WEEK_MS);
+  if (recent.length < MIN_WINDOW_CHECKS || prior.length < MIN_WINDOW_CHECKS) return null;
+  const from = Math.round(median(prior.map((c) => c.score)));
+  const to = Math.round(median(recent.map((c) => c.score)));
+  if (Math.abs(to - from) < LEVEL_CHANGE) return null;
+  const up = to > from;
+  const halfway = from + (to - from) / 2;
+  // Weeks back from now: count the run, newest first, of weeks with checks sitting past halfway.
+  let weeksHeld = 0;
+  let since = now;
+  for (let w = 0; w < 4; w++) {
+    const end = t - w * WEEK_MS;
+    const week = recent.filter((c) => c.takenAt.getTime() > end - WEEK_MS && c.takenAt.getTime() <= end).map((c) => c.score);
+    if (!week.length) continue;
+    const m = median(week);
+    if (up ? m < halfway : m > halfway) break;
+    weeksHeld++;
+    since = new Date(end - WEEK_MS);
+  }
+  return weeksHeld >= 2 ? { direction: up ? "up" : "down", from, to, since, weeksHeld } : null;
+}

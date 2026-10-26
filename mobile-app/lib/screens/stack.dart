@@ -251,6 +251,24 @@ class _StackScreenState extends State<StackScreen> {
             const BlockTitle('Supplements'),
           ],
           ..._supplements(context, snapshot),
+          if (snapshot.data?.stopped case final stopped? when stopped.isNotEmpty) ...[
+            const BlockTitle('Stopped lately'),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final (i, item) in stopped.indexed)
+                    ListTile(
+                      shape: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: item.experiment == null ? null : ExperimentLine(item.experiment!),
+                      trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+                      onTap: () => showAppSheet<void>(context, title: item.name, builder: (_) => _Working(item)),
+                    ),
+                ],
+              ),
+            ),
+          ],
           const BlockTitle('Gadgets and practices'),
           _Practices(_sessions, onLog: () => showSessionSheet(context, onChanged: _reload)),
         ],
@@ -493,6 +511,9 @@ class ExperimentLine extends StatelessWidget {
       'building' => (Icons.hourglass_top_rounded, c.synapseInk, 'Building · day ${e.day} of about ${e.onsetDays}'),
       'too_early' => (Icons.insights_rounded, c.inkSoft, 'A few more days of data to tell'),
       'need_baseline' => (Icons.insights_rounded, c.inkSoft, 'Collecting your numbers'),
+      'watching' => (Icons.visibility_rounded, c.synapseInk, 'Watching after you stopped · day ${e.day} of 28'),
+      'lasted' => (Icons.trending_up_rounded, c.chlorophyll, 'The gain lasted after you stopped'),
+      'faded' => (Icons.trending_down_rounded, c.glucoseInk, 'Faded after you stopped'),
       _ => (Icons.schedule_rounded, c.inkSoft, 'Long-term: no daily number'),
     };
     return Row(
@@ -595,7 +616,9 @@ class _Working extends StatelessWidget {
         if (e.before case final b?)
           if (e.since case final s?)
             Text(
-              '${_cap(e.measureLabel)}: ${n(b.mean)} before (${b.days} days), ${n(s.mean)} since (${s.days} days)',
+              e.during != null
+                  ? '${_cap(e.measureLabel)}: ${n(b.mean)} before, ${n(e.during!.mean)} while taking it, ${n(s.mean)} since you stopped'
+                  : '${_cap(e.measureLabel)}: ${n(b.mean)} before (${b.days} days), ${n(s.mean)} since (${s.days} days)',
               style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
             ),
         if (e.feeling case final f?)
@@ -768,10 +791,23 @@ class _EditStackItemState extends State<_EditStackItem> {
                   'Saved',
                 ),
         ),
+        // Stopping keeps it, so NeuroCal can see whether the gain lasts; deleting is for a mistake.
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            foregroundColor: c.synapseInk,
+            side: BorderSide(color: c.ruleStrong, width: 1.5),
+          ),
+          onPressed: _busy
+              ? null
+              : () =>
+                    _run(() => api.stopStackItem(widget.item.id), 'Stopped. NeuroCal will watch the next four weeks.'),
+          child: const Text('I’ve stopped taking it'),
+        ),
         TextButton(
           style: TextButton.styleFrom(foregroundColor: c.beet),
-          onPressed: _busy ? null : () => _run(() => api.removeFromStack(widget.item.id), 'Removed from your stack'),
-          child: const Text('Remove from my stack'),
+          onPressed: _busy ? null : () => _run(() => api.removeFromStack(widget.item.id), 'Deleted from your stack'),
+          child: const Text('Delete it (added by mistake)'),
         ),
       ],
     );

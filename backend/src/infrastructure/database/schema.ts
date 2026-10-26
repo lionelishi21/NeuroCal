@@ -491,6 +491,8 @@ export const stackItems = pgTable(
     startedOn: date("started_on", { mode: "string" }).notNull(),
     /** When it was first added; unlike started_on, a new bottle doesn't move it. Its experiment starts here. */
     addedOn: date("added_on", { mode: "string" }).notNull().default(sql`current_date`),
+    /** When it was stopped; it stays for its experiment to watch the weeks after. Null while taken. */
+    stoppedOn: date("stopped_on", { mode: "string" }),
     ...timestamps,
   },
   (t) => [index("stack_items_user_idx").on(t.userId), check("stack_items_servings_positive", sql`${t.servingsPerDay} between 1 and 6`)],

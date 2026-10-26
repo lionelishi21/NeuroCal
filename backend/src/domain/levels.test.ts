@@ -51,4 +51,10 @@ describe("levelOf", () => {
     const move = levelOf(days, steady).requirements.find((r) => r.title === "Move most days")!;
     expect(move).toMatchObject({ met: false, progress: "Movement: 0 of 10 days with data so far" });
   });
+
+  it("marks a lasting Brain speed rise as a milestone, apart from the habits", () => {
+    const withRise = levelOf([], { recent: 76, usual: 74, raised: { from: 68, to: 76 } });
+    expect(withRise.milestones).toEqual(["You raised your Brain speed: your usual went from 68 to 76, and it's held."]);
+    expect(levelOf([], { recent: 70, usual: 70 }).milestones).toBeUndefined();
+  });
 });

@@ -2,12 +2,14 @@ import type { Feeling } from "../../domain/experiment";
 import type { StackItem } from "../../domain/stack";
 
 export type NewStackItem = Omit<StackItem, "id">;
-export type StackItemPatch = Partial<Pick<StackItem, "servingsPerDay" | "timing" | "startedOn">> & { servingsPerContainer?: number | null };
+export type StackItemPatch = Partial<Pick<StackItem, "servingsPerDay" | "timing" | "startedOn" | "stoppedOn">> & { servingsPerContainer?: number | null };
 
 /** Every method is scoped to one user (ARCHITECTURE §10): another user's item reads as missing. */
 export interface IStackRepository {
-  /** Oldest first. */
+  /** What's being taken (not stopped), oldest first. */
   list(userId: string): Promise<StackItem[]>;
+  /** Stopped on or after `since`, oldest first. */
+  listStopped(userId: string, since: string): Promise<StackItem[]>;
   add(userId: string, item: NewStackItem): Promise<StackItem>;
   /** Null when there is no such item for this user. */
   update(userId: string, id: string, patch: StackItemPatch): Promise<StackItem | null>;

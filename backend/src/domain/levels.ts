@@ -32,6 +32,8 @@ export interface BrainTrend {
   recent: number | null;
   /** The person's usual; null until there are enough checks. */
   usual: number | null;
+  /** A lasting rise in the usual (domain/brainCheck.ts levelChangeOf), marked as a milestone. */
+  raised?: { from: number; to: number };
 }
 
 export interface LevelRequirement {
@@ -46,6 +48,8 @@ export interface LevelResult {
   level: number;
   name: string;
   requirements: LevelRequirement[];
+  /** Lasting gains worth marking, apart from the habits. */
+  milestones?: string[];
 }
 
 const GOOD = 0.75;
@@ -148,5 +152,6 @@ export function levelOf(days: LevelDay[], brain: BrainTrend): LevelResult {
     if (!requirements.filter((r) => r.level === l).every((r) => r.met)) break;
     level = l;
   }
-  return { level, name: LEVEL_NAMES[level]!, requirements };
+  const milestones = brain.raised ? [`You raised your Brain speed: your usual went from ${brain.raised.from} to ${brain.raised.to}, and it's held.`] : [];
+  return { level, name: LEVEL_NAMES[level]!, requirements, ...(milestones.length ? { milestones } : {}) };
 }

@@ -542,14 +542,18 @@ describe("API routes", () => {
     expect((await call("PUT", "/stack/nope/feeling", { feeling: "same" })).status).toBe(404);
 
     expect((await call("PUT", `/stack/${id}`, { servingsPerDay: 2, newBottle: true })).body).toMatchObject({ servingsPerDay: 2, daysLeft: 15 });
+    // Stopping keeps it for its experiment: off the daily list, onto the stopped one.
+    const zinc25 = StackResponse.parse((await call("GET", "/stack")).body).items[1]!.id;
+    expect((await call("POST", `/stack/${zinc25}/stop`)).body).toMatchObject({ stoppedOn: "2026-09-29" });
+    const afterStop = StackResponse.parse((await call("GET", "/stack")).body);
+    expect(afterStop.items.map((i) => i.name)).toEqual(["Daily Multi"]);
+    expect(afterStop.stopped).toEqual([expect.objectContaining({ name: "Zinc 25", experiment: expect.objectContaining({ verdict: "long_term" }) })]);
+    expect((await call("POST", "/stack/nope/stop")).status).toBe(404);
     expect((await call("PUT", "/stack/nope/taken", { taken: true })).status).toBe(404);
     expect((await call("POST", "/stack", { name: "", ingredients: [], servingsPerDay: 1, timing: "any" })).status).toBe(400);
     expect((await call("DELETE", `/stack/${id}`)).status).toBe(204);
-    // Two 25 mg servings a day is still over the limit on its own.
-    expect((await call("GET", "/stack")).body).toMatchObject({
-      items: [{ name: "Zinc 25" }],
-      flags: [{ message: "You take 50 mg of zinc a day, above the 40 mg upper limit for adults. Check with your doctor." }],
-    });
+    // Zinc 25 was stopped, so nothing is taken now and nothing is flagged.
+    expect((await call("GET", "/stack")).body).toMatchObject({ items: [], stopped: [{ name: "Zinc 25" }], flags: [] });
   });
 
   it("grades a barcode from the product database, and a food label from photos", async () => {

@@ -111,7 +111,18 @@ export type Measure = "brain_speed" | "sleep" | "stress";
 export const measureFor = (purpose: Purpose | null): Measure | null =>
   purpose === "long_term" ? null : purpose === "sleep" ? "sleep" : purpose === "stress" ? "stress" : "brain_speed";
 
-export type Verdict = "long_term" | "building" | "need_baseline" | "too_early" | "helping" | "no_change" | "worse";
+export type Verdict =
+  | "long_term"
+  | "building"
+  | "need_baseline"
+  | "too_early"
+  | "helping"
+  | "no_change"
+  | "worse"
+  // After stopping: still watching, the gain lasted, or it faded.
+  | "watching"
+  | "lasted"
+  | "faded";
 export type Feeling = "better" | "same" | "worse";
 
 export interface Experiment {
@@ -121,7 +132,10 @@ export interface Experiment {
   onsetDays: number;
   /** Means on the measure's 0–100 scale, and how many days each has. */
   before: { mean: number; days: number } | null;
+  /** Since it had time to work; after stopping, since it was stopped. */
   since: { mean: number; days: number } | null;
+  /** After stopping: while it was being taken. */
+  during?: { mean: number; days: number } | null;
   /** since − before, in points; null until there's a verdict. */
   change: number | null;
   verdict: Verdict;
@@ -242,4 +256,74 @@ export function experimentOf(o: {
         ? `Since starting ${name}, your ${label} is down ${shown(-change)} (from ${shown(mean(before))} to ${shown(mean(since))}). Worth trying a different one, or another time of day.${spotty}`
         : `No clear change in your ${label} since starting ${name}.${spotty} If it still isn't helping after another couple of weeks, try a different form or brand.`;
   return { ...result, change, verdict, summary };
+}
+
+/** Days left out after stopping, while it wears off. */
+export const WASH_OUT_DAYS = 3;
+/** How long after stopping NeuroCal keeps watching. */
+export const WATCH_AFTER_STOP_DAYS = 28;
+
+/**
+ * After stopping a supplement: did the gain last? Before it, while taking it (from when it could work)
+ * and since stopping (after a few days to wear off) are compared on its measure. A gain that held is
+ * "lasted": maybe it isn't needed any more. One that went back is "faded": it works while taken.
+ */
+export function afterStopOf(o: {
+  name: string;
+  profile: SupplementProfile;
+  added: string;
+  stopped: string;
+  today: string;
+  series: Map<string, number>;
+}): Experiment {
+  const { name, profile } = o;
+  const measure = measureFor(profile.purpose);
+  const dayIdx = dayIndex;
+  const sinceStop = dayIdx(o.today) - dayIdx(o.stopped);
+  const base = { measure, day: sinceStop + 1, onsetDays: profile.onsetDays, taken: null, askFeeling: false, feeling: null, change: null };
+  if (measure === null) {
+    return { ...base, before: null, since: null, verdict: "long_term", summary: `You stopped ${name}. It works over months, so there's no daily number to watch.` };
+  }
+  const label = LABEL[measure];
+  const start = dayIdx(o.added);
+  const stop = dayIdx(o.stopped);
+  const values = [...o.series.entries()].map(([d, v]) => ({ i: dayIdx(d), v }));
+  const pick = (from: number, to: number) => values.filter((x) => x.i >= from && x.i <= to).map((x) => x.v);
+  const before = pick(start - BEFORE_DAYS, start - 1);
+  const during = pick(start + Math.max(0, profile.onsetDays - 1), stop - 1);
+  const after = pick(stop + WASH_OUT_DAYS, Math.min(dayIdx(o.today), stop + WATCH_AFTER_STOP_DAYS));
+  const stat = (xs: number[]) => (xs.length ? { mean: Math.round(mean(xs) * 10) / 10, days: xs.length } : null);
+  const shown = { ...base, before: stat(before), during: stat(during), since: stat(after) };
+  if (after.length < MIN_DAYS || sinceStop < 7) {
+    return {
+      ...shown,
+      verdict: "watching",
+      summary: `You stopped ${name} ${sinceStop === 0 ? "today" : sinceStop === 1 ? "yesterday" : `${sinceStop} days ago`}. NeuroCal is watching whether your ${label} holds for four weeks.`,
+    };
+  }
+  if (before.length < MIN_DAYS || during.length < MIN_DAYS) {
+    return { ...shown, verdict: "need_baseline", summary: `There aren't enough numbers from before or while you took ${name} to tell what stopping did.` };
+  }
+  const b = mean(before);
+  const d = mean(during);
+  const a = mean(after);
+  const threshold = Math.max(MIN_CHANGE[measure], 0.5 * sd(before));
+  const helped = d - b >= threshold;
+  const held = a - b >= threshold;
+  const r = Math.round;
+  const numbers = `${r(b)} before, ${r(d)} while you took it, ${r(a)} since you stopped`;
+  if (helped && held) {
+    return { ...shown, change: Math.round((a - b) * 10) / 10, verdict: "lasted", summary: `Your ${label} stayed up after you stopped ${name}: ${numbers}. You may not need to keep taking it.` };
+  }
+  if (helped) {
+    return { ...shown, change: Math.round((a - d) * 10) / 10, verdict: "faded", summary: `Your ${label} went back down after you stopped ${name}: ${numbers}. It seems to work while you take it.` };
+  }
+  return {
+    ...shown,
+    change: Math.round((a - b) * 10) / 10,
+    verdict: "no_change",
+    summary: held
+      ? `Your ${label} rose after you stopped ${name} (${numbers}), so something else is likely behind it.`
+      : `No clear change from ${name}, on it or off it: ${numbers}.`,
+  };
 }

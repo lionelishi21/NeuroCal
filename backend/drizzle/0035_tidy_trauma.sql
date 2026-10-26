@@ -1,0 +1,1 @@
+ALTER TABLE "stack_items" ADD COLUMN "stopped_on" date;

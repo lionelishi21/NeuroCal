@@ -1090,6 +1090,8 @@ export const LevelResponse = z.object({
   name: z.string(),
   /** Every habit for levels 1–5, in order; a level needs all of its own and every lower level's. */
   requirements: z.array(z.object({ level: z.number().int().min(1).max(5), title: z.string(), met: z.boolean(), progress: z.string() })),
+  /** Lasting gains worth marking, apart from the habits: "You raised your Brain speed…". */
+  milestones: z.array(z.string()).optional(),
 });
 export type LevelResponse = z.infer<typeof LevelResponse>;
 
@@ -1098,6 +1100,20 @@ export const BrainCheckHistory = z.object({
   checks: z.array(BrainCheck),
   /** The median score of checks before the latest one, once there are three. */
   baselineScore: z.number().int().optional(),
+  /**
+   * The usual has moved and stayed moved: the last four weeks' median against the four before, by 5 or
+   * more, held for at least two weeks (the first week of checks left out as practice).
+   */
+  newLevel: z
+    .object({
+      direction: z.enum(["up", "down"]),
+      from: z.number().int(),
+      to: z.number().int(),
+      /** Start of the earliest recent week at the new level. */
+      since: IsoDate,
+      weeksHeld: z.number().int().min(2).max(4),
+    })
+    .optional(),
 });
 export type BrainCheckHistory = z.infer<typeof BrainCheckHistory>;
 
@@ -1200,10 +1216,14 @@ export const SupplementExperiment = z.object({
   onsetDays: z.number().int().nonnegative(),
   /** Means on a 0–100 scale and how many days each has. */
   before: z.object({ mean: z.number(), days: z.number().int() }).nullable(),
+  /** Since it had time to work; after stopping, since it was stopped (after a few days to wear off). */
   since: z.object({ mean: z.number(), days: z.number().int() }).nullable(),
+  /** After stopping: while it was being taken. */
+  during: z.object({ mean: z.number(), days: z.number().int() }).nullable().optional(),
   /** since − before, in points; null until there's a verdict. */
   change: z.number().nullable(),
-  verdict: z.enum(["long_term", "building", "need_baseline", "too_early", "helping", "no_change", "worse"]),
+  /** After stopping: watching (the four weeks after), lasted (the gain held) or faded (it went back). */
+  verdict: z.enum(["long_term", "building", "need_baseline", "too_early", "helping", "no_change", "worse", "watching", "lasted", "faded"]),
   /** Plain sentences for the person; show as is. */
   summary: z.string(),
   /** Days ticked as taken since it had time to work, out of the days since. */
@@ -1229,6 +1249,8 @@ export const StackItem = z.object({
   takenToday: z.boolean(),
   /** When it was first added (YYYY-MM-DD); a new bottle doesn't move it. Its experiment starts here. */
   addedOn: IsoDate,
+  /** When it was stopped; such items are listed under `stopped` for four weeks while NeuroCal watches. */
+  stoppedOn: IsoDate.optional(),
   /** What it's for, from its known ingredients: purpose, how long until it can show, and what to expect. */
   profile: SupplementProfile.optional(),
   /** Whether it's working for this person, from their own data (backend domain/experiment.ts). */
@@ -1312,6 +1334,8 @@ export const StackResponse = z.object({
   /** Today in the profile's time zone. */
   date: IsoDate,
   items: z.array(StackItem),
+  /** Stopped in the last four weeks: whether the gain lasted or faded. */
+  stopped: z.array(StackItem),
   flags: z.array(StackFlag),
 });
 export type StackResponse = z.infer<typeof StackResponse>;
@@ -1569,6 +1593,8 @@ export const endpoints = {
   /** Ticks (or unticks) a supplement as taken today. */
   setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
   setStackFeeling: { method: "PUT", path: "/stack/:id/feeling", body: SetFeelingRequest, response: SetFeelingRequest },
+  /** Stopped taking it: it leaves the daily list, and its experiment watches the four weeks after. */
+  stopStackItem: { method: "POST", path: "/stack/:id/stop", response: StackItem },
   getSessions: { method: "GET", path: "/sessions", response: SessionsResponse },
   getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },

@@ -23,6 +23,8 @@ export interface StackItem {
   startedOn: string;
   /** YYYY-MM-DD: when it was first added; a new bottle doesn't move it. */
   addedOn: string;
+  /** YYYY-MM-DD: when it was stopped; absent while it's taken. */
+  stoppedOn?: string;
 }
 
 export interface StackFlag {

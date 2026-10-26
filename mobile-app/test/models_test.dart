@@ -2,6 +2,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neurocal/api/models.dart';
 
 void main() {
+  test('Brain speed history carries a new level when the usual has moved and held', () {
+    final h = BrainCheckHistory.fromJson({
+      'checks': [],
+      'baselineScore': 74,
+      'newLevel': {'direction': 'up', 'from': 68, 'to': 76, 'since': '2026-09-28', 'weeksHeld': 4},
+    });
+    expect(h.newLevel, (up: true, from: 68, to: 76, since: DateTime(2026, 9, 28), weeksHeld: 4));
+    expect(BrainCheckHistory.fromJson({'checks': []}).newLevel, isNull);
+    expect(
+      Level.fromJson({
+        'level': 2,
+        'name': 'Fuelled',
+        'requirements': [],
+        'milestones': ['You raised your Brain speed'],
+      }).milestones,
+      ['You raised your Brain speed'],
+    );
+  });
+
   test('a Focus Score carries its foundation and what today\'s Brain speed did to it', () {
     final f = FocusScore.fromJson({
       'date': '2026-10-26',

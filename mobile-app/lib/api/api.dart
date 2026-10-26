@@ -142,6 +142,9 @@ abstract interface class NeuroCalApi {
     bool newBottle = false,
   });
   Future<void> removeFromStack(String id);
+
+  /// Stopped taking it: off the daily list, and watched for four weeks to see if the gain lasts.
+  Future<void> stopStackItem(String id);
   Future<void> setTaken(String id, bool taken);
 
   /// "How does it make you feel?", answered for today.
@@ -649,6 +652,11 @@ class HttpNeuroCalApi implements NeuroCalApi {
       }),
     );
     return StackItem.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> stopStackItem(String id) async {
+    _decode(await _client.post(_uri('/stack/$id/stop'), headers: await _headers()));
   }
 
   @override

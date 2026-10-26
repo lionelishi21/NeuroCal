@@ -494,7 +494,11 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         const days = req.query.get("days");
         if (days !== null && !/^\d+$/.test(days)) throw new BadRequest("days must be a whole number.");
         const h = await uc.brainChecks.history(req.userId, days ? Number(days) : undefined);
-        return ok(BrainCheckHistory, { checks: h.checks.map(toBrainCheck), ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }) });
+        return ok(BrainCheckHistory, {
+          checks: h.checks.map(toBrainCheck),
+          ...(h.baselineScore === undefined ? {} : { baselineScore: h.baselineScore }),
+          ...(h.newLevel ? { newLevel: { ...h.newLevel, since: h.newLevel.since.toISOString().slice(0, 10) } } : {}),
+        });
       },
     ],
     [
@@ -636,7 +640,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       /^\/stack$/,
       async (req) => {
         const s = await uc.stack.get(req.userId);
-        return ok(StackResponse, { date: s.date, items: s.items, flags: s.flags });
+        return ok(StackResponse, { date: s.date, items: s.items, stopped: s.stopped, flags: s.flags });
       },
     ],
     ["POST", /^\/stack$/, async (req) => ok(StackItem, await uc.stack.add(req.userId, json(req, AddStackItemRequest)), 201)],
@@ -658,6 +662,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return ok(SetTakenRequest, { taken });
       },
     ],
+    ["POST", /^\/stack\/([^/]+)\/stop$/, async (req, [id]) => ok(StackItem, await uc.stack.stop(req.userId, id!))],
     [
       "PUT",
       /^\/stack\/([^/]+)\/feeling$/,
@@ -858,7 +863,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
           extra("fasting", async () => toFasting(await uc.getFasting.execute(req))),
           extra("stack", async () => {
             const s = await uc.stack.get(req.userId);
-            return { date: s.date, items: s.items, flags: s.flags };
+            return { date: s.date, items: s.items, stopped: s.stopped, flags: s.flags };
           }),
           extra("brain", async () => {
             const h = await uc.brainChecks.history(req.userId, 30);

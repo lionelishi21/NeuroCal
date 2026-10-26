@@ -180,6 +180,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "A sauna, cold plunge, meditation, breathwork, BrainTap, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
   },
   deleteSession: { summary: "Remove a session", status: 204, params: { id: "The session's id." } },
+  stopStackItem: {
+    summary: "Stop taking a supplement",
+    description: "It leaves the daily list and reminders, and for four weeks its experiment compares before, while taking it and since stopping: did the gain last or fade? DELETE removes one added by mistake.",
+    params: { id: "The stack item's id." },
+  },
   setStackFeeling: {
     summary: "Say how a supplement makes you feel",
     description: "Asked at two and four weeks (the item's experiment says when); one answer a day, the latest kept.",

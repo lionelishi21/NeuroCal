@@ -122,4 +122,49 @@ void main() {
       expect(find.text('Sleep · in about 14 days'), findsOneWidget);
     },
   );
+
+  testWidgets('stopping a supplement keeps watching it: did the gain last?', (tester) async {
+    tester.view.physicalSize = const Size(360, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final api = MockNeuroCalApi()..latency = Duration.zero;
+    await tester.runAsync(
+      () => api.addToStack(
+        name: 'Focus blend',
+        ingredients: const [(name: 'L-theanine', amount: 200, unit: 'mg', inBlend: false)],
+        servingsPerDay: 1,
+        timing: StackTiming.morning,
+      ),
+    );
+    await tester.pumpWidget(
+      AppScope(
+        api: api,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        timeZone: () async => 'Europe/London',
+        openLink: (_) async => true,
+        billing: MockBilling(active: true),
+        child: MaterialApp(
+          theme: buildTheme(Brightness.light),
+          builder: (context, child) => ToastHost(child: child!),
+          home: const StackScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Focus blend'));
+    await tester.pumpAndSettle();
+    final stop = find.text('I’ve stopped taking it');
+    await tester.ensureVisible(stop);
+    await tester.pumpAndSettle();
+    await tester.tap(stop);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stopped lately'), findsOneWidget);
+    expect(find.text('Watching after you stopped · day 1 of 28'), findsOneWidget);
+    await tester.tap(find.text('Focus blend'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('watching whether your Brain speed holds for four weeks'), findsOneWidget);
+  });
 }

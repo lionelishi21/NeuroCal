@@ -1394,6 +1394,39 @@
         }
       }
     },
+    "/stack/{id}/stop": {
+      "post": {
+        "operationId": "stopStackItem",
+        "summary": "Stop taking a supplement",
+        "description": "It leaves the daily list and reminders, and for four weeks its experiment compares before, while taking it and since stopping: did the gain last or fade? DELETE removes one added by mistake.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The stack item's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StackItem"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/sessions": {
       "get": {
         "operationId": "getSessions",
@@ -3436,6 +3469,40 @@
           },
           "baselineScore": {
             "type": "integer"
+          },
+          "newLevel": {
+            "type": "object",
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down"
+                ]
+              },
+              "from": {
+                "type": "integer"
+              },
+              "to": {
+                "type": "integer"
+              },
+              "since": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "weeksHeld": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 4
+              }
+            },
+            "required": [
+              "direction",
+              "from",
+              "to",
+              "since",
+              "weeksHeld"
+            ]
           }
         },
         "required": [
@@ -5442,6 +5509,12 @@
                 "progress"
               ]
             }
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -7038,6 +7111,10 @@
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
+          "stoppedOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
           "profile": {
             "$ref": "#/components/schemas/SupplementProfile"
           },
@@ -7069,6 +7146,12 @@
               "$ref": "#/components/schemas/StackItem"
             }
           },
+          "stopped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StackItem"
+            }
+          },
           "flags": {
             "type": "array",
             "items": {
@@ -7079,6 +7162,7 @@
         "required": [
           "date",
           "items",
+          "stopped",
           "flags"
         ]
       },
@@ -7194,6 +7278,28 @@
               }
             ]
           },
+          "during": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mean": {
+                    "type": "number"
+                  },
+                  "days": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "mean",
+                  "days"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "change": {
             "type": [
               "number",
@@ -7209,7 +7315,10 @@
               "too_early",
               "helping",
               "no_change",
-              "worse"
+              "worse",
+              "watching",
+              "lasted",
+              "faded"
             ]
           },
           "summary": {

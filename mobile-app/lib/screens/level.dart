@@ -148,6 +148,22 @@ class _LevelViewState extends State<LevelView> {
           child: Column(children: [for (final (i, r) in nextHabits.indexed) _Habit(r, divider: i > 0)]),
         ),
       ],
+      if (l.milestones.isNotEmpty) ...[
+        const BlockTitle('Milestones'),
+        for (final m in l.milestones)
+          AppCard(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: Space.s3,
+              children: [
+                Icon(Icons.emoji_events_rounded, color: c.chlorophyll),
+                Expanded(
+                  child: Text(m, style: const TextStyle(fontSize: TextSize.sm, height: 1.4)),
+                ),
+              ],
+            ),
+          ),
+      ],
       if (held.isNotEmpty) ...[
         const BlockTitle('Habits you hold'),
         AppCard(

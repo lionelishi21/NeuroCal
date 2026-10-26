@@ -707,11 +707,25 @@ export class DrizzleStackRepository implements IStackRepository {
       ...(row.servingsPerContainer ? { servingsPerContainer: row.servingsPerContainer } : {}),
       startedOn: row.startedOn,
       addedOn: row.addedOn,
+      ...(row.stoppedOn ? { stoppedOn: row.stoppedOn } : {}),
     };
   }
 
   async list(userId: string): Promise<StackItem[]> {
-    const rows = await this.db.select().from(stackItems).where(eq(stackItems.userId, userId)).orderBy(asc(stackItems.createdAt));
+    const rows = await this.db
+      .select()
+      .from(stackItems)
+      .where(and(eq(stackItems.userId, userId), isNull(stackItems.stoppedOn)))
+      .orderBy(asc(stackItems.createdAt));
+    return rows.map(DrizzleStackRepository.toItem);
+  }
+
+  async listStopped(userId: string, since: string): Promise<StackItem[]> {
+    const rows = await this.db
+      .select()
+      .from(stackItems)
+      .where(and(eq(stackItems.userId, userId), gte(stackItems.stoppedOn, since)))
+      .orderBy(asc(stackItems.createdAt));
     return rows.map(DrizzleStackRepository.toItem);
   }
 
@@ -740,6 +754,7 @@ export class DrizzleStackRepository implements IStackRepository {
       ...(patch.timing !== undefined ? { timing: patch.timing } : {}),
       ...(patch.servingsPerContainer !== undefined ? { servingsPerContainer: patch.servingsPerContainer } : {}),
       ...(patch.startedOn !== undefined ? { startedOn: patch.startedOn } : {}),
+      ...(patch.stoppedOn !== undefined ? { stoppedOn: patch.stoppedOn } : {}),
     };
     const where = and(eq(stackItems.id, id), eq(stackItems.userId, userId));
     const [row] = Object.keys(set).length

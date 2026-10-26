@@ -1,6 +1,6 @@
 import { NotFoundError } from "../../domain/errors";
 import { processingOf } from "../../domain/bioState";
-import { baselineOf } from "../../domain/brainCheck";
+import { baselineOf, levelChangeOf } from "../../domain/brainCheck";
 import { computeFocusComponents, keptFast } from "../../domain/focusScore";
 import { LEVEL_WINDOW_DAYS, type LevelDay, type LevelResult, levelOf } from "../../domain/levels";
 import { localDateOf } from "../../domain/localDay";
@@ -59,12 +59,18 @@ export class GetLevelUseCase {
       }),
     );
 
+    // Eight weeks and a bit: enough for the usual and for a lasting change in it.
     const checks = await this.brainChecks.listSince(input.userId, new Date(now.getTime() - 60 * DAY_MS));
     const weekAgo = now.getTime() - 7 * DAY_MS;
     const recent = checks.filter((c) => c.takenAt.getTime() >= weekAgo).map((c) => c.score);
     const earlier = checks.filter((c) => c.takenAt.getTime() < weekAgo).map((c) => c.score);
     const sorted = [...recent].sort((a, b) => a - b);
     const median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length - 1) / 2]! : Math.round((sorted[sorted.length / 2 - 1]! + sorted[sorted.length / 2]!) / 2)) : null;
-    return levelOf(days, { recent: median, usual: baselineOf(earlier) });
+    const change = levelChangeOf(checks, now);
+    return levelOf(days, {
+      recent: median,
+      usual: baselineOf(earlier),
+      ...(change?.direction === "up" ? { raised: { from: change.from, to: change.to } } : {}),
+    });
   }
 }

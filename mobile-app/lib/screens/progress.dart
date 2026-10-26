@@ -278,6 +278,53 @@ class _BodyState extends State<_Body> {
 }
 
 /// The last checks as columns against your usual, newest on the right.
+/// The usual has moved and held: a new level, said plainly, with the honest caveat.
+class _NewLevel extends StatelessWidget {
+  const _NewLevel(this.level);
+
+  final LevelChange level;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final since = '${level.since.day} ${monthShort[level.since.month - 1]}';
+    final (fill, ink, icon) = level.up
+        ? (c.chlorophyllSoft, c.chlorophyll, Icons.trending_up_rounded)
+        : (c.glucoseSoft, c.glucoseInk, Icons.trending_down_rounded);
+    return Container(
+      padding: const EdgeInsets.all(Space.s3),
+      decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(Radii.option)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: Space.s2,
+        children: [
+          Icon(icon, size: 22, color: ink),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text(
+                  level.up
+                      ? 'New level: ${level.from} → ${level.to}'
+                      : 'Your usual has dropped: ${level.from} → ${level.to}',
+                  style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800, color: ink),
+                ),
+                Text(
+                  level.up
+                      ? 'Your usual Brain speed rose from about $since and has held for ${level.weeksHeld} weeks. It’s your new normal: the daily score now compares you with it. Better sleep, less stress or anything you started around then can be behind it.'
+                      : 'Since about $since your usual has been lower for ${level.weeksHeld} weeks. Short sleep, stress and late caffeine are the usual reasons; anything you stopped around then may be too.',
+                  style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.ink),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BrainHistory extends StatelessWidget {
   const _BrainHistory(this.history, {required this.onCheck});
 
@@ -302,6 +349,7 @@ class _BrainHistory extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: Space.s3,
         children: [
+          if (history?.newLevel case final level?) _NewLevel(level),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,

@@ -345,6 +345,12 @@ describe("DrizzleStackRepository", () => {
     expect(await repo.setFeeling(alice, item.id, "2026-10-04", "better")).toBe(true);
     expect(await repo.setFeeling(bob, item.id, "2026-10-04", "worse")).toBe(false);
     expect(await repo.feelings(alice)).toEqual([{ itemId: item.id, date: "2026-10-04", feeling: "better" }]);
+
+    // Stopped: off the list of what's taken, on the list of what's stopped.
+    expect(await repo.update(alice, item.id, { stoppedOn: "2026-10-05" })).toMatchObject({ stoppedOn: "2026-10-05" });
+    expect(await repo.list(alice)).toEqual([]);
+    expect((await repo.listStopped(alice, "2026-10-01")).map((i) => i.id)).toEqual([item.id]);
+    expect(await repo.listStopped(alice, "2026-10-06")).toEqual([]);
   });
 });
 

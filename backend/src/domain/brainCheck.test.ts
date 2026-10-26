@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { baselineOf, scoreCheck } from "./brainCheck";
+import { baselineOf, levelChangeOf, scoreCheck } from "./brainCheck";
 
 const repeat = (ms: number, n: number) => Array.from({ length: n }, () => ms);
 
@@ -22,5 +22,36 @@ describe("Brain speed check", () => {
   it("needs three earlier checks for a baseline", () => {
     expect(baselineOf([80, 90])).toBeNull();
     expect(baselineOf([80, 90, 70, 100])).toBe(85);
+  });
+});
+
+describe("levelChangeOf", () => {
+  const now = new Date("2026-10-26T12:00:00Z");
+  const daysAgo = (d: number, score: number) => ({ takenAt: new Date(now.getTime() - d * 86_400_000), score });
+  // Eight weeks of checks every other day: [before] for the older four weeks, [after] for the last four.
+  const run = (before: number, after: number) => Array.from({ length: 28 }, (_, i) => daysAgo(55 - i * 2, i < 14 ? before : after));
+
+  it("finds a rise that has held, and when it started", () => {
+    const change = levelChangeOf(run(68, 76), now);
+    expect(change).toMatchObject({ direction: "up", from: 68, to: 76, weeksHeld: 4 });
+    expect(change!.since.toISOString().slice(0, 10)).toBe("2026-09-28");
+  });
+
+  it("finds a fall too, and ignores small moves", () => {
+    expect(levelChangeOf(run(76, 66), now)).toMatchObject({ direction: "down", from: 76, to: 66 });
+    expect(levelChangeOf(run(70, 73), now)).toBeNull();
+  });
+
+  it("wants two weeks at the new level, and enough checks either side", () => {
+    // Only the last week is up: not a level yet.
+    const late = Array.from({ length: 28 }, (_, i) => daysAgo(55 - i * 2, i < 24 ? 68 : 80));
+    expect(levelChangeOf(late, now)).toBeNull();
+    expect(levelChangeOf(run(68, 76).slice(10), now)).toBeNull(); // too few before
+  });
+
+  it("leaves out the first week as practice", () => {
+    // The first week was slow while learning; without it, there's no change.
+    const checks = [...Array.from({ length: 4 }, (_, i) => daysAgo(55 - i, 55)), ...Array.from({ length: 24 }, (_, i) => daysAgo(50 - i * 2, 75))];
+    expect(levelChangeOf(checks, now, checks[0]!.takenAt)).toBeNull();
   });
 });

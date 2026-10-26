@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { addDays } from "./weight";
-import { experimentOf, profileOf } from "./experiment";
+import { afterStopOf, experimentOf, profileOf } from "./experiment";
 
 const ing = (name: string) => ({ name });
 
@@ -75,5 +75,36 @@ describe("experimentOf", () => {
     expect(run({ today: "2026-10-14", series: new Map() }).askFeeling).toBe(true); // day 14
     expect(run({ today: "2026-10-20", series: new Map(), feelings: [{ date: "2026-10-15", feeling: "better" }] })).toMatchObject({ askFeeling: false, feeling: "better" });
     expect(run({ today: "2026-10-28", series: new Map(), feelings: [{ date: "2026-10-15", feeling: "better" }] }).askFeeling).toBe(true); // day 28
+  });
+});
+
+describe("afterStopOf", () => {
+  const focus = profileOf({ name: "Focus blend", ingredients: [{ name: "L-theanine" }, { name: "Caffeine" }] });
+  const added = "2026-09-01";
+  const stopped = "2026-10-01";
+  /** Brain speed: [before] the 4 weeks before starting, [during] while taking it, [after] since stopping. */
+  const series = (before: number, during: number, after: number, today = "2026-10-26") => {
+    const out = new Map<string, number>();
+    for (let i = 1; i <= 20; i++) out.set(addDays(added, -i), before);
+    for (let i = 1; i < 30; i++) out.set(addDays(added, i), during);
+    for (let d = addDays(stopped, 3); d <= today; d = addDays(d, 1)) out.set(d, after);
+    return out;
+  };
+  const run = (before: number, during: number, after: number, today = "2026-10-26") =>
+    afterStopOf({ name: "Focus blend", profile: focus, added, stopped, today, series: series(before, during, after, today) });
+
+  it("says the gain lasted when the level stayed up after stopping", () => {
+    const e = run(68, 76, 75);
+    expect(e).toMatchObject({ verdict: "lasted", measure: "brain_speed", before: { mean: 68 }, during: { mean: 76 }, since: { mean: 75 } });
+    expect(e.summary).toBe("Your Brain speed stayed up after you stopped Focus blend: 68 before, 76 while you took it, 75 since you stopped. You may not need to keep taking it.");
+  });
+
+  it("says it faded when the level went back down", () => {
+    expect(run(68, 76, 69).verdict).toBe("faded");
+  });
+
+  it("watches the first week after stopping, and spots a rise that came later", () => {
+    expect(run(68, 76, 75, "2026-10-04")).toMatchObject({ verdict: "watching", summary: expect.stringContaining("3 days ago") });
+    expect(run(68, 68, 76)).toMatchObject({ verdict: "no_change", summary: expect.stringContaining("something else") });
   });
 });

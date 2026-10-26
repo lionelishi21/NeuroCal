@@ -495,7 +495,10 @@ export class InMemoryStack implements IStackRepository {
   readonly doses = new Set<string>();
   private next = 1;
   async list(userId: string) {
-    return this.rows.filter((r) => r.userId === userId).map(({ userId: _, ...item }) => item);
+    return this.rows.filter((r) => r.userId === userId && !r.stoppedOn).map(({ userId: _, ...item }) => item);
+  }
+  async listStopped(userId: string, since: string) {
+    return this.rows.filter((r) => r.userId === userId && r.stoppedOn !== undefined && r.stoppedOn >= since).map(({ userId: _, ...item }) => item);
   }
   async add(userId: string, item: NewStackItem) {
     const saved = { ...item, id: `s${this.next++}` };

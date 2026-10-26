@@ -1,6 +1,17 @@
 import { conditionsOf } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
-import { BEFORE_DAYS, type Experiment, type Feeling, type Measure, type SupplementProfile, experimentOf, measureFor, profileOf } from "../../domain/experiment";
+import {
+  BEFORE_DAYS,
+  type Experiment,
+  type Feeling,
+  type Measure,
+  type SupplementProfile,
+  WATCH_AFTER_STOP_DAYS,
+  afterStopOf,
+  experimentOf,
+  measureFor,
+  profileOf,
+} from "../../domain/experiment";
 import { localDateOf } from "../../domain/localDay";
 import { type StackFlag, type StackItem, daysLeft, stackFlags } from "../../domain/stack";
 import type { Profile } from "../../domain/types";
@@ -32,6 +43,8 @@ export const FEELINGS: readonly Feeling[] = ["better", "same", "worse"];
 export interface StackView {
   date: string;
   items: StackItemView[];
+  /** Stopped in the last four weeks, each with whether the gain lasted. */
+  stopped: StackItemView[];
   flags: StackFlag[];
 }
 
@@ -57,13 +70,27 @@ export class StackUseCases {
 
   async get(userId: string): Promise<StackView> {
     const { profile, today } = await todayFor(this.profiles, userId, this.clock);
-    const [items, taken] = await Promise.all([this.stack.list(userId), this.stack.takenOn(userId, today)]);
-    const experiments = await this.experiments(profile, items, today);
+    const [items, stopped, taken] = await Promise.all([
+      this.stack.list(userId),
+      this.stack.listStopped(userId, addDays(today, -WATCH_AFTER_STOP_DAYS)),
+      this.stack.takenOn(userId, today),
+    ]);
+    const experiments = await this.experiments(profile, [...items, ...stopped], today);
+    const withExperiment = (i: StackItem) => ({ ...view(i, today, taken), ...(experiments.get(i.id) ?? {}) });
     return {
       date: today,
-      items: items.map((i) => ({ ...view(i, today, taken), ...(experiments.get(i.id) ?? {}) })),
+      items: items.map(withExperiment),
+      stopped: stopped.map(withExperiment),
       flags: stackFlags(items, conditionsOf(profile)),
     };
+  }
+
+  /** Stopped taking it: off the daily list, and watched for four weeks to see if the gain lasts. */
+  async stop(userId: string, id: string): Promise<StackItemView> {
+    const { today } = await todayFor(this.profiles, userId, this.clock);
+    const saved = await this.stack.update(userId, id, { stoppedOn: today });
+    if (!saved) throw new NotFoundError("That supplement isn't in your stack.");
+    return view(saved, today, new Set());
   }
 
   /** "How does it make you feel?", answered for today. */
@@ -97,17 +124,20 @@ export class StackUseCases {
     for (const item of items) {
       const p = profileOf(item);
       const measure = measureFor(p.purpose);
+      const ownSeries = measure ? series[measure] : new Map<string, number>();
       out.set(item.id, {
         profile: p,
-        experiment: experimentOf({
-          name: item.name,
-          profile: p,
-          added: item.addedOn,
-          today,
-          series: measure ? series[measure] : new Map(),
-          doses: doses.filter((d) => d.itemId === item.id).map((d) => d.date),
-          feelings: feelings.filter((f) => f.itemId === item.id),
-        }),
+        experiment: item.stoppedOn
+          ? afterStopOf({ name: item.name, profile: p, added: item.addedOn, stopped: item.stoppedOn, today, series: ownSeries })
+          : experimentOf({
+              name: item.name,
+              profile: p,
+              added: item.addedOn,
+              today,
+              series: ownSeries,
+              doses: doses.filter((d) => d.itemId === item.id).map((d) => d.date),
+              feelings: feelings.filter((f) => f.itemId === item.id),
+            }),
       });
     }
     return out;

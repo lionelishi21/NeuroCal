@@ -467,8 +467,11 @@ class BrainCheck {
   );
 }
 
+/// The usual has moved and stayed moved (`BrainCheckHistory.newLevel` in the contracts).
+typedef LevelChange = ({bool up, int from, int to, DateTime since, int weeksHeld});
+
 class BrainCheckHistory {
-  const BrainCheckHistory({this.checks = const [], this.baselineScore});
+  const BrainCheckHistory({this.checks = const [], this.baselineScore, this.newLevel});
 
   /// Newest first.
   final List<BrainCheck> checks;
@@ -476,9 +479,23 @@ class BrainCheckHistory {
   /// Your usual: the median of earlier checks, once there are three.
   final int? baselineScore;
 
+  /// A lasting rise or fall in the usual, held for two weeks or more.
+  final LevelChange? newLevel;
+
   factory BrainCheckHistory.fromJson(Map<String, dynamic> j) => BrainCheckHistory(
     checks: [for (final c in j['checks'] as List) BrainCheck.fromJson(c as Map<String, dynamic>)],
     baselineScore: (j['baselineScore'] as num?)?.toInt(),
+    newLevel: switch (j['newLevel']) {
+      {
+        'direction': final String d,
+        'from': final num from,
+        'to': final num to,
+        'since': final String since,
+        'weeksHeld': final num held,
+      } =>
+        (up: d == 'up', from: from.toInt(), to: to.toInt(), since: DateTime.parse(since), weeksHeld: held.toInt()),
+      _ => null,
+    },
   );
 }
 
@@ -699,6 +716,7 @@ class SupplementExperiment {
     this.taken,
     this.askFeeling = false,
     this.feeling,
+    this.during,
   });
 
   /// brain_speed, sleep or stress; null for long-term supplements.
@@ -717,6 +735,9 @@ class SupplementExperiment {
   final ({int days, int of})? taken;
   final bool askFeeling;
   final Feeling? feeling;
+
+  /// After stopping: while it was being taken ([since] is then since stopping).
+  final ({double mean, int days})? during;
 
   String get measureLabel => switch (measure) {
     'sleep' => 'sleep score',
@@ -757,6 +778,7 @@ class SupplementExperiment {
     },
     askFeeling: j['askFeeling'] == true,
     feeling: Feeling.fromWire(j['feeling']),
+    during: _stat(j['during']),
   );
 }
 
@@ -795,6 +817,7 @@ class StackItem {
     this.addedOn,
     this.profile,
     this.experiment,
+    this.stoppedOn,
   });
 
   final String id;
@@ -812,6 +835,9 @@ class StackItem {
 
   /// When it was first added; its experiment starts here.
   final String? addedOn;
+
+  /// When it was stopped; NeuroCal then watches whether the gain lasts.
+  final String? stoppedOn;
   final SupplementProfile? profile;
   final SupplementExperiment? experiment;
 
@@ -845,6 +871,7 @@ class StackItem {
     daysLeft: (j['daysLeft'] as num?)?.toInt(),
     takenToday: j['takenToday'] as bool? ?? false,
     addedOn: j['addedOn'] as String?,
+    stoppedOn: j['stoppedOn'] as String?,
     profile: _profileFromJson(j['profile']),
     experiment: j['experiment'] == null ? null : SupplementExperiment.fromJson(j['experiment'] as Map<String, dynamic>),
   );
@@ -854,13 +881,17 @@ class StackItem {
 typedef StackFlag = ({String kind, String message, List<String> itemIds});
 
 class SupplementStack {
-  const SupplementStack({this.items = const [], this.flags = const []});
+  const SupplementStack({this.items = const [], this.flags = const [], this.stopped = const []});
 
   final List<StackItem> items;
+
+  /// Stopped in the last four weeks, each with whether the gain lasted.
+  final List<StackItem> stopped;
   final List<StackFlag> flags;
 
   factory SupplementStack.fromJson(Map<String, dynamic> j) => SupplementStack(
     items: [for (final i in j['items'] as List) StackItem.fromJson(i as Map<String, dynamic>)],
+    stopped: [for (final i in (j['stopped'] as List?) ?? const []) StackItem.fromJson(i as Map<String, dynamic>)],
     flags: [
       for (final f in j['flags'] as List)
         (
@@ -1507,13 +1538,16 @@ class BetterChoice {
 
 /// The biohacking level (`LevelResponse` in the contracts): 0 Getting started … 5 Upgraded.
 class Level {
-  const Level({required this.level, required this.name, required this.requirements});
+  const Level({required this.level, required this.name, required this.requirements, this.milestones = const []});
 
   final int level;
   final String name;
 
   /// Every habit for levels 1–5, in order.
   final List<({int level, String title, bool met, String progress})> requirements;
+
+  /// Lasting gains worth marking, apart from the habits.
+  final List<String> milestones;
 
   static const names = ['Getting started', 'Aware', 'Fuelled', 'In rhythm', 'Recovered', 'Upgraded'];
 
@@ -1529,6 +1563,7 @@ class Level {
           progress: r['progress'] as String,
         ),
     ],
+    milestones: [for (final m in (j['milestones'] as List?) ?? const []) m as String],
   );
 }
 

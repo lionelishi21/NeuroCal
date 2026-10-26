@@ -1363,7 +1363,47 @@ class MockNeuroCalApi implements NeuroCalApi {
         ));
       }
     }
-    return SupplementStack(items: [for (final item in _stack) _withExperiment(item)], flags: flags);
+    return SupplementStack(
+      items: [
+        for (final item in _stack)
+          if (!_stopped.containsKey(item.id)) _withExperiment(item),
+      ],
+      stopped: [
+        for (final item in _stack)
+          if (_stopped[item.id] case final on?) _stoppedView(item, on),
+      ],
+      flags: flags,
+    );
+  }
+
+  final _stopped = <String, DateTime>{};
+
+  @override
+  Future<void> stopStackItem(String id) async {
+    await _wait();
+    _stopped[id] = DateTime.now();
+  }
+
+  /// A stopped item, still in its first week after stopping, as the API (backend afterStopOf).
+  StackItem _stoppedView(StackItem item, DateTime on) {
+    final days = DateTime.now().difference(on).inDays;
+    return StackItem(
+      id: item.id,
+      name: item.name,
+      ingredients: item.ingredients,
+      servingsPerDay: item.servingsPerDay,
+      timing: item.timing,
+      startedOn: item.startedOn,
+      stoppedOn: isoDate(on),
+      experiment: SupplementExperiment(
+        measure: 'brain_speed',
+        day: days + 1,
+        onsetDays: 14,
+        verdict: 'watching',
+        summary:
+            'You stopped ${item.name} ${days == 0 ? 'today' : '$days days ago'}. NeuroCal is watching whether your Brain speed holds for four weeks.',
+      ),
+    );
   }
 
   /// When each item was first added, by id; tests set it to see an experiment further along.
