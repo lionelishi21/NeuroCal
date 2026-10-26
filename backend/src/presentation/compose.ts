@@ -29,6 +29,7 @@ import type { IPantryRecipeAssistant, IPantryRepository } from "../application/i
 import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import { SessionUseCases } from "../application/use-cases/SessionUseCases";
+import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
@@ -148,6 +149,8 @@ export interface Ports {
   email: IEmailSender;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
+  /** Amazon Associates tag for book links. */
+  amazonTag?: string | undefined;
 }
 
 /** Wires use cases to whatever adapters the caller provides (ARCHITECTURE §2: composition root). */
@@ -196,6 +199,7 @@ export function buildUseCases(p: Ports): UseCases {
     ingestTelemetry: new IngestTelemetryUseCase(p.telemetry, p.clock),
     getFocusScore: new GetFocusScoreUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.focusScores, p.explainer, p.clock, p.exercises, p.brainChecks, environment, p.glucose, p.coffee, p.sessions),
     getHistory: new GetHistoryUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.clock, p.exercises, environment, p.coffee, p.sessions),
+    getLearn: new GetLearnUseCase(p.profiles, p.focusScores, p.stack, p.clock, p.amazonTag ? { amazonTag: p.amazonTag } : {}),
     sessions: new SessionUseCases(p.profiles, p.sessions, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),

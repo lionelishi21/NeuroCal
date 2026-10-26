@@ -1,3 +1,4 @@
+import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
 import {
@@ -55,6 +56,7 @@ import {
   CoffeeDay,
   CoffeeProducts,
   LogSessionRequest,
+  LearnResponse,
   SessionsResponse,
   LogCoffeeRequest,
   BetterChoiceRequest,
@@ -181,6 +183,7 @@ export interface UseCases {
   betterChoice: BetterChoiceUseCase;
   coffee: CoffeeUseCases;
   sessions: SessionUseCases;
+  getLearn: GetLearnUseCase;
   logWeight: LogWeightUseCase;
   getWeightHistory: GetWeightHistoryUseCase;
   deleteWeight: DeleteWeightUseCase;
@@ -612,6 +615,14 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
     ],
     ["GET", /^\/fasting$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.execute(req)))],
     ["GET", /^\/coffee$/, async (req) => ok(CoffeeDay, toCoffeeDay(await uc.coffee.day(req.userId, date(req))))],
+    [
+      "GET",
+      /^\/learn$/,
+      async (req) => {
+        const books = await uc.getLearn.execute(req);
+        return ok(LearnResponse, { books, affiliate: books.some((b) => b.bookUrl.includes("&tag=")) });
+      },
+    ],
     ["GET", /^\/sessions$/, async (req) => ok(SessionsResponse, toSessionDay(await uc.sessions.day(req.userId)))],
     [
       "POST",

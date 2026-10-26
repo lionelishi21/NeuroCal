@@ -1229,6 +1229,27 @@ export const SessionsResponse = z.object({
 });
 export type SessionsResponse = z.infer<typeof SessionsResponse>;
 
+/** The Learn shelf: books and audiobooks for what someone is working on (backend domain/learn.ts). */
+export const LearnResponse = z.object({
+  books: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      author: z.string(),
+      /** What it is, in our words. */
+      summary: z.string(),
+      /** Why it's on this person's shelf. */
+      because: z.string(),
+      /** Store searches; the book link carries NeuroCal's affiliate tag when one is set, so label it. */
+      bookUrl: z.url(),
+      audioUrl: z.url(),
+    }),
+  ),
+  /** The book links earn NeuroCal a commission. */
+  affiliate: z.boolean(),
+});
+export type LearnResponse = z.infer<typeof LearnResponse>;
+
 /** "How does it make you feel?", asked at two and four weeks. */
 export const Feeling = z.enum(["better", "same", "worse"]);
 export const SetFeelingRequest = z.object({ feeling: Feeling });
@@ -1498,6 +1519,7 @@ export const endpoints = {
   setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
   setStackFeeling: { method: "PUT", path: "/stack/:id/feeling", body: SetFeelingRequest, response: SetFeelingRequest },
   getSessions: { method: "GET", path: "/sessions", response: SessionsResponse },
+  getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
   deleteSession: { method: "DELETE", path: "/sessions/:id" },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },

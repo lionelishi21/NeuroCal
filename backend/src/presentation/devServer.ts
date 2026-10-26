@@ -233,6 +233,7 @@ async function main() {
       waitlist: new DrizzleWaitlistRepository(db),
       email: config.resendApiKey ? new ResendEmailSender({ apiKey: config.resendApiKey, from: config.emailFrom }) : noEmail,
       webUrl: config.webUrl,
+    amazonTag: config.amazonTag,
     }),
   );
 

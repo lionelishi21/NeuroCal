@@ -630,6 +630,54 @@ class MockNeuroCalApi implements NeuroCalApi {
     _cups.removeWhere((c) => c.id == id);
   }
 
+  /// Three of the API's books (backend domain/learn.ts), as for someone whose sleep is the weak spot.
+  @override
+  Future<LearnShelf> learn() async {
+    await _wait();
+    ({String bookUrl, String audioUrl}) links(String q) => (
+      bookUrl: 'https://www.amazon.com/s?k=${Uri.encodeComponent(q)}&i=stripbooks',
+      audioUrl: 'https://www.audible.com/search?keywords=${Uri.encodeComponent(q)}',
+    );
+    LearnBook book(String id, String title, String author, String summary, String because) {
+      final l = links('$title $author');
+      return (
+        id: id,
+        title: title,
+        author: author,
+        summary: summary,
+        because: because,
+        bookUrl: l.bookUrl,
+        audioUrl: l.audioUrl,
+      );
+    }
+
+    return LearnShelf(
+      books: [
+        book(
+          'why-we-sleep',
+          'Why We Sleep',
+          'Matthew Walker',
+          'What sleep does for memory, mood and health, and what steals it, from a sleep scientist.',
+          'Sleep is pulling your Focus Score down most.',
+        ),
+        book(
+          'head-strong',
+          'Head Strong',
+          'Dave Asprey',
+          'How the brain makes energy, and the food, light and supplement changes the author says sharpen it in two weeks.',
+          'For sharper thinking.',
+        ),
+        book(
+          'outlive',
+          'Outlive',
+          'Peter Attia',
+          'A doctor’s plan for living longer and better: exercise first, then nutrition, sleep and emotional health.',
+          'For a long, healthy life.',
+        ),
+      ],
+    );
+  }
+
   final _sessions = <LoggedSession>[];
 
   /// As the API (backend domain/session.ts).

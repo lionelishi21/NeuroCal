@@ -36,6 +36,8 @@ export interface AppConfig {
   emailFrom: string;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
+  /** Amazon Associates tag for the Learn shelf's book links; none when unset. */
+  amazonTag?: string;
   /** Open-Meteo API key (paid plan); without it the free, non-commercial API is used. */
   openMeteoApiKey?: string;
   /** YouTube Data API key, to check channels for new videos (titles and links only). */
@@ -70,6 +72,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     resendApiKey: opt("RESEND_API_KEY"),
     emailFrom: opt("EMAIL_FROM") ?? "NeuroCal <hello@neurocal.ai>",
     webUrl: opt("WEB_URL") ?? "https://neurocal.ai",
+    ...(opt("AMAZON_ASSOCIATE_TAG") ? { amazonTag: opt("AMAZON_ASSOCIATE_TAG")! } : {}),
     adminEmails: (opt("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),
     recipeDomains: domains ? domains.split(",").map((d) => d.trim()).filter(Boolean) : DEFAULT_RECIPE_DOMAINS,
     youTubeApiKey: opt("YOUTUBE_API_KEY"),

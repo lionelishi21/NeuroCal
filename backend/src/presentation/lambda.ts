@@ -131,6 +131,7 @@ const api = createApi(
     // Without a Resend key the waitlist still fills; its emails go out once the key is set.
     email: config.resendApiKey ? new ResendEmailSender({ apiKey: config.resendApiKey, from: config.emailFrom }) : noEmail,
     webUrl: config.webUrl,
+    amazonTag: config.amazonTag,
     recipeDomains: config.recipeDomains,
   }),
   errors,

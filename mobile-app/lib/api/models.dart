@@ -2106,3 +2106,40 @@ class SessionsDay {
     ],
   );
 }
+
+/// A book on the Learn shelf, with why it's there (`LearnResponse` in the contracts).
+typedef LearnBook = ({
+  String id,
+  String title,
+  String author,
+  String summary,
+  String because,
+  String bookUrl,
+  String audioUrl,
+});
+
+/// The Learn shelf: books and audiobooks for what someone is working on.
+class LearnShelf {
+  const LearnShelf({this.books = const [], this.affiliate = false});
+
+  final List<LearnBook> books;
+
+  /// The book links earn NeuroCal a commission: say so.
+  final bool affiliate;
+
+  factory LearnShelf.fromJson(Map<String, dynamic> j) => LearnShelf(
+    books: [
+      for (final b in j['books'] as List)
+        (
+          id: b['id'] as String,
+          title: b['title'] as String,
+          author: b['author'] as String,
+          summary: b['summary'] as String,
+          because: b['because'] as String,
+          bookUrl: b['bookUrl'] as String,
+          audioUrl: b['audioUrl'] as String,
+        ),
+    ],
+    affiliate: j['affiliate'] == true,
+  );
+}

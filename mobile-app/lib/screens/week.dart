@@ -4,6 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../nights.dart';
 import '../theme/tokens.dart';
+import '../widgets/learn_shelf.dart';
 import '../widgets/product_card.dart';
 import '../widgets/ui.dart';
 import 'healthspan_card.dart';
@@ -156,6 +157,7 @@ class _WeekScreenState extends State<WeekScreen> {
                   onPick: pick,
                 ),
                 _WhatHelps(help: _help, daysLogged: days.where((d) => d.hasData).length),
+                const LearnShelfSection(),
                 const BlockTitle('Every day'),
                 _DayTable(days, selected: selected, onPick: pick),
               ],

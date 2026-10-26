@@ -1258,6 +1258,28 @@
         }
       }
     },
+    "/learn": {
+      "get": {
+        "operationId": "getLearn",
+        "summary": "Books and audiobooks for you",
+        "description": "A short, hand-picked shelf ranked by the weakest parts of your latest Focus Score, then fasting, your supplement stack, focus and longevity, each with why it's there and links to the book and the audiobook.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearnResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/sessions/{id}": {
       "delete": {
         "operationId": "deleteSession",
@@ -5058,6 +5080,58 @@
           "quote",
           "link",
           "status"
+        ]
+      },
+      "LearnResponse": {
+        "type": "object",
+        "properties": {
+          "books": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "author": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "because": {
+                  "type": "string"
+                },
+                "bookUrl": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "audioUrl": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "author",
+                "summary",
+                "because",
+                "bookUrl",
+                "audioUrl"
+              ]
+            }
+          },
+          "affiliate": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "books",
+          "affiliate"
         ]
       },
       "LeaveWaitlistRequest": {

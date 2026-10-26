@@ -155,6 +155,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   updateStackItem: { summary: "Change servings, timing or the bottle size", params: { id: "The stack item's id." } },
   deleteStackItem: { summary: "Remove a supplement from your stack", status: 204, params: { id: "The stack item's id." } },
   setStackTaken: { summary: "Tick a supplement as taken today", params: { id: "The stack item's id." } },
+  getLearn: {
+    summary: "Books and audiobooks for you",
+    description: "A short, hand-picked shelf ranked by the weakest parts of your latest Focus Score, then fasting, your supplement stack, focus and longevity, each with why it's there and links to the book and the audiobook.",
+  },
   getSessions: {
     summary: "Your gadget and practice sessions",
     description: "Today's sessions, what each kind is for, and for each kind used in the last eight weeks the days after a session against the days without, on the measure that fits.",

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -423,6 +423,17 @@ describe("API routes", () => {
     const scan = FoodScanResponse.parse((await call("GET", "/foods/barcode/0850000000024")).body);
     expect(scan.coffeeFat).toMatchObject({ addIn: "mct_c8_c10", good: false });
     expect(scan.coffee).toBeUndefined();
+  });
+
+  it("shelves books for the weakest parts of the latest score, without an affiliate tag unless one is set", async () => {
+    // A stored score where sleep is the weakest input.
+    await ports.focusScores.put({ userId: "u1", date: "2026-09-28", score: 60, components: { sleep: 0.4, timing: 0.9, glycemic: 0.7, stress: 1, movement: null }, explanation: "", modelVersion: "v1" });
+    const res = await call("GET", "/learn");
+    const learn = LearnResponse.parse(res.body);
+    expect(learn.affiliate).toBe(false);
+    expect(learn.books[0]).toMatchObject({ id: "why-we-sleep", because: "Sleep is pulling your Focus Score down most." });
+    expect(learn.books[1]).toMatchObject({ because: "Your food is the weak spot in your score." });
+    expect(learn.books[0]!.audioUrl).toMatch(/^https:\/\/www\.audible\.com\/search/);
   });
 
   it("logs gadget sessions, lists every kind with what to expect, and tests the ones used", async () => {

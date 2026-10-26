@@ -45,6 +45,9 @@ abstract interface class NeuroCalApi {
 
   Future<void> deleteCoffee(String id);
 
+  /// Books and audiobooks for what this person is working on.
+  Future<LearnShelf> learn();
+
   /// Today's gadget and practice sessions, every kind, and what the ones used are doing.
   Future<SessionsDay> sessions();
 
@@ -353,6 +356,9 @@ class HttpNeuroCalApi implements NeuroCalApi {
   Future<void> deleteCoffee(String id) async {
     _decode(await _client.delete(_uri('/coffee/$id'), headers: await _headers()));
   }
+
+  @override
+  Future<LearnShelf> learn() async => LearnShelf.fromJson(await _get('/learn') as Map<String, dynamic>);
 
   @override
   Future<SessionsDay> sessions() async => SessionsDay.fromJson(await _get('/sessions') as Map<String, dynamic>);
