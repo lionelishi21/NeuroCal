@@ -322,6 +322,28 @@ export const sessions = pgTable(
   (t) => [index("sessions_user_taken_at_idx").on(t.userId, t.takenAt)],
 );
 
+/** Performance sessions (domain/performance.ts): deep work, study, training, creative work, gaming. */
+export const performanceSessions = pgTable(
+  "performance_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    activity: text("activity").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    minutes: smallint("minutes").notNull(),
+    sharpness: smallint("sharpness").notNull(),
+    result: real("result"),
+    game: text("game"),
+    wins: smallint("wins"),
+    losses: smallint("losses"),
+    ratingBefore: integer("rating_before"),
+    ratingAfter: integer("rating_after"),
+  },
+  (t) => [index("performance_sessions_user_started_at_idx").on(t.userId, t.startedAt), check("performance_sessions_sharpness", sql`${t.sharpness} between 1 and 5`)],
+);
+
 /** The shopping list someone keeps (domain/shoppingList.ts). */
 export const shoppingItems = pgTable(
   "shopping_items",

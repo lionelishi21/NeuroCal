@@ -1526,6 +1526,83 @@
         }
       }
     },
+    "/performance": {
+      "get": {
+        "operationId": "getPerformance",
+        "summary": "Your performance sessions",
+        "description": "The last two weeks' sessions (deep work, study, training, creative work, gaming) and, for each activity done in the last eight weeks, how sharp the sessions felt and what goes with the best ones: last night's sleep, caffeine or a meal before, the time of day and the session's length. Patterns need six sessions of an activity and a clear enough difference.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "logPerformance",
+        "summary": "Log a performance session",
+        "description": "Rated for sharpness (1 to 5), with a result where the activity takes one, or games and rating for gaming. Starts its length before now unless a start is given, within the last two days.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogPerformanceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/performance/{id}": {
+      "delete": {
+        "operationId": "deletePerformance",
+        "summary": "Remove a performance session",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The session's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done; no content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/me/subscription": {
       "get": {
         "operationId": "getSubscription",
@@ -2701,6 +2778,94 @@
       }
     },
     "schemas": {
+      "Activity": {
+        "type": "string",
+        "enum": [
+          "deep_work",
+          "study",
+          "training",
+          "creative",
+          "gaming"
+        ]
+      },
+      "ActivityInfo": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/Activity"
+          },
+          "label": {
+            "type": "string"
+          },
+          "usualMinutes": {
+            "type": "integer"
+          },
+          "result": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "label",
+              "max"
+            ]
+          }
+        },
+        "required": [
+          "activity",
+          "label",
+          "usualMinutes"
+        ]
+      },
+      "ActivitySummary": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/Activity"
+          },
+          "sessions": {
+            "type": "integer"
+          },
+          "sharpness": {
+            "type": "number"
+          },
+          "wins": {
+            "type": "integer"
+          },
+          "losses": {
+            "type": "integer"
+          },
+          "ratingChange": {
+            "type": "integer"
+          },
+          "bestResult": {
+            "type": "number"
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceInsight"
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity",
+          "sessions",
+          "sharpness",
+          "insights"
+        ]
+      },
       "AddKnowledgeSourceRequest": {
         "type": "object",
         "properties": {
@@ -5571,6 +5736,62 @@
           "minutes"
         ]
       },
+      "LogPerformanceRequest": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/Activity"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "sharpness": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "result": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "losses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "ratingBefore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "ratingAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "activity",
+          "minutes",
+          "sharpness"
+        ]
+      },
       "LogSessionRequest": {
         "type": "object",
         "properties": {
@@ -6068,6 +6289,149 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "PerformanceInsight": {
+        "type": "object",
+        "properties": {
+          "factor": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "caffeine",
+              "meal",
+              "morning",
+              "afternoon",
+              "evening",
+              "short"
+            ]
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "sharpness",
+              "win_rate"
+            ]
+          },
+          "with": {
+            "type": "number"
+          },
+          "without": {
+            "type": "number"
+          },
+          "countWith": {
+            "type": "integer"
+          },
+          "countWithout": {
+            "type": "integer"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor",
+          "measure",
+          "with",
+          "without",
+          "countWith",
+          "countWithout",
+          "summary"
+        ]
+      },
+      "PerformanceResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceSession"
+            }
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityInfo"
+            }
+          },
+          "summaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivitySummary"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "recent",
+          "activities",
+          "summaries"
+        ]
+      },
+      "PerformanceSession": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "$ref": "#/components/schemas/Activity"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "sharpness": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "result": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "losses": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "ratingBefore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "ratingAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "activity",
+          "minutes",
+          "sharpness",
+          "id",
+          "startedAt"
         ]
       },
       "PhotoUpload": {

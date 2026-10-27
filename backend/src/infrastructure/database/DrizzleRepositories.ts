@@ -1,5 +1,6 @@
 import type { Aisle, ShoppingListItem } from "../../domain/shoppingList";
 import type { Session, SessionKind } from "../../domain/session";
+import type { Activity, PerformanceSession } from "../../domain/performance";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
@@ -10,6 +11,7 @@ import type {
   IFastPlanRepository,
   ICoffeeRepository,
   ISessionRepository,
+  IPerformanceRepository,
   IShoppingListRepository,
   IMealRepository,
   IProfileRepository,
@@ -85,6 +87,7 @@ import {
   fastPlans,
   coffeeCups,
   sessions,
+  performanceSessions,
   shoppingItems,
   exercises,
   knowledgeSources,
@@ -153,6 +156,7 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
       await tx.delete(coffeeCups).where(eq(coffeeCups.userId, userId));
       await tx.delete(sessions).where(eq(sessions.userId, userId));
+      await tx.delete(performanceSessions).where(eq(performanceSessions.userId, userId));
       await tx.delete(shoppingItems).where(eq(shoppingItems.userId, userId));
       await tx.delete(mealPlans).where(eq(mealPlans.userId, userId));
       await tx.delete(waitlist).where(eq(waitlist.email, user.email.toLowerCase()));
@@ -1307,6 +1311,59 @@ export class DrizzleSessionRepository implements ISessionRepository {
 
   async delete(userId: string, id: string) {
     const gone = await this.db.delete(sessions).where(and(eq(sessions.userId, userId), eq(sessions.id, id))).returning({ id: sessions.id });
+    return gone.length > 0;
+  }
+}
+
+export class DrizzlePerformanceRepository implements IPerformanceRepository {
+  constructor(private readonly db: Database) {}
+
+  private static toSession(r: typeof performanceSessions.$inferSelect): PerformanceSession {
+    const optional = { result: r.result, game: r.game, wins: r.wins, losses: r.losses, ratingBefore: r.ratingBefore, ratingAfter: r.ratingAfter };
+    return {
+      id: r.id,
+      activity: r.activity as Activity,
+      startedAt: r.startedAt,
+      minutes: r.minutes,
+      sharpness: r.sharpness,
+      ...Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== null)),
+    };
+  }
+
+  async add(userId: string, s: Omit<PerformanceSession, "id">) {
+    const [row] = await this.db
+      .insert(performanceSessions)
+      .values({
+        userId,
+        activity: s.activity,
+        startedAt: s.startedAt,
+        minutes: s.minutes,
+        sharpness: s.sharpness,
+        result: s.result ?? null,
+        game: s.game ?? null,
+        wins: s.wins ?? null,
+        losses: s.losses ?? null,
+        ratingBefore: s.ratingBefore ?? null,
+        ratingAfter: s.ratingAfter ?? null,
+      })
+      .returning();
+    return DrizzlePerformanceRepository.toSession(row!);
+  }
+
+  async listBetween(userId: string, from: Date, to: Date) {
+    const rows = await this.db
+      .select()
+      .from(performanceSessions)
+      .where(and(eq(performanceSessions.userId, userId), gte(performanceSessions.startedAt, from), lt(performanceSessions.startedAt, to)))
+      .orderBy(asc(performanceSessions.startedAt));
+    return rows.map(DrizzlePerformanceRepository.toSession);
+  }
+
+  async delete(userId: string, id: string) {
+    const gone = await this.db
+      .delete(performanceSessions)
+      .where(and(eq(performanceSessions.userId, userId), eq(performanceSessions.id, id)))
+      .returning({ id: performanceSessions.id });
     return gone.length > 0;
   }
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -29,6 +29,7 @@ import {
   InMemoryFastPlans,
   InMemoryCoffee,
   InMemorySessions,
+  InMemoryPerformance,
   InMemoryShoppingList,
   FakeBetterChoice,
   FakeShoppingReviewer,
@@ -168,6 +169,7 @@ beforeEach(async () => {
     fastPlans: new InMemoryFastPlans(),
     coffee: new InMemoryCoffee(),
     sessions: new InMemorySessions(),
+    performance: new InMemoryPerformance(),
     shoppingList: new InMemoryShoppingList(),
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
@@ -451,6 +453,21 @@ describe("API routes", () => {
     expect((await call("DELETE", `/sessions/${day.sessions[0]!.id}`)).status).toBe(204);
     expect(SessionsResponse.parse((await call("GET", "/sessions")).body).sessions).toEqual([]);
     expect((await call("DELETE", "/sessions/nope")).status).toBe(404);
+  });
+
+  it("logs performance sessions with each activity's own result, and lists what goes with the best ones", async () => {
+    const logged = await call("POST", "/performance", { activity: "gaming", minutes: 60, sharpness: 4, game: "Street Fighter 6", wins: 7, losses: 3 });
+    expect(logged.status).toBe(201);
+    const view = PerformanceResponse.parse(logged.body);
+    expect(view.recent).toEqual([expect.objectContaining({ activity: "gaming", game: "Street Fighter 6", wins: 7 })]);
+    expect(view.activities.find((a) => a.activity === "study")).toMatchObject({ label: "Study", result: { label: "Practice score", unit: "%", max: 100 } });
+    expect(view.summaries).toEqual([expect.objectContaining({ activity: "gaming", sessions: 1, wins: 7, losses: 3, insights: [] })]);
+
+    expect((await call("POST", "/performance", { activity: "chess", minutes: 30, sharpness: 3 })).status).toBe(400);
+    expect((await call("POST", "/performance", { activity: "study", minutes: 30, sharpness: 3, wins: 1 })).status).toBe(400);
+    expect((await call("DELETE", `/performance/${view.recent[0]!.id}`)).status).toBe(204);
+    expect(PerformanceResponse.parse((await call("GET", "/performance")).body).recent).toEqual([]);
+    expect((await call("DELETE", "/performance/nope")).status).toBe(404);
   });
 
   it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {

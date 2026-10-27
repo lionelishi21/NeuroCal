@@ -70,6 +70,24 @@ abstract interface class NeuroCalApi {
 
   Future<void> deleteSession(String id);
 
+  /// Performance sessions: the last two weeks, and what goes with the best ones.
+  Future<PerformanceView> performance();
+
+  /// Logs a performance session that has just finished; returns the view with it.
+  Future<PerformanceView> logPerformance({
+    required Activity activity,
+    required int minutes,
+    required int sharpness,
+    num? result,
+    String? game,
+    int? wins,
+    int? losses,
+    int? ratingBefore,
+    int? ratingAfter,
+  });
+
+  Future<void> deletePerformance(String id);
+
   /// What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine.
   Future<List<SuggestedProduct>> coffeeProducts();
 
@@ -449,6 +467,45 @@ class HttpNeuroCalApi implements NeuroCalApi {
   @override
   Future<void> deleteSession(String id) async {
     _decode(await _client.delete(_uri('/sessions/$id'), headers: await _headers()));
+  }
+
+  @override
+  Future<PerformanceView> performance() async =>
+      PerformanceView.fromJson(await _get('/performance') as Map<String, dynamic>);
+
+  @override
+  Future<PerformanceView> logPerformance({
+    required Activity activity,
+    required int minutes,
+    required int sharpness,
+    num? result,
+    String? game,
+    int? wins,
+    int? losses,
+    int? ratingBefore,
+    int? ratingAfter,
+  }) async {
+    final res = await _client.post(
+      _uri('/performance'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'activity': activity.wire,
+        'minutes': minutes,
+        'sharpness': sharpness,
+        'result': ?result,
+        'game': ?game,
+        'wins': ?wins,
+        'losses': ?losses,
+        'ratingBefore': ?ratingBefore,
+        'ratingAfter': ?ratingAfter,
+      }),
+    );
+    return PerformanceView.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deletePerformance(String id) async {
+    _decode(await _client.delete(_uri('/performance/$id'), headers: await _headers()));
   }
 
   @override

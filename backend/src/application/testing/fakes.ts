@@ -1,6 +1,7 @@
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import type { ShoppingListItem } from "../../domain/shoppingList";
 import type { Session } from "../../domain/session";
+import type { PerformanceSession } from "../../domain/performance";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
@@ -74,6 +75,7 @@ import type {
   IFastPlanRepository,
   ICoffeeRepository,
   ISessionRepository,
+  IPerformanceRepository,
   IShoppingListRepository,
   IMealRepository,
   IProfileRepository,
@@ -1065,6 +1067,28 @@ export class InMemorySessions implements ISessionRepository {
     return this.rows
       .filter((r) => r.userId === userId && r.takenAt >= from && r.takenAt < to)
       .sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime())
+      .map(({ userId: _, ...s }) => s);
+  }
+  async delete(userId: string, id: string) {
+    const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);
+    if (i < 0) return false;
+    this.rows.splice(i, 1);
+    return true;
+  }
+}
+
+export class InMemoryPerformance implements IPerformanceRepository {
+  readonly rows: (PerformanceSession & { userId: string })[] = [];
+  async add(userId: string, s: Omit<PerformanceSession, "id">) {
+    const row = { ...s, id: `perf-${this.rows.length + 1}`, userId };
+    this.rows.push(row);
+    const { userId: _, ...saved } = row;
+    return saved;
+  }
+  async listBetween(userId: string, from: Date, to: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && r.startedAt >= from && r.startedAt < to)
+      .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
       .map(({ userId: _, ...s }) => s);
   }
   async delete(userId: string, id: string) {

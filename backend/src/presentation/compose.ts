@@ -9,7 +9,7 @@ import type { IEmbeddingProvider } from "../application/interfaces/IEmbeddingPro
 import type { IFocusExplainer } from "../application/interfaces/IFocusExplainer";
 import type { IIdentityProvider } from "../application/interfaces/IIdentityProvider";
 import type { IObjectStorage } from "../application/interfaces/IObjectStorage";
-import type { ICoffeeRepository, ISessionRepository, IShoppingListRepository, IFastPlanRepository,
+import type { ICoffeeRepository, IPerformanceRepository, ISessionRepository, IShoppingListRepository, IFastPlanRepository,
   ICheckInRepository,
   IFocusScoreRepository,
   IMealRepository,
@@ -29,6 +29,7 @@ import type { IPantryRecipeAssistant, IPantryRepository } from "../application/i
 import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import { SessionUseCases } from "../application/use-cases/SessionUseCases";
+import { PerformanceUseCases } from "../application/use-cases/PerformanceUseCases";
 import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { ShoppingListUseCases } from "../application/use-cases/ShoppingListUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
@@ -127,6 +128,7 @@ export interface Ports {
   fastPlans: IFastPlanRepository;
   coffee: ICoffeeRepository;
   sessions: ISessionRepository;
+  performance: IPerformanceRepository;
   shoppingList: IShoppingListRepository;
   airQuality: IAirQuality;
   geocoder: IGeocoder;
@@ -204,6 +206,7 @@ export function buildUseCases(p: Ports): UseCases {
     shoppingList: new ShoppingListUseCases(p.shoppingList, p.pantry, p.clock),
     getLearn: new GetLearnUseCase(p.profiles, p.focusScores, p.stack, p.clock, p.amazonTag ? { amazonTag: p.amazonTag } : {}),
     sessions: new SessionUseCases(p.profiles, p.sessions, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
+    performance: new PerformanceUseCases(p.profiles, p.performance, p.clock, { scores: p.focusScores, coffee: p.coffee, meals: p.meals }),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),
     markers: new MarkerUseCases(p.markers, p.clock),

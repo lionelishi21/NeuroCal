@@ -180,6 +180,17 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "A sauna, cold plunge, meditation, breathwork, BrainTap, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
   },
   deleteSession: { summary: "Remove a session", status: 204, params: { id: "The session's id." } },
+  getPerformance: {
+    summary: "Your performance sessions",
+    description:
+      "The last two weeks' sessions (deep work, study, training, creative work, gaming) and, for each activity done in the last eight weeks, how sharp the sessions felt and what goes with the best ones: last night's sleep, caffeine or a meal before, the time of day and the session's length. Patterns need six sessions of an activity and a clear enough difference.",
+  },
+  logPerformance: {
+    summary: "Log a performance session",
+    description: "Rated for sharpness (1 to 5), with a result where the activity takes one, or games and rating for gaming. Starts its length before now unless a start is given, within the last two days.",
+    status: 201,
+  },
+  deletePerformance: { summary: "Remove a performance session", status: 204, params: { id: "The session's id." } },
   stopStackItem: {
     summary: "Stop taking a supplement",
     description: "It leaves the daily list and reminders, and for four weeks its experiment compares before, while taking it and since stopping: did the gain last or fade? DELETE removes one added by mistake.",

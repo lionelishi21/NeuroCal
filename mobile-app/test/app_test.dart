@@ -275,7 +275,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InkWell, 'Body'));
     await tester.pumpAndSettle();
-    expect(find.text('Weight, Brain speed and health markers'), findsOneWidget);
+    expect(find.text('Weight, Brain speed, performance and health markers'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(InkWell, 'Level'));
     await tester.pumpAndSettle();

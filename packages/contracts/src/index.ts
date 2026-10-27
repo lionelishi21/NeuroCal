@@ -1295,6 +1295,79 @@ export const SessionsResponse = z.object({
 });
 export type SessionsResponse = z.infer<typeof SessionsResponse>;
 
+/** What someone wants to be sharp for (backend domain/performance.ts). */
+export const Activity = z.enum(["deep_work", "study", "training", "creative", "gaming"]);
+export type Activity = z.infer<typeof Activity>;
+
+export const LogPerformanceRequest = z.object({
+  activity: Activity,
+  minutes: z.number().int().min(1).max(720),
+  /** How sharp it felt: 1 (foggy) to 5 (locked in). */
+  sharpness: z.number().int().min(1).max(5),
+  /** Deep work: tasks finished (0–50). Study: practice score (0–100%). Not for other activities. */
+  result: z.number().min(0).max(100).optional(),
+  /** Gaming only. */
+  game: z.string().max(60).optional(),
+  wins: z.number().int().min(0).max(200).optional(),
+  losses: z.number().int().min(0).max(200).optional(),
+  ratingBefore: z.number().int().min(0).max(100000).optional(),
+  ratingAfter: z.number().int().min(0).max(100000).optional(),
+  /** When it started; its length before now when left out. Within the last two days. */
+  startedAt: IsoDateTime.optional(),
+});
+export type LogPerformanceRequest = z.infer<typeof LogPerformanceRequest>;
+
+export const PerformanceSession = LogPerformanceRequest.omit({ startedAt: true }).extend({ id: Id, startedAt: IsoDateTime });
+export type PerformanceSession = z.infer<typeof PerformanceSession>;
+
+/** One activity: its name and the result it takes; the same for everyone. */
+export const ActivityInfo = z.object({
+  activity: Activity,
+  label: z.string(),
+  usualMinutes: z.number().int(),
+  result: z.object({ label: z.string(), unit: z.string().optional(), max: z.number() }).optional(),
+});
+
+/** Something that goes with someone's best sessions, from their own data; a pattern, not proof of the cause. */
+export const PerformanceInsight = z.object({
+  factor: z.enum(["sleep", "caffeine", "meal", "morning", "afternoon", "evening", "short"]),
+  measure: z.enum(["sharpness", "win_rate"]),
+  /** Average sharpness (1–5) or win rate (0–1) with the factor and without it. */
+  with: z.number(),
+  without: z.number(),
+  /** Sessions (sharpness) or games (win rate) on each side. */
+  countWith: z.number().int(),
+  countWithout: z.number().int(),
+  summary: z.string(),
+});
+
+export const ActivitySummary = z.object({
+  activity: Activity,
+  /** Sessions in the last eight weeks, and their average sharpness. */
+  sessions: z.number().int(),
+  sharpness: z.number(),
+  wins: z.number().int().optional(),
+  losses: z.number().int().optional(),
+  /** Rating gained over the sessions that logged both ratings. */
+  ratingChange: z.number().int().optional(),
+  bestResult: z.number().optional(),
+  /** Strongest first, at most three. */
+  insights: z.array(PerformanceInsight),
+  /** Why there are no patterns to show: too few sessions, or none clear. */
+  note: z.string().optional(),
+});
+
+export const PerformanceResponse = z.object({
+  date: IsoDate,
+  /** The last two weeks' sessions, newest first. */
+  recent: z.array(PerformanceSession),
+  /** Every activity, for the logging sheet. */
+  activities: z.array(ActivityInfo),
+  /** Each activity done in the last eight weeks, most recently done first. */
+  summaries: z.array(ActivitySummary),
+});
+export type PerformanceResponse = z.infer<typeof PerformanceResponse>;
+
 /** The Learn shelf: books and audiobooks for what someone is working on (backend domain/learn.ts). */
 export const LearnResponse = z.object({
   books: z.array(
@@ -1599,6 +1672,9 @@ export const endpoints = {
   getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
   deleteSession: { method: "DELETE", path: "/sessions/:id" },
+  getPerformance: { method: "GET", path: "/performance", response: PerformanceResponse },
+  logPerformance: { method: "POST", path: "/performance", body: LogPerformanceRequest, response: PerformanceResponse },
+  deletePerformance: { method: "DELETE", path: "/performance/:id" },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },

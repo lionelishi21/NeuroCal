@@ -937,6 +937,107 @@ class MockNeuroCalApi implements NeuroCalApi {
     _sessions.removeWhere((s) => s.id == id);
   }
 
+  final _performance = <PerformanceSession>[];
+
+  static const _activities = <ActivityInfo>[
+    (
+      activity: Activity.deepWork,
+      label: 'Deep work',
+      usualMinutes: 90,
+      result: (label: 'Tasks finished', unit: null, max: 50),
+    ),
+    (
+      activity: Activity.study,
+      label: 'Study',
+      usualMinutes: 60,
+      result: (label: 'Practice score', unit: '%', max: 100),
+    ),
+    (activity: Activity.training, label: 'Training', usualMinutes: 60, result: null),
+    (activity: Activity.creative, label: 'Creative work', usualMinutes: 60, result: null),
+    (activity: Activity.gaming, label: 'Gaming', usualMinutes: 90, result: null),
+  ];
+
+  @override
+  Future<PerformanceView> performance() async {
+    await _wait();
+    final done = <Activity>[];
+    for (final s in _performance.reversed) {
+      if (!done.contains(s.activity)) done.add(s.activity);
+    }
+    return PerformanceView(
+      date: isoDate(DateTime.now()),
+      recent: _performance.reversed.toList(),
+      activities: _activities,
+      summaries: [
+        for (final a in done)
+          () {
+            final mine = _performance.where((s) => s.activity == a).toList();
+            final played = mine.where((s) => s.wins != null || s.losses != null);
+            final rated = mine.where((s) => s.ratingBefore != null && s.ratingAfter != null);
+            final results = [for (final s in mine) ?s.result];
+            final need = 6 - mine.length;
+            return (
+              activity: a,
+              sessions: mine.length,
+              sharpness: (mine.fold(0, (n, s) => n + s.sharpness) / mine.length * 10).round() / 10,
+              wins: played.isEmpty ? null : played.fold(0, (n, s) => n + (s.wins ?? 0)),
+              losses: played.isEmpty ? null : played.fold(0, (n, s) => n + (s.losses ?? 0)),
+              ratingChange: rated.isEmpty ? null : rated.fold(0, (n, s) => n + s.ratingAfter! - s.ratingBefore!),
+              bestResult: results.isEmpty ? null : results.reduce((x, y) => x > y ? x : y),
+              insights: need > 0
+                  ? const <PerformanceInsight>[]
+                  : [
+                      (
+                        factor: 'sleep',
+                        winRate: false,
+                        summary:
+                            'You feel sharper ${a == Activity.gaming ? 'gaming' : 'in these sessions'} after a good night\'s sleep: 4.3 against 2.8 out of 5 (4 sessions against 3).',
+                      ),
+                    ],
+              note: need > 0
+                  ? 'Log $need more ${need == 1 ? 'session' : 'sessions'} and NeuroCal can show what goes with your best ones.'
+                  : null,
+            );
+          }(),
+      ],
+    );
+  }
+
+  @override
+  Future<PerformanceView> logPerformance({
+    required Activity activity,
+    required int minutes,
+    required int sharpness,
+    num? result,
+    String? game,
+    int? wins,
+    int? losses,
+    int? ratingBefore,
+    int? ratingAfter,
+  }) async {
+    await _wait();
+    _performance.add((
+      id: 'perf${_performance.length + 1}',
+      activity: activity,
+      startedAt: DateTime.now().subtract(Duration(minutes: minutes)),
+      minutes: minutes,
+      sharpness: sharpness,
+      result: result,
+      game: game,
+      wins: wins,
+      losses: losses,
+      ratingBefore: ratingBefore,
+      ratingAfter: ratingAfter,
+    ));
+    return performance();
+  }
+
+  @override
+  Future<void> deletePerformance(String id) async {
+    await _wait();
+    _performance.removeWhere((s) => s.id == id);
+  }
+
   /// As the API's catalog (backend partnerProducts.ts), two of them.
   @override
   Future<List<SuggestedProduct>> coffeeProducts() async {

@@ -2238,3 +2238,130 @@ String planQuantity(int grams) => grams >= 1000
     : grams >= 100
     ? 'about ${(grams / 10).round() * 10} g'
     : 'about ${((grams / 5).round() * 5).clamp(5, 95)} g';
+
+/// What someone wants to be sharp for (`Activity` in the contracts; backend domain/performance.ts).
+enum Activity {
+  deepWork('deep_work'),
+  study('study'),
+  training('training'),
+  creative('creative'),
+  gaming('gaming');
+
+  const Activity(this.wire);
+  final String wire;
+
+  static Activity? fromWire(Object? wire) => values.where((a) => a.wire == wire).firstOrNull;
+}
+
+/// An activity's name and the result it takes; the same for everyone (`ActivityInfo` in the contracts).
+typedef ActivityInfo = ({
+  Activity activity,
+  String label,
+  int usualMinutes,
+  ({String label, String? unit, num max})? result,
+});
+
+/// One logged performance session; game, wins, losses and ratings are for gaming.
+typedef PerformanceSession = ({
+  String id,
+  Activity activity,
+  DateTime startedAt,
+  int minutes,
+  int sharpness,
+  num? result,
+  String? game,
+  int? wins,
+  int? losses,
+  int? ratingBefore,
+  int? ratingAfter,
+});
+
+/// Something that goes with someone's best sessions; a pattern, not proof of the cause.
+typedef PerformanceInsight = ({String factor, bool winRate, String summary});
+
+/// One activity over the last eight weeks (`ActivitySummary` in the contracts).
+typedef ActivitySummary = ({
+  Activity activity,
+  int sessions,
+  double sharpness,
+  int? wins,
+  int? losses,
+  int? ratingChange,
+  num? bestResult,
+  List<PerformanceInsight> insights,
+  String? note,
+});
+
+/// Recent sessions, every activity, and what goes with the best sessions (`PerformanceResponse`).
+class PerformanceView {
+  const PerformanceView({
+    required this.date,
+    this.recent = const [],
+    this.activities = const [],
+    this.summaries = const [],
+  });
+
+  final String date;
+  final List<PerformanceSession> recent;
+  final List<ActivityInfo> activities;
+  final List<ActivitySummary> summaries;
+
+  ActivityInfo? info(Activity activity) => activities.where((a) => a.activity == activity).firstOrNull;
+
+  static int? _int(Object? n) => (n as num?)?.toInt();
+
+  factory PerformanceView.fromJson(Map<String, dynamic> j) => PerformanceView(
+    date: j['date'] as String,
+    recent: [
+      for (final s in j['recent'] as List)
+        if (Activity.fromWire(s['activity']) case final activity?)
+          (
+            id: s['id'] as String,
+            activity: activity,
+            startedAt: DateTime.parse(s['startedAt'] as String).toLocal(),
+            minutes: (s['minutes'] as num).toInt(),
+            sharpness: (s['sharpness'] as num).toInt(),
+            result: s['result'] as num?,
+            game: s['game'] as String?,
+            wins: _int(s['wins']),
+            losses: _int(s['losses']),
+            ratingBefore: _int(s['ratingBefore']),
+            ratingAfter: _int(s['ratingAfter']),
+          ),
+    ],
+    activities: [
+      for (final a in j['activities'] as List)
+        if (Activity.fromWire(a['activity']) case final activity?)
+          (
+            activity: activity,
+            label: a['label'] as String,
+            usualMinutes: (a['usualMinutes'] as num).toInt(),
+            result: a['result'] == null
+                ? null
+                : (
+                    label: a['result']['label'] as String,
+                    unit: a['result']['unit'] as String?,
+                    max: a['result']['max'] as num,
+                  ),
+          ),
+    ],
+    summaries: [
+      for (final s in j['summaries'] as List)
+        if (Activity.fromWire(s['activity']) case final activity?)
+          (
+            activity: activity,
+            sessions: (s['sessions'] as num).toInt(),
+            sharpness: (s['sharpness'] as num).toDouble(),
+            wins: _int(s['wins']),
+            losses: _int(s['losses']),
+            ratingChange: _int(s['ratingChange']),
+            bestResult: s['bestResult'] as num?,
+            insights: [
+              for (final i in s['insights'] as List)
+                (factor: i['factor'] as String, winRate: i['measure'] == 'win_rate', summary: i['summary'] as String),
+            ],
+            note: s['note'] as String?,
+          ),
+    ],
+  );
+}

@@ -9,6 +9,7 @@ import '../weight_units.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'markers_view.dart';
+import 'performance.dart';
 import 'progress_photos_view.dart';
 import 'capture.dart';
 import 'level.dart';
@@ -105,6 +106,7 @@ typedef _BodyData = ({
   WeightUnit unit,
   LabUnits labUnits,
   BrainCheckHistory? brain,
+  PerformanceView? performance,
   List<MarkerSummary>? markers,
   List<GlucoseDay> glucose,
   bool diabetic,
@@ -149,6 +151,7 @@ class _BodyState extends State<_Body> {
     final labUnits = LabUnits.load(Localizations.localeOf(context));
     final weights = api.weights(days: 60).then<WeightHistory?>((w) => w).catchError((Object _) => null);
     final brain = api.brainChecks(days: 30).then<BrainCheckHistory?>((b) => b).catchError((Object _) => null);
+    final performance = api.performance().then<PerformanceView?>((p) => p).catchError((Object _) => null);
     final markers = api.markers().then<List<MarkerSummary>?>((m) => m).catchError((Object _) => null);
     final glucose = api.glucose().catchError((Object _) => <GlucoseDay>[]);
     final profile = api.me().then<Profile?>((p) => p).catchError((Object _) => null);
@@ -158,6 +161,7 @@ class _BodyState extends State<_Body> {
       unit: await unit,
       labUnits: await labUnits,
       brain: await brain,
+      performance: await performance,
       markers: await markers,
       glucose: await glucose,
       diabetic: conditions.contains('type1_diabetes') || conditions.contains('type2_diabetes'),
@@ -232,7 +236,7 @@ class _BodyState extends State<_Body> {
     builder: (context, snapshot) => ListView(
       padding: const EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s4, Space.s6),
       children: [
-        const ScreenTitle('Body', detail: 'Weight, Brain speed and health markers'),
+        const ScreenTitle('Body', detail: 'Weight, Brain speed, performance and health markers'),
         const SizedBox(height: 14),
         if (!snapshot.hasData)
           const ScreenLoading(label: 'Loading', heights: [180, 180])
@@ -256,6 +260,12 @@ class _BodyState extends State<_Body> {
           ],
           const BlockTitle('Brain speed'),
           _BrainHistory(snapshot.data!.brain, onCheck: () => widget.onCapture(Capture.brain)),
+          const BlockTitle('Performance'),
+          PerformanceSection(
+            snapshot.data!.performance,
+            onLog: (activity) => showPerformanceSheet(context, initial: activity, onChanged: widget.onChanged),
+            onRetry: _reload,
+          ),
           if (snapshot.data!.glucose.isNotEmpty) ...[
             const BlockTitle('Blood sugar'),
             GlucoseCard(snapshot.data!.glucose, diabetic: snapshot.data!.diabetic, units: snapshot.data!.labUnits),

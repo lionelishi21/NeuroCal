@@ -253,6 +253,13 @@
       "when": 1793039321626,
       "tag": "0035_tidy_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793116415239,
+      "tag": "0036_lethal_butterfly",
+      "breakpoints": true
     }
   ]
 }

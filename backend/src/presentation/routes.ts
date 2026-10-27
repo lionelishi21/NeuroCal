@@ -2,6 +2,8 @@ import type { ShoppingListUseCases, ShoppingListView } from "../application/use-
 import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
+import type { PerformanceUseCases, PerformanceView } from "../application/use-cases/PerformanceUseCases";
+import { ACTIVITIES, ACTIVITY } from "../domain/performance";
 import {
   AdminProduct,
   AdminProductList,
@@ -57,6 +59,8 @@ import {
   CoffeeDay,
   CoffeeProducts,
   LogSessionRequest,
+  LogPerformanceRequest,
+  PerformanceResponse,
   LearnResponse,
   SwapMealRequest,
   ShoppingList,
@@ -189,6 +193,7 @@ export interface UseCases {
   betterChoice: BetterChoiceUseCase;
   coffee: CoffeeUseCases;
   sessions: SessionUseCases;
+  performance: PerformanceUseCases;
   getLearn: GetLearnUseCase;
   shoppingList: ShoppingListUseCases;
   logWeight: LogWeightUseCase;
@@ -298,6 +303,16 @@ const toFoodScan = ({ reading: { sourceNovaGroup: _, ...reading }, processing, f
   ...(item ? { item: toFoodItem(item) } : {}),
   ...(coffee ? { coffee } : {}),
   ...(coffeeFat ? { coffeeFat } : {}),
+});
+
+const toPerformance = (v: PerformanceView) => ({
+  date: v.date,
+  recent: v.recent.map((s) => ({ ...s, startedAt: s.startedAt.toISOString() })),
+  activities: ACTIVITIES.map((activity) => {
+    const { label, usualMinutes, result } = ACTIVITY[activity];
+    return { activity, label, usualMinutes, ...(result ? { result } : {}) };
+  }),
+  summaries: v.summaries,
 });
 
 const toSessionDay = (d: SessionDayRecord) => ({
@@ -680,6 +695,24 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       async (req) => {
         const books = await uc.getLearn.execute(req);
         return ok(LearnResponse, { books, affiliate: books.some((b) => b.bookUrl.includes("&tag=")) });
+      },
+    ],
+    ["GET", /^\/performance$/, async (req) => ok(PerformanceResponse, toPerformance(await uc.performance.view(req.userId)))],
+    [
+      "POST",
+      /^\/performance$/,
+      async (req) => {
+        const { startedAt, ...body } = json(req, LogPerformanceRequest);
+        const view = await uc.performance.log(req.userId, { ...body, ...(startedAt ? { startedAt: new Date(startedAt) } : {}) });
+        return ok(PerformanceResponse, toPerformance(view), 201);
+      },
+    ],
+    [
+      "DELETE",
+      /^\/performance\/([^/]+)$/,
+      async (req, [id]) => {
+        await uc.performance.remove(req.userId, id!);
+        return { status: 204 };
       },
     ],
     ["GET", /^\/sessions$/, async (req) => ok(SessionsResponse, toSessionDay(await uc.sessions.day(req.userId)))],

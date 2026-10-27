@@ -19,6 +19,7 @@ import 'sleep_sheets.dart';
 import 'supplement_sheet.dart';
 import 'weight_sheets.dart';
 import 'coffee_sheet.dart';
+import 'performance.dart';
 import 'session_sheet.dart';
 
 /// The add menu's sections, in the order they show.
@@ -45,7 +46,8 @@ enum Capture {
   screenTime('Log screen time', 'Late screens', Icons.phone_iphone_rounded, CaptureGroup.body),
   checkIn('Check in', 'How you feel now', Icons.mood_rounded, CaptureGroup.mind),
   brain('Brain speed check', '2 minutes', Icons.bolt_rounded, CaptureGroup.mind),
-  session('Log a session', 'Sauna, cold, meditation, glasses', Icons.spa_rounded, CaptureGroup.mind);
+  session('Log a session', 'Sauna, cold, meditation, glasses', Icons.spa_rounded, CaptureGroup.mind),
+  performance('Log performance', 'Work, study, training or gaming', Icons.trending_up_rounded, CaptureGroup.mind);
 
   const Capture(this.label, this.detail, this.icon, this.group);
 
@@ -59,7 +61,7 @@ enum Capture {
     meal || foodPackage || recipe => (c.glucoseInk, c.glucoseSoft),
     coffee => (c.oil, c.glucoseSoft),
     supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
-    checkIn || brain => (c.synapseInk, c.synapseSoft),
+    checkIn || brain || performance => (c.synapseInk, c.synapseSoft),
     sleep => (c.sleep, c.sleepSoft),
     screenTime || session => (c.ionInk, c.ionSoft),
     weight => (c.oil, c.glucoseSoft),
@@ -233,6 +235,8 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       await showCoffeeSheet(context, onChanged: onChanged);
     case Capture.session:
       await showSessionSheet(context, onChanged: onChanged);
+    case Capture.performance:
+      await showPerformanceSheet(context, onChanged: onChanged);
     case Capture.brain:
       if (await showBrainCheck(context) != null && context.mounted) onChanged();
   }

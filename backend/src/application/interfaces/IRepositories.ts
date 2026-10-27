@@ -1,5 +1,6 @@
 import type { ShoppingListItem } from "../../domain/shoppingList";
 import type { Session } from "../../domain/session";
+import type { PerformanceSession } from "../../domain/performance";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
 import type {
@@ -127,6 +128,14 @@ export interface ISessionRepository {
   add(userId: string, session: Omit<Session, "id">): Promise<Session>;
   /** Taken at or after `from` and before `to`, oldest first. */
   listBetween(userId: string, from: Date, to: Date): Promise<Session[]>;
+  delete(userId: string, id: string): Promise<boolean>;
+}
+
+/** Performance sessions (deep work, study, training, creative work, gaming), scoped to one user. */
+export interface IPerformanceRepository {
+  add(userId: string, session: Omit<PerformanceSession, "id">): Promise<PerformanceSession>;
+  /** Started at or after `from` and before `to`, oldest first. */
+  listBetween(userId: string, from: Date, to: Date): Promise<PerformanceSession[]>;
   delete(userId: string, id: string): Promise<boolean>;
 }
 
