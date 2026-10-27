@@ -35,6 +35,7 @@ describe("GetHistoryUseCase", () => {
       caloriesEaten: 1300,
       proteinG: 47,
       focusScore: 50, // only stress has data: two distinct negative flags → 0.5
+      components: { sleep: null, timing: null, glycemic: null, stress: 0.5, movement: null, environment: null },
       sleepMinutes: null,
       lastMealAt: "21:40",
       bedtime: null,

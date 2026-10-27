@@ -265,16 +265,16 @@ class ReminderSettings extends ChangeNotifier {
     );
   }
 
-  /// The week in review, every Sunday at 18:00: the next one from [now], scheduled again at each open.
+  /// Last week's report, every Monday at 08:00: the next one from [now], scheduled again at each open.
   Future<void> weekly() {
     final now = _now();
-    var at = DateTime(now.year, now.month, now.day + (DateTime.sunday - now.weekday) % 7, 18);
-    if (!at.isAfter(now)) at = DateTime(at.year, at.month, at.day + 7, 18);
+    var at = DateTime(now.year, now.month, now.day + (DateTime.monday - now.weekday) % 7, 8);
+    if (!at.isAfter(now)) at = DateTime(at.year, at.month, at.day + 7, 8);
     return _reminders.oneOff(
       weeklyNudgeId,
       at,
-      title: 'Your week in NeuroCal',
-      body: 'Your average Focus Score, your best day and what made it. Tap to see your week.',
+      title: 'Your weekly report is ready',
+      body: 'How last week went, what moved your Focus Score, and one thing for this week.',
       payload: weeklyPayload,
     );
   }

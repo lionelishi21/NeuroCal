@@ -3,7 +3,7 @@ import { InvalidError, NotFoundError } from "../../domain/errors";
 import { computeFocusComponents, focusScoreFrom, lateScreenMinutes, sleepMinutes } from "../../domain/focusScore";
 import { localDateOf, localTimeOf, previousDate } from "../../domain/localDay";
 import { mealCalories, sumMacros } from "../../domain/meal";
-import type { CognitiveFlag } from "../../domain/types";
+import type { CognitiveFlag, FocusComponents } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
 import type { ICheckInRepository, ICoffeeRepository, IMealRepository, IProfileRepository, ISessionRepository, ITelemetryRepository } from "../interfaces/IRepositories";
 import { type EnvironmentInputs, loadFocusInputs } from "./GetFocusScoreUseCase";
@@ -16,6 +16,8 @@ export interface HistoryDay {
   caloriesEaten: number;
   proteinG: number;
   focusScore: number | null;
+  /** The score's inputs, each 0–1 or null without data (not in the API response). */
+  components: FocusComponents;
   sleepMinutes: number | null;
   lastMealAt: string | null;
   bedtime: string | null;
@@ -42,7 +44,8 @@ export class GetHistoryUseCase {
     private readonly sessions?: ISessionRepository,
   ) {}
 
-  async execute(input: { userId: string; days?: number }): Promise<HistoryDay[]> {
+  /** [endDate]: the last day, today when left out. */
+  async execute(input: { userId: string; days?: number; endDate?: string }): Promise<HistoryDay[]> {
     const days = input.days ?? 7;
     if (!Number.isInteger(days) || days < 1 || days > MAX_HISTORY_DAYS) {
       throw new InvalidError(`Ask for between 1 and ${MAX_HISTORY_DAYS} days.`);
@@ -51,7 +54,7 @@ export class GetHistoryUseCase {
     if (!profile) throw new NotFoundError("Set up your profile first.");
     const { timeZone } = profile;
 
-    const dates: string[] = [localDateOf(this.clock.now(), timeZone)];
+    const dates: string[] = [input.endDate ?? localDateOf(this.clock.now(), timeZone)];
     while (dates.length < days) dates.unshift(previousDate(dates[0]!));
 
     const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, coffee: this.coffee, sessions: this.sessions };
@@ -69,6 +72,7 @@ export class GetHistoryUseCase {
           return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
         };
         const { sleep } = focusInputs;
+        const components = computeFocusComponents(focusInputs);
         const fellAsleep = sleep.length ? new Date(Math.min(...sleep.map((s) => s.start.getTime()))) : undefined;
         const woke = sleep.length ? new Date(Math.max(...sleep.map((s) => s.end.getTime()))) : undefined;
         return {
@@ -76,7 +80,8 @@ export class GetHistoryUseCase {
           calorieTarget: profile.dailyCalorieTarget,
           caloriesEaten: meals.reduce((sum, m) => sum + mealCalories(m), 0),
           proteinG: Math.round(sumMacros(meals.flatMap((m) => m.items)).proteinG),
-          focusScore: focusScoreFrom(computeFocusComponents(focusInputs)),
+          focusScore: focusScoreFrom(components),
+          components,
           sleepMinutes: focusInputs.sleep.length ? Math.round(sleepMinutes(focusInputs.sleep)) : null,
           lastMealAt: clock(last?.eatenAt),
           bedtime: clock(fellAsleep),

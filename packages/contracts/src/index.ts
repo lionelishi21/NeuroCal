@@ -1368,6 +1368,48 @@ export const PerformanceResponse = z.object({
 });
 export type PerformanceResponse = z.infer<typeof PerformanceResponse>;
 
+/** A Focus Score input, as the rings on Today call them (backend domain/weeklyReport.ts). */
+export const ReportPillar = z.enum(["sleep", "timing", "glycemic", "stress", "movement", "environment"]);
+
+/**
+ * Last week, Monday to Sunday, in one place (backend domain/weeklyReport.ts). Built from the person's
+ * own numbers with fixed rules; no model writes it.
+ */
+export const WeeklyReportResponse = z.object({
+  weekStart: IsoDate,
+  weekEnd: IsoDate,
+  /** Days with a Focus Score. */
+  daysScored: z.number().int(),
+  /** The average Focus Score against the week before, and the pillar that moved it most. */
+  headline: z.object({
+    score: z.number().int().nullable(),
+    previous: z.number().int().nullable(),
+    change: z.number().int().nullable(),
+    title: z.string(),
+    summary: z.string(),
+  }),
+  /** Each pillar's average (0–100, null without data) and what was logged. Air is left out without data. */
+  pillars: z.array(
+    z.object({ pillar: ReportPillar, label: z.string(), score: z.number().int().nullable(), previous: z.number().int().nullable(), summary: z.string() }),
+  ),
+  mind: z.object({ brain: z.string(), performance: z.string().nullable() }),
+  /** First and last weigh-in of the week, and the goal, in kg. */
+  body: z.object({ startKg: z.number().nullable(), endKg: z.number().nullable(), goalKg: z.number().nullable() }),
+  /** Supplements and practices with a verdict. */
+  working: z.array(
+    z.object({
+      name: z.string(),
+      kind: z.enum(["supplement", "practice"]),
+      verdict: z.enum(["helping", "worse", "no_change", "lasted", "faded"]),
+      summary: z.string(),
+    }),
+  ),
+  level: z.object({ level: z.number().int(), name: z.string(), summary: z.string() }),
+  /** One step for next week, from the weakest pillar or a missing input. */
+  next: z.object({ pillar: ReportPillar, title: z.string(), detail: z.string() }),
+});
+export type WeeklyReportResponse = z.infer<typeof WeeklyReportResponse>;
+
 /** The Learn shelf: books and audiobooks for what someone is working on (backend domain/learn.ts). */
 export const LearnResponse = z.object({
   books: z.array(
@@ -1675,6 +1717,7 @@ export const endpoints = {
   getPerformance: { method: "GET", path: "/performance", response: PerformanceResponse },
   logPerformance: { method: "POST", path: "/performance", body: LogPerformanceRequest, response: PerformanceResponse },
   deletePerformance: { method: "DELETE", path: "/performance/:id" },
+  getWeeklyReport: { method: "GET", path: "/report/week", response: WeeklyReportResponse },
   getSubscription: { method: "GET", path: "/me/subscription", response: SubscriptionStatus },
   /** The whole food catalog (about 100 foods), sorted by name; clients search and filter it themselves. */
   listFoods: { method: "GET", path: "/foods", response: FoodCatalog },

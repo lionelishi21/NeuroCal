@@ -195,18 +195,20 @@ void main() {
     expect(find.text('Save check-in'), findsOneWidget);
   });
 
-  testWidgets('the weekly nudge is set for Sunday evening, and tapping it opens the week', (tester) async {
+  testWidgets('the weekly nudge is set for Monday morning, and tapping it opens the report', (tester) async {
     final device = await pumpSignedIn(tester);
     final weekly = device.oneOffs[weeklyNudgeId]!;
-    expect(weekly.at.weekday, DateTime.sunday);
-    expect(weekly.at.hour, 18);
+    expect(weekly.at.weekday, DateTime.monday);
+    expect(weekly.at.hour, 8);
     expect(weekly.at.isAfter(DateTime.now()), isTrue);
     expect(weekly.payload, weeklyPayload);
+    expect(weekly.title, 'Your weekly report is ready');
 
-    expect(find.text('This week'), findsNothing);
+    expect(find.text('Weekly report'), findsNothing);
     device.tapWeek();
     await tester.pumpAndSettle();
-    expect(find.text('This week'), findsWidgets);
+    expect(find.text('Weekly report'), findsOneWidget);
+    expect(find.text('Focus Score 70, up 6'), findsOneWidget);
   });
 
   testWidgets('tapping a supplement nudge opens the Stack', (tester) async {

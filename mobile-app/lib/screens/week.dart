@@ -9,6 +9,7 @@ import '../widgets/product_card.dart';
 import '../widgets/ui.dart';
 import 'healthspan_card.dart';
 import '../theme/theme.dart' show fontFamily;
+import 'weekly_report.dart';
 
 const _fullWeekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const _fullMonths = [
@@ -104,7 +105,15 @@ class _WeekScreenState extends State<WeekScreen> {
                 'This week',
                 detail: days.isEmpty ? null : '${_short(days.first.day)} – ${_short(days.last.day)}',
               ),
-              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => openWeeklyReport(context),
+                  icon: const Icon(Icons.insights_rounded, size: 18),
+                  label: const Text("Last week's report"),
+                ),
+              ),
+              const SizedBox(height: Space.s2),
               HealthspanCard(changes: widget.changes),
               if (snapshot.hasError)
                 ScreenFailed(

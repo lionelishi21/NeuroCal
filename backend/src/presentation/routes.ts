@@ -3,6 +3,7 @@ import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
 import type { PerformanceUseCases, PerformanceView } from "../application/use-cases/PerformanceUseCases";
+import type { GetWeeklyReportUseCase } from "../application/use-cases/GetWeeklyReportUseCase";
 import { ACTIVITIES, ACTIVITY } from "../domain/performance";
 import {
   AdminProduct,
@@ -61,6 +62,7 @@ import {
   LogSessionRequest,
   LogPerformanceRequest,
   PerformanceResponse,
+  WeeklyReportResponse,
   LearnResponse,
   SwapMealRequest,
   ShoppingList,
@@ -194,6 +196,7 @@ export interface UseCases {
   coffee: CoffeeUseCases;
   sessions: SessionUseCases;
   performance: PerformanceUseCases;
+  weeklyReport: GetWeeklyReportUseCase;
   getLearn: GetLearnUseCase;
   shoppingList: ShoppingListUseCases;
   logWeight: LogWeightUseCase;
@@ -697,6 +700,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return ok(LearnResponse, { books, affiliate: books.some((b) => b.bookUrl.includes("&tag=")) });
       },
     ],
+    ["GET", /^\/report\/week$/, async (req) => ok(WeeklyReportResponse, await uc.weeklyReport.execute(req.userId))],
     ["GET", /^\/performance$/, async (req) => ok(PerformanceResponse, toPerformance(await uc.performance.view(req.userId)))],
     [
       "POST",

@@ -30,6 +30,7 @@ import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCas
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import { SessionUseCases } from "../application/use-cases/SessionUseCases";
 import { PerformanceUseCases } from "../application/use-cases/PerformanceUseCases";
+import { GetWeeklyReportUseCase } from "../application/use-cases/GetWeeklyReportUseCase";
 import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { ShoppingListUseCases } from "../application/use-cases/ShoppingListUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
@@ -163,7 +164,7 @@ export function buildUseCases(p: Ports): UseCases {
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock, p.coffee);
   const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
-  return {
+  const uc = {
     getProfile: new GetProfileUseCase(p.profiles),
     updateProfile: new UpdateProfileUseCase(p.profiles, { users: p.users, email: p.email }),
     deleteAccount: new DeleteAccountUseCase(p.users, p.storage, p.identity, { email: p.email, clock: p.clock }),
@@ -218,6 +219,17 @@ export function buildUseCases(p: Ports): UseCases {
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
     adminWaitlist: new AdminWaitlistUseCase(p.waitlist, p.clock),
   };
+  const weeklyReport = new GetWeeklyReportUseCase(p.profiles, p.clock, {
+    history: uc.getHistory,
+    brain: uc.brainChecks,
+    performance: uc.performance,
+    performanceSessions: p.performance,
+    weights: p.weights,
+    stack: uc.stack,
+    sessions: uc.sessions,
+    level: uc.getLevel,
+  });
+  return { ...uc, weeklyReport };
 }
 
 export const systemClock: IClock = { now: () => new Date() };

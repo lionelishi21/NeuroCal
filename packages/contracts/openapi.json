@@ -1603,6 +1603,28 @@
         }
       }
     },
+    "/report/week": {
+      "get": {
+        "operationId": "getWeeklyReport",
+        "summary": "Last week's report",
+        "description": "The last full week, Monday to Sunday in the user's time zone: the average Focus Score against the week before and the pillar that moved it most, each pillar with what was logged, Brain speed and performance, weight, supplements and practices with a verdict, the level, and one step for next week. Built from the user's own numbers with fixed rules.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyReportResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/me/subscription": {
       "get": {
         "operationId": "getSubscription",
@@ -6859,6 +6881,17 @@
           "readings"
         ]
       },
+      "ReportPillar": {
+        "type": "string",
+        "enum": [
+          "sleep",
+          "timing",
+          "glycemic",
+          "stress",
+          "movement",
+          "environment"
+        ]
+      },
       "ReviewDeviceRequest": {
         "oneOf": [
           {
@@ -8146,6 +8179,227 @@
           "component",
           "label",
           "average"
+        ]
+      },
+      "WeeklyReportResponse": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "weekEnd": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "daysScored": {
+            "type": "integer"
+          },
+          "headline": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "previous": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "change": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "score",
+              "previous",
+              "change",
+              "title",
+              "summary"
+            ]
+          },
+          "pillars": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pillar": {
+                  "$ref": "#/components/schemas/ReportPillar"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "previous": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pillar",
+                "label",
+                "score",
+                "previous",
+                "summary"
+              ]
+            }
+          },
+          "mind": {
+            "type": "object",
+            "properties": {
+              "brain": {
+                "type": "string"
+              },
+              "performance": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "brain",
+              "performance"
+            ]
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "startKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "endKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "goalKg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "startKg",
+              "endKg",
+              "goalKg"
+            ]
+          },
+          "working": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "supplement",
+                    "practice"
+                  ]
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "helping",
+                    "worse",
+                    "no_change",
+                    "lasted",
+                    "faded"
+                  ]
+                },
+                "summary": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "kind",
+                "verdict",
+                "summary"
+              ]
+            }
+          },
+          "level": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "level",
+              "name",
+              "summary"
+            ]
+          },
+          "next": {
+            "type": "object",
+            "properties": {
+              "pillar": {
+                "$ref": "#/components/schemas/ReportPillar"
+              },
+              "title": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pillar",
+              "title",
+              "detail"
+            ]
+          }
+        },
+        "required": [
+          "weekStart",
+          "weekEnd",
+          "daysScored",
+          "headline",
+          "pillars",
+          "mind",
+          "body",
+          "working",
+          "level",
+          "next"
         ]
       },
       "WeightEntry": {

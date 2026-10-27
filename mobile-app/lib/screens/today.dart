@@ -31,6 +31,7 @@ import 'plan_fast_sheet.dart';
 import 'streak.dart';
 import 'stack.dart';
 import 'weight_cards.dart' show FastingCard;
+import 'weekly_report.dart';
 import '../theme/theme.dart' show fontFamily;
 
 class _Day {
@@ -209,6 +210,9 @@ class _TodayScreenState extends State<TodayScreen> {
   /// The day shown; null is today.
   DateTime? _date;
 
+  /// Last week's report is ready and not opened yet (Monday to Wednesday).
+  var _reportDue = false;
+
   NeuroCalApi get _api => AppScope.of(context).api;
 
   /// Moves "Now" along: caffeine rises and wears off, and the fast's hours grow.
@@ -232,8 +236,19 @@ class _TodayScreenState extends State<TodayScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_day == null) _checkReport();
     _day ??= _load();
     _tick;
+  }
+
+  Future<void> _checkReport() async {
+    final due = await weeklyReportDue(DateTime.now());
+    if (mounted && due != _reportDue) setState(() => _reportDue = due);
+  }
+
+  Future<void> _openReport() async {
+    await openWeeklyReport(context);
+    await _checkReport();
   }
 
   /// One call for the whole screen; the server leaves out an extra that failed, so the day still shows.
@@ -560,6 +575,7 @@ class _TodayScreenState extends State<TodayScreen> {
                       const SizedBox(height: Space.s3),
                       _PlanCard(day, onLogWeight: () => widget.onCapture(Capture.weight)),
                     ],
+                    if (_reportDue) ...[const SizedBox(height: Space.s3), WeeklyReportCard(onOpen: _openReport)],
                   ],
                   BlockTitle(
                     day.fastPlanned ? 'Fasting' : 'Food',

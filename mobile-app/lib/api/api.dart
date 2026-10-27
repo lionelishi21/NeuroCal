@@ -88,6 +88,9 @@ abstract interface class NeuroCalApi {
 
   Future<void> deletePerformance(String id);
 
+  /// Last week, Monday to Sunday, in one report.
+  Future<WeeklyReport> weeklyReport();
+
   /// What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine.
   Future<List<SuggestedProduct>> coffeeProducts();
 
@@ -502,6 +505,10 @@ class HttpNeuroCalApi implements NeuroCalApi {
     );
     return PerformanceView.fromJson(_decode(res) as Map<String, dynamic>);
   }
+
+  @override
+  Future<WeeklyReport> weeklyReport() async =>
+      WeeklyReport.fromJson(await _get('/report/week') as Map<String, dynamic>);
 
   @override
   Future<void> deletePerformance(String id) async {

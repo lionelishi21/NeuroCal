@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
@@ -468,6 +468,16 @@ describe("API routes", () => {
     expect((await call("DELETE", `/performance/${view.recent[0]!.id}`)).status).toBe(204);
     expect(PerformanceResponse.parse((await call("GET", "/performance")).body).recent).toEqual([]);
     expect((await call("DELETE", "/performance/nope")).status).toBe(404);
+  });
+
+  it("reports the last full week, Monday to Sunday, with one step for next week", async () => {
+    // Tuesday 29 September: last week ran from Monday 21 to Sunday 27.
+    const res = await call("GET", "/report/week");
+    expect(res.status).toBe(200);
+    const report = WeeklyReportResponse.parse(res.body);
+    expect(report).toMatchObject({ weekStart: "2026-09-21", weekEnd: "2026-09-27", headline: { title: "Not enough logged for a Focus Score" } });
+    expect(report.pillars.map((p) => p.label)).toEqual(["Sleep", "Evening", "Food", "Stress", "Move"]);
+    expect(report.next).toMatchObject({ pillar: "sleep", title: "Log your sleep" });
   });
 
   it("plans a fast until a time from the last meal, within the limit; a drink doesn't end it, a meal does", async () => {

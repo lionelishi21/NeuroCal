@@ -1033,6 +1033,82 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
+  Future<WeeklyReport> weeklyReport() async {
+    await _wait();
+    final now = DateTime.now();
+    final end = DateTime(now.year, now.month, now.day - now.weekday);
+    final start = DateTime(end.year, end.month, end.day - 6);
+    return WeeklyReport(
+      weekStart: isoDate(start),
+      weekEnd: isoDate(end),
+      daysScored: 7,
+      headline: (
+        score: 70,
+        previous: 64,
+        change: 6,
+        title: 'Focus Score 70, up 6',
+        summary: 'Up from 64 the week before, mostly from sleep (65 to 85).',
+      ),
+      pillars: const [
+        (
+          pillar: 'sleep',
+          label: 'Sleep',
+          score: 85,
+          previous: 65,
+          summary: '7 h 30 min a night on average over 7 nights (6 h 40 min the week before).',
+        ),
+        (
+          pillar: 'timing',
+          label: 'Evening',
+          score: 60,
+          previous: 60,
+          summary: 'Last meal at about 20:10 on average; 35 min of screens late in the evening.',
+        ),
+        (
+          pillar: 'glycemic',
+          label: 'Food',
+          score: 70,
+          previous: 68,
+          summary: '2,050 kcal a day against your 2,200 target, with 110 g of protein, over 7 days logged.',
+        ),
+        (
+          pillar: 'stress',
+          label: 'Stress',
+          score: 72,
+          previous: 70,
+          summary: 'Stress score 72 (70 the week before), from your check-ins.',
+        ),
+        (
+          pillar: 'movement',
+          label: 'Move',
+          score: 40,
+          previous: 40,
+          summary: 'Movement score 40 (40 the week before).',
+        ),
+      ],
+      brain: '3 Brain speed checks, averaging 74 against your usual 70.',
+      performance: _performance.isEmpty
+          ? null
+          : '${_performance.length} performance ${_performance.length == 1 ? 'session' : 'sessions'} this week.',
+      body: (startKg: 82.4, endKg: 81.8, goalKg: 78.0),
+      working: const [
+        (
+          name: 'Creatine',
+          supplement: true,
+          verdict: 'helping',
+          summary: 'Your Brain speed is higher: 76 since you started, against 70 before.',
+        ),
+      ],
+      level: (level: 2, name: 'Fuelled', summary: '2 of 3 habits for In rhythm. Still to do: A steady wake time.'),
+      next: (
+        pillar: 'movement',
+        title: 'Move a little more',
+        detail: 'Add a 20-minute walk on three days, ideally after a meal.',
+      ),
+    );
+  }
+
+  @override
   Future<void> deletePerformance(String id) async {
     await _wait();
     _performance.removeWhere((s) => s.id == id);

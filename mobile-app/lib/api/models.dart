@@ -2365,3 +2365,85 @@ class PerformanceView {
     ],
   );
 }
+
+/// Last week, Monday to Sunday, in one place (`WeeklyReportResponse` in the contracts).
+class WeeklyReport {
+  const WeeklyReport({
+    required this.weekStart,
+    required this.weekEnd,
+    required this.daysScored,
+    required this.headline,
+    required this.pillars,
+    required this.brain,
+    required this.performance,
+    required this.body,
+    required this.working,
+    required this.level,
+    required this.next,
+  });
+
+  final String weekStart;
+  final String weekEnd;
+  final int daysScored;
+  final ({int? score, int? previous, int? change, String title, String summary}) headline;
+  final List<({String pillar, String label, int? score, int? previous, String summary})> pillars;
+  final String brain;
+  final String? performance;
+
+  /// First and last weigh-in of the week, and the goal, in kg.
+  final ({double? startKg, double? endKg, double? goalKg}) body;
+  final List<({String name, bool supplement, String verdict, String summary})> working;
+  final ({int level, String name, String summary}) level;
+  final ({String pillar, String title, String detail}) next;
+
+  static int? _int(Object? n) => (n as num?)?.toInt();
+  static double? _kg(Object? n) => (n as num?)?.toDouble();
+
+  factory WeeklyReport.fromJson(Map<String, dynamic> j) {
+    final h = j['headline'] as Map<String, dynamic>;
+    final mind = j['mind'] as Map<String, dynamic>;
+    final body = j['body'] as Map<String, dynamic>;
+    final level = j['level'] as Map<String, dynamic>;
+    final next = j['next'] as Map<String, dynamic>;
+    return WeeklyReport(
+      weekStart: j['weekStart'] as String,
+      weekEnd: j['weekEnd'] as String,
+      daysScored: (j['daysScored'] as num).toInt(),
+      headline: (
+        score: _int(h['score']),
+        previous: _int(h['previous']),
+        change: _int(h['change']),
+        title: h['title'] as String,
+        summary: h['summary'] as String,
+      ),
+      pillars: [
+        for (final p in j['pillars'] as List)
+          (
+            pillar: p['pillar'] as String,
+            label: p['label'] as String,
+            score: _int(p['score']),
+            previous: _int(p['previous']),
+            summary: p['summary'] as String,
+          ),
+      ],
+      brain: mind['brain'] as String,
+      performance: mind['performance'] as String?,
+      body: (startKg: _kg(body['startKg']), endKg: _kg(body['endKg']), goalKg: _kg(body['goalKg'])),
+      working: [
+        for (final w in j['working'] as List)
+          (
+            name: w['name'] as String,
+            supplement: w['kind'] == 'supplement',
+            verdict: w['verdict'] as String,
+            summary: w['summary'] as String,
+          ),
+      ],
+      level: (
+        level: (level['level'] as num).toInt(),
+        name: level['name'] as String,
+        summary: level['summary'] as String,
+      ),
+      next: (pillar: next['pillar'] as String, title: next['title'] as String, detail: next['detail'] as String),
+    );
+  }
+}

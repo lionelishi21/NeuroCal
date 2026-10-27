@@ -11,6 +11,7 @@ import 'progress.dart';
 import 'settings.dart';
 import 'stack.dart';
 import 'today.dart';
+import 'weekly_report.dart';
 import 'coffee.dart';
 
 /// The signed-in app: Today, Kitchen, Progress and Stack under a bottom tab bar, with the add button
@@ -29,7 +30,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  static const _today = 0, _kitchen = 1, _progress = 2, _stack = 3;
+  static const _today = 0, _kitchen = 1, _stack = 3;
   var _tab = _today;
 
   @override
@@ -112,13 +113,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Weekly nudge taps already acted on.
   var _weekHandled = 0;
 
-  /// The weekly nudge was tapped: the week, on Progress.
+  /// The weekly nudge was tapped: last week's report.
   void _weekTapped() {
     final reminders = _reminders;
     if (!mounted || reminders == null || reminders.openedWeek.value <= _weekHandled) return;
     _weekHandled = reminders.openedWeek.value;
     AppScope.of(context).analytics.track('weekly_opened');
-    setState(() => _tab = _progress);
+    openWeeklyReport(context);
   }
 
   /// Supplement nudge taps already acted on.

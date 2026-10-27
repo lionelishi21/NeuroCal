@@ -191,6 +191,11 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     status: 201,
   },
   deletePerformance: { summary: "Remove a performance session", status: 204, params: { id: "The session's id." } },
+  getWeeklyReport: {
+    summary: "Last week's report",
+    description:
+      "The last full week, Monday to Sunday in the user's time zone: the average Focus Score against the week before and the pillar that moved it most, each pillar with what was logged, Brain speed and performance, weight, supplements and practices with a verdict, the level, and one step for next week. Built from the user's own numbers with fixed rules.",
+  },
   stopStackItem: {
     summary: "Stop taking a supplement",
     description: "It leaves the daily list and reminders, and for four weeks its experiment compares before, while taking it and since stopping: did the gain last or fade? DELETE removes one added by mistake.",
