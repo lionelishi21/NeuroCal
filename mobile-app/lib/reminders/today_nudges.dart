@@ -44,6 +44,12 @@ Future<void> planTodayNudges(
         wakeHour: wake,
         items: [for (final i in stack.items) (name: i.name, startedOn: i.startedOn, ours: i.shopUrl != null)],
       ),
+    if (day.stack case final stack?)
+      NudgeKind.runningLow: runningLowNudges(
+        now: at,
+        wakeHour: wake,
+        items: [for (final i in stack.items) (name: i.name, daysLeft: i.daysLeft, ours: i.shopUrl != null)],
+      ),
     NudgeKind.windDown: windDownNudges(now: at, wakeHour: wake),
     if (coffee != null)
       NudgeKind.caffeineCurfew: drinksCoffee ? caffeineNudges(now: at, curfew: coffee.curfew) : const [],

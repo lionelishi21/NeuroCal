@@ -11,6 +11,7 @@ enum NudgeKind {
   water('Water', '15:00, when you’re well behind', true),
   weighIn('Weekly weigh-in', 'A week after your last, with a weight goal', true),
   supplementCheck('Is it working?', 'Two weeks after you start a supplement', true),
+  runningLow('Running low', 'Five days before a supplement runs out', true),
   mealPlanEnding('Meal plan ending', 'The evening before its last day', true),
   movement('Movement', '17:00 on days without exercise', false),
   caffeineCurfew('Caffeine curfew', 'Half an hour before your last-coffee time', false),
@@ -98,6 +99,29 @@ List<Planned> supplementCheckNudges({
           body: i.ours
               ? 'You’ve taken it for two weeks. Notice any change in focus, sleep or energy? Your Stack shows how it’s going, and reorders it from MitoProof.'
               : 'You’ve taken it for two weeks. Notice any change in focus, sleep or energy? Your Brain speed checks show it too.',
+        ),
+];
+
+/// Days before a supplement runs out that [runningLowNudges] warns: time for an order to arrive.
+const runningLowDays = 5;
+
+/// Once, [runningLowDays] before each supplement runs out ([daysLeft] from today, from the Stack),
+/// three hours after waking; none when it's already closer than that, as the Stack says so itself.
+/// For our brand's ([ours]) it says the Stack reorders it; a tap opens the Stack.
+List<Planned> runningLowNudges({
+  required DateTime now,
+  required double wakeHour,
+  required List<({String name, int? daysLeft, bool ours})> items,
+}) => [
+  for (final i in items)
+    if (i.daysLeft case final left? when left >= runningLowDays)
+      if (_dayAt(_day(now, left - runningLowDays), wakeHour + 3) case final at when at.isAfter(now))
+        (
+          at: at,
+          title: '${i.name} runs out in $runningLowDays days',
+          body: i.ours
+              ? 'Reorder it from MitoProof in your Stack so you don’t miss a day.'
+              : 'Restock now so you don’t miss a day: gaps make it hard to tell if it works.',
         ),
 ];
 

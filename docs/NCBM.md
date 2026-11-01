@@ -194,7 +194,7 @@ An average needs at least 10 days with data before it counts.
 Each notification should move a pillar or explain the score, come at a sensible time, and be easy to switch off. Me → Notifications has a switch for every one.
 
 **Reminders the phone schedules itself.** These need no server and work offline. They're planned a few days ahead and refreshed every time Today opens.
-- Check-in windows, the streak at risk, the weekly report, the Brain speed check, wind-down, water, the weekly weigh-in, "is it working?" two weeks into a supplement, a meal plan ending, and a fast done.
+- Check-in windows, the streak at risk, the weekly report, the Brain speed check, wind-down, water, the weekly weigh-in, "is it working?" two weeks into a supplement, running low five days before one runs out, a meal plan ending, and a fast done.
 - Movement, the caffeine curfew, morning daylight and the monthly progress photo are off by default.
 - Water, coffee and movement reminders wait until the person has logged that habit once.
 - At most 4 a day, the most useful first; fasts and supplement reminders don't count. Quiet hours run from bedtime to waking.
@@ -217,7 +217,7 @@ The phone registers its token at every launch, so the server also knows when it 
 
 **Optional emails** (Resend): the weekly report on Monday mornings (with one of our brand's products for the week's weak point, labelled as ours), and one email after a week away. Each has its own "stop these emails" link. Account and billing emails aren't optional.
 
-**Our brand in the Stack:** a supplement whose name says MitoProof links to its store page ("Reorder from MitoProof"), and its two-week "Is it working?" reminder says the Stack can reorder it.
+**Our brand in the Stack:** a supplement whose name says MitoProof links to its store page ("Reorder from MitoProof"), and its two-week "Is it working?" and running-low reminders say the Stack can reorder it.
 
 
 ## 11. Guides and the 30-day program

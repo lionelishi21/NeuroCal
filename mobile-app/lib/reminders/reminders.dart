@@ -425,7 +425,7 @@ class ReminderSettings extends ChangeNotifier {
         body: n.nudge.body,
         payload: switch (n.kind) {
           NudgeKind.weekly => weeklyPayload,
-          NudgeKind.supplementCheck => stackPayload,
+          NudgeKind.supplementCheck || NudgeKind.runningLow => stackPayload,
           _ => null,
         },
       );

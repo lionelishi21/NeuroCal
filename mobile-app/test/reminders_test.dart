@@ -308,6 +308,30 @@ void main() {
         'You’ve taken it for two weeks. Notice any change in focus, sleep or energy? Your Stack shows how it’s going, and reorders it from MitoProof.',
       );
       expect(
+        runningLowNudges(
+          now: now,
+          wakeHour: 7,
+          items: [
+            (name: 'Magnesium', daysLeft: 12, ours: false),
+            (name: 'MitoProof Sleep Formula', daysLeft: 6, ours: true),
+            (name: 'Creatine', daysLeft: 3, ours: false),
+            (name: 'Fish oil', daysLeft: null, ours: false),
+          ],
+        ),
+        [
+          (
+            at: DateTime(2026, 10, 26, 10),
+            title: 'Magnesium runs out in 5 days',
+            body: 'Restock now so you don’t miss a day: gaps make it hard to tell if it works.',
+          ),
+          (
+            at: DateTime(2026, 10, 20, 10),
+            title: 'MitoProof Sleep Formula runs out in 5 days',
+            body: 'Reorder it from MitoProof in your Stack so you don’t miss a day.',
+          ),
+        ],
+      );
+      expect(
         mealPlanNudges(now: now, createdAt: DateTime(2026, 10, 19, 9), days: 3).single.at,
         DateTime(2026, 10, 20, 19),
       );
