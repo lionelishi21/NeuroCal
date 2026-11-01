@@ -47,7 +47,7 @@ export const PACES = [0.5, 0.75, 1] as const;
 const SMOOTHING = 0.1;
 const DAY_MS = 86_400_000;
 
-const dayNumber = (date: string) => Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / DAY_MS;
+export const dayNumber = (date: string) => Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / DAY_MS;
 export const addDays = (date: string, days: number) => new Date((dayNumber(date) + days) * DAY_MS).toISOString().slice(0, 10);
 
 /** The trend for each day from the first weigh-in to the last, filling missed days by carrying the trend. */

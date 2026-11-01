@@ -25,7 +25,11 @@ import type { EnvironmentCheck } from "../../domain/environment";
 
 /** Reads a day's air and environment check for the score (EnvironmentUseCases). */
 export interface EnvironmentInputs {
-  inputsFor(userId: string, date: string, timeZone: string): Promise<{ aqi: number | null; check: EnvironmentCheck | null }>;
+  inputsFor(
+    userId: string,
+    date: string,
+    timeZone: string,
+  ): Promise<{ aqi: number | null; check: EnvironmentCheck | null; water?: { ml: number; targetMl: number } | null }>;
 }
 import type { FocusComponents, FocusScore, Profile } from "../../domain/types";
 import type { IClock } from "../interfaces/IClock";
@@ -177,7 +181,7 @@ export async function loadFocusInputs(
     checkIns: ICheckInRepository;
     telemetry: ITelemetryRepository;
     exercises?: IExerciseRepository | undefined;
-    /** Yesterday's air and environment check (EnvironmentUseCases.inputsFor). */
+    /** Yesterday's air, environment check and water (EnvironmentUseCases.inputsFor). */
     environment?: EnvironmentInputs | undefined;
     /** Glucose-sensor days, when the person has a sensor. */
     glucose?: IGlucoseRepository | undefined;

@@ -155,3 +155,76 @@ export function levelOf(days: LevelDay[], brain: BrainTrend): LevelResult {
   const milestones = brain.raised ? [`You raised your Brain speed: your usual went from ${brain.raised.from} to ${brain.raised.to}, and it's held.`] : [];
   return { level, name: LEVEL_NAMES[level]!, requirements, ...(milestones.length ? { milestones } : {}) };
 }
+
+/** The last week, as "this week" when a level is slipping. */
+const WEEK = 7;
+/** Days with data a week needs before an average says it slipped. */
+const MIN_WEEK_DAYS = 3;
+/** Logged on at least this many of the last 7 days to keep "most days". */
+const WEEK_LOGGED = 4;
+
+/**
+ * Why the person's [level] is at risk, from the last 7 of [days] (oldest first): the first habit of
+ * that level or below that this week fell short of. Null when nothing has slipped, or at level 0.
+ * Brain speed isn't judged here: a week of checks is too few to call.
+ */
+export function slippingOf(days: LevelDay[], level: number): string | null {
+  if (level < 1) return null;
+  const week = days.slice(-WEEK);
+  const weekAvg = (values: (number | null)[]) => {
+    const have = known(values);
+    return have.length >= MIN_WEEK_DAYS ? avg(have)! : null;
+  };
+  const below = (values: (number | null)[]) => {
+    const a = weekAvg(values);
+    return a !== null && a < GOOD;
+  };
+  const checks: { level: number; why: () => string | null }[] = [
+    { level: 1, why: () => (n(week, (d) => d.foodLogged) < WEEK_LOGGED ? `You've logged food on ${n(week, (d) => d.foodLogged)} of the last 7 days` : null) },
+    { level: 1, why: () => (n(week, (d) => d.sleepLogged) < WEEK_LOGGED ? `You've logged sleep on ${n(week, (d) => d.sleepLogged)} of the last 7 nights` : null) },
+    {
+      level: 2,
+      why: () => {
+        const graded = week.reduce((s, d) => s + d.gradedKcal, 0);
+        const share = graded > 0 ? week.reduce((s, d) => s + d.ultraKcal, 0) / graded : null;
+        return share !== null && share >= 0.2 ? `Ultra-processed food was ${pct(share)} of your calories this week` : null;
+      },
+    },
+    {
+      level: 2,
+      why: () => {
+        const ratios = known(week.map((d) => d.proteinRatio));
+        const a = ratios.length >= MIN_WEEK_DAYS ? avg(ratios)! : null;
+        return a !== null && a < 0.8 ? `Protein has averaged ${pct(a)} of your target this week` : null;
+      },
+    },
+    {
+      level: 3,
+      why: () => {
+        const timed = known(week.map((d) => d.timing));
+        const onTime = timed.filter((t) => t >= GOOD).length;
+        return timed.length >= MIN_WEEK_DAYS && onTime / timed.length < SHARE_OF_NIGHTS ? `You ate and switched off on time ${onTime} of ${timed.length} evenings this week` : null;
+      },
+    },
+    {
+      level: 3,
+      why: () => {
+        const fasts = known(week.map((d) => d.keptFast));
+        const kept = fasts.filter(Boolean).length;
+        return fasts.length >= MIN_WEEK_DAYS && kept / fasts.length < SHARE_OF_NIGHTS ? `You kept ${kept} of your last ${fasts.length} fasts` : null;
+      },
+    },
+    { level: 4, why: () => (below(week.map((d) => d.sleep)) ? "Your sleep has slipped this week" : null) },
+    { level: 4, why: () => (below(week.map((d) => d.stress)) ? "Stress has been higher this week" : null) },
+    { level: 5, why: () => (below(week.map((d) => d.movement)) ? "You've moved less this week" : null) },
+    { level: 5, why: () => (below(week.map((d) => d.environment ?? null)) ? "Your environment has slipped this week" : null) },
+  ];
+  for (const c of checks) {
+    if (c.level > level) break;
+    const why = c.why();
+    if (why) return why;
+  }
+  return null;
+}
+
+const n = (days: LevelDay[], test: (d: LevelDay) => boolean) => days.filter(test).length;

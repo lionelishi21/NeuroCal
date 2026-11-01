@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:sentry/sentry.dart';
@@ -17,9 +18,11 @@ import 'auth/auth.dart';
 import 'auth/cognito_auth.dart';
 import 'billing/billing.dart';
 import 'config.dart';
+import 'firebase_options.dart';
 import 'health/sleep_sync.dart';
 import 'home_widget/focus_widget.dart';
 import 'progress_photos.dart';
+import 'push/push.dart';
 import 'reminders/reminders.dart';
 import 'review/review_prompt.dart';
 import 'device_time_zone.dart';
@@ -58,6 +61,17 @@ Future<void> main() async {
   await device.start().catchError((Object _) {});
   // Again at every launch: the phone may have changed time zone, or the app was updated.
   reminders.restore().catchError((Object _) {});
+  // Server notifications need the real API: the mock has no server to send them.
+  FirebasePush? push;
+  if (!AppConfig.usesMockApi) {
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      push = FirebasePush(device);
+      push.start().catchError((Object _) {});
+    } catch (_) {
+      push = null;
+    }
+  }
   final sleepSync = SleepSync(prefs, HealthSleepSource());
   sleepSync.start();
   final Analytics analytics = AppConfig.posthogKey.isEmpty
@@ -79,6 +93,7 @@ Future<void> main() async {
     reviewPrompt: reviewPrompt,
     homeWidget: const HomeScreenFocusWidget(),
     photos: FileProgressPhotoStore(),
+    push: push,
   );
   if (AppConfig.sentryDsn.isEmpty) return runApp(app);
   // Crashes and errors only: no personal details, no performance tracing. The Dart SDK, so no native
@@ -137,6 +152,7 @@ class NeuroCalApp extends StatelessWidget {
     this.reviewPrompt,
     this.homeWidget,
     this.photos,
+    this.push,
   });
 
   final NeuroCalApi api;
@@ -166,6 +182,9 @@ class NeuroCalApp extends StatelessWidget {
   /// Progress photos on the phone; none when left out.
   final ProgressPhotoStore? photos;
 
+  /// Notifications from the server; none when left out.
+  final PushClient? push;
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -183,6 +202,7 @@ class NeuroCalApp extends StatelessWidget {
       reviewPrompt: reviewPrompt,
       homeWidget: homeWidget,
       photos: photos,
+      push: push,
       child: ValueListenableBuilder(
         valueListenable: theme,
         builder: (context, mode, _) => MaterialApp(
@@ -223,6 +243,7 @@ class _SignedInState extends State<_SignedIn> {
   Future<Profile?>? _profile;
   Billing? _billing;
   ReminderSettings? _reminders;
+  PushClient? _push;
 
   /// Whether the subscription or trial gives access, per profile loaded.
   final _access = <Profile, Future<bool>>{};
@@ -236,14 +257,20 @@ class _SignedInState extends State<_SignedIn> {
     _profile ??= AppScope.of(context).api.me();
     _billing = AppScope.of(context).billing;
     _reminders = AppScope.of(context).reminders;
+    if (_push == null) {
+      // Once per sign-in, and at every launch: the server takes that as when the person was last seen.
+      _push = AppScope.of(context).push;
+      _push?.register(AppScope.of(context).api).catchError((Object _) {});
+    }
   }
 
   @override
   void dispose() {
     // Signed out: purchases on this device stop following that account.
     _billing?.signOut().catchError((Object _) {});
-    // And no reminders for an account that isn't here.
+    // And no reminders or notifications for an account that isn't here.
     _reminders?.clear().catchError((Object _) {});
+    _push?.unregister().catchError((Object _) {});
     super.dispose();
   }
 

@@ -20,6 +20,7 @@ import {
   DrizzleMarkerRepository,
   DrizzleGlucoseRepository,
   DrizzleEnvironmentRepository,
+  DrizzleNotificationSettingsRepository,
   DrizzleStackRepository,
   DrizzleShoppingListRepository,
   DrizzleSubscriptionRepository,
@@ -28,6 +29,7 @@ import {
 } from "./DrizzleRepositories";
 import { eq } from "drizzle-orm";
 import { createPgliteDatabase } from "./pglite";
+import { DrizzleGuideRepository, DrizzleProgramRepository } from "./DrizzleGuideRepositories";
 import { eatingOutFood } from "../../domain/eatingOut";
 import * as schema from "./schema";
 import { item, profile } from "../../application/testing/fakes";
@@ -384,6 +386,13 @@ describe("DrizzleEnvironmentRepository", () => {
     expect(await repo.saveCheck(alice, "2026-10-01", { darkBedroom: false })).toEqual({ daylight: true, darkBedroom: false });
     expect(await repo.getCheck(bob, "2026-10-01")).toBeNull();
 
+    // Water shares the day's row: the check keeps its answers, and a field not sent keeps its value.
+    expect(await repo.getWater(alice, "2026-10-01")).toBeNull();
+    await repo.saveWater(alice, "2026-10-01", { ml: 500 });
+    expect(await repo.saveWater(alice, "2026-10-01", { electrolytes: true })).toEqual({ ml: 500, electrolytes: true });
+    expect(await repo.getCheck(alice, "2026-10-01")).toEqual({ daylight: true, darkBedroom: false });
+    expect(await repo.getWater(bob, "2026-10-01")).toBeNull();
+
     expect(await repo.cachedAqi(30.3, -97.7, "2026-10-01")).toBeUndefined();
     await repo.cacheAqi(30.3, -97.7, "2026-10-01", null);
     expect(await repo.cachedAqi(30.3, -97.7, "2026-10-01")).toBeNull();
@@ -531,12 +540,88 @@ describe("DrizzlePerformanceRepository", () => {
   });
 });
 
+describe("DrizzleNotificationSettingsRepository", () => {
+  const allOn = { weeklyReport: true, comeBackEmail: true, push: expect.objectContaining({ focusScore: true, levelUp: true, trialEnding: true }) };
+
+  it("defaults everything on, keeps one token, lists people with a profile, and stops each email by token", async () => {
+    const repo = new DrizzleNotificationSettingsRepository(db);
+    expect(await repo.get(alice)).toEqual(allOn);
+    expect(await repo.tokenFor(alice, "token-alice-1111111111")).toBe("token-alice-1111111111");
+    expect(await repo.tokenFor(alice, "token-alice-2222222222")).toBe("token-alice-1111111111");
+    await repo.markWeeklySent(alice, "2026-10-26");
+    expect(await repo.weeklyRecipients()).toContainEqual({ userId: alice, email: expect.any(String), timeZone: expect.any(String), sentFor: "2026-10-26" });
+
+    await repo.unsubscribe("not-a-token-0000000000", "weekly");
+    expect(await repo.get(alice)).toEqual(allOn);
+    await repo.unsubscribe("token-alice-1111111111", "weekly");
+    expect(await repo.get(alice)).toMatchObject({ weeklyReport: false, comeBackEmail: true });
+    expect((await repo.weeklyRecipients()).map((r) => r.userId)).not.toContain(alice);
+    await repo.unsubscribe("token-alice-1111111111", "comeBack");
+    expect(await repo.get(alice)).toMatchObject({ weeklyReport: false, comeBackEmail: false });
+    await repo.save(alice, { weeklyReport: true, comeBackEmail: true });
+    expect(await repo.get(alice)).toEqual(allOn);
+
+    // Push kinds merge: one switched off stays off when another is saved.
+    await repo.save(alice, { push: { airQuality: false } });
+    await repo.save(alice, { push: { newRoutine: false } });
+    expect((await repo.get(alice)).push).toMatchObject({ airQuality: false, newRoutine: false, focusScore: true });
+    await repo.save(alice, { push: { airQuality: true, newRoutine: true } });
+  });
+
+  it("keeps phones, lists them with the last seen time, logs each notification once, and remembers the level", async () => {
+    const repo = new DrizzleNotificationSettingsRepository(db);
+    await repo.saveDevice(alice, { token: "fcm-token-alice-phone-1", platform: "android" }, new Date("2026-10-20T08:00:00Z"));
+    await repo.saveDevice(alice, { token: "fcm-token-alice-phone-2", platform: "ios" }, new Date("2026-10-28T08:00:00Z"));
+    expect((await repo.devicesOf(alice)).sort()).toEqual(["fcm-token-alice-phone-1", "fcm-token-alice-phone-2"]);
+    // The same phone signed in to another account moves to it.
+    await repo.saveDevice(bob, { token: "fcm-token-alice-phone-1", platform: "android" }, new Date("2026-10-29T08:00:00Z"));
+    expect(await repo.devicesOf(alice)).toEqual(["fcm-token-alice-phone-2"]);
+    await repo.removeDevice("fcm-token-alice-phone-1");
+    expect(await repo.devicesOf(bob)).toEqual([]);
+
+    expect(await repo.claim(alice, "score:2026-10-30", new Date())).toBe(true);
+    expect(await repo.claim(alice, "score:2026-10-30", new Date())).toBe(false);
+    await repo.setLastLevel(alice, 2);
+    const me = (await repo.notificationRecipients()).find((r) => r.userId === alice);
+    expect(me).toMatchObject({
+      tokens: ["fcm-token-alice-phone-2"],
+      lastSeenAt: new Date("2026-10-28T08:00:00Z"),
+      lastLevel: 2,
+      prefs: allOn,
+      recent: [{ key: "score:2026-10-30", sentAt: expect.any(Date) }],
+    });
+    // Bob has no phone left, so the job doesn't look at him.
+    expect((await repo.notificationRecipients()).map((r) => r.userId)).not.toContain(bob);
+  });
+});
+
+describe("DrizzleGuideRepository and DrizzleProgramRepository", () => {
+  it("saves guide text over and over under one id, and keeps one program per person", async () => {
+    const guides = new DrizzleGuideRepository(db);
+    const guide = { id: "mitoproof-protocol", title: "The Mitoproof Protocol", subtitle: "", summary: "", body: "## One", brand: "ownBrand" as const, status: "draft" as const, program: true, updatedAt: new Date("2026-11-01T00:00:00Z") };
+    await guides.save(guide);
+    await guides.save({ ...guide, body: "## Two", status: "published" });
+    expect(await guides.list()).toEqual([{ ...guide, body: "## Two", status: "published" }]);
+    expect(await guides.get("nope")).toBeNull();
+
+    const programs = new DrizzleProgramRepository(db);
+    expect(await programs.get(alice)).toBeNull();
+    const state = { guideId: "mitoproof-protocol", startedOn: "2026-11-02", days: { "2026-11-02": { ticked: ["noAlcohol"], done: ["noAlcohol", "daylight"] } }, checks: [{ checkpoint: 1 as const, date: "2026-11-02", answers: [1, 2, 3, 2, 1] }] };
+    await programs.save(alice, state);
+    await programs.save(alice, { ...state, startedOn: "2026-11-03" });
+    expect(await programs.get(alice)).toEqual({ ...state, startedOn: "2026-11-03" });
+    await programs.save(bob, state);
+    await programs.delete(bob);
+    expect(await programs.get(bob)).toBeNull();
+  });
+});
+
 // Last on purpose: by now the earlier tests have given alice rows in every user table.
 describe("DrizzleUserRepository.delete", () => {
   it("removes the user, everything they own and their waitlist entry, and nobody else's", async () => {
     // Her sign-in email is new@example.com since the first test.
     await new DrizzleWaitlistRepository(db).join("new@example.com", "iphone", "token-alice-0000000000");
-    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions, schema.stackItems, schema.stackDoses, schema.brainChecks, schema.performanceSessions];
+    const owned = [schema.profiles, schema.meals, schema.checkIns, schema.recipeRecommendations, schema.sleepSessions, schema.screenTimeSamples, schema.focusScores, schema.weightEntries, schema.subscriptions, schema.stackItems, schema.stackDoses, schema.brainChecks, schema.performanceSessions, schema.notificationSettings, schema.pushDevices, schema.notificationLog, schema.programs];
     const rowsOf = async (userId: string) => Promise.all(owned.map(async (t) => (await db.select().from(t).where(eq(t.userId, userId))).length));
     const before = await rowsOf(alice);
     const bobBefore = await rowsOf(bob);

@@ -53,9 +53,11 @@ import type { Exercise, IExerciseRepository, NewExercise } from "../../applicati
 import type { IPantryRepository, PantryItem } from "../../application/interfaces/IPantry";
 import type { IKnowledgeRepository, NewTechnique } from "../../application/interfaces/IKnowledge";
 import type { IEnvironmentRepository } from "../../application/interfaces/IEnvironment";
+import { type INotificationSettingsRepository, type NotificationPrefsChange, type NotificationRecipient, RECENT_DAYS } from "../../application/interfaces/INotificationSettings";
+import { type EmailKind, prefsOf } from "../../domain/notifications";
 import type { IMealPlanRepository } from "../../application/interfaces/IMealPlans";
 import type { MealPlan } from "../../domain/mealPlan";
-import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
+import type { AirLocation, EnvironmentCheck, WaterDay } from "../../domain/environment";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { FoundDevice, IDeviceCandidateRepository } from "../../application/interfaces/IDevices";
 import type { IAiUsage } from "../../application/interfaces/IAiUsage";
@@ -82,6 +84,10 @@ import {
   brainChecks,
   deviceCandidates,
   eatingOutItems,
+  notificationSettings,
+  notificationLog,
+  pushDevices,
+  programs,
   environmentChecks,
   environmentLocations,
   fastPlans,
@@ -152,6 +158,10 @@ export class DrizzleUserRepository implements IUserRepository {
       await tx.delete(exercises).where(eq(exercises.userId, userId));
       await tx.delete(pantryItems).where(eq(pantryItems.userId, userId));
       await tx.delete(environmentChecks).where(eq(environmentChecks.userId, userId));
+      await tx.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+      await tx.delete(pushDevices).where(eq(pushDevices.userId, userId));
+      await tx.delete(notificationLog).where(eq(notificationLog.userId, userId));
+      await tx.delete(programs).where(eq(programs.userId, userId));
       await tx.delete(environmentLocations).where(eq(environmentLocations.userId, userId));
       await tx.delete(fastPlans).where(eq(fastPlans.userId, userId));
       await tx.delete(coffeeCups).where(eq(coffeeCups.userId, userId));
@@ -998,6 +1008,144 @@ export class DrizzleKnowledgeRepository implements IKnowledgeRepository {
   }
 }
 
+export class DrizzleNotificationSettingsRepository implements INotificationSettingsRepository {
+  constructor(private readonly db: Database) {}
+
+  async get(userId: string) {
+    const [row] = await this.db.select().from(notificationSettings).where(eq(notificationSettings.userId, userId));
+    return prefsOf(row);
+  }
+
+  async save(userId: string, change: NotificationPrefsChange) {
+    const set = {
+      ...(change.weeklyReport === undefined ? {} : { weeklyReport: change.weeklyReport }),
+      ...(change.comeBackEmail === undefined ? {} : { comeBackEmail: change.comeBackEmail }),
+      // Merged into what's stored, so a kind left out keeps its setting.
+      ...(change.push ? { push: sql`${notificationSettings.push} || ${JSON.stringify(change.push)}::jsonb` } : {}),
+    };
+    await this.db
+      .insert(notificationSettings)
+      .values({ userId, ...set, ...(change.push ? { push: change.push as Record<string, boolean> } : {}) })
+      .onConflictDoUpdate({ target: notificationSettings.userId, set: Object.keys(set).length ? set : { userId } });
+  }
+
+  async tokenFor(userId: string, fresh: string) {
+    const [row] = await this.db
+      .insert(notificationSettings)
+      .values({ userId, unsubscribeToken: fresh })
+      .onConflictDoUpdate({ target: notificationSettings.userId, set: { unsubscribeToken: sql`coalesce(${notificationSettings.unsubscribeToken}, ${fresh})` } })
+      .returning({ token: notificationSettings.unsubscribeToken });
+    return row!.token!;
+  }
+
+  async unsubscribe(token: string, from: EmailKind) {
+    await this.db
+      .update(notificationSettings)
+      .set(from === "comeBack" ? { comeBackEmail: false } : { weeklyReport: false })
+      .where(eq(notificationSettings.unsubscribeToken, token));
+  }
+
+  async weeklyRecipients() {
+    const rows = await this.db
+      .select({ userId: users.id, email: users.email, timeZone: profiles.timeZone, sentFor: notificationSettings.weeklySentFor })
+      .from(users)
+      .innerJoin(profiles, eq(profiles.userId, users.id))
+      .leftJoin(notificationSettings, eq(notificationSettings.userId, users.id))
+      .where(and(isNull(users.deletedAt), sql`coalesce(${notificationSettings.weeklyReport}, true)`));
+    return rows.map((r) => ({ ...r, sentFor: r.sentFor ?? null }));
+  }
+
+  async markWeeklySent(userId: string, weekStart: string) {
+    await this.db
+      .insert(notificationSettings)
+      .values({ userId, weeklySentFor: weekStart })
+      .onConflictDoUpdate({ target: notificationSettings.userId, set: { weeklySentFor: weekStart } });
+  }
+
+  async saveDevice(userId: string, device: { token: string; platform: "android" | "ios" }, at: Date) {
+    await this.db
+      .insert(pushDevices)
+      .values({ token: device.token, userId, platform: device.platform, updatedAt: at })
+      .onConflictDoUpdate({ target: pushDevices.token, set: { userId, platform: device.platform, updatedAt: at } });
+  }
+
+  async removeDevice(token: string) {
+    await this.db.delete(pushDevices).where(eq(pushDevices.token, token));
+  }
+
+  async devicesOf(userId: string) {
+    const rows = await this.db.select({ token: pushDevices.token }).from(pushDevices).where(eq(pushDevices.userId, userId));
+    return rows.map((r) => r.token);
+  }
+
+  async devicesOfEmail(email: string) {
+    const rows = await this.db
+      .select({ token: pushDevices.token })
+      .from(pushDevices)
+      .innerJoin(users, eq(users.id, pushDevices.userId))
+      .where(and(eq(sql`lower(${users.email})`, email.toLowerCase()), isNull(users.deletedAt)));
+    return rows.map((r) => r.token);
+  }
+
+  async notificationRecipients(): Promise<NotificationRecipient[]> {
+    const rows = await this.db
+      .select({
+        userId: users.id,
+        email: users.email,
+        name: profiles.displayName,
+        timeZone: profiles.timeZone,
+        settings: notificationSettings,
+        token: pushDevices.token,
+        seenAt: pushDevices.updatedAt,
+      })
+      .from(pushDevices)
+      .innerJoin(users, eq(users.id, pushDevices.userId))
+      .innerJoin(profiles, eq(profiles.userId, users.id))
+      .leftJoin(notificationSettings, eq(notificationSettings.userId, users.id))
+      .where(isNull(users.deletedAt));
+    if (rows.length === 0) return [];
+    const byUser = new Map<string, NotificationRecipient>();
+    for (const r of rows) {
+      const known = byUser.get(r.userId);
+      if (known) {
+        known.tokens.push(r.token);
+        if (r.seenAt > known.lastSeenAt) known.lastSeenAt = r.seenAt;
+        continue;
+      }
+      byUser.set(r.userId, {
+        userId: r.userId,
+        email: r.email,
+        name: r.name,
+        timeZone: r.timeZone,
+        prefs: prefsOf(r.settings),
+        tokens: [r.token],
+        lastSeenAt: r.seenAt,
+        lastLevel: r.settings?.lastLevel ?? null,
+        recent: [],
+      });
+    }
+    const since = new Date(Date.now() - RECENT_DAYS * 86_400_000);
+    const sent = await this.db
+      .select()
+      .from(notificationLog)
+      .where(and(inArray(notificationLog.userId, [...byUser.keys()]), gte(notificationLog.sentAt, since)));
+    for (const s of sent) byUser.get(s.userId)?.recent.push({ key: s.key, sentAt: s.sentAt });
+    return [...byUser.values()];
+  }
+
+  async claim(userId: string, key: string, at: Date) {
+    const rows = await this.db.insert(notificationLog).values({ userId, key, sentAt: at }).onConflictDoNothing().returning({ key: notificationLog.key });
+    return rows.length > 0;
+  }
+
+  async setLastLevel(userId: string, level: number) {
+    await this.db
+      .insert(notificationSettings)
+      .values({ userId, lastLevel: level })
+      .onConflictDoUpdate({ target: notificationSettings.userId, set: { lastLevel: level } });
+  }
+}
+
 export class DrizzleEnvironmentRepository implements IEnvironmentRepository {
   constructor(private readonly db: Database) {}
 
@@ -1039,6 +1187,24 @@ export class DrizzleEnvironmentRepository implements IEnvironmentRepository {
       .onConflictDoUpdate({ target: [environmentChecks.userId, environmentChecks.date], set: Object.keys(set).length ? set : { userId } })
       .returning();
     return DrizzleEnvironmentRepository.toCheck(row!);
+  }
+
+  async getWater(userId: string, day: string): Promise<WaterDay | null> {
+    const [row] = await this.db.select().from(environmentChecks).where(and(eq(environmentChecks.userId, userId), eq(environmentChecks.date, day)));
+    return row && (row.waterMl !== null || row.electrolytes !== null) ? { ml: row.waterMl ?? 0, electrolytes: row.electrolytes ?? false } : null;
+  }
+
+  async saveWater(userId: string, day: string, water: Partial<WaterDay>): Promise<WaterDay> {
+    const set = {
+      ...(water.ml !== undefined ? { waterMl: water.ml } : {}),
+      ...(water.electrolytes !== undefined ? { electrolytes: water.electrolytes } : {}),
+    };
+    const [row] = await this.db
+      .insert(environmentChecks)
+      .values({ userId, date: day, ...set })
+      .onConflictDoUpdate({ target: [environmentChecks.userId, environmentChecks.date], set: Object.keys(set).length ? set : { userId } })
+      .returning();
+    return { ml: row!.waterMl ?? 0, electrolytes: row!.electrolytes ?? false };
   }
 
   async cachedAqi(latitude: number, longitude: number, day: string) {

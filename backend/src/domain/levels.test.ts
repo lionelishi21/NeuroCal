@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { LEVEL_WINDOW_DAYS, type LevelDay, levelOf } from "./levels";
+import { LEVEL_WINDOW_DAYS, type LevelDay, levelOf, slippingOf } from "./levels";
 
 const day = (over: Partial<LevelDay> = {}): LevelDay => ({
   foodLogged: true,
@@ -56,5 +56,25 @@ describe("levelOf", () => {
     const withRise = levelOf([], { recent: 76, usual: 74, raised: { from: 68, to: 76 } });
     expect(withRise.milestones).toEqual(["You raised your Brain speed: your usual went from 68 to 76, and it's held."]);
     expect(levelOf([], { recent: 70, usual: 70 }).milestones).toBeUndefined();
+  });
+});
+
+describe("slippingOf", () => {
+  const withWeek = (over: Partial<LevelDay>) => [...month().slice(0, LEVEL_WINDOW_DAYS - 7), ...Array.from({ length: 7 }, () => day(over))];
+
+  it("says nothing when the week holds, or at level 0", () => {
+    expect(slippingOf(month(), 5)).toBeNull();
+    expect(slippingOf(withWeek({ foodLogged: false }), 0)).toBeNull();
+  });
+
+  it("names the first habit of the level or below that slipped this week", () => {
+    expect(slippingOf(withWeek({ sleep: 0.5 }), 4)).toBe("Your sleep has slipped this week");
+    expect(slippingOf(withWeek({ sleepLogged: false, sleep: 0.5 }), 4)).toBe("You've logged sleep on 0 of the last 7 nights");
+    expect(slippingOf(withWeek({ ultraKcal: 600 }), 2)).toBe("Ultra-processed food was 30% of your calories this week");
+  });
+
+  it("ignores habits above the level", () => {
+    expect(slippingOf(withWeek({ movement: 0.2 }), 4)).toBeNull();
+    expect(slippingOf(withWeek({ movement: 0.2 }), 5)).toBe("You've moved less this week");
   });
 });

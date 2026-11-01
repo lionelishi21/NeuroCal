@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
+import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { FOODS } from "../infrastructure/catalog/foods";
@@ -39,6 +40,9 @@ import {
   FakeAirQuality,
   FakeGeocoder,
   InMemoryEnvironment,
+  InMemoryNotificationSettings,
+  InMemoryGuides,
+  InMemoryPrograms,
   FakeTechniqueExtractor,
   FakeDeviceExtractor,
   FakeWebSearch,
@@ -177,6 +181,10 @@ beforeEach(async () => {
     mealPlanner: new FakeMealPlanner(),
     mealPlans: new InMemoryMealPlans(),
     environment: new InMemoryEnvironment(),
+    notificationSettings: new InMemoryNotificationSettings(),
+    guides: new InMemoryGuides(),
+    programs: new InMemoryPrograms(),
+    guideSeeds: GUIDE_SEEDS,
     airQuality: new FakeAirQuality(),
     geocoder: new FakeGeocoder(),
     knowledge: new InMemoryKnowledge(),
@@ -1061,6 +1069,30 @@ describe("API routes", () => {
     const token = waitlist.rows[0]!.unsubscribeToken;
     expect(await call("POST", "/waitlist/unsubscribe", { token })).toEqual({ status: 200, body: { status: "unsubscribed" } });
     expect(waitlist.rows[0]!.unsubscribed).toBe(true);
+  });
+
+  it("keeps notification settings, on by default, saves phones, and an email's public link stops it", async () => {
+    const all = { weeklyReport: true, comeBackEmail: true, push: expect.objectContaining({ focusScore: true, airQuality: true }) };
+    expect(await call("GET", "/notification-settings")).toEqual({ status: 200, body: all });
+    const saved = await call("PUT", "/notification-settings", { weeklyReport: false, comeBackEmail: true, push: { airQuality: false } });
+    expect(saved).toEqual({ status: 200, body: { weeklyReport: false, comeBackEmail: true, push: expect.objectContaining({ airQuality: false, focusScore: true }) } });
+    expect((await call("PUT", "/notification-settings", {})).status).toBe(400);
+    expect((await call("PUT", "/notification-settings", { weeklyReport: true, comeBackEmail: true, push: { nope: true } })).status).toBe(400);
+    await call("PUT", "/notification-settings", { weeklyReport: true, comeBackEmail: true, push: { airQuality: true } });
+
+    const settings = ports.notificationSettings as InMemoryNotificationSettings;
+    expect(await call("PUT", "/devices", { token: "fcm-token-0123456789abcdef", platform: "android" })).toEqual({ status: 204 });
+    expect(await settings.devicesOf("u1")).toEqual(["fcm-token-0123456789abcdef"]);
+    expect((await call("PUT", "/devices", { token: "short", platform: "android" })).status).toBe(400);
+
+    expect(api.isPublic("POST", "/email/unsubscribe")).toBe(true);
+    const token = await settings.tokenFor("u1", "token-u1-0000000000000000");
+    expect(await call("POST", "/email/unsubscribe", { token })).toEqual({ status: 200, body: { status: "unsubscribed" } });
+    expect((await call("GET", "/notification-settings")).body).toMatchObject({ weeklyReport: false, comeBackEmail: true });
+    await call("POST", "/email/unsubscribe", { token, from: "comeBack" });
+    expect((await call("GET", "/notification-settings")).body).toMatchObject({ weeklyReport: false, comeBackEmail: false });
+    // An unknown token gets the same answer.
+    expect((await call("POST", "/email/unsubscribe", { token: "unknown-token-000000" })).status).toBe(200);
   });
 
   it("answers bad JSON, unknown paths and wrong methods clearly", async () => {

@@ -20,6 +20,7 @@ import '../health/sleep_sync.dart';
 import '../plan/three_weeks.dart';
 import '../weight_units.dart';
 import '../reminders/reminders.dart';
+import '../reminders/today_nudges.dart';
 import 'calf_routine.dart';
 import 'capture.dart';
 import 'environment_card.dart';
@@ -28,6 +29,7 @@ import 'guide.dart';
 import 'healthspan_card.dart';
 import 'next_step.dart';
 import 'plan_fast_sheet.dart';
+import 'program.dart';
 import 'streak.dart';
 import 'stack.dart';
 import 'weight_cards.dart' show FastingCard;
@@ -56,6 +58,7 @@ class _Day {
     this.weightGoal,
     this.weighInDue = false,
     this.coffee,
+    this.program,
   });
 
   final DateTime date;
@@ -109,6 +112,9 @@ class _Day {
 
   /// Today's coffee; null when it didn't load or for a past day.
   final CoffeeDay? coffee;
+
+  /// The 30-day program in progress; null with none, for a past day, or when it didn't load.
+  final Program? program;
 
   bool get isToday => _sameDay(date, DateTime.now());
 }
@@ -271,6 +277,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final coffeeLoad = _date == null
         ? _api.coffee().then<CoffeeDay?>((c) => c).catchError((Object _) => null)
         : Future<CoffeeDay?>.value(null);
+    final programLoad = _date == null ? _api.program().catchError((Object _) => null) : Future<Program?>.value(null);
     final prefsLoad = SharedPreferences.getInstance().then<SharedPreferences?>((p) => p).catchError((Object _) => null);
     final d = await _api.today(_date);
     // Today's ticks decide which supplement nudges are still due.
@@ -295,6 +302,17 @@ class _TodayScreenState extends State<TodayScreen> {
     final streak = days == null ? null : streakFrom(days, date);
     // The evening nudge follows what's logged: set while a streak is at risk, gone once today counts.
     if (streak != null) reminders?.streak(days: streak.days, todayDone: streak.todayDone).catchError((Object _) {});
+    if (_date == null && reminders != null) {
+      planTodayNudges(
+        reminders,
+        api: _api,
+        day: d,
+        coffee: await coffeeLoad,
+        hasWeightGoal: goal != null,
+        lastWeighIn: lastWeighIn,
+        photos: scope.photos,
+      ).catchError((Object _) {});
+    }
     final homeWidget = scope.homeWidget;
     if (homeWidget != null && _date == null) {
       final status = _statusOf(
@@ -347,6 +365,7 @@ class _TodayScreenState extends State<TodayScreen> {
       weightGoal: goal,
       weighInDue: weighInDue,
       coffee: await coffeeLoad,
+      program: await programLoad,
     );
   }
 
@@ -571,6 +590,10 @@ class _TodayScreenState extends State<TodayScreen> {
                       onHowItWorks: () => showGuide(context),
                       onPlanFast: day.planLimitHours > 0 ? () => _planFast(day.fastingAll) : null,
                     ),
+                    if (day.program case final program?) ...[
+                      const SizedBox(height: Space.s3),
+                      ProgramCard(program, onOpen: () => openProgram(context).then((_) => _refresh())),
+                    ],
                     if (day.plan != null || day.weightGoal != null) ...[
                       const SizedBox(height: Space.s3),
                       _PlanCard(day, onLogWeight: () => widget.onCapture(Capture.weight)),
@@ -1106,7 +1129,8 @@ const _inputWhy = {
   'Blood sugar': 'Steady blood sugar means steady energy; big swings bring slumps.',
   'Stress': 'How you said you feel in your recent check-ins.',
   'Movement': 'Moving lifts focus for the next couple of hours, and helps you sleep.',
-  'Environment': 'Morning daylight, a dark and quiet bedroom, clean water and the air where you live.',
+  'Environment':
+      'Morning daylight, a dark and quiet bedroom, clean water, how much you drink and the air where you live.',
 };
 
 /// One of the six inputs as a small ring in its body system's colour: full and green from 0.75,

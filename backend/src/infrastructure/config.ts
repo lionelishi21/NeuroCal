@@ -34,6 +34,8 @@ export interface AppConfig {
   resendApiKey?: string;
   /** The sender, on a domain verified with Resend. */
   emailFrom: string;
+  /** Firebase service account key (JSON) for push notifications; without it nothing is pushed. */
+  firebaseServiceAccount?: string;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
   /** Amazon Associates tag for the Learn shelf's book links; none when unset. */
@@ -71,6 +73,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     paywall: opt("PAYWALL") === "on",
     resendApiKey: opt("RESEND_API_KEY"),
     emailFrom: opt("EMAIL_FROM") ?? "NeuroCal <hello@neurocal.ai>",
+    firebaseServiceAccount: opt("FIREBASE_SERVICE_ACCOUNT"),
     webUrl: opt("WEB_URL") ?? "https://neurocal.ai",
     ...(opt("AMAZON_ASSOCIATE_TAG") ? { amazonTag: opt("AMAZON_ASSOCIATE_TAG")! } : {}),
     adminEmails: (opt("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean),

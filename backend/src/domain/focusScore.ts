@@ -15,7 +15,7 @@ import type { CheckIn, CognitiveFlag, FocusComponents, Meal, ScreenTimeSample, S
  *   glycemic ← share of D−1 calories from high-glycemic-load items
  *   stress   ← negative flags in check-ins on D−1 and D
  *   movement ← exercise on D−1, for people who log exercise (v1)
- *   environment ← the air where you live on D−1 and that day's environment check (v1.1)
+ *   environment ← the air where you live on D−1, that day's environment check and water drunk (v1.1)
  *
  * v1 (docs/NCBM.md §3.2) adds movement and fasting, and tunes the weights to each person once
  * their Brain speed checks show which inputs actually move their reaction time.
@@ -73,8 +73,8 @@ export interface FocusInputs {
   fastHours?: number;
   /** Meals on `date`, for the overnight fast (the first one ends it). */
   todayMeals?: Meal[];
-  /** The previous day's air (US AQI) and environment check. */
-  environment?: { aqi: number | null; check: EnvironmentCheck | null };
+  /** The previous day's air (US AQI), environment check and water against its target. */
+  environment?: { aqi: number | null; check: EnvironmentCheck | null; water?: { ml: number; targetMl: number } | null };
   /** The previous day's glucose-sensor summary, already scored 0–1 (domain/glucose.ts); replaces the meal estimate. */
   previousDayGlucose?: number;
 }
@@ -184,7 +184,7 @@ export function computeFocusComponents(inputs: FocusInputs): FocusComponents {
     glycemic: round(inputs.previousDayGlucose ?? glycemicComponent(inputs.previousDayMeals)),
     stress: round(stressComponent(inputs.checkIns)),
     movement: round(movementComponent(inputs)),
-    environment: inputs.environment ? environmentSignal(inputs.environment.aqi, inputs.environment.check) : null,
+    environment: inputs.environment ? environmentSignal(inputs.environment.aqi, inputs.environment.check, inputs.environment.water) : null,
   };
 }
 

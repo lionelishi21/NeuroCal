@@ -13,6 +13,7 @@ import {
   profileOf,
 } from "../../domain/experiment";
 import { localDateOf } from "../../domain/localDay";
+import { shopUrlFor } from "../../domain/shop";
 import { type StackFlag, type StackItem, daysLeft, stackFlags } from "../../domain/stack";
 import type { Profile } from "../../domain/types";
 import { addDays } from "../../domain/weight";
@@ -24,6 +25,8 @@ import type { IStackRepository, NewStackItem } from "../interfaces/IStackReposit
 export const MAX_STACK_ITEMS = 30;
 
 export type StackItemView = StackItem & {
+  /** Our brand's store page, for a reorder. */
+  shopUrl?: string;
   daysLeft?: number;
   takenToday: boolean;
   /** What it's for, how long it takes and what to expect (domain/experiment.ts). */
@@ -66,6 +69,8 @@ export class StackUseCases {
     private readonly stack: IStackRepository,
     private readonly clock: IClock,
     private readonly sources?: ExperimentSources,
+    /** Our brand's supplements and their store pages, for a reorder link (domain/shop.ts). */
+    private readonly ownProducts?: () => Promise<{ name: string; url?: string }[]>,
   ) {}
 
   async get(userId: string): Promise<StackView> {
@@ -75,8 +80,14 @@ export class StackUseCases {
       this.stack.listStopped(userId, addDays(today, -WATCH_AFTER_STOP_DAYS)),
       this.stack.takenOn(userId, today),
     ]);
-    const experiments = await this.experiments(profile, [...items, ...stopped], today);
-    const withExperiment = (i: StackItem) => ({ ...view(i, today, taken), ...(experiments.get(i.id) ?? {}) });
+    const [experiments, shop] = await Promise.all([
+      this.experiments(profile, [...items, ...stopped], today),
+      this.ownProducts ? this.ownProducts().catch(() => []) : Promise.resolve([]),
+    ]);
+    const withExperiment = (i: StackItem): StackItemView => {
+      const shopUrl = shopUrlFor(i.name, shop);
+      return { ...view(i, today, taken), ...(experiments.get(i.id) ?? {}), ...(shopUrl ? { shopUrl } : {}) };
+    };
     return {
       date: today,
       items: items.map(withExperiment),

@@ -5,13 +5,14 @@ import '../app_scope.dart';
 import '../config.dart';
 import '../health/sleep_sync.dart';
 import '../onboarding/bio_profile.dart';
-import '../reminders/reminders.dart';
 import '../theme/theme_controller.dart';
 import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
 import 'guide.dart';
+import 'guides.dart';
+import 'notification_settings.dart';
 
 /// "SR" for "Sam Rivera": the first letters of the first two words.
 String _initials(String name) =>
@@ -181,13 +182,16 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           if (scope.reminders case final reminders?) ...[
-            const GroupLabel('Check-in windows'),
-            _Reminders(reminders),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(Space.s1, Space.s2, Space.s1, 0),
-              child: Text(
-                'Set from when you wake up. While a window is open, we nudge up to three times; checking in stops it for the day.',
-                style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
+            const GroupLabel('Notifications'),
+            AppCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                contentPadding: const EdgeInsets.fromLTRB(Space.s4, Space.s1, Space.s3, Space.s1),
+                leading: Icon(Icons.notifications_none_rounded, color: c.synapseInk),
+                title: const Text('Reminders and email', style: TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: const Text('Check-ins, water, wind-down, quiet hours'),
+                trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+                onTap: () => openNotificationSettings(context, reminders),
               ),
             ),
           ],
@@ -219,6 +223,18 @@ class SettingsScreen extends StatelessWidget {
           ],
           const GroupLabel('Health'),
           _Health(profile.healthConditions ?? const [], onChanged: onChanged),
+          const GroupLabel('Read'),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              contentPadding: const EdgeInsets.fromLTRB(Space.s4, Space.s1, Space.s3, Space.s1),
+              leading: Icon(Icons.menu_book_rounded, color: c.synapseInk),
+              title: const Text('Guides', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('The Mitoproof Protocol and its 30-day program'),
+              trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              onTap: () => openGuides(context),
+            ),
+          ),
           const GroupLabel('Help'),
           AppCard(
             padding: EdgeInsets.zero,
@@ -424,74 +440,6 @@ class _SubscriptionState extends State<_Subscription> {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// A switch per daily reminder. The first one switched on asks to show notifications.
-class _Reminders extends StatelessWidget {
-  const _Reminders(this.settings);
-
-  final ReminderSettings settings;
-
-  Future<void> _set(BuildContext context, ReminderSlot slot, bool on) async {
-    final done = await settings.set(slot, on);
-    if (!context.mounted) return;
-    if (!done) {
-      showToast(
-        context,
-        'Notifications are off for NeuroCal. Turn them on in your phone’s settings.',
-        ToastTone.problem,
-      );
-    } else if (on) {
-      showToast(context, '${slot.label} window set: ${slot.range(settings.wakeHour)} every day');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: ListenableBuilder(
-        listenable: settings,
-        builder: (context, _) {
-          final on = settings.slots;
-          return Column(
-            children: [
-              for (final (i, slot) in ReminderSlot.values.indexed)
-                MergeSemantics(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s3, Space.s2),
-                    decoration: BoxDecoration(
-                      border: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${slot.label} · ${slot.range(settings.wakeHour)}',
-                                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
-                              ),
-                              Text(
-                                'Nudges until you check in',
-                                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(value: on.contains(slot), onChanged: (v) => _set(context, slot, v)),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
       ),
     );
   }

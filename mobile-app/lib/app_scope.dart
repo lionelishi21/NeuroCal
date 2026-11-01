@@ -8,6 +8,7 @@ import 'billing/billing.dart';
 import 'health/sleep_sync.dart';
 import 'home_widget/focus_widget.dart';
 import 'progress_photos.dart';
+import 'push/push.dart';
 import 'reminders/reminders.dart';
 import 'review/review_prompt.dart';
 import 'theme/theme_controller.dart';
@@ -32,6 +33,7 @@ class AppScope extends InheritedWidget {
     this.reviewPrompt,
     this.homeWidget,
     this.photos,
+    this.push,
     required super.child,
   });
 
@@ -70,6 +72,9 @@ class AppScope extends InheritedWidget {
   /// Progress photos, on the phone only; null where there's no file storage (previews).
   final ProgressPhotoStore? photos;
 
+  /// Notifications from the server; null with the mock API (tests, previews) or without Firebase.
+  final PushClient? push;
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
@@ -87,5 +92,6 @@ class AppScope extends InheritedWidget {
       sleepSync != oldWidget.sleepSync ||
       reviewPrompt != oldWidget.reviewPrompt ||
       homeWidget != oldWidget.homeWidget ||
-      photos != oldWidget.photos;
+      photos != oldWidget.photos ||
+      push != oldWidget.push;
 }

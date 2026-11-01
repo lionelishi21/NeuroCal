@@ -3,6 +3,8 @@
  * NEXT_PUBLIC_API_URL=http://localhost:4000. Uses real services when keys are set,
  * stubs otherwise; an in-memory Postgres (seeded) unless DATABASE_URL is set.
  */
+import { DrizzleGuideRepository, DrizzleProgramRepository } from "../infrastructure/database/DrizzleGuideRepositories";
+import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { createServer } from "node:http";
 import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
@@ -43,6 +45,7 @@ import {
   DrizzleGlucoseRepository,
   DrizzleEatingOutRepository,
   DrizzleEnvironmentRepository,
+  DrizzleNotificationSettingsRepository,
   DrizzleFastPlanRepository,
   DrizzleCoffeeRepository,
   DrizzleSessionRepository,
@@ -208,6 +211,10 @@ async function main() {
       mealPlanner: config.anthropicApiKey ? new ClaudeMealPlanner({ apiKey: config.anthropicApiKey }) : stubMealPlanner,
       mealPlans: new DrizzleMealPlanRepository(db),
       environment: new DrizzleEnvironmentRepository(db),
+      notificationSettings: new DrizzleNotificationSettingsRepository(db),
+      guides: new DrizzleGuideRepository(db),
+      programs: new DrizzleProgramRepository(db),
+      guideSeeds: GUIDE_SEEDS,
       fastPlans: new DrizzleFastPlanRepository(db),
       coffee: new DrizzleCoffeeRepository(db),
     sessions: new DrizzleSessionRepository(db),

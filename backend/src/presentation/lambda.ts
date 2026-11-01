@@ -1,4 +1,6 @@
 import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
+import { DrizzleGuideRepository, DrizzleProgramRepository } from "../infrastructure/database/DrizzleGuideRepositories";
+import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
@@ -38,6 +40,7 @@ import {
   DrizzleGlucoseRepository,
   DrizzleEatingOutRepository,
   DrizzleEnvironmentRepository,
+  DrizzleNotificationSettingsRepository,
   DrizzleFastPlanRepository,
   DrizzleCoffeeRepository,
   DrizzleSessionRepository,
@@ -55,6 +58,7 @@ import { RevenueCatLookup } from "../infrastructure/billing/RevenueCat";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
+import { FcmPushSender, parseServiceAccount } from "../infrastructure/push/FcmPushSender";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { errorReporterFor, routeOf } from "../infrastructure/monitoring/SentryErrorReporter";
 import { buildUseCases, systemClock } from "./compose";
@@ -74,8 +78,8 @@ const required = <T>(name: string, value: T | undefined): T => {
 const errors = errorReporterFor(config.sentryDsn, config.stage);
 const db = createDatabase(required("DATABASE_URL", config.databaseUrl));
 const users = new DrizzleUserRepository(db);
-const api = createApi(
-  buildUseCases({
+const firebase = parseServiceAccount(config.firebaseServiceAccount);
+const useCases = buildUseCases({
     users,
     identity: new CognitoIdentityProvider({ userPoolId: required("USER_POOL_ID", config.userPoolId) }),
     profiles: new DrizzleProfileRepository(db),
@@ -104,6 +108,10 @@ const api = createApi(
     mealPlanner: new ClaudeMealPlanner({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     mealPlans: new DrizzleMealPlanRepository(db),
     environment: new DrizzleEnvironmentRepository(db),
+    notificationSettings: new DrizzleNotificationSettingsRepository(db),
+    guides: new DrizzleGuideRepository(db),
+    programs: new DrizzleProgramRepository(db),
+    guideSeeds: GUIDE_SEEDS,
     fastPlans: new DrizzleFastPlanRepository(db),
     coffee: new DrizzleCoffeeRepository(db),
     sessions: new DrizzleSessionRepository(db),
@@ -134,12 +142,13 @@ const api = createApi(
     waitlist: new DrizzleWaitlistRepository(db),
     // Without a Resend key the waitlist still fills; its emails go out once the key is set.
     email: config.resendApiKey ? new ResendEmailSender({ apiKey: config.resendApiKey, from: config.emailFrom }) : noEmail,
+    // Without a Firebase key nothing is pushed; the phone's own reminders still work.
+    ...(firebase ? { push: new FcmPushSender({ account: firebase }) } : {}),
     webUrl: config.webUrl,
     amazonTag: config.amazonTag,
     recipeDomains: config.recipeDomains,
-  }),
-  errors,
-);
+  });
+const api = createApi(useCases, errors);
 const userIds = new Map<string, string>();
 
 /** Admins are the verified emails listed in ADMIN_EMAILS (set by the stack). */
@@ -149,7 +158,31 @@ function isAdminClaim(claims: Record<string, unknown>): boolean {
   return verified && config.adminEmails.includes(email);
 }
 
-export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> {
+/** The hourly schedule (infra: Notifications rule) sends this instead of an HTTP request. */
+const NOTIFICATIONS = "notifications";
+/** What the rule sent before push notifications; still accepted while an old rule is about. */
+const WEEKLY_EMAILS = "weekly-emails";
+
+export async function handler(event: APIGatewayProxyEventV2WithJWTAuthorizer | { job: string; email?: string }): Promise<APIGatewayProxyResultV2> {
+  // Run by hand (aws lambda invoke) to check push reaches someone's phone.
+  if ("job" in event && event.job === "test-push" && event.email) {
+    const result = await useCases.sendNotifications.test(event.email);
+    console.info(JSON.stringify({ event: "test_push", ...result }));
+    return { statusCode: 200, body: JSON.stringify(result) };
+  }
+  if ("job" in event) {
+    if (event.job !== NOTIFICATIONS && event.job !== WEEKLY_EMAILS) throw new Error(`Unknown job ${event.job}`);
+    try {
+      const weekly = await useCases.sendWeeklyEmails.execute();
+      console.info(JSON.stringify({ event: "weekly_emails", ...weekly }));
+      const sent = await useCases.sendNotifications.execute();
+      console.info(JSON.stringify({ event: "notifications", ...sent }));
+      return { statusCode: 200 };
+    } catch (e) {
+      await errors.report(e, { source: "notifications" });
+      throw e;
+    }
+  }
   try {
     return await handle(event);
   } catch (e) {

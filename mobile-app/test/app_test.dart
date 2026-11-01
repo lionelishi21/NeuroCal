@@ -637,9 +637,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Air quality on for Austin, sample region'), findsOneWidget);
 
-    expect(tester.getSemantics(find.bySemanticsLabel('Morning daylight')), isSemantics(isChecked: false));
-    await tapCentered(tester, find.text('Morning daylight'));
-    expect(tester.getSemantics(find.bySemanticsLabel('Morning daylight')), isSemantics(isChecked: true));
+    expect(tester.getSemantics(find.bySemanticsLabel('Got morning daylight')), isSemantics(isChecked: false));
+    await tapCentered(tester, find.text('Got morning daylight'));
+    expect(tester.getSemantics(find.bySemanticsLabel('Got morning daylight')), isSemantics(isChecked: true));
+
+    // Water: a glass at a time against the day's target, and the electrolytes tick.
+    expect(find.text('0 of 2,000 ml'), findsOneWidget);
+    await tapCentered(tester, find.bySemanticsLabel('Add a glass, 250 ml'));
+    await tapCentered(tester, find.bySemanticsLabel('Add a glass, 250 ml'));
+    expect(find.text('500 of 2,000 ml'), findsOneWidget);
+    await tapCentered(tester, find.bySemanticsLabel('Remove a glass'));
+    expect(find.text('250 of 2,000 ml'), findsOneWidget);
+    await tapCentered(tester, find.text('Added salt or electrolytes'));
+    expect(tester.getSemantics(find.bySemanticsLabel('Added salt or electrolytes')), isSemantics(isChecked: true));
+
+    await tester.tap(find.byTooltip('Why these?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Why these matter'), findsOneWidget);
+    expect(find.textContaining('holds back melatonin'), findsOneWidget);
+    expect(find.textContaining('slightly short of water'), findsOneWidget);
   });
 
   testWidgets('meal plan: plan three days, see the day against the target and the shopping list, and log a meal', (

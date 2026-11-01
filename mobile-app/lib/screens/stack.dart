@@ -341,6 +341,21 @@ class _StackScreenState extends State<StackScreen> {
                               ].join(' · '),
                             ),
                             if (item.experiment case final e?) ExperimentLine(e),
+                            if (item.shopUrl case final url?)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  onPressed: () => AppScope.of(context).openLink(Uri.parse(url)),
+                                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                                  label: Text(
+                                    item.runningLow ? 'Running low: reorder from MitoProof' : 'Reorder from MitoProof',
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),

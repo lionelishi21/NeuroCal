@@ -92,10 +92,11 @@ describe("NeuroCalStack", () => {
     // Preflights carry no token, so they must skip the authorizer or browsers block every call.
     dev.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: "OPTIONS /{proxy+}", AuthorizationType: "NONE" });
     const routes = Object.values(dev.findResources("AWS::ApiGatewayV2::Route")) as { Properties: { RouteKey: string; AuthorizationType: string } }[];
-    // The only open routes: preflights, the landing page's waitlist form and unsubscribe link, and
-    // RevenueCat's webhook (which the Lambda checks with a shared secret).
+    // The only open routes: preflights, the landing page's waitlist form and unsubscribe link, the
+    // weekly email's unsubscribe link, and RevenueCat's webhook (which the Lambda checks with a shared secret).
     expect(routes.filter((r) => r.Properties.AuthorizationType === "NONE").map((r) => r.Properties.RouteKey).sort()).toEqual([
       "OPTIONS /{proxy+}",
+      "POST /email/unsubscribe",
       "POST /waitlist",
       "POST /waitlist/unsubscribe",
       "POST /webhooks/revenuecat",
@@ -105,7 +106,13 @@ describe("NeuroCalStack", () => {
       RouteSettings: {
         "POST /waitlist": { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
         "POST /waitlist/unsubscribe": { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
+        "POST /email/unsubscribe": { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
       },
+    });
+    // The weekly report email and the push notifications run hourly in the API Lambda, which tells the job from a request by its input.
+    dev.hasResourceProperties("AWS::Events::Rule", {
+      ScheduleExpression: "rate(1 hour)",
+      Targets: [Match.objectLike({ Input: JSON.stringify({ job: "notifications" }) })],
     });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Api", {
       CorsConfiguration: Match.objectLike({ AllowOrigins: ["https://app.example.com"] }),

@@ -239,6 +239,168 @@ export function trialEndingEmail(o: { to: string; day: string }): RenderedEmail 
   };
 }
 
+/** After a week away: one email, never repeated, with a way back in and a way out. */
+export function comeBackEmail(o: { to: string; name: string; unsubscribeUrl: string }): RenderedEmail {
+  const hi = o.name ? `Hi ${o.name},` : "Hi,";
+  return {
+    subject: "Your Focus Score misses you",
+    text: [
+      hi,
+      "",
+      "It's been a week since you last opened NeuroCal. No guilt: habits come and go.",
+      "",
+      "One small thing today restarts your streak:",
+      "- Log one meal: a photo is enough.",
+      "- Or do the 2-minute Brain speed check, to see where your focus is.",
+      "",
+      "We won't send this again.",
+      "",
+      `Stop these emails: ${o.unsubscribeUrl}`,
+      "",
+      "NeuroCal",
+    ].join("\n"),
+    html: layout({
+      preheader: "One small thing today restarts your streak.",
+      eyebrow: "It's been a week",
+      title: "Pick up where you left off",
+      intro: `${escapeHtml(hi)} it's been a week since you last opened NeuroCal. No guilt: habits come and go.`,
+      body: [
+        p("One small thing today restarts your streak:"),
+        steps([
+          ["Log one meal", "A photo is enough."],
+          ["Or do the Brain speed check", "Two minutes, to see where your focus is."],
+        ]),
+        p("We won't send this again.", { muted: true }),
+      ],
+      footer: `Sent to ${escapeHtml(o.to)} once, after a week away. <a href="${escapeHtml(o.unsubscribeUrl)}" style="color:${C.link};">Stop these emails</a>, or change it in the app under Me &gt; Notifications.`,
+    }),
+  };
+}
+
+/** The weight trend reached the person's goal. */
+export function goalWeightEmail(o: { to: string; targetKg: number }): RenderedEmail {
+  return {
+    subject: "You reached your goal weight",
+    text: [
+      "Hi,",
+      "",
+      `Your weight trend has reached your goal of ${o.targetKg} kg. That's weeks of steady habits, not one good day.`,
+      "",
+      "What next? In the app, on Progress, set a new goal, or switch to keeping the weight you're at.",
+      "",
+      "NeuroCal",
+    ].join("\n"),
+    html: layout({
+      preheader: `Your trend reached ${o.targetKg} kg.`,
+      eyebrow: "Goal reached",
+      title: "You reached your goal weight",
+      intro: `Your weight trend has reached your goal of ${o.targetKg} kg. That's weeks of steady habits, not one good day.`,
+      body: [p("What next? In the app, on Progress, set a new goal, or switch to keeping the weight you're at.")],
+      footer: `Sent to ${escapeHtml(o.to)} because you set a weight goal in NeuroCal. Switch these off in the app under Me &gt; Notifications.`,
+    }),
+  };
+}
+
+/** One row per pillar: its name and line, and the week's score against the week before. */
+const pillarRows = (rows: { label: string; score: number | null; previous: number | null; summary: string }[]): Block =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">${rows
+    .map((r) => {
+      const change = r.score !== null && r.previous !== null ? r.score - r.previous : null;
+      const changeText = change === null || change === 0 ? "" : `<div style="font-size:12px;color:${change > 0 ? C.button : C.alert};">${change > 0 ? "+" : "−"}${Math.abs(change)}</div>`;
+      return `<tr><td valign="top" style="padding:12px 0;border-bottom:1px solid ${C.rule};font-family:${FONT};"><div style="font-size:15px;font-weight:bold;color:${C.ink};">${escapeHtml(r.label)}</div><div style="font-size:14px;line-height:20px;color:${C.inkSoft};padding-top:2px;">${escapeHtml(r.summary)}</div></td>
+<td width="56" valign="top" align="right" style="padding:12px 0;border-bottom:1px solid ${C.rule};font-family:${FONT};"><div style="font-size:20px;font-weight:bold;color:${C.ink};">${r.score ?? "–"}</div>${changeText}</td></tr>`;
+    })
+    .join("")}</table>`;
+
+/** Week dates as "27 Oct – 2 Nov". */
+const weekRange = (start: string, end: string) => {
+  const f = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${f(start)} – ${f(end)}`;
+};
+
+/** Monday's weekly report (domain/weeklyReport.ts), the same as the app's This week screen. */
+export interface OwnPick {
+  name: string;
+  description: string;
+  url: string;
+  /** The weak point it's for, as a phrase ("short or light sleep"); null when none stood out. */
+  area: string | null;
+}
+
+const OUR_BRAND = "Sold by MitoProof, which is run by the people who make NeuroCal.";
+
+export function weeklyReportEmail(o: {
+  to: string;
+  unsubscribeUrl: string;
+  /** One of our brand's products for the week's weakest area (GetProtocolsUseCase), labelled as ours. */
+  pick?: OwnPick | null;
+  report: {
+    weekStart: string;
+    weekEnd: string;
+    headline: { score: number | null; change: number | null; title: string; summary: string };
+    pillars: { label: string; score: number | null; previous: number | null; summary: string }[];
+    working: { name: string; summary: string }[];
+    level: { name: string; summary: string };
+    next: { title: string; detail: string };
+  };
+}): RenderedEmail {
+  const r = o.report;
+  const range = weekRange(r.weekStart, r.weekEnd);
+  const scoreLine =
+    r.headline.score === null
+      ? ""
+      : `Focus Score ${r.headline.score}${r.headline.change ? ` (${r.headline.change > 0 ? "+" : "−"}${Math.abs(r.headline.change)} on the week before)` : ""}`;
+  return {
+    subject: `Your week: ${r.headline.title}`,
+    text: [
+      `Your week, ${range}`,
+      "",
+      r.headline.title,
+      ...(scoreLine ? [scoreLine] : []),
+      r.headline.summary,
+      "",
+      ...r.pillars.map((x) => `${x.label}: ${x.score ?? "–"}. ${x.summary}`),
+      ...(r.working.length ? ["", "What's working", ...r.working.map((w) => `- ${w.name}: ${w.summary}`)] : []),
+      "",
+      `Level: ${r.level.name}. ${r.level.summary}`,
+      "",
+      `One thing for this week: ${r.next.title}`,
+      r.next.detail,
+      "",
+      ...(o.pick ? [`From our brand${o.pick.area ? `, for ${o.pick.area}` : ""}: ${o.pick.name}`, o.pick.description, o.pick.url, OUR_BRAND, ""] : []),
+      `Stop these emails: ${o.unsubscribeUrl}`,
+      "",
+      "NeuroCal",
+    ].join("\n"),
+    html: layout({
+      preheader: `${scoreLine ? `${scoreLine}. ` : ""}One thing for this week: ${escapeHtml(r.next.title)}`,
+      eyebrow: `Your week · ${range}`,
+      title: escapeHtml(r.headline.title),
+      intro: `${scoreLine ? `<b style="color:${C.white};">${scoreLine}</b><br>` : ""}${escapeHtml(r.headline.summary)}`,
+      body: [
+        pillarRows(r.pillars),
+        ...(r.working.length
+          ? [
+              p("<b>What's working</b>"),
+              ...r.working.map((w) => p(`<b>${escapeHtml(w.name)}</b>: ${escapeHtml(w.summary)}`, { muted: true })),
+            ]
+          : []),
+        p(`<b>${escapeHtml(r.level.name)}</b>: ${escapeHtml(r.level.summary)}`, { muted: true }),
+        callout("One thing for this week", escapeHtml(r.next.title), escapeHtml(r.next.detail)),
+        ...(o.pick
+          ? [
+              p(`<b>From our brand${o.pick.area ? `, for ${escapeHtml(o.pick.area)}` : ""}</b>`),
+              p(`<a href="${escapeHtml(o.pick.url)}" style="color:${C.link};">${escapeHtml(o.pick.name)}</a>: ${escapeHtml(o.pick.description)}`, { muted: true }),
+              p(OUR_BRAND, { muted: true }),
+            ]
+          : []),
+        p("Open NeuroCal for the whole week, day by day.", { muted: true }),
+      ],
+      footer: `Sent to ${escapeHtml(o.to)} every Monday. <a href="${escapeHtml(o.unsubscribeUrl)}" style="color:${C.link};">Stop these emails</a>, or change it in the app under Me &gt; Notifications.`,
+    }),
+  };
+}
+
 /** Confirms a deleted account; the last email to that address. */
 export function accountDeletedEmail(o: { to: string; when: string; signUpUrl?: string }): RenderedEmail {
   const what = `On ${o.when} we deleted the NeuroCal account for ${o.to}, along with every meal, sleep log, check-in and photo in it.`;

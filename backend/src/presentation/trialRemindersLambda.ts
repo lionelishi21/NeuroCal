@@ -3,17 +3,21 @@ import { applyAwsSecrets } from "../infrastructure/aws/secrets";
 import { loadConfig } from "../infrastructure/config";
 import { errorReporterFor, reportingErrors } from "../infrastructure/monitoring/SentryErrorReporter";
 import { createDatabase } from "../infrastructure/database/client";
-import { DrizzleSubscriptionRepository } from "../infrastructure/database/DrizzleRepositories";
+import { DrizzleNotificationSettingsRepository, DrizzleSubscriptionRepository } from "../infrastructure/database/DrizzleRepositories";
+import { FcmPushSender, parseServiceAccount } from "../infrastructure/push/FcmPushSender";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { systemClock } from "./compose";
 
-/** Runs every hour (infra: TrialReminders schedule): emails trials ending in two days. */
+/** Runs every hour (infra: TrialReminders schedule): emails trials ending in two days, and pushes to their phones. */
 async function run() {
   await applyAwsSecrets();
   const config = loadConfig();
   if (!config.databaseUrl) throw new Error("Missing required setting DATABASE_URL");
   const email = config.resendApiKey ? new ResendEmailSender({ apiKey: config.resendApiKey, from: config.emailFrom }) : noEmail;
-  const result = await new SendTrialRemindersUseCase(new DrizzleSubscriptionRepository(createDatabase(config.databaseUrl)), email, systemClock).execute();
+  const db = createDatabase(config.databaseUrl);
+  const firebase = parseServiceAccount(config.firebaseServiceAccount);
+  const push = firebase ? { settings: new DrizzleNotificationSettingsRepository(db), sender: new FcmPushSender({ account: firebase }) } : undefined;
+  const result = await new SendTrialRemindersUseCase(new DrizzleSubscriptionRepository(db), email, systemClock, push).execute();
   console.info(JSON.stringify({ event: "trial_reminders", ...result }));
   return result;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { accountDeletedEmail, codeEmail, escapeHtml, trialEndingEmail, waitlistEmail, welcomeEmail } from "./templates";
+import { accountDeletedEmail, codeEmail, escapeHtml, trialEndingEmail, waitlistEmail, weeklyReportEmail, welcomeEmail } from "./templates";
 
 describe("email templates", () => {
   it("puts a code in a box, and Cognito's placeholder survives for it to fill", () => {
@@ -39,5 +39,47 @@ describe("email templates", () => {
 
   it("escapes HTML", () => {
     expect(escapeHtml(`<a href="x">'&'</a>`)).toBe("&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;");
+  });
+  it("lays out the weekly report: score and change, a row per pillar, one thing for the week, and a way to stop it", () => {
+    const e = weeklyReportEmail({
+      to: "maya@example.com",
+      unsubscribeUrl: "https://neurocal.ai/unsubscribe?token=t&from=weekly",
+      report: {
+        weekStart: "2026-10-26",
+        weekEnd: "2026-11-01",
+        headline: { score: 72, change: -3, title: "A <steady> week", summary: "Sleep held up." },
+        pillars: [{ label: "Sleep", score: 81, previous: 70, summary: "7 h 40 min a night." }],
+        working: [{ name: "Magnesium", summary: "Deeper sleep since you started." }],
+        level: { name: "Aware", summary: "Two habits to Level 3." },
+        next: { title: "Dinner by 20:00", detail: "Late meals cost you most." },
+      },
+    });
+    expect(e.subject).toBe("Your week: A <steady> week");
+    expect(e.html).toContain("A &lt;steady&gt; week");
+    expect(e.html).toContain("Your week · 26 Oct – 1 Nov");
+    expect(e.html).toContain("Focus Score 72 (−3 on the week before)");
+    expect(e.html).toContain(">+11</div>");
+    expect(e.html).toContain("Stop these emails");
+    expect(e.text).toContain("Sleep: 81. 7 h 40 min a night.");
+    expect(e.text).toContain("- Magnesium: Deeper sleep since you started.");
+  });
+
+  it("adds one of our brand's products to the weekly email, labelled as ours", () => {
+    const report = {
+      weekStart: "2026-10-26",
+      weekEnd: "2026-11-01",
+      headline: { score: 72, change: null, title: "A steady week", summary: "Sleep held up." },
+      pillars: [],
+      working: [],
+      level: { name: "Aware", summary: "Two habits to Level 3." },
+      next: { title: "Dinner by 20:00", detail: "Late meals cost you most." },
+    };
+    const pick = { name: "MitoProof Sleep Formula", description: "A bedtime supplement blend.", url: "https://www.mitoproof.com/products/sleep-formula", area: "short or light sleep" };
+    const e = weeklyReportEmail({ to: "maya@example.com", unsubscribeUrl: "https://neurocal.ai/u", report, pick });
+    expect(e.html).toContain("<b>From our brand, for short or light sleep</b>");
+    expect(e.html).toContain('<a href="https://www.mitoproof.com/products/sleep-formula"');
+    expect(e.text).toContain("From our brand, for short or light sleep: MitoProof Sleep Formula");
+    expect(e.text).toContain("Sold by MitoProof, which is run by the people who make NeuroCal.");
+    expect(weeklyReportEmail({ to: "maya@example.com", unsubscribeUrl: "https://neurocal.ai/u", report }).text).not.toContain("From our brand");
   });
 });

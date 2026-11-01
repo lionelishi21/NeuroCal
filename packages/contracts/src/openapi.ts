@@ -70,11 +70,15 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   deleteExercise: { summary: "Remove logged exercise", status: 204, params: { id: "The exercise's id." } },
   getEnvironment: {
     summary: "A day's environment",
-    description: "The day's mean US AQI for the town you set (Open-Meteo), your environment check (morning daylight, a dark and quiet bedroom, filtered water), and the Focus Score's environment input.",
+    description: "The day's mean US AQI for the town you set (Open-Meteo), your environment check (morning daylight, a dark and quiet bedroom, filtered water), water drunk against your target, and the Focus Score's environment input.",
     query: dateQuery,
   },
   setEnvironmentLocation: { summary: "Set the town for air quality", description: "A town or postcode, looked up once and stored rounded to about 10 km. Null clears it." },
   saveEnvironmentCheck: { summary: "Answer the day's environment check", description: "Items not sent keep their answer. Default date: today." },
+  saveWater: {
+    summary: "Set the day's water",
+    description: "The day's total in ml (not an amount to add) and whether salt or electrolytes went in. A field not sent keeps its value. Default date: today.",
+  },
   getLevel: {
     summary: "Your biohacking level",
     description: "Levels 1 (Aware) to 5 (Upgraded) from habits kept over the last 28 days: logging, food quality, evening rhythm and fasting, sleep, stress and Brain speed, then movement. Each level needs every one below it. Each habit says how close it is.",
@@ -326,6 +330,29 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     description: "Public: no sign-in. Takes the token from the unsubscribe link in a waitlist email; an unknown token is answered the same way.",
     public: true,
   },
+  getNotificationSettings: {
+    summary: "Which optional notifications and emails you get",
+    description: "Every push notification and optional email is on until switched off. Account and billing emails aren't optional.",
+  },
+  saveNotificationSettings: { summary: "Choose which optional notifications and emails you get" },
+  registerDevice: {
+    summary: "Save this phone for push notifications",
+    description: "The phone's Firebase Cloud Messaging token. A token Firebase no longer accepts is dropped when a notification fails.",
+    status: 204,
+  },
+  unsubscribeEmail: {
+    summary: "Stop an optional email",
+    description: "Public: no sign-in. Takes the token from the link in a weekly report or come-back email (`from` says which); an unknown token is answered the same way.",
+    public: true,
+  },
+  listGuides: { summary: "List the guides", description: "Published guides; admins also see drafts, which wait for the text to be reviewed." },
+  getGuide: { summary: "Read a guide", description: "A draft answers 404 to anyone but an admin." },
+  saveGuide: { summary: "Save a guide's text", description: "Admins only; anyone else gets 403. A guide that comes with the app keeps the saved text from then on." },
+  getProgram: { summary: "See the program in progress", description: "Today's habits, ticked from what's logged where possible, the day's tip and any energy check due. Null when none is running." },
+  startProgram: { summary: "Start a guide's program today", description: "One program at a time: starting one replaces another. A draft guide's program can be started only by an admin." },
+  stopProgram: { summary: "Stop the program", status: 204 },
+  tickProgramRule: { summary: "Tick or untick one of today's habits", description: "Habits ticked from what's logged can't be unticked here." },
+  saveEnergyCheck: { summary: "Take the energy check due now", description: "Five answers from 0 to 4. 400 when no check is due." },
 };
 
 const REF_PREFIX = "#/components/schemas/";

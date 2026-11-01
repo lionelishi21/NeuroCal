@@ -1073,6 +1073,13 @@ export const EnvironmentDay = z.object({
   /** The day's mean US AQI and its EPA band; null without a place or a reading. */
   air: z.object({ aqi: z.number().int(), category: z.enum(["good", "moderate", "sensitive", "unhealthy", "very_unhealthy", "hazardous"]) }).nullable(),
   check: EnvironmentItems.nullable(),
+  /** Water drunk that day against a target from the latest weigh-in (33 ml/kg) plus the day's exercise. */
+  water: z.object({
+    ml: z.number().int().min(0),
+    targetMl: z.number().int().positive(),
+    /** Salt or electrolytes added; not scored. */
+    electrolytes: z.boolean(),
+  }),
   /** The Focus Score's environment input for the day, 0–1. */
   signal: z.number().min(0).max(1).nullable(),
 });
@@ -1083,6 +1090,12 @@ export type SetEnvironmentLocationRequest = z.infer<typeof SetEnvironmentLocatio
 
 export const EnvironmentCheckRequest = z.object({ date: IsoDate.optional(), items: EnvironmentItems });
 export type EnvironmentCheckRequest = z.infer<typeof EnvironmentCheckRequest>;
+
+/** The day's water total (not an amount to add, so a retried request can't count twice) and the electrolytes tick. */
+export const SaveWaterRequest = z
+  .object({ date: IsoDate.optional(), ml: z.number().int().min(0).max(10_000).optional(), electrolytes: z.boolean().optional() })
+  .refine((r) => r.ml !== undefined || r.electrolytes !== undefined, "Send ml or electrolytes.");
+export type SaveWaterRequest = z.infer<typeof SaveWaterRequest>;
 
 /** The biohacking level (docs/NCBM.md §8): 0 Getting started, 1 Aware … 5 Upgraded, from the last 28 days. */
 export const LevelResponse = z.object({
@@ -1255,6 +1268,8 @@ export const StackItem = z.object({
   profile: SupplementProfile.optional(),
   /** Whether it's working for this person, from their own data (backend domain/experiment.ts). */
   experiment: SupplementExperiment.optional(),
+  /** Where to buy more: the MitoProof store page, when this is one of our brand's products. */
+  shopUrl: z.string().url().optional(),
 });
 export type StackItem = z.infer<typeof StackItem>;
 
@@ -1547,6 +1562,37 @@ export const LeaveWaitlistResponse = z.object({ status: z.literal("unsubscribed"
 export type LeaveWaitlistResponse = z.infer<typeof LeaveWaitlistResponse>;
 
 /**
+ * Notifications the server sends (docs/NCBM.md §10): each one at the person's own time,
+ * once, in daytime. The phone's own reminders are switched on the phone, not here.
+ */
+/** `productNews` (new MitoProof products that fit you) is promotional, so it stays off until switched on. */
+export const PushKind = z.enum(["focusScore", "levelUp", "levelAtRisk", "airQuality", "newRoutine", "comeBack", "goalWeight", "trialEnding", "productNews"]);
+export type PushKind = z.infer<typeof PushKind>;
+
+/** Which optional notifications and emails someone gets. Account and billing emails aren't optional. */
+export const NotificationSettings = z.object({
+  /** Mondays: last week, what moved the Focus Score, one thing to try. On until switched off. */
+  weeklyReport: z.boolean(),
+  /** One email after a week away. */
+  comeBackEmail: z.boolean(),
+  /** Each push notification, on until switched off (productNews: off until switched on). The server answers with every kind; a kind left out of a save keeps its setting. */
+  push: z.partialRecord(PushKind, z.boolean()),
+});
+export type NotificationSettings = z.infer<typeof NotificationSettings>;
+
+/** Which optional email a "stop these emails" link came from. */
+export const EmailKind = z.enum(["weekly", "comeBack"]);
+export type EmailKind = z.infer<typeof EmailKind>;
+
+/** The "stop these emails" link in an optional email; without `from`, the weekly report. */
+export const EmailUnsubscribeRequest = z.object({ token: z.string().min(16).max(64), from: EmailKind.optional() });
+export type EmailUnsubscribeRequest = z.infer<typeof EmailUnsubscribeRequest>;
+
+/** The phone's push token (Firebase Cloud Messaging), sent after sign-in and whenever it changes. */
+export const RegisterDeviceRequest = z.object({ token: z.string().min(20).max(4096), platform: z.enum(["android", "ios"]) });
+export type RegisterDeviceRequest = z.infer<typeof RegisterDeviceRequest>;
+
+/**
  * An eating-out item an admin types in from a chain's own nutrition page, for chains whose sites can't
  * be read automatically. Saving the same chain, item and country again updates it.
  */
@@ -1636,6 +1682,111 @@ export const ApiError = z.object({
 export type ApiError = z.infer<typeof ApiError>;
 
 /** HTTP surface shared by the web app, its mocks and the backend. */
+/** Long-form reading in the app (docs/NCBM.md §11), such as The Mitoproof Protocol. */
+export const GuideBrand = z.enum(["ownBrand", "general"]);
+export type GuideBrand = z.infer<typeof GuideBrand>;
+/** Drafts are seen only by admins, until the text is reviewed and published. */
+export const GuideStatus = z.enum(["draft", "published"]);
+export type GuideStatus = z.infer<typeof GuideStatus>;
+
+export const GuideSummary = z.object({
+  id: Id,
+  title: z.string().min(1),
+  subtitle: z.string(),
+  /** One or two sentences for the list. */
+  summary: z.string(),
+  /** "ownBrand": MitoProof's, labelled "Our brand". */
+  brand: GuideBrand,
+  status: GuideStatus,
+  /** Has a day-by-day program to start (ProgramView). */
+  program: z.boolean(),
+  /** Minutes to read, from the length. */
+  minutes: z.number().int().positive(),
+});
+export type GuideSummary = z.infer<typeof GuideSummary>;
+
+export const Guide = GuideSummary.extend({
+  /** Markdown: ## and ### headings, paragraphs, "- " lists, pipe tables, **bold** and _italic_. */
+  body: z.string(),
+  updatedAt: IsoDateTime,
+});
+export type Guide = z.infer<typeof Guide>;
+
+export const GuideList = z.object({ guides: z.array(GuideSummary) });
+export type GuideList = z.infer<typeof GuideList>;
+
+export const SaveGuideRequest = z.object({
+  title: z.string().trim().min(1).max(120),
+  subtitle: z.string().trim().max(200),
+  summary: z.string().trim().max(400),
+  body: z.string().min(1).max(200_000),
+  status: GuideStatus,
+});
+export type SaveGuideRequest = z.infer<typeof SaveGuideRequest>;
+
+/** One of the day's protocol habits. */
+export const ProgramRule = z.object({
+  id: Id,
+  label: z.string(),
+  /** Why, in a sentence. */
+  detail: z.string(),
+  done: z.boolean(),
+  /** Ticked from what's logged (daylight, meals, exercise, sessions), so it can't be unticked by hand. */
+  auto: z.boolean(),
+});
+export type ProgramRule = z.infer<typeof ProgramRule>;
+
+/** The energy check (five areas scored 0–4) is taken on days 1, 15 and 30. */
+export const EnergyCheckpoint = z.union([z.literal(1), z.literal(15), z.literal(30)]);
+export type EnergyCheckpoint = z.infer<typeof EnergyCheckpoint>;
+
+export const EnergyCheckResult = z.object({
+  checkpoint: EnergyCheckpoint,
+  date: IsoDate,
+  /** Energy, clear thinking, sleep, energy after meals, recovery from exercise; 0 is best. */
+  answers: z.array(z.number().int().min(0).max(4)).length(5),
+  total: z.number().int().min(0).max(20),
+  /** 0–4 well, 5–9 some room, 10–14 lots of room, 15–20 see a doctor first. */
+  band: z.enum(["well", "some", "lots", "doctor"]),
+});
+export type EnergyCheckResult = z.infer<typeof EnergyCheckResult>;
+
+export const ProgramView = z.object({
+  guideId: Id,
+  title: z.string(),
+  startedOn: IsoDate,
+  /** Today in the profile's time zone. */
+  date: IsoDate,
+  /** Day of the program, from 1; past [days] it's finished. */
+  day: z.number().int().min(1),
+  days: z.number().int().positive(),
+  phase: z.enum(["reset", "build", "finished"]),
+  /** Today's habits; empty once finished. */
+  rules: z.array(ProgramRule),
+  tip: z.object({ title: z.string(), detail: z.string() }),
+  /** The energy check to take now, if one is due. */
+  checkDue: EnergyCheckpoint.nullable(),
+  checks: z.array(EnergyCheckResult),
+  /** Days so far with every habit done, today included once it is. */
+  fullDays: z.number().int().min(0),
+  /** Average Focus Score over the first week and the latest week; null without scores. */
+  focusScore: z.object({ firstWeek: z.number().nullable(), lastWeek: z.number().nullable() }),
+});
+export type ProgramView = z.infer<typeof ProgramView>;
+
+export const ProgramResponse = z.object({ program: ProgramView.nullable() });
+export type ProgramResponse = z.infer<typeof ProgramResponse>;
+
+export const StartProgramRequest = z.object({ guideId: Id });
+export type StartProgramRequest = z.infer<typeof StartProgramRequest>;
+
+/** Ticks or unticks one of today's habits. */
+export const TickProgramRuleRequest = z.object({ ruleId: Id, done: z.boolean() });
+export type TickProgramRuleRequest = z.infer<typeof TickProgramRuleRequest>;
+
+export const EnergyCheckRequest = z.object({ answers: z.array(z.number().int().min(0).max(4)).length(5) });
+export type EnergyCheckRequest = z.infer<typeof EnergyCheckRequest>;
+
 export const endpoints = {
   getMe: { method: "GET", path: "/me", response: Profile },
   updateProfile: { method: "PUT", path: "/me/profile", body: UpdateProfileRequest, response: Profile },
@@ -1678,6 +1829,8 @@ export const endpoints = {
   setEnvironmentLocation: { method: "PUT", path: "/environment/location", body: SetEnvironmentLocationRequest, response: EnvironmentDay },
   /** Saves answers to the day's environment check; items not sent keep their answer. */
   saveEnvironmentCheck: { method: "PUT", path: "/environment/check", body: EnvironmentCheckRequest, response: EnvironmentDay },
+  /** Sets the day's water total and electrolytes tick; a field not sent keeps its value. */
+  saveWater: { method: "PUT", path: "/environment/water", body: SaveWaterRequest, response: EnvironmentDay },
   /** The biohacking level from the last 28 days, with each habit and how close it is. */
   getLevel: { method: "GET", path: "/level", response: LevelResponse },
   getPantry: { method: "GET", path: "/pantry", response: PantryResponse },
@@ -1781,6 +1934,25 @@ export const endpoints = {
   joinWaitlist: { method: "POST", path: "/waitlist", body: JoinWaitlistRequest, response: JoinWaitlistResponse },
   /** Public: leave the list with the token from an email's unsubscribe link. */
   leaveWaitlist: { method: "POST", path: "/waitlist/unsubscribe", body: LeaveWaitlistRequest, response: LeaveWaitlistResponse },
+  getNotificationSettings: { method: "GET", path: "/notification-settings", response: NotificationSettings },
+  saveNotificationSettings: { method: "PUT", path: "/notification-settings", body: NotificationSettings, response: NotificationSettings },
+  /** Saves this phone for push notifications; a token another account had moves to this one. */
+  registerDevice: { method: "PUT", path: "/devices", body: RegisterDeviceRequest },
+  /** Open to anyone: an optional email's link. An unknown token is answered like a known one. */
+  unsubscribeEmail: { method: "POST", path: "/email/unsubscribe", body: EmailUnsubscribeRequest, response: LeaveWaitlistResponse },
+  /** Published guides; admins see drafts too. */
+  listGuides: { method: "GET", path: "/guides", response: GuideList },
+  getGuide: { method: "GET", path: "/guides/:id", response: Guide },
+  /** Admin only: saves a guide's text and whether it's published. */
+  saveGuide: { method: "PUT", path: "/admin/guides/:id", body: SaveGuideRequest, response: Guide },
+  /** The program in progress (or just finished), or null. */
+  getProgram: { method: "GET", path: "/program", response: ProgramResponse },
+  /** Starts a guide's program today; one at a time, so it replaces any other. */
+  startProgram: { method: "POST", path: "/program", body: StartProgramRequest, response: ProgramResponse },
+  stopProgram: { method: "DELETE", path: "/program" },
+  tickProgramRule: { method: "PUT", path: "/program/rules", body: TickProgramRuleRequest, response: ProgramResponse },
+  /** The energy check due now (day 1, 15 or 30). */
+  saveEnergyCheck: { method: "POST", path: "/program/checks", body: EnergyCheckRequest, response: ProgramResponse },
 } as const;
 
 export function mealCalories(meal: Pick<Meal, "items">): number {

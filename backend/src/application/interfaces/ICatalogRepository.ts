@@ -14,6 +14,10 @@ export interface ICatalogRepository {
   upsertProducts(items: Embedded<Product>[]): Promise<void>;
   /** A routine approved in the knowledge pipeline; kept by `retain`, unlike routines from the repo. */
   addProtocol(protocol: Embedded<Protocol>): Promise<void>;
+  /** Routines approved in the knowledge pipeline since [since], newest first (the new-routine notification). */
+  knowledgeProtocolsSince(since: Date): Promise<Protocol[]>;
+  /** Enabled own-brand products added since [since], newest first (the product-news notification). */
+  ownProductsSince(since: Date): Promise<{ id: string; name: string }[]>;
   /** Removes catalog entries no longer in the source list. Products added by an admin and approved routines are kept. */
   retain(ids: { protocols: string[]; products: string[] }): Promise<void>;
   nearestProtocols(embedding: number[], limit: number): Promise<{ item: Protocol; similarity: number }[]>;

@@ -1,4 +1,4 @@
-import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
+import type { AirLocation, EnvironmentCheck, WaterDay } from "../../domain/environment";
 
 /** Scoped to one user (ARCHITECTURE §10), except the air readings, which belong to a place and day. */
 export interface IEnvironmentRepository {
@@ -7,6 +7,10 @@ export interface IEnvironmentRepository {
   getCheck(userId: string, date: string): Promise<EnvironmentCheck | null>;
   /** Merges into the day's check: items not sent keep their answer. */
   saveCheck(userId: string, date: string, check: EnvironmentCheck): Promise<EnvironmentCheck>;
+  /** The day's water; null when none was logged. */
+  getWater(userId: string, date: string): Promise<WaterDay | null>;
+  /** Fields not sent keep their value. */
+  saveWater(userId: string, date: string, water: Partial<WaterDay>): Promise<WaterDay>;
   /** A day's AQI already fetched for a (rounded) place; undefined when not fetched yet, null when there was none. */
   cachedAqi(latitude: number, longitude: number, date: string): Promise<number | null | undefined>;
   cacheAqi(latitude: number, longitude: number, date: string, aqi: number | null): Promise<void>;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +8,9 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../api/models.dart' show StackItem, StackTiming;
 import '../device_time_zone.dart';
+import 'nudges.dart';
+
+export 'nudges.dart';
 
 /// The day's check-in windows, set from when the person wakes up (onboarding's chronotype question).
 /// While a window is open and they haven't checked in, the phone nudges: at the start, an hour later,
@@ -61,6 +66,13 @@ const weeklyNudgeId = oneOffIds + 2;
 
 /// Tapping it opens the week (Progress) instead of the check-in.
 const weeklyPayload = 'week';
+
+/// The optional reminders (nudges.dart) use ids from here: 20 per kind.
+const nudgeKindIds = oneOffIds + 1000;
+const _perKind = 20;
+
+/// The id of a kind's [index]th planned nudge.
+int nudgeIdOf(NudgeKind kind, [int index = 0]) => nudgeKindIds + kind.index * _perKind + index;
 
 /// Supplement nudges use ids from here: one per time of day per day ahead.
 const supplementNudgeIds = oneOffIds + 100;
@@ -246,9 +258,14 @@ class ReminderSettings extends ChangeNotifier {
   int handled = 0;
 
   /// Schedules the next few days again: at launch, after a check-in, or a change of time zone.
-  Future<void> restore() {
+  Future<void> restore() async {
     final now = _now();
-    return _reminders.schedule(nudgesFor(slots: slots, wakeHour: wakeHour, now: now, doneToday: doneOn(now)));
+    await _reminders.schedule(nudgesFor(slots: slots, wakeHour: wakeHour, now: now, doneToday: doneOn(now)));
+    // The streak and weekly nudges moved to the reminder kinds; drop any left under their old ids.
+    await _reminders.oneOff(streakNudgeId, null);
+    await _reminders.oneOff(weeklyNudgeId, null);
+    // Quiet hours follow the wake time.
+    await _flush();
   }
 
   /// The evening nudge that keeps a streak: at 20:00 on a day with a streak going and nothing logged
@@ -257,12 +274,11 @@ class ReminderSettings extends ChangeNotifier {
     final now = _now();
     final at = DateTime(now.year, now.month, now.day, 20);
     final due = days > 0 && !todayDone && now.isBefore(at);
-    return _reminders.oneOff(
-      streakNudgeId,
-      due ? at : null,
-      title: 'Keep your $days-day streak',
-      body: 'Log a meal or last night’s sleep before bed.',
-    );
+    return plan({
+      NudgeKind.streak: [
+        if (due) (at: at, title: 'Keep your $days-day streak', body: 'Log a meal or last night’s sleep before bed.'),
+      ],
+    });
   }
 
   /// Last week's report, every Monday at 08:00: the next one from [now], scheduled again at each open.
@@ -270,13 +286,154 @@ class ReminderSettings extends ChangeNotifier {
     final now = _now();
     var at = DateTime(now.year, now.month, now.day + (DateTime.monday - now.weekday) % 7, 8);
     if (!at.isAfter(now)) at = DateTime(at.year, at.month, at.day + 7, 8);
-    return _reminders.oneOff(
-      weeklyNudgeId,
-      at,
-      title: 'Your weekly report is ready',
-      body: 'How last week went, what moved your Focus Score, and one thing for this week.',
-      payload: weeklyPayload,
+    return plan({
+      NudgeKind.weekly: [
+        (
+          at: at,
+          title: 'Your weekly report is ready',
+          body: 'How last week went, what moved your Focus Score, and one thing for this week.',
+        ),
+      ],
+    });
+  }
+
+  static const _kindsKey = 'neurocal.nudges.on';
+  static const _planKey = 'neurocal.nudges.plan';
+  static const _quietKey = 'neurocal.nudges.quiet';
+  static const _nudgesAskedKey = 'neurocal.nudges.asked';
+
+  /// Kinds switched away from their default, as "name:1" or "name:0".
+  Map<String, bool> get _choices => {
+    for (final c in _prefs.getStringList(_kindsKey) ?? const <String>[])
+      if (c.split(':') case [final name, final v]) name: v == '1',
+  };
+
+  bool isOn(NudgeKind kind) => _choices[kind.name] ?? kind.onByDefault;
+
+  /// Switches a kind of reminder on or off. Switching one on asks to show notifications; false when refused.
+  Future<bool> setKind(NudgeKind kind, bool on) async {
+    if (on && !await _reminders.requestPermission()) return false;
+    final choices = {..._choices, kind.name: on};
+    await _prefs.setStringList(_kindsKey, [for (final e in choices.entries) '${e.key}:${e.value ? 1 : 0}']);
+    await _flush();
+    notifyListeners();
+    return true;
+  }
+
+  /// No reminders from bedtime until waking, except fasts you set; on unless switched off.
+  bool get quietHours => _prefs.getBool(_quietKey) ?? true;
+
+  Future<void> setQuietHours(bool on) async {
+    await _prefs.setBool(_quietKey, on);
+    await _flush();
+    notifyListeners();
+  }
+
+  /// "22:00–07:00".
+  String get quietRange {
+    DateTime at(double h) => DateTime(2026).add(Duration(minutes: (h * 60).round() % 1440));
+    return '${clock(at(wakeHour + quietFromAfterWake))}–${clock(at(wakeHour))}';
+  }
+
+  /// The plans by kind, as saved: each kind keeps its last plan until it's planned again.
+  Map<NudgeKind, List<Planned>> get _plans {
+    final raw = _prefs.getString(_planKey);
+    if (raw == null) return {};
+    try {
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      return {
+        for (final kind in NudgeKind.values)
+          if (j[kind.name] case final List<dynamic> list)
+            kind: [
+              for (final n in list.cast<Map<String, dynamic>>())
+                (at: DateTime.parse(n['at'] as String), title: n['title'] as String, body: n['body'] as String),
+            ],
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Replaces the plans of the kinds in [plans] (an empty list cancels a kind) and schedules what's
+  /// due under quiet hours and the daily limit. Asks to show notifications the first time there's one.
+  Future<void> plan(Map<NudgeKind, List<Planned>> plans) =>
+      _planning = _planning.catchError((Object _) {}).then((_) => _plan(plans));
+
+  /// Plans run one at a time, so two screens planning at once can't schedule over each other.
+  Future<void> _planning = Future.value();
+
+  Future<void> _plan(Map<NudgeKind, List<Planned>> plans) async {
+    final now = _now();
+    final all = {..._plans, ...plans};
+    await _prefs.setString(
+      _planKey,
+      jsonEncode({
+        for (final e in all.entries)
+          e.key.name: [
+            for (final n in e.value)
+              if (n.at.isAfter(now)) {'at': n.at.toIso8601String(), 'title': n.title, 'body': n.body},
+          ],
+      }),
     );
+    final wanted = plans.entries.any((e) => isOn(e.key) && e.value.isNotEmpty);
+    if (wanted && _prefs.getBool(_nudgesAskedKey) != true) {
+      await _prefs.setBool(_nudgesAskedKey, true);
+      if (!await _reminders.requestPermission()) return;
+    }
+    await _flush();
+  }
+
+  /// What's scheduled now, for tests and Settings.
+  List<({NudgeKind kind, int index, Planned nudge})> get scheduledNudges => pickNudges(
+    plans: _plans,
+    on: {
+      for (final k in NudgeKind.values)
+        if (isOn(k)) k,
+    },
+    quiet: quietHours,
+    wakeHour: wakeHour,
+    now: _now(),
+  );
+
+  static const _scheduledKey = 'neurocal.nudges.scheduled';
+  static const _tracksKey = 'neurocal.nudges.tracks';
+
+  /// Whether [what] (water, coffee, exercise) has ever been logged on this phone, noting it when [seenNow].
+  Future<bool> tracks(String what, {required bool seenNow}) async {
+    final seen = {...?_prefs.getStringList(_tracksKey)};
+    if (seenNow && seen.add(what)) await _prefs.setStringList(_tracksKey, seen.toList());
+    return seen.contains(what);
+  }
+
+  /// Schedules what [scheduledNudges] picks, touching only the ids whose nudge changed since last time.
+  Future<void> _flush() async {
+    final before = {
+      for (final e in _prefs.getStringList(_scheduledKey) ?? const <String>[])
+        if (e.indexOf('|') case final i when i > 0) int.parse(e.substring(0, i)): e.substring(i + 1),
+    };
+    final after = <int, String>{};
+    for (final n in scheduledNudges) {
+      if (n.index >= _perKind) continue;
+      final id = nudgeIdOf(n.kind, n.index);
+      final sig = '${n.nudge.at.toIso8601String()}|${n.nudge.title}|${n.nudge.body}';
+      after[id] = sig;
+      if (before[id] == sig) continue;
+      await _reminders.oneOff(
+        id,
+        n.nudge.at,
+        title: n.nudge.title,
+        body: n.nudge.body,
+        payload: switch (n.kind) {
+          NudgeKind.weekly => weeklyPayload,
+          NudgeKind.supplementCheck => stackPayload,
+          _ => null,
+        },
+      );
+    }
+    for (final id in before.keys) {
+      if (!after.containsKey(id)) await _reminders.oneOff(id, null);
+    }
+    await _prefs.setStringList(_scheduledKey, [for (final e in after.entries) '${e.key}|${e.value}']);
   }
 
   /// Bumped when the weekly nudge is tapped.
@@ -332,6 +489,9 @@ class ReminderSettings extends ChangeNotifier {
     await _reminders.schedule(const []);
     await _reminders.oneOff(streakNudgeId, null);
     await _reminders.oneOff(weeklyNudgeId, null);
+    await _prefs.remove(_planKey);
+    await _prefs.remove(_tracksKey);
+    await _flush();
     for (final timing in _supplementHours.keys) {
       for (var d = 0; d < 3; d++) {
         await _reminders.oneOff(supplementNudgeIds + timing.index * 10 + d, null);
@@ -376,6 +536,42 @@ class DeviceReminders implements Reminders {
     if (payload == stackPayload) _openedStack.value++;
   }
 
+  /// A tapped server push (lib/push/push.dart): its `open` is one of the payloads here, or none for Today.
+  void tapped(String? payload) => _tapped(payload);
+
+  /// The Android channel server pushes arrive on (backend FcmPushSender), apart from the reminders.
+  /// High importance so they pop up; a channel's importance can't be raised once created, which is
+  /// why it replaced the quieter [_oldUpdatesChannel].
+  static const updatesChannel = AndroidNotificationChannel(
+    'neurocal_news',
+    'Updates from NeuroCal',
+    description: 'Your morning score, level changes, air quality and new routines.',
+    importance: Importance.high,
+  );
+  static const _oldUpdatesChannel = 'neurocal_updates';
+
+  /// Shows a server push that arrived while the app was open; Android doesn't show those by itself.
+  Future<void> show({required String title, required String body, String? payload}) async {
+    await _init();
+    await _plugin.show(
+      id: _shown++ % 100 + oneOffIds - 100,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          updatesChannel.id,
+          updatesChannel.name,
+          channelDescription: updatesChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      payload: payload,
+    );
+  }
+
+  var _shown = 0;
+
   Future<void> _init() => _ready ??= () async {
     tzdata.initializeTimeZones();
     final zone = await deviceTimeZone();
@@ -392,6 +588,9 @@ class DeviceReminders implements Reminders {
       ),
       onDidReceiveNotificationResponse: (r) => _tapped(r.payload),
     );
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.deleteNotificationChannel(channelId: _oldUpdatesChannel);
+    await android?.createNotificationChannel(updatesChannel);
     // The app was started by tapping a reminder.
     final launch = await _plugin.getNotificationAppLaunchDetails();
     if (launch?.didNotificationLaunchApp == true) _tapped(launch?.notificationResponse?.payload);

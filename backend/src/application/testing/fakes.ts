@@ -1,3 +1,5 @@
+import type { IGuideRepository, IProgramRepository, ProgramState } from "../interfaces/IGuides";
+import type { GuideRecord } from "../../domain/guides";
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import type { ShoppingListItem } from "../../domain/shoppingList";
 import type { Session } from "../../domain/session";
@@ -24,7 +26,10 @@ import type { FoundDevice, IDeviceCandidateRepository, IDeviceExtractor, IWebSea
 import type { DeviceCandidate, DeviceStatus, DeviceTag } from "../../domain/devices";
 import type { KnowledgeSource, SourceStatus, Technique, TechniqueStatus } from "../../domain/knowledge";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../interfaces/IEnvironment";
-import type { AirLocation, EnvironmentCheck } from "../../domain/environment";
+import type { INotificationSettingsRepository, NotificationPrefsChange, NotificationRecipient } from "../interfaces/INotificationSettings";
+import type { IPushSender } from "../interfaces/IPushSender";
+import { type EmailKind, type NotificationPrefs, type PushMessage, prefsOf } from "../../domain/notifications";
+import type { AirLocation, EnvironmentCheck, WaterDay } from "../../domain/environment";
 import type { IMealPlanRepository, IMealPlanner, MealPlanContext } from "../interfaces/IMealPlans";
 import type { MealPlan, PlannedMeal } from "../../domain/mealPlan";
 import type { IRecipeParser } from "../interfaces/IRecipeParser";
@@ -341,9 +346,26 @@ export class InMemoryCatalog implements ICatalogRepository {
   async upsertProducts(items: Embedded<Product>[]) {
     for (const e of items) this.products.set(e.item.id, e);
   }
+  /** When each knowledge routine was added; now unless a test sets it. */
+  readonly addedAt = new Map<string, Date>();
   async addProtocol(e: Embedded<Protocol>) {
     this.protocols.set(e.item.id, e);
     this.knowledgeIds.add(e.item.id);
+    if (!this.addedAt.has(e.item.id)) this.addedAt.set(e.item.id, new Date());
+  }
+  async knowledgeProtocolsSince(since: Date) {
+    return [...this.knowledgeIds]
+      .filter((id) => (this.addedAt.get(id) ?? new Date(0)) >= since && this.protocols.has(id))
+      .sort((a, b) => this.addedAt.get(b)!.getTime() - this.addedAt.get(a)!.getTime())
+      .map((id) => this.protocols.get(id)!.item);
+  }
+  /** When each product was added; products without one count as old. */
+  readonly productAddedAt = new Map<string, Date>();
+  async ownProductsSince(since: Date) {
+    return [...this.products.values()]
+      .filter((e) => e.item.ownBrand && this.settings.get(e.item.id)?.enabled !== false && (this.productAddedAt.get(e.item.id) ?? new Date(0)) >= since)
+      .sort((a, b) => this.productAddedAt.get(b.item.id)!.getTime() - this.productAddedAt.get(a.item.id)!.getTime())
+      .map((e) => ({ id: e.item.id, name: e.item.name }));
   }
   async retain(ids: { protocols: string[]; products: string[] }) {
     for (const id of this.protocols.keys()) if (!ids.protocols.includes(id) && !this.knowledgeIds.has(id)) this.protocols.delete(id);
@@ -819,6 +841,7 @@ export class FakeRecipeParser implements IRecipeParser {
 export class InMemoryEnvironment implements IEnvironmentRepository {
   readonly locations = new Map<string, AirLocation>();
   readonly checks = new Map<string, EnvironmentCheck>();
+  readonly water = new Map<string, WaterDay>();
   readonly air = new Map<string, number | null>();
   async getLocation(userId: string) {
     return this.locations.get(userId) ?? null;
@@ -835,12 +858,112 @@ export class InMemoryEnvironment implements IEnvironmentRepository {
     this.checks.set(`${userId}|${date}`, merged);
     return merged;
   }
+  async getWater(userId: string, date: string) {
+    return this.water.get(`${userId}|${date}`) ?? null;
+  }
+  async saveWater(userId: string, date: string, water: Partial<WaterDay>) {
+    const merged = { ml: 0, electrolytes: false, ...this.water.get(`${userId}|${date}`), ...water };
+    this.water.set(`${userId}|${date}`, merged);
+    return merged;
+  }
   async cachedAqi(latitude: number, longitude: number, date: string) {
     const key = `${latitude}|${longitude}|${date}`;
     return this.air.has(key) ? this.air.get(key)! : undefined;
   }
   async cacheAqi(latitude: number, longitude: number, date: string, aqi: number | null) {
     this.air.set(`${latitude}|${longitude}|${date}`, aqi);
+  }
+}
+
+export class InMemoryNotificationSettings implements INotificationSettingsRepository {
+  readonly rows = new Map<string, { prefs: NotificationPrefs; token: string | null; sentFor: string | null; lastLevel: number | null }>();
+  /** Who the jobs may notify: userId → address, name and time zone. */
+  readonly people = new Map<string, { email: string; timeZone: string; name?: string }>();
+  readonly devices = new Map<string, { userId: string; platform: "android" | "ios"; seenAt: Date }>();
+  readonly log: { userId: string; key: string; sentAt: Date }[] = [];
+  private row(userId: string) {
+    return this.rows.get(userId) ?? { prefs: prefsOf(), token: null, sentFor: null, lastLevel: null };
+  }
+  async get(userId: string) {
+    return this.row(userId).prefs;
+  }
+  async save(userId: string, change: NotificationPrefsChange) {
+    const row = this.row(userId);
+    const prefs = { ...row.prefs, ...change, push: { ...row.prefs.push, ...change.push } };
+    this.rows.set(userId, { ...row, prefs });
+  }
+  async tokenFor(userId: string, fresh: string) {
+    const row = this.row(userId);
+    const token = row.token ?? fresh;
+    this.rows.set(userId, { ...row, token });
+    return token;
+  }
+  async unsubscribe(token: string, from: EmailKind) {
+    for (const [userId, row] of this.rows)
+      if (row.token === token) this.rows.set(userId, { ...row, prefs: { ...row.prefs, ...(from === "comeBack" ? { comeBackEmail: false } : { weeklyReport: false }) } });
+  }
+  async weeklyRecipients() {
+    return [...this.people]
+      .filter(([userId]) => this.row(userId).prefs.weeklyReport)
+      .map(([userId, p]) => ({ userId, email: p.email, timeZone: p.timeZone, sentFor: this.row(userId).sentFor }));
+  }
+  async markWeeklySent(userId: string, weekStart: string) {
+    this.rows.set(userId, { ...this.row(userId), sentFor: weekStart });
+  }
+  async saveDevice(userId: string, device: { token: string; platform: "android" | "ios" }, at: Date) {
+    this.devices.set(device.token, { userId, platform: device.platform, seenAt: at });
+  }
+  async removeDevice(token: string) {
+    this.devices.delete(token);
+  }
+  async devicesOf(userId: string) {
+    return [...this.devices].filter(([, d]) => d.userId === userId).map(([token]) => token);
+  }
+  async devicesOfEmail(email: string) {
+    const ids = [...this.people].filter(([, p]) => p.email === email.toLowerCase()).map(([id]) => id);
+    return [...this.devices].filter(([, d]) => ids.includes(d.userId)).map(([token]) => token);
+  }
+  async notificationRecipients(): Promise<NotificationRecipient[]> {
+    return [...this.people].flatMap(([userId, p]) => {
+      const mine = [...this.devices].filter(([, d]) => d.userId === userId);
+      if (mine.length === 0) return [];
+      const row = this.row(userId);
+      return [
+        {
+          userId,
+          email: p.email,
+          name: p.name ?? "",
+          timeZone: p.timeZone,
+          prefs: row.prefs,
+          tokens: mine.map(([token]) => token),
+          lastSeenAt: new Date(Math.max(...mine.map(([, d]) => d.seenAt.getTime()))),
+          lastLevel: row.lastLevel,
+          recent: this.log.filter((l) => l.userId === userId).map(({ key, sentAt }) => ({ key, sentAt })),
+        },
+      ];
+    });
+  }
+  async claim(userId: string, key: string, at: Date) {
+    if (this.log.some((l) => l.userId === userId && l.key === key)) return false;
+    this.log.push({ userId, key, sentAt: at });
+    return true;
+  }
+  async setLastLevel(userId: string, level: number) {
+    this.rows.set(userId, { ...this.row(userId), lastLevel: level });
+  }
+}
+
+/** Remembers what was pushed; tokens in [gone] are refused as no longer valid. */
+export class FakePushSender implements IPushSender {
+  readonly sent: { token: string; message: PushMessage }[] = [];
+  constructor(
+    readonly gone = new Set<string>(),
+    readonly enabled = true,
+  ) {}
+  async send(token: string, message: PushMessage) {
+    if (this.gone.has(token)) return "gone" as const;
+    this.sent.push({ token, message });
+    return "sent" as const;
   }
 }
 
@@ -1118,5 +1241,32 @@ export class InMemoryCoffee implements ICoffeeRepository {
     if (i < 0) return false;
     this.rows.splice(i, 1);
     return true;
+  }
+}
+
+export class InMemoryGuides implements IGuideRepository {
+  readonly rows = new Map<string, GuideRecord>();
+  async list() {
+    return [...this.rows.values()];
+  }
+  async get(id: string) {
+    return this.rows.get(id) ?? null;
+  }
+  async save(guide: GuideRecord) {
+    this.rows.set(guide.id, guide);
+  }
+}
+
+export class InMemoryPrograms implements IProgramRepository {
+  readonly rows = new Map<string, ProgramState>();
+  async get(userId: string) {
+    const s = this.rows.get(userId);
+    return s ? structuredClone(s) : null;
+  }
+  async save(userId: string, state: ProgramState) {
+    this.rows.set(userId, structuredClone(state));
+  }
+  async delete(userId: string) {
+    this.rows.delete(userId);
   }
 }

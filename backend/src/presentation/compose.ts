@@ -37,6 +37,7 @@ import type { IShoppingListReviewer } from "../application/interfaces/IShoppingL
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../application/interfaces/IEnvironment";
+import type { INotificationSettingsRepository } from "../application/interfaces/INotificationSettings";
 import type { IKnowledgeRepository, ITechniqueExtractor, IVideoFeed } from "../application/interfaces/IKnowledge";
 import type { IDeviceCandidateRepository, IDeviceExtractor, IWebSearch } from "../application/interfaces/IDevices";
 import { DeviceScoutUseCases } from "../application/use-cases/DeviceScoutUseCases";
@@ -74,6 +75,13 @@ import { ReviewShoppingListUseCase } from "../application/use-cases/ReviewShoppi
 import { KnowledgeUseCases } from "../application/use-cases/KnowledgeUseCases";
 import { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
+import { NotificationSettingsUseCases } from "../application/use-cases/NotificationSettingsUseCases";
+import { GuideUseCases } from "../application/use-cases/GuideUseCases";
+import { ProgramUseCases } from "../application/use-cases/ProgramUseCases";
+import type { IGuideRepository, IProgramRepository } from "../application/interfaces/IGuides";
+import type { GuideRecord } from "../domain/guides";
+import { localDateOf, localTimeOf } from "../domain/localDay";
+import { SendWeeklyEmailsUseCase } from "../application/use-cases/SendWeeklyEmailsUseCase";
 import { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
 import { ListFoodsUseCase } from "../application/use-cases/ListFoodsUseCase";
 import { EatingOutAdminUseCases } from "../application/use-cases/EatingOutAdminUseCases";
@@ -83,6 +91,8 @@ import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-case
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
+import { SendNotificationsUseCase } from "../application/use-cases/SendNotificationsUseCase";
+import type { IPushSender } from "../application/interfaces/IPushSender";
 import type { UseCases } from "./routes";
 
 export interface Ports {
@@ -126,6 +136,11 @@ export interface Ports {
   mealPlanner: IMealPlanner;
   mealPlans: IMealPlanRepository;
   environment: IEnvironmentRepository;
+  notificationSettings: INotificationSettingsRepository;
+  guides: IGuideRepository;
+  programs: IProgramRepository;
+  /** Guides that come with the app (infrastructure/catalog/guides.ts). */
+  guideSeeds: readonly GuideRecord[];
   fastPlans: IFastPlanRepository;
   coffee: ICoffeeRepository;
   sessions: ISessionRepository;
@@ -152,6 +167,8 @@ export interface Ports {
   /** PAYWALL=on. */
   paywall: boolean;
   email: IEmailSender;
+  /** Push notifications; none when left out. */
+  push?: IPushSender;
   /** The website; unsubscribe links point at it. */
   webUrl: string;
   /** Amazon Associates tag for book links. */
@@ -160,7 +177,8 @@ export interface Ports {
 
 /** Wires use cases to whatever adapters the caller provides (ARCHITECTURE §2: composition root). */
 export function buildUseCases(p: Ports): UseCases {
-  const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock);
+  const guides = new GuideUseCases(p.guides, p.guideSeeds, p.clock);
+  const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock, p.weights, p.exercises);
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock, p.coffee);
   const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
@@ -182,7 +200,9 @@ export function buildUseCases(p: Ports): UseCases {
     getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee),
     coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock, p.catalog),
     getSubscription,
-    stack: new StackUseCases(p.profiles, p.stack, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }),
+    stack: new StackUseCases(p.profiles, p.stack, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }, async () =>
+      (await p.catalog.listProducts()).filter((x) => x.ownBrand && x.enabled),
+    ),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),
     getLevel: new GetLevelUseCase(p.profiles, p.meals, p.checkIns, p.telemetry, p.exercises, p.brainChecks, p.clock, environment),
@@ -218,6 +238,8 @@ export function buildUseCases(p: Ports): UseCases {
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
     adminWaitlist: new AdminWaitlistUseCase(p.waitlist, p.clock),
+    notificationSettings: new NotificationSettingsUseCases(p.notificationSettings, p.clock),
+    guides,
   };
   const weeklyReport = new GetWeeklyReportUseCase(p.profiles, p.clock, {
     history: uc.getHistory,
@@ -229,7 +251,85 @@ export function buildUseCases(p: Ports): UseCases {
     sessions: uc.sessions,
     level: uc.getLevel,
   });
-  return { ...uc, weeklyReport };
+  // What the app recommends: products for the week's weak points (GetProtocolsUseCase). A product is
+  // "for" a weak point only when there's just one; with two the match could be for either.
+  const recommended = async (userId: string) => {
+    const m = await uc.getProtocols.execute({ userId });
+    return { products: m.products.map((x) => x.item), area: m.weakPoints.length === 1 ? m.weakPoints[0]!.label : null };
+  };
+  const sendWeeklyEmails = new SendWeeklyEmailsUseCase(
+    p.notificationSettings,
+    weeklyReport,
+    p.email,
+    p.clock,
+    { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") },
+    async (userId) => {
+      const { products, area } = await recommended(userId);
+      const own = products.find((x) => x.ownBrand && x.url);
+      return own ? { name: own.name, description: own.description, url: own.url!, area } : null;
+    },
+  );
+  const sendNotifications = new SendNotificationsUseCase(
+    p.notificationSettings,
+    {
+      focusScore: async (userId) => {
+        const f = await uc.getFocusScore.execute({ userId });
+        return { score: f.score, sleepIn: f.components.sleep !== null, explanation: f.explanation };
+      },
+      level: async (userId) => {
+        const { result, days } = await uc.getLevel.withDays(userId);
+        return { level: result.level, name: result.name, days };
+      },
+      air: async (userId) => {
+        const day = await environment.day(userId);
+        return day.air && day.location ? { aqi: day.air.aqi, place: day.location.place } : null;
+      },
+      newRoutines: (since) => p.catalog.knowledgeProtocolsSince(since),
+      goalReached: async (userId) => {
+        const history = await uc.getWeightHistory.execute({ userId, days: 30 });
+        return history.goal && history.goal.toGoKg <= 0 ? { targetKg: history.goal.targetKg } : null;
+      },
+      newOwnProducts: (since) => p.catalog.ownProductsSince(since),
+      recommendedProducts: async (userId) => {
+        const { products, area } = await recommended(userId);
+        return { ids: products.map((x) => x.id), area };
+      },
+    },
+    p.push ?? { enabled: false, send: async () => "sent" as const },
+    p.email,
+    p.clock,
+    { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") },
+  );
+  // What's logged on a local day, for the program's habits that tick themselves.
+  const program = new ProgramUseCases(
+    p.programs,
+    guides,
+    p.profiles,
+    p.clock,
+    async (userId, date, timeZone) => {
+      // A window wide enough for any time zone, then the exact local day.
+      const from = new Date(Date.parse(`${date}T12:00:00Z`) - 2 * 86_400_000);
+      const to = new Date(Date.parse(`${date}T12:00:00Z`) + 2 * 86_400_000);
+      const onDay = (at: Date) => localDateOf(at, timeZone) === date;
+      const [check, meals, exercises, sessions] = await Promise.all([
+        p.environment.getCheck(userId, date),
+        p.meals.listForDay(userId, { date, timeZone }),
+        p.exercises.listBetween(userId, from, to),
+        p.sessions.listBetween(userId, from, to),
+      ]);
+      return {
+        daylight: check?.daylight === true,
+        mealMinutes: meals.map((m) => {
+          const t = localTimeOf(m.eatenAt, timeZone);
+          return t.hour * 60 + t.minute;
+        }),
+        exercise: exercises.filter((e) => onDay(e.startedAt)).map((e) => e.kind),
+        sessions: sessions.filter((x) => onDay(x.takenAt)).map((x) => x.kind),
+      };
+    },
+    p.focusScores,
+  );
+  return { ...uc, weeklyReport, sendWeeklyEmails, sendNotifications, program };
 }
 
 export const systemClock: IClock = { now: () => new Date() };

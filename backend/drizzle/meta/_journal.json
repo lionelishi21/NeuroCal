@@ -260,6 +260,34 @@
       "when": 1793116415239,
       "tag": "0036_lethal_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793407481412,
+      "tag": "0037_gorgeous_gladiator",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793480395794,
+      "tag": "0038_sturdy_secret_warriors",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793540424384,
+      "tag": "0039_wild_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793548071140,
+      "tag": "0040_flaky_microbe",
+      "breakpoints": true
     }
   ]
 }

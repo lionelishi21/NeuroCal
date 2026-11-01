@@ -27,6 +27,12 @@ export class GetLevelUseCase {
   ) {}
 
   async execute(input: { userId: string }): Promise<LevelResult> {
+    return (await this.withDays(input.userId)).result;
+  }
+
+  /** The level, and the window's days it was read from (oldest first), for telling when it's slipping. */
+  async withDays(userId: string): Promise<{ result: LevelResult; days: LevelDay[] }> {
+    const input = { userId };
     const profile = await this.profiles.get(input.userId);
     if (!profile) throw new NotFoundError("Set up your profile first.");
     const now = this.clock.now();
@@ -67,10 +73,11 @@ export class GetLevelUseCase {
     const sorted = [...recent].sort((a, b) => a - b);
     const median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length - 1) / 2]! : Math.round((sorted[sorted.length / 2 - 1]! + sorted[sorted.length / 2]!) / 2)) : null;
     const change = levelChangeOf(checks, now);
-    return levelOf(days, {
+    const result = levelOf(days, {
       recent: median,
       usual: baselineOf(earlier),
       ...(change?.direction === "up" ? { raised: { from: change.from, to: change.to } } : {}),
     });
+    return { result, days };
   }
 }

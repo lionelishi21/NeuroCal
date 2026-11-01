@@ -205,6 +205,14 @@ export class NeuroCalStack extends Stack {
       targets: [new targets.LambdaFunction(trialReminders, { retryAttempts: 0 })],
     });
 
+    // Hourly, run by the API Lambda itself (lambda.ts `job`), which already has everything they read:
+    // last week's report by email on Monday morning, and the server's push notifications and emails
+    // (docs/NCBM.md §10), each at the person's own time.
+    new events.Rule(this, "WeeklyEmails", {
+      schedule: events.Schedule.rate(Duration.hours(1)),
+      targets: [new targets.LambdaFunction(api, { retryAttempts: 0, event: events.RuleTargetInput.fromObject({ job: "notifications" }) })],
+    });
+
     // Knowledge pipeline (docs/NCBM.md §7): on the 1st of each month, new uploads on the watched YouTube
     // channels go into the admin Knowledge list. Titles and links only; nothing reaches users until approved.
     const knowledgeSync = fn("KnowledgeSyncFunction", "knowledgeSyncLambda.ts", { timeout: Duration.minutes(2) });
@@ -287,6 +295,13 @@ export class NeuroCalStack extends Stack {
         authorizer: new HttpNoneAuthorizer(),
       }),
     );
+    // The "stop these emails" link in the weekly report: the token is the proof, as for the waitlist.
+    const emailUnsubscribeRoutes = httpApi.addRoutes({
+      path: "/email/unsubscribe",
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration("EmailUnsubscribeIntegration", api),
+      authorizer: new HttpNoneAuthorizer(),
+    });
     // RevenueCat reports purchases here. It has no Cognito token; the Lambda checks its shared secret.
     httpApi.addRoutes({
       path: "/webhooks/revenuecat",
@@ -299,11 +314,11 @@ export class NeuroCalStack extends Stack {
     const stage = httpApi.defaultStage!.node.defaultChild as CfnStage;
     stage.routeSettings = Object.fromEntries(
       // Route settings are passed to CloudFormation as written, so the keys take its capitals.
-      waitlistRoutes.map((path) => [`POST ${path}`, { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 }]),
+      [...waitlistRoutes, "/email/unsubscribe"].map((path) => [`POST ${path}`, { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 }]),
     );
     // The stage names these routes, so they must exist first. Without this, CloudFormation updated
     // the stage before creating them and the deploy failed ("Unable to find Route by key").
-    for (const route of waitlistRouteResources) stage.addDependency(route.node.defaultChild as CfnResource);
+    for (const route of [...waitlistRouteResources, ...emailUnsubscribeRoutes]) stage.addDependency(route.node.defaultChild as CfnResource);
 
     new CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint, description: "NEXT_PUBLIC_API_URL for the web app" });
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });

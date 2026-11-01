@@ -37,6 +37,17 @@ import {
   EnvironmentCheckRequest,
   EnvironmentDay,
   SetEnvironmentLocationRequest,
+  SaveWaterRequest,
+  NotificationSettings,
+  Guide,
+  GuideList,
+  SaveGuideRequest,
+  ProgramResponse,
+  StartProgramRequest,
+  TickProgramRuleRequest,
+  EnergyCheckRequest,
+  EmailUnsubscribeRequest,
+  RegisterDeviceRequest,
   RecipeAnalysis,
   AddKnowledgeSourceRequest,
   AddTranscriptRequest,
@@ -136,6 +147,11 @@ import type { GlucoseUseCases } from "../application/use-cases/GlucoseUseCases";
 import { MARKERS, type MarkerSummary as MarkerSummaryRecord } from "../domain/markers";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
+import type { NotificationSettingsUseCases } from "../application/use-cases/NotificationSettingsUseCases";
+import type { GuideUseCases } from "../application/use-cases/GuideUseCases";
+import type { ProgramUseCases } from "../application/use-cases/ProgramUseCases";
+import type { SendWeeklyEmailsUseCase } from "../application/use-cases/SendWeeklyEmailsUseCase";
+import type { SendNotificationsUseCase } from "../application/use-cases/SendNotificationsUseCase";
 import type { MealPlanUseCases } from "../application/use-cases/MealPlanUseCases";
 import type { MealPlan } from "../domain/mealPlan";
 import { linkAt, type KnowledgeSource as SourceRecord, type Technique } from "../domain/knowledge";
@@ -197,6 +213,12 @@ export interface UseCases {
   sessions: SessionUseCases;
   performance: PerformanceUseCases;
   weeklyReport: GetWeeklyReportUseCase;
+  /** Run by the hourly schedule (lambda.ts), not by a route. */
+  sendWeeklyEmails: SendWeeklyEmailsUseCase;
+  sendNotifications: SendNotificationsUseCase;
+  notificationSettings: NotificationSettingsUseCases;
+  guides: GuideUseCases;
+  program: ProgramUseCases;
   getLearn: GetLearnUseCase;
   shoppingList: ShoppingListUseCases;
   logWeight: LogWeightUseCase;
@@ -378,6 +400,7 @@ const toShoppingList = (v: ShoppingListView & { movedToPantry?: number }) => ({
 });
 
 const admin = (req: ApiRequest) => ({ isAdmin: req.isAdmin === true });
+const toGuide = <T extends { updatedAt: Date }>(g: T) => ({ ...g, updatedAt: g.updatedAt.toISOString() });
 const toCatalogFood = (food: Food) => {
   const { kind: _, ...rest } = food;
   return { ...rest, diets: dietsFor(food) };
@@ -404,6 +427,15 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       /^\/waitlist\/unsubscribe$/,
       async (req) => {
         await uc.leaveWaitlist.execute(json(req, LeaveWaitlistRequest));
+        return ok(LeaveWaitlistResponse, { status: "unsubscribed" });
+      },
+    ],
+    [
+      "POST",
+      /^\/email\/unsubscribe$/,
+      async (req) => {
+        const body = json(req, EmailUnsubscribeRequest);
+        await uc.notificationSettings.unsubscribe(body.token, body.from);
         return ok(LeaveWaitlistResponse, { status: "unsubscribed" });
       },
     ],
@@ -623,6 +655,15 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return ok(EnvironmentDay, await uc.environment.day(req.userId, body.date));
       },
     ],
+    [
+      "PUT",
+      /^\/environment\/water$/,
+      async (req) => {
+        const body = json(req, SaveWaterRequest);
+        await uc.environment.saveWater(req.userId, body);
+        return ok(EnvironmentDay, await uc.environment.day(req.userId, body.date));
+      },
+    ],
     ["GET", /^\/level$/, async (req) => ok(LevelResponse, await uc.getLevel.execute(req))],
     ["GET", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.list(req.userId) })],
     ["POST", /^\/pantry$/, async (req) => ok(PantryResponse, { items: await uc.pantry.add(req.userId, json(req, AddPantryItemsRequest).names) })],
@@ -701,6 +742,42 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       },
     ],
     ["GET", /^\/report\/week$/, async (req) => ok(WeeklyReportResponse, await uc.weeklyReport.execute(req.userId))],
+    ["GET", /^\/notification-settings$/, async (req) => ok(NotificationSettings, await uc.notificationSettings.get(req.userId))],
+    ["PUT", /^\/notification-settings$/, async (req) => ok(NotificationSettings, await uc.notificationSettings.save(req.userId, json(req, NotificationSettings)))],
+    [
+      "PUT",
+      /^\/devices$/,
+      async (req) => {
+        await uc.notificationSettings.registerDevice(req.userId, json(req, RegisterDeviceRequest));
+        return { status: 204 };
+      },
+    ],
+    ["GET", /^\/guides$/, async (req) => ok(GuideList, { guides: await uc.guides.list(admin(req)) })],
+    ["GET", /^\/guides\/([^/]+)$/, async (req, [id]) => ok(Guide, toGuide(await uc.guides.get(id!, admin(req))))],
+    ["PUT", /^\/admin\/guides\/([^/]+)$/, async (req, [id]) => ok(Guide, toGuide(await uc.guides.save(admin(req), id!, json(req, SaveGuideRequest))))],
+    ["GET", /^\/program$/, async (req) => ok(ProgramResponse, { program: await uc.program.get(req.userId) })],
+    [
+      "POST",
+      /^\/program$/,
+      async (req) => ok(ProgramResponse, { program: await uc.program.start(req.userId, json(req, StartProgramRequest).guideId, admin(req)) }),
+    ],
+    [
+      "DELETE",
+      /^\/program$/,
+      async (req) => {
+        await uc.program.stop(req.userId);
+        return { status: 204 };
+      },
+    ],
+    [
+      "PUT",
+      /^\/program\/rules$/,
+      async (req) => {
+        const body = json(req, TickProgramRuleRequest);
+        return ok(ProgramResponse, { program: await uc.program.tick(req.userId, body.ruleId, body.done) });
+      },
+    ],
+    ["POST", /^\/program\/checks$/, async (req) => ok(ProgramResponse, { program: await uc.program.check(req.userId, json(req, EnergyCheckRequest).answers) })],
     ["GET", /^\/performance$/, async (req) => ok(PerformanceResponse, toPerformance(await uc.performance.view(req.userId)))],
     [
       "POST",

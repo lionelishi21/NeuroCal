@@ -276,7 +276,7 @@ export const environmentLocations = pgTable("environment_locations", {
   longitude: real("longitude").notNull(),
 });
 
-/** The daily environment check; a null item wasn't answered. */
+/** The daily environment check (a null item wasn't answered), and the day's water. */
 export const environmentChecks = pgTable(
   "environment_checks",
   {
@@ -288,8 +288,56 @@ export const environmentChecks = pgTable(
     darkBedroom: boolean("dark_bedroom"),
     quietBedroom: boolean("quiet_bedroom"),
     filteredWater: boolean("filtered_water"),
+    /** Water drunk that day; null when none was logged. */
+    waterMl: integer("water_ml"),
+    electrolytes: boolean("electrolytes"),
   },
   (t) => [primaryKey({ columns: [t.userId, t.date] })],
+);
+
+/** Optional notifications and emails: a row once someone changes a setting or is sent one; none means the defaults. */
+export const notificationSettings = pgTable("notification_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  weeklyReport: boolean("weekly_report").notNull().default(true),
+  comeBackEmail: boolean("come_back_email").notNull().default(true),
+  /** Push kinds switched off or on (contracts PushKind); a kind not here is on. */
+  push: jsonb("push").$type<Record<string, boolean>>().notNull().default({}),
+  /** For the "stop these emails" link; made with the first optional email. */
+  unsubscribeToken: text("unsubscribe_token").unique(),
+  /** The Monday of the last week reported, so each week is emailed once. */
+  weeklySentFor: date("weekly_sent_for", { mode: "string" }),
+  /** The level last seen by the notification job, so a level-up is told once; null before the first look. */
+  lastLevel: integer("last_level"),
+});
+
+/** Phones to push to (Firebase Cloud Messaging tokens). A token belongs to the account last signed in on it. */
+export const pushDevices = pgTable(
+  "push_devices",
+  {
+    token: text("token").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    platform: text("platform", { enum: ["android", "ios"] }).notNull(),
+    /** Saved at every app start, so it's also when the person was last seen. */
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("push_devices_user_idx").on(t.userId)],
+);
+
+/** Each server notification sent, by a key that makes it once only (e.g. "score:2026-10-31"). */
+export const notificationLog = pgTable(
+  "notification_log",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    key: text("key").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
 
 /** Cups of coffee, each with its add-ins (domain/coffee.ts), apart from meals. */
@@ -652,6 +700,8 @@ export const products = pgTable(
     urlOverride: text("url_override"),
     /** Replaces `affiliate` when set. */
     affiliateOverride: boolean("affiliate_override"),
+    /** When it joined the catalog (the product-news notification). Products from before this column count as old. */
+    createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,
   },
   (t) => [index("products_embedding_hnsw").using("hnsw", t.embedding.op("vector_cosine_ops"))],
@@ -662,5 +712,30 @@ export const eatingOutItems = pgTable("eating_out_items", {
   id: text("id").primaryKey(),
   food: jsonb("food").$type<Food>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Guide text saved from the admin screen; it replaces the guide that comes with the app under the same id. */
+export const guides = pgTable("guides", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle").notNull(),
+  summary: text("summary").notNull(),
+  body: text("body").notNull(),
+  brand: text("brand").$type<"ownBrand" | "general">().notNull(),
+  status: text("status").$type<"draft" | "published">().notNull(),
+  program: boolean("program").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The program someone is following (domain/program.ts); one per person, its days and checks as JSON. */
+export const programs = pgTable("programs", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  guideId: text("guide_id").notNull(),
+  startedOn: date("started_on", { mode: "string" }).notNull(),
+  days: jsonb("days").$type<Record<string, { ticked: string[]; done: string[] }>>().notNull().default({}),
+  checks: jsonb("checks").$type<{ checkpoint: 1 | 15 | 30; date: string; answers: number[] }[]>().notNull().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -100,6 +100,36 @@ abstract interface class NeuroCalApi {
   /// Answers items of today's environment check.
   Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items);
 
+  /// Sets today's water total (not an amount to add) and the electrolytes tick; null leaves one as it is.
+  Future<EnvironmentDay> saveWater({int? ml, bool? electrolytes});
+
+  /// Which optional notifications and emails you get.
+  Future<NotificationSettings> notificationSettings();
+
+  Future<NotificationSettings> saveNotificationSettings(NotificationSettings settings);
+
+  /// Saves this phone's push token (Firebase), after sign-in and whenever it changes.
+  Future<void> registerDevice({required String token, required String platform});
+
+  /// Published guides; an admin also sees drafts.
+  Future<List<GuideSummary>> guides();
+
+  Future<Guide> guide(String id);
+
+  /// The program in progress (or finished in the last week), or null.
+  Future<Program?> program();
+
+  /// Starts a guide's program today, replacing any other.
+  Future<Program> startProgram(String guideId);
+
+  Future<void> stopProgram();
+
+  /// Ticks or unticks one of today's habits by hand.
+  Future<Program> tickProgramRule(String ruleId, {required bool done});
+
+  /// The energy check due now: five answers, 0 (best) to 4.
+  Future<Program> saveEnergyCheck(List<int> answers);
+
   /// The biohacking level from the last 28 days.
   Future<Level> level();
 
@@ -545,6 +575,94 @@ class HttpNeuroCalApi implements NeuroCalApi {
         body: jsonEncode({
           'items': {for (final e in items.entries) e.key.wire: e.value},
         }),
+      ),
+    ) as Map<String, dynamic>,
+  );
+
+  @override
+  Future<NotificationSettings> notificationSettings() async =>
+      NotificationSettings.fromJson(await _get('/notification-settings') as Map<String, dynamic>);
+
+  @override
+  Future<NotificationSettings> saveNotificationSettings(NotificationSettings settings) async =>
+      NotificationSettings.fromJson(
+        _decode(
+          await _client.put(
+            _uri('/notification-settings'),
+            headers: await _headers(json: true),
+            body: jsonEncode(settings.toJson()),
+          ),
+        ) as Map<String, dynamic>,
+      );
+
+  @override
+  Future<List<GuideSummary>> guides() async => [
+    for (final g in (await _get('/guides') as Map<String, dynamic>)['guides'] as List)
+      GuideSummary.fromJson(g as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<Guide> guide(String id) async =>
+      Guide.fromJson(await _get('/guides/${Uri.encodeComponent(id)}') as Map<String, dynamic>);
+
+  Program? _program(dynamic body) {
+    final p = (body as Map<String, dynamic>)['program'];
+    return p == null ? null : Program.fromJson(p as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Program?> program() async => _program(await _get('/program'));
+
+  @override
+  Future<Program> startProgram(String guideId) async => _program(
+    _decode(
+      await _client.post(_uri('/program'), headers: await _headers(json: true), body: jsonEncode({'guideId': guideId})),
+    ),
+  )!;
+
+  @override
+  Future<void> stopProgram() async {
+    _decode(await _client.delete(_uri('/program'), headers: await _headers()));
+  }
+
+  @override
+  Future<Program> tickProgramRule(String ruleId, {required bool done}) async => _program(
+    _decode(
+      await _client.put(
+        _uri('/program/rules'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'ruleId': ruleId, 'done': done}),
+      ),
+    ),
+  )!;
+
+  @override
+  Future<Program> saveEnergyCheck(List<int> answers) async => _program(
+    _decode(
+      await _client.post(
+        _uri('/program/checks'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'answers': answers}),
+      ),
+    ),
+  )!;
+
+  @override
+  Future<void> registerDevice({required String token, required String platform}) async => _decode(
+    await _client.put(
+      _uri('/devices'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'token': token, 'platform': platform}),
+    ),
+  );
+
+  @override
+  Future<EnvironmentDay> saveWater({int? ml, bool? electrolytes}) async => EnvironmentDay.fromJson(
+    _decode(
+      await _client.put(
+        _uri('/environment/water'),
+        headers: await _headers(json: true),
+        body: jsonEncode({'ml': ?ml, 'electrolytes': ?electrolytes}),
       ),
     ) as Map<String, dynamic>,
   );

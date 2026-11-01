@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "957053675563",
+    "project_id": "neurocal-52fbd",
+    "storage_bucket": "neurocal-52fbd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:957053675563:android:ae749d5907886b9897a26e",
+        "android_client_info": {
+          "package_name": "com.neurocal.neurocal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-R4ZS6mG5jX1DIB0_4ibFLXX44o9XR_w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

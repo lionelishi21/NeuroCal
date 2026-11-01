@@ -10,6 +10,9 @@ import {
   type ReviewTechniqueRequest,
   AdminDevices,
   AdminEatingOutList,
+  Guide,
+  GuideList,
+  type SaveGuideRequest,
   CatalogFood,
   type SaveEatingOutItemRequest,
   DeviceCandidate,
@@ -28,6 +31,7 @@ import {
   type JoinWaitlistRequest,
   JoinWaitlistResponse,
   LeaveWaitlistResponse,
+  type EmailKind,
   ProtocolsResponse,
   IngestResponse,
   type IngestScreenTimeRequest,
@@ -58,6 +62,8 @@ export const keys = {
   adminKnowledge: ["admin", "knowledge"] as const,
   adminDevices: ["admin", "devices"] as const,
   adminEatingOut: ["admin", "eating-out"] as const,
+  guides: ["guides"] as const,
+  guide: (id: string) => ["guides", id] as const,
 };
 
 export function useProfile() {
@@ -328,6 +334,14 @@ export function useLeaveWaitlist() {
   });
 }
 
+/** An optional email's "stop these emails" link: the weekly report or the one after a week away. */
+export function useStopEmail() {
+  return useMutation({
+    mutationFn: ({ token, from }: { token: string; from: EmailKind }) =>
+      request("/email/unsubscribe", LeaveWaitlistResponse, { method: "POST", body: JSON.stringify({ token, from }) }),
+  });
+}
+
 /** Videos and the techniques taken from them, for admins (the knowledge pipeline, docs/NCBM.md §7). */
 export function useAdminKnowledge() {
   return useQuery({ queryKey: keys.adminKnowledge, queryFn: () => request("/admin/knowledge", AdminKnowledge), retry: false });
@@ -418,5 +432,30 @@ export function useScanDevices() {
   return useMutation({
     mutationFn: () => request("/admin/devices/scan", DeviceScanResponse, { method: "POST" }),
     onSuccess: invalidate,
+  });
+}
+
+/** Guides; an admin sees drafts too. */
+export function useGuides() {
+  return useQuery({ queryKey: keys.guides, queryFn: () => request("/guides", GuideList), retry: false });
+}
+
+export function useGuide(id: string | null) {
+  return useQuery({
+    queryKey: keys.guide(id ?? ""),
+    queryFn: () => request(`/guides/${encodeURIComponent(id!)}`, Guide),
+    enabled: id !== null,
+  });
+}
+
+export function useSaveGuide() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...guide }: SaveGuideRequest & { id: string }) =>
+      request(`/admin/guides/${encodeURIComponent(id)}`, Guide, { method: "PUT", body: JSON.stringify(guide) }),
+    onSuccess: (saved) => {
+      client.setQueryData(keys.guide(saved.id), saved);
+      return client.invalidateQueries({ queryKey: keys.guides, exact: true });
+    },
   });
 }

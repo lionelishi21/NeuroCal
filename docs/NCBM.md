@@ -82,9 +82,9 @@ A morning score for day D, built from the day before and the night:
 | Glycemic load | 15% | Share of D−1's calories from high-glycemic-load food | Mostly low-GL |
 | Stress | 15% | Negative check-ins (stressed, brain fog, low focus, wired) on D−1 and D | Few or none |
 | Movement | 10% | Exercise on D−1 against 30 moderate minutes (hard counts double, light half) | 30 moderate minutes |
-| Environment | 10% | D−1's mean US AQI where you live (Open-Meteo, town rounded to ~10 km) and that day's check: morning daylight, a dark bedroom, a quiet bedroom, filtered water | Clean air, habits kept |
+| Environment | 10% | D−1's mean US AQI where you live (Open-Meteo, town rounded to ~10 km), that day's check (morning daylight, a dark bedroom, a quiet bedroom, filtered water) and water drunk against a target of 33 ml/kg (1.5–3.5 l, 2 l without a weigh-in) plus ½ l an hour of exercise | Clean air, habits kept, enough water |
 
-A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. Movement only counts for people who've logged exercise in the past week, and environment only once a town is set or the check is done, so nobody is marked down for a habit they don't track. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
+A signal with no data is left out and the others are re-weighted, so a new user gets a score as soon as they log one thing. Movement only counts for people who've logged exercise in the past week, and environment only once a town is set, the check is done or water is logged (drinking past the target earns nothing more; the salt or electrolytes tick isn't scored), so nobody is marked down for a habit they don't track. A signal under 0.75 is a **weak point**. The two weakest of the week are matched (by meaning, with pgvector) to routines and products in the catalog.
 
 ### 3.2 Weights tuned to each person (built)
 
@@ -144,10 +144,11 @@ flowchart LR
 | Supplements: label scanning, stack, daily checklist, whole-stack limits and duplicates | Built |
 | Outcome: Brain speed check with personal baseline | Built, and it tunes each person's weights (v1) |
 | Weight: goal, smoothed trend, pace, projected date | Built |
-| Environment: air quality where you live, and a daily check of daylight, a dark and quiet bedroom and filtered water | Built (v1.1). Water by postcode and light and noise from sensors next |
+| Environment: air quality where you live, a daily check of daylight, a dark and quiet bedroom and filtered water, and water drunk a glass at a time against a target from weight and exercise | Built (v1.1). Water by postcode, light and noise from sensors, and water from Health Connect next |
 | Shopper: review a typed or photographed shopping list, with swaps and gadget picks | Built. Gadgets come from the catalog by rule (air fryer, water filter, ice cream maker, blender), with your affiliate links; a device scraper isn't planned |
 | Knowledge pipeline (below) | Built |
 | Levels (below) | Built |
+| Notifications (below): the phone's own reminders, the server's push notifications and the optional emails | Built. Billing pushes wait for RevenueCat |
 
 ## 7. The knowledge pipeline
 
@@ -187,3 +188,48 @@ An average needs at least 10 days with data before it counts.
 - Calories and glycemic load from photos and labels are estimates. The app says so where it shows them.
 - Brain speed is a self-check for comparing your own days, not a medical test.
 - Supplement and device suggestions carry a note to check with a doctor or pharmacist, and are labelled when they're affiliate or own-brand.
+
+## 10. Notifications
+
+Each notification should move a pillar or explain the score, come at a sensible time, and be easy to switch off. Me → Notifications has a switch for every one.
+
+**Reminders the phone schedules itself.** These need no server and work offline. They're planned a few days ahead and refreshed every time Today opens.
+- Check-in windows, the streak at risk, the weekly report, the Brain speed check, wind-down, water, the weekly weigh-in, "is it working?" two weeks into a supplement, a meal plan ending, and a fast done.
+- Movement, the caffeine curfew, morning daylight and the monthly progress photo are off by default.
+- Water, coffee and movement reminders wait until the person has logged that habit once.
+- At most 4 a day, the most useful first; fasts and supplement reminders don't count. Quiet hours run from bedtime to waking.
+
+**Push notifications from the server** (Firebase Cloud Messaging; `SendNotificationsUseCase`). An hourly job sends each one at the person's local time, in daytime only, once (a log keyed by day or milestone), and at most 2 a day.
+
+| Notification | When |
+|---|---|
+| Morning Focus Score, with the first line of its explanation | 08:00–12:00, once last night's sleep is in |
+| Unhealthy air (AQI over 100) where the person set their town | 07:00–10:00 |
+| Level up | 18:00–21:00. The first look only notes the level, since it was earned before notifications began |
+| Level at risk: the first habit of the level or below that slipped this week | Wednesday, 18:00–21:00 |
+| Goal weight reached (push and email) | 09:00–21:00, once per goal |
+| A new routine from the knowledge pipeline | 10:00–20:00, once each, within 3 days of approval |
+| Come back: one push after 3 days away, one email after 7 | 10:00–20:00, once per absence. "Away" means since the app last started on any of the person's phones |
+| Product news (off until switched on, since it's promotional): a new MitoProof product, only when it's among the person's own recommendations (§6.9 of ARCHITECTURE) | 10:00–20:00, looked at once a day, within 7 days of the product being added; each product once |
+| Trial ending, alongside the email | Two days before, from the trial reminder job |
+
+The phone registers its token at every launch, so the server also knows when it was last seen. Signing out deletes the token, and the server drops any token Firebase no longer accepts.
+
+**Optional emails** (Resend): the weekly report on Monday mornings (with one of our brand's products for the week's weak point, labelled as ours), and one email after a week away. Each has its own "stop these emails" link. Account and billing emails aren't optional.
+
+**Our brand in the Stack:** a supplement whose name says MitoProof links to its store page ("Reorder from MitoProof"), and its two-week "Is it working?" reminder says the Stack can reorder it.
+
+
+## 11. Guides and the 30-day program
+
+Guides are long reads in the app (Me → Guides), edited on the web admin's Guides tab. A guide comes with the app (`backend/src/infrastructure/catalog/guides.ts`) and the text an admin saves replaces it. **Drafts are seen only by admins**, so unreviewed health claims never reach users: The Mitoproof Protocol stays a draft until its corrected text has been reviewed and signed off.
+
+A guide can carry a **30-day program** (`domain/program.ts`), which feeds every pillar:
+
+| Days | Habits | Ticked from what's logged |
+| --- | --- | --- |
+| 1–30 | Morning daylight, no seed oils, no added sugar, no alcohol, screens off by 9pm, last meal by 7pm, a walk after the largest meal | Daylight (environment check), last meal (meals, after 7pm), walk (exercise), screens (blue-blocking session) |
+| 8–30 | Zone 2 or strength, five times a week (rest days don't break a full day) | Any exercise |
+| 10–30 | Cold at the end of the shower | A cold plunge session |
+
+Habits NeuroCal can't see are ticked by hand. Each day has a tip; the **energy check** (five areas, 0–4 each, from the guide's chapter 3) is taken on day 1, 15 and 30; and the program shows full days and the average Focus Score of week one against the latest week. It stays on Today for a week after day 30. Later: subscribers only, once RevenueCat is in.

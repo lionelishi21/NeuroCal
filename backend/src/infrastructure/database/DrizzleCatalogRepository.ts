@@ -1,4 +1,4 @@
-import { and, asc, cosineDistance, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, asc, cosineDistance, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import type { Embedded, ICatalogRepository } from "../../application/interfaces/ICatalogRepository";
 import type { AdminProduct, Product, ProductSettings, Protocol } from "../../domain/types";
 import type { Database } from "./client";
@@ -78,6 +78,23 @@ export class DrizzleCatalogRepository implements ICatalogRepository {
           updatedAt: new Date(),
         },
       });
+  }
+
+  async knowledgeProtocolsSince(since: Date): Promise<Protocol[]> {
+    const rows = await this.db
+      .select({ id: protocols.id, title: protocols.title, summary: protocols.summary, steps: protocols.steps, tags: protocols.tags })
+      .from(protocols)
+      .where(and(eq(protocols.managedBy, "knowledge"), gte(protocols.updatedAt, since)))
+      .orderBy(desc(protocols.updatedAt));
+    return rows;
+  }
+
+  async ownProductsSince(since: Date): Promise<{ id: string; name: string }[]> {
+    return this.db
+      .select({ id: products.id, name: products.name })
+      .from(products)
+      .where(and(eq(products.ownBrand, true), eq(products.enabled, true), gte(products.createdAt, since)))
+      .orderBy(desc(products.createdAt));
   }
 
   async addProtocol({ item, embedding, contentHash }: Embedded<Protocol>) {

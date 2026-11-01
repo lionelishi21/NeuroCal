@@ -709,11 +709,21 @@ class MockNeuroCalApi implements NeuroCalApi {
 
   String? _place;
   final _check = <EnvironmentItem, bool>{};
+  var _waterMl = 0;
+  var _electrolytes = false;
+
+  /// The API's target (backend domain/environment.ts) from the latest weigh-in, without the exercise part.
+  int get _waterTargetMl {
+    final dates = _weighIns.keys.toList()..sort();
+    if (dates.isEmpty) return 2000;
+    return ((_weighIns[dates.last]! * 33).clamp(1500, 3500) / 50).round() * 50;
+  }
 
   double? _environmentSignal() {
     final parts = <double>[
       if (_place != null) 1.0, // sample air: AQI 38, good
       if (_check.isNotEmpty) _check.values.where((v) => v).length / _check.length,
+      if (_waterMl > 0) (_waterMl / _waterTargetMl).clamp(0.0, 1.0),
     ];
     return parts.isEmpty ? null : parts.reduce((a, b) => a + b) / parts.length;
   }
@@ -723,6 +733,9 @@ class MockNeuroCalApi implements NeuroCalApi {
     aqi: _place == null ? null : 38,
     category: _place == null ? null : 'good',
     check: Map.of(_check),
+    waterMl: _waterMl,
+    waterTargetMl: _waterTargetMl,
+    electrolytes: _electrolytes,
     signal: _environmentSignal(),
   );
 
@@ -1158,6 +1171,255 @@ class MockNeuroCalApi implements NeuroCalApi {
   Future<EnvironmentDay> saveEnvironmentCheck(Map<EnvironmentItem, bool> items) async {
     await _wait();
     _check.addAll(items);
+    return _environmentDay();
+  }
+
+  var _notifications = NotificationSettings(
+    weeklyReport: true,
+    comeBackEmail: true,
+    push: {for (final k in PushKind.values) k: k.onByDefault},
+  );
+
+  /// Push tokens saved, newest last.
+  final devices = <String>[];
+
+  @override
+  Future<NotificationSettings> notificationSettings() async {
+    await _wait();
+    return _notifications;
+  }
+
+  @override
+  Future<NotificationSettings> saveNotificationSettings(NotificationSettings settings) async {
+    await _wait();
+    return _notifications = settings;
+  }
+
+  @override
+  Future<void> registerDevice({required String token, required String platform}) async {
+    devices.add(token);
+  }
+
+  // Guides and the 30-day program: a short stand-in for The Mitoproof Protocol (the API holds the
+  // real text, backend/src/infrastructure/catalog/guides.ts) and the program's daily habits.
+  static const _guide = GuideSummary(
+    id: 'mitoproof-protocol',
+    title: 'The Mitoproof Protocol',
+    subtitle: 'Your 30-day cellular energy plan',
+    summary:
+        'A 7-day reset, then a 21-day build: daylight, meal timing, movement, sleep and a supplement stack, '
+        'with an energy check on days 1, 15 and 30.',
+    ownBrand: true,
+    draft: true,
+    program: true,
+    minutes: 26,
+  );
+
+  static const _guideBody = '''_This guide is for education only and is not medical advice._
+
+"Energy starts in your cells. Look after the power plants, and the rest gets easier."
+
+## Chapter 1: Why cellular energy matters
+
+You've been told your fatigue is stress. Or ageing. Or just how life is after 35.
+
+Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for many people, the **daily habits** that run their cells matter more than they think.
+
+### What the protocol aims for
+
+- Steadier energy through the day, with less need for caffeine
+- Clearer thinking, especially in the afternoon
+- Better sleep and easier mornings
+
+## Chapter 6: The supplement stack and timing
+
+### Daily timing
+
+| Time | Supplement |
+| --- | --- |
+| 7:30am, with breakfast | PQQ 20 mg, vitamin C 500 mg |
+| 6:00pm, with dinner | CoQ10 100–200 mg |
+| 9:30pm, before bed | Magnesium glycinate 200–350 mg |
+''';
+
+  static const _rules = [
+    (
+      id: 'daylight',
+      label: 'Morning daylight',
+      detail: 'Ten minutes outside within 30 minutes of waking sets your body clock.',
+      from: 1,
+    ),
+    (
+      id: 'noSeedOils',
+      label: 'No seed oils',
+      detail: 'Cook with olive oil, and skip fried food, packaged snacks and takeaway.',
+      from: 1,
+    ),
+    (
+      id: 'noSugar',
+      label: 'No added sugar or refined carbs',
+      detail: 'Sweet potato, rice, oats and fruit are fine.',
+      from: 1,
+    ),
+    (
+      id: 'noAlcohol',
+      label: 'No alcohol',
+      detail: 'Alcohol breaks up sleep, especially the second half of the night.',
+      from: 1,
+    ),
+    (id: 'screensOff', label: 'Screens off by 9pm', detail: 'Or amber blue-light-blocking glasses from 8pm.', from: 1),
+    (
+      id: 'lastMeal',
+      label: 'Last meal by 7pm',
+      detail: 'Ticks itself after 7pm when your meals are logged and none came later.',
+      from: 1,
+    ),
+    (
+      id: 'walk',
+      label: 'A walk after your largest meal',
+      detail: 'Ten to thirty gentle minutes. Logging a walk ticks it.',
+      from: 1,
+    ),
+    (id: 'train', label: 'Zone 2 or strength', detail: 'Five sessions a week. Logging exercise ticks it.', from: 8),
+    (
+      id: 'cold',
+      label: 'Cold at the end of your shower',
+      detail: 'Start with 30 seconds and build to 2–3 minutes.',
+      from: 10,
+    ),
+  ];
+
+  /// Day 1 of the program, or null when none is running; tests set it to see later days.
+  DateTime? programStartedOn;
+  final _ticked = <String, Set<String>>{};
+  final _energyChecks = <EnergyCheck>[];
+
+  @override
+  Future<List<GuideSummary>> guides() async {
+    await _wait();
+    return [_guide];
+  }
+
+  @override
+  Future<Guide> guide(String id) async {
+    await _wait();
+    if (id != _guide.id) throw ApiException(404, "There's no such guide.");
+    return const Guide(summary: _guide, body: _guideBody);
+  }
+
+  @override
+  Future<Program?> program() async {
+    await _wait();
+    return _programView();
+  }
+
+  @override
+  Future<Program> startProgram(String guideId) async {
+    await _wait();
+    final now = DateTime.now();
+    programStartedOn = DateTime(now.year, now.month, now.day);
+    _ticked.clear();
+    _energyChecks.clear();
+    return _programView()!;
+  }
+
+  @override
+  Future<void> stopProgram() async {
+    await _wait();
+    programStartedOn = null;
+  }
+
+  @override
+  Future<Program> tickProgramRule(String ruleId, {required bool done}) async {
+    await _wait();
+    final today = _ticked.putIfAbsent(isoDate(DateTime.now()), () => {});
+    done ? today.add(ruleId) : today.remove(ruleId);
+    return _programView()!;
+  }
+
+  @override
+  Future<Program> saveEnergyCheck(List<int> answers) async {
+    await _wait();
+    final view = _programView()!;
+    final due = view.checkDue;
+    if (due == null) throw ApiException(400, 'No energy check is due today.');
+    final total = answers.fold(0, (a, b) => a + b);
+    _energyChecks.add(
+      EnergyCheck(
+        checkpoint: due,
+        date: isoDate(DateTime.now()),
+        answers: answers,
+        total: total,
+        band: total <= 4
+            ? EnergyBand.well
+            : total <= 9
+            ? EnergyBand.some
+            : total <= 14
+            ? EnergyBand.lots
+            : EnergyBand.doctor,
+      ),
+    );
+    return _programView()!;
+  }
+
+  Program? _programView() {
+    final start = programStartedOn;
+    if (start == null) return null;
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day).difference(start).inDays + 1;
+    if (day > 37) return null;
+    final ticked = _ticked[isoDate(now)] ?? const {};
+    final walked = _exercises.any((e) => e.kind == ExerciseKind.walk && isoDate(e.startedAt) == isoDate(now));
+    bool auto(String id) => switch (id) {
+      'daylight' => _check[EnvironmentItem.daylight] == true,
+      'walk' => walked,
+      _ => false,
+    };
+    final taken = {for (final c in _energyChecks) c.checkpoint};
+    final due = [
+      (1, 1, 3),
+      (15, 15, 18),
+      (30, 30, 37),
+    ].where((w) => !taken.contains(w.$1) && day >= w.$2 && day <= w.$3).map((w) => w.$1).firstOrNull;
+    return Program(
+      guideId: _guide.id,
+      title: _guide.title,
+      startedOn: isoDate(start),
+      day: day,
+      days: 30,
+      phase: day > 30
+          ? ProgramPhase.finished
+          : day > 7
+          ? ProgramPhase.build
+          : ProgramPhase.reset,
+      rules: [
+        if (day <= 30)
+          for (final r in _rules.where((r) => r.from <= day))
+            ProgramRule(
+              id: r.id,
+              label: r.label,
+              detail: r.detail,
+              done: auto(r.id) || ticked.contains(r.id),
+              auto: auto(r.id),
+            ),
+      ],
+      tipTitle: day == 1 ? 'Start with the energy check' : 'Daylight first thing',
+      tipDetail: day == 1
+          ? 'It’s your starting point for days 15 and 30. Then aim for the seven habits, not perfection.'
+          : 'Step outside within 30 minutes of waking, without sunglasses.',
+      checkDue: due,
+      checks: List.of(_energyChecks),
+      fullDays: 0,
+      focusFirstWeek: day > 7 ? 64 : null,
+      focusLastWeek: day > 7 ? 71 : null,
+    );
+  }
+
+  @override
+  Future<EnvironmentDay> saveWater({int? ml, bool? electrolytes}) async {
+    await _wait();
+    _waterMl = ml ?? _waterMl;
+    _electrolytes = electrolytes ?? _electrolytes;
     return _environmentDay();
   }
 
@@ -1642,6 +1904,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       takenToday: item.takenToday,
       addedOn: isoDate(added),
       profile: (purpose: purpose, onsetDays: onset, ingredients: found),
+      // The server matches the name to our brand's catalog; here any MitoProof name gets the store.
+      shopUrl: RegExp('mito ?proof', caseSensitive: false).hasMatch(item.name) ? 'https://www.mitoproof.com/' : null,
       experiment: SupplementExperiment(
         measure: measure,
         day: day,

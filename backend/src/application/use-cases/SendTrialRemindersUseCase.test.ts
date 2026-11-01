@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { FakeEmail, FixedClock, InMemorySubscriptions } from "../testing/fakes";
+import { FakeEmail, FakePushSender, FixedClock, InMemoryNotificationSettings, InMemorySubscriptions } from "../testing/fakes";
 import { SendTrialRemindersUseCase } from "./SendTrialRemindersUseCase";
 
 const now = new Date("2026-10-25T15:00:00Z");
@@ -31,5 +31,24 @@ describe("SendTrialRemindersUseCase", () => {
     expect(await new SendTrialRemindersUseCase(subs, new FakeEmail(true, new Error("down")), new FixedClock(now)).execute()).toEqual({ sent: 0, failed: 1 });
     expect(await new SendTrialRemindersUseCase(subs, new FakeEmail(false), new FixedClock(now)).execute()).toEqual({ sent: 0, failed: 0 });
     expect(await new SendTrialRemindersUseCase(subs, new FakeEmail(), new FixedClock(now)).execute()).toEqual({ sent: 1, failed: 0 });
+  });
+
+  it("pushes the same reminder to the person's phones unless they switched it off", async () => {
+    const subs = new InMemorySubscriptions();
+    await subs.save("u1", trial("2026-10-27T05:00:00Z"));
+    const settings = new InMemoryNotificationSettings();
+    await settings.saveDevice("u1", { token: "phone-1", platform: "ios" }, now);
+    const sender = new FakePushSender();
+    await new SendTrialRemindersUseCase(subs, new FakeEmail(), new FixedClock(now), { settings, sender }).execute();
+    expect(sender.sent).toEqual([
+      { token: "phone-1", message: { title: "Your free trial ends on Tuesday 27 October", body: "Staying? Nothing to do. To cancel, use your app store's subscriptions before then." } },
+    ]);
+
+    const quiet = new InMemorySubscriptions();
+    await quiet.save("u1", trial("2026-10-27T05:00:00Z"));
+    await settings.save("u1", { push: { trialEnding: false } });
+    const none = new FakePushSender();
+    await new SendTrialRemindersUseCase(quiet, new FakeEmail(), new FixedClock(now), { settings, sender: none }).execute();
+    expect(none.sent).toEqual([]);
   });
 });

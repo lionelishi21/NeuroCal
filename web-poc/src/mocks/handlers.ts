@@ -7,6 +7,8 @@ import {
   ReviewTechniqueRequest,
   ReviewDeviceRequest,
   SaveEatingOutItemRequest,
+  SaveGuideRequest,
+  type Guide,
   type CatalogFood,
   type DeviceCandidate,
   type AdminProduct,
@@ -20,6 +22,7 @@ import {
   IngestSleepRequest,
   JoinWaitlistRequest,
   LeaveWaitlistRequest,
+  EmailUnsubscribeRequest,
   UpdateAdminProductRequest,
   UpdateProfileRequest,
 } from "@neurocal/contracts";
@@ -44,6 +47,21 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
   // A few sign-ups so the admin dashboard has something to show. Newest first.
   // Eating-out items an admin typed in; starts empty, like a new deploy.
   const eatingOut: CatalogFood[] = [];
+  // A short stand-in for The Mitoproof Protocol (backend/src/infrastructure/catalog/guides.ts holds the real text).
+  const guides: Guide[] = [
+    {
+      id: "mitoproof-protocol",
+      title: "The Mitoproof Protocol",
+      subtitle: "Your 30-day cellular energy plan",
+      summary: "A 7-day reset, then a 21-day build, with an energy check on days 1, 15 and 30.",
+      brand: "ownBrand",
+      status: "draft",
+      program: true,
+      minutes: 26,
+      updatedAt: "2026-11-01T00:00:00.000Z",
+      body: "## Chapter 1: Why cellular energy matters\n\nYou've been told your fatigue is stress.\n\n### What the protocol aims for\n\n- Steadier energy through the day\n- Better sleep",
+    },
+  ];
   // Sample data for the admin Devices screen; links point at no real product page.
   const devices: DeviceCandidate[] = [
     {
@@ -313,6 +331,33 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       adminProducts[index] = next;
       return HttpResponse.json(next);
     }),
+    http.get(url("/guides"), async () => {
+      await delay(latency);
+      return HttpResponse.json({ guides: guides.map(({ body: _, updatedAt: __, ...g }) => g) });
+    }),
+    http.get(url("/guides/:id"), async ({ params }) => {
+      const guide = guides.find((g) => g.id === params.id);
+      await delay(latency);
+      return guide ? HttpResponse.json(guide) : HttpResponse.json({ code: "not_found", message: "There's no such guide." }, { status: 404 });
+    }),
+    http.put(url("/admin/guides/:id"), async ({ params, request }) => {
+      const body = SaveGuideRequest.safeParse(await request.json());
+      if (!body.success) return invalid("A guide needs a title and text.");
+      const index = guides.findIndex((g) => g.id === params.id);
+      const current = guides[index];
+      const saved: Guide = {
+        ...body.data,
+        id: String(params.id),
+        brand: current?.brand ?? "general",
+        program: current?.program ?? false,
+        minutes: Math.max(1, Math.round(body.data.body.split(/\s+/).length / 220)),
+        updatedAt: new Date().toISOString(),
+      };
+      if (index < 0) guides.push(saved);
+      else guides[index] = saved;
+      await delay(latency);
+      return HttpResponse.json(saved);
+    }),
     http.get(url("/admin/eating-out"), async () => {
       await delay(latency);
       return HttpResponse.json({ items: eatingOut });
@@ -421,6 +466,12 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
     }),
     http.post(url("/waitlist/unsubscribe"), async ({ request }) => {
       const body = LeaveWaitlistRequest.safeParse(await request.json());
+      if (!body.success) return invalid("That unsubscribe link isn't complete.");
+      await delay(latency);
+      return HttpResponse.json({ status: "unsubscribed" });
+    }),
+    http.post(url("/email/unsubscribe"), async ({ request }) => {
+      const body = EmailUnsubscribeRequest.safeParse(await request.json());
       if (!body.success) return invalid("That unsubscribe link isn't complete.");
       await delay(latency);
       return HttpResponse.json({ status: "unsubscribed" });

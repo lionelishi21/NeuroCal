@@ -818,6 +818,7 @@ class StackItem {
     this.profile,
     this.experiment,
     this.stoppedOn,
+    this.shopUrl,
   });
 
   final String id;
@@ -841,6 +842,9 @@ class StackItem {
   final SupplementProfile? profile;
   final SupplementExperiment? experiment;
 
+  /// Our brand's store page, for a reorder (only MitoProof products have one).
+  final String? shopUrl;
+
   bool get runningLow => daysLeft != null && daysLeft! <= 7;
 
   StackItem copyWith({bool? takenToday, SupplementExperiment? experiment}) => StackItem(
@@ -857,6 +861,8 @@ class StackItem {
     addedOn: addedOn,
     profile: profile,
     experiment: experiment ?? this.experiment,
+    stoppedOn: stoppedOn,
+    shopUrl: shopUrl,
   );
 
   factory StackItem.fromJson(Map<String, dynamic> j) => StackItem(
@@ -874,6 +880,7 @@ class StackItem {
     stoppedOn: j['stoppedOn'] as String?,
     profile: _profileFromJson(j['profile']),
     experiment: j['experiment'] == null ? null : SupplementExperiment.fromJson(j['experiment'] as Map<String, dynamic>),
+    shopUrl: j['shopUrl'] as String?,
   );
 }
 
@@ -1663,20 +1670,49 @@ class RecipeAnalysis {
 
 /// The daily environment check's items (`EnvironmentItems` in the contracts).
 enum EnvironmentItem {
-  daylight('Morning daylight', 'daylight'),
-  darkBedroom('Dark bedroom', 'darkBedroom'),
-  quietBedroom('Quiet bedroom', 'quietBedroom'),
-  filteredWater('Filtered water', 'filteredWater');
+  daylight(
+    'Got morning daylight',
+    'daylight',
+    'Bright light in the first hour after waking sets your body clock, so you feel alert by day and sleepy at night. Ten minutes outside is enough on most days.',
+  ),
+  darkBedroom(
+    'Slept in a dark room',
+    'darkBedroom',
+    'Light at night holds back melatonin, the hormone that brings on sleep. Blackout curtains or an eye mask help.',
+  ),
+  quietBedroom(
+    'Slept in a quiet room',
+    'quietBedroom',
+    'Noise can wake you for a moment without you remembering, breaking up deep sleep. Earplugs or white noise help.',
+  ),
+  filteredWater(
+    'Drank filtered water',
+    'filteredWater',
+    'A filter cuts contaminants some tap water carries, such as chlorine by-products and lead.',
+  );
 
-  const EnvironmentItem(this.label, this.wire);
+  const EnvironmentItem(this.label, this.wire, this.why);
 
+  /// What was done, as the tick reads.
   final String label;
   final String wire;
+
+  /// Why it matters, for the card's "Why these?" sheet.
+  final String why;
 }
 
 /// A day's environment (`EnvironmentDay` in the contracts).
 class EnvironmentDay {
-  const EnvironmentDay({this.place, this.aqi, this.category, this.check = const {}, this.signal});
+  const EnvironmentDay({
+    this.place,
+    this.aqi,
+    this.category,
+    this.check = const {},
+    this.waterMl = 0,
+    this.waterTargetMl = 2000,
+    this.electrolytes = false,
+    this.signal,
+  });
 
   /// The town air quality is measured for; null until set.
   final String? place;
@@ -1687,6 +1723,13 @@ class EnvironmentDay {
 
   /// Answered items; an item not in the map wasn't answered.
   final Map<EnvironmentItem, bool> check;
+
+  /// Water drunk today, against a target from the latest weigh-in and the day's exercise.
+  final int waterMl;
+  final int waterTargetMl;
+
+  /// Salt or electrolytes added; not scored.
+  final bool electrolytes;
   final double? signal;
 
   String get categoryLabel => switch (category) {
@@ -1701,6 +1744,7 @@ class EnvironmentDay {
 
   factory EnvironmentDay.fromJson(Map<String, dynamic> j) {
     final check = j['check'] as Map<String, dynamic>?;
+    final water = j['water'] as Map<String, dynamic>?;
     return EnvironmentDay(
       place: (j['location'] as Map<String, dynamic>?)?['place'] as String?,
       aqi: (j['air'] as Map<String, dynamic>?)?['aqi'] as int?,
@@ -1709,7 +1753,72 @@ class EnvironmentDay {
         for (final item in EnvironmentItem.values)
           if (check?[item.wire] is bool) item: check![item.wire] as bool,
       },
+      // Absent from servers older than water tracking.
+      waterMl: (water?['ml'] as num?)?.toInt() ?? 0,
+      waterTargetMl: (water?['targetMl'] as num?)?.toInt() ?? 2000,
+      electrolytes: water?['electrolytes'] == true,
       signal: (j['signal'] as num?)?.toDouble(),
+    );
+  }
+}
+
+/// A notification the server sends (`PushKind` in the contracts), in the order Settings lists them.
+enum PushKind {
+  focusScore('Morning Focus Score', 'Once last night’s sleep is in'),
+  levelUp('Level up', 'When you reach a new level'),
+  levelAtRisk('Level at risk', 'Wednesday evening, when a habit slips'),
+  goalWeight('Goal weight reached', 'By notification and email'),
+  airQuality('Unhealthy air', 'Mornings, when your town’s air is bad'),
+  newRoutine('New routines', 'When we add a routine from an expert'),
+  comeBack('After a few days away', 'Once, after 3 days'),
+  trialEnding('Trial ending', 'Two days before your free trial ends'),
+  productNews('News from our brand', 'A new MitoProof product picked for you', onByDefault: false);
+
+  const PushKind(this.label, this.when, {this.onByDefault = true});
+
+  /// Product news is promotional, so it waits to be switched on.
+  final bool onByDefault;
+
+  final String label;
+
+  /// When it comes, for Settings.
+  final String when;
+}
+
+/// Which optional notifications and emails someone gets (`NotificationSettings` in the contracts).
+class NotificationSettings {
+  const NotificationSettings({required this.weeklyReport, required this.comeBackEmail, required this.push});
+
+  /// Mondays: last week, what moved the score, one thing to try.
+  final bool weeklyReport;
+
+  /// One email after a week away.
+  final bool comeBackEmail;
+
+  /// Each server notification; a kind the server didn't mention has its default ([PushKind.onByDefault]).
+  final Map<PushKind, bool> push;
+
+  bool isOn(PushKind kind) => push[kind] ?? kind.onByDefault;
+
+  NotificationSettings copyWith({bool? weeklyReport, bool? comeBackEmail, Map<PushKind, bool>? push}) =>
+      NotificationSettings(
+        weeklyReport: weeklyReport ?? this.weeklyReport,
+        comeBackEmail: comeBackEmail ?? this.comeBackEmail,
+        push: push ?? this.push,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'weeklyReport': weeklyReport,
+    'comeBackEmail': comeBackEmail,
+    'push': {for (final e in push.entries) e.key.name: e.value},
+  };
+
+  factory NotificationSettings.fromJson(Map<String, dynamic> j) {
+    final push = j['push'] is Map ? j['push'] as Map : const {};
+    return NotificationSettings(
+      weeklyReport: j['weeklyReport'] != false,
+      comeBackEmail: j['comeBackEmail'] != false,
+      push: {for (final k in PushKind.values) k: push[k.name] is bool ? push[k.name] as bool : k.onByDefault},
     );
   }
 }
@@ -2444,6 +2553,198 @@ class WeeklyReport {
         summary: level['summary'] as String,
       ),
       next: (pillar: next['pillar'] as String, title: next['title'] as String, detail: next['detail'] as String),
+    );
+  }
+}
+
+/// A guide in the list (`GuideSummary` in the contracts): long-form reading such as The Mitoproof Protocol.
+class GuideSummary {
+  const GuideSummary({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.summary,
+    required this.ownBrand,
+    required this.draft,
+    required this.program,
+    required this.minutes,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final String summary;
+
+  /// MitoProof's, labelled "Our brand".
+  final bool ownBrand;
+
+  /// Not yet reviewed: only admins see it.
+  final bool draft;
+
+  /// Has a day-by-day program to start.
+  final bool program;
+  final int minutes;
+
+  factory GuideSummary.fromJson(Map<String, dynamic> j) => GuideSummary(
+    id: j['id'] as String,
+    title: j['title'] as String,
+    subtitle: j['subtitle'] as String? ?? '',
+    summary: j['summary'] as String? ?? '',
+    ownBrand: j['brand'] == 'ownBrand',
+    draft: j['status'] == 'draft',
+    program: j['program'] == true,
+    minutes: (j['minutes'] as num?)?.toInt() ?? 1,
+  );
+}
+
+/// A whole guide (`Guide`); [body] is markdown: ## and ### headings, paragraphs, "- " lists, pipe
+/// tables, **bold** and _italic_.
+class Guide {
+  const Guide({required this.summary, required this.body});
+
+  final GuideSummary summary;
+  final String body;
+
+  factory Guide.fromJson(Map<String, dynamic> j) => Guide(summary: GuideSummary.fromJson(j), body: j['body'] as String);
+}
+
+/// One of the day's program habits (`ProgramRule`).
+class ProgramRule {
+  const ProgramRule({
+    required this.id,
+    required this.label,
+    required this.detail,
+    required this.done,
+    required this.auto,
+  });
+
+  final String id;
+  final String label;
+  final String detail;
+  final bool done;
+
+  /// Ticked from what's logged, so it can't be unticked by hand.
+  final bool auto;
+
+  factory ProgramRule.fromJson(Map<String, dynamic> j) => ProgramRule(
+    id: j['id'] as String,
+    label: j['label'] as String,
+    detail: j['detail'] as String? ?? '',
+    done: j['done'] == true,
+    auto: j['auto'] == true,
+  );
+}
+
+/// How an energy check total reads (the guide's chapter 3).
+enum EnergyBand {
+  well('You’re doing well'),
+  some('Some room to improve'),
+  lots('A lot of room to improve'),
+  doctor('See your doctor');
+
+  const EnergyBand(this.label);
+  final String label;
+
+  static EnergyBand fromWire(Object? v) => values.firstWhere((b) => b.name == v, orElse: () => EnergyBand.some);
+}
+
+/// An energy check taken on day 1, 15 or 30 (`EnergyCheckResult`).
+class EnergyCheck {
+  const EnergyCheck({
+    required this.checkpoint,
+    required this.date,
+    required this.answers,
+    required this.total,
+    required this.band,
+  });
+
+  final int checkpoint;
+  final String date;
+  final List<int> answers;
+
+  /// 0 (best) to 20.
+  final int total;
+  final EnergyBand band;
+
+  factory EnergyCheck.fromJson(Map<String, dynamic> j) => EnergyCheck(
+    checkpoint: (j['checkpoint'] as num).toInt(),
+    date: j['date'] as String,
+    answers: [for (final a in j['answers'] as List) (a as num).toInt()],
+    total: (j['total'] as num).toInt(),
+    band: EnergyBand.fromWire(j['band']),
+  );
+}
+
+enum ProgramPhase {
+  reset('The 7-day reset'),
+  build('The 21-day build'),
+  finished('Finished');
+
+  const ProgramPhase(this.label);
+  final String label;
+
+  static ProgramPhase fromWire(Object? v) => values.firstWhere((p) => p.name == v, orElse: () => ProgramPhase.reset);
+}
+
+/// The program in progress (`ProgramView`).
+class Program {
+  const Program({
+    required this.guideId,
+    required this.title,
+    required this.startedOn,
+    required this.day,
+    required this.days,
+    required this.phase,
+    required this.rules,
+    required this.tipTitle,
+    required this.tipDetail,
+    required this.checkDue,
+    required this.checks,
+    required this.fullDays,
+    required this.focusFirstWeek,
+    required this.focusLastWeek,
+  });
+
+  final String guideId;
+  final String title;
+  final String startedOn;
+
+  /// From 1; past [days] it's finished.
+  final int day;
+  final int days;
+  final ProgramPhase phase;
+  final List<ProgramRule> rules;
+  final String tipTitle;
+  final String tipDetail;
+
+  /// The energy check to take now (1, 15 or 30), if one is due.
+  final int? checkDue;
+  final List<EnergyCheck> checks;
+  final int fullDays;
+  final int? focusFirstWeek;
+  final int? focusLastWeek;
+
+  bool get finished => phase == ProgramPhase.finished;
+  int get doneToday => rules.where((r) => r.done).length;
+
+  factory Program.fromJson(Map<String, dynamic> j) {
+    final tip = j['tip'] as Map<String, dynamic>;
+    final focus = j['focusScore'] as Map<String, dynamic>? ?? const {};
+    return Program(
+      guideId: j['guideId'] as String,
+      title: j['title'] as String,
+      startedOn: j['startedOn'] as String,
+      day: (j['day'] as num).toInt(),
+      days: (j['days'] as num).toInt(),
+      phase: ProgramPhase.fromWire(j['phase']),
+      rules: [for (final r in j['rules'] as List) ProgramRule.fromJson(r as Map<String, dynamic>)],
+      tipTitle: tip['title'] as String,
+      tipDetail: tip['detail'] as String,
+      checkDue: (j['checkDue'] as num?)?.toInt(),
+      checks: [for (final c in j['checks'] as List) EnergyCheck.fromJson(c as Map<String, dynamic>)],
+      fullDays: (j['fullDays'] as num).toInt(),
+      focusFirstWeek: (focus['firstWeek'] as num?)?.round(),
+      focusLastWeek: (focus['lastWeek'] as num?)?.round(),
     );
   }
 }
