@@ -4,14 +4,14 @@ import { Match, Template } from "aws-cdk-lib/assertions";
 import { NeuroCalStack } from "./NeuroCalStack";
 
 /** Skip esbuild bundling in tests; `npm run synth` exercises it. */
-const synth = (stage: string) => {
+const synth = (stage: string, extra: { website?: boolean } = {}) => {
   const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
-  const stack = new NeuroCalStack(app, `NeuroCal-${stage}`, { stage, webOrigins: ["https://app.example.com"] });
+  const stack = new NeuroCalStack(app, `NeuroCal-${stage}`, { stage, webOrigins: ["https://app.example.com"], ...extra });
   return Template.fromStack(stack);
 };
 
 describe("NeuroCalStack", () => {
-  const dev = synth("dev");
+  const dev = synth("dev", { website: true });
   const prod = synth("prod");
 
   it("runs Aurora PostgreSQL Serverless v2, encrypted and off the internet", () => {
@@ -115,8 +115,27 @@ describe("NeuroCalStack", () => {
       Targets: [Match.objectLike({ Input: JSON.stringify({ job: "notifications" }) })],
     });
     dev.hasResourceProperties("AWS::ApiGatewayV2::Api", {
-      CorsConfiguration: Match.objectLike({ AllowOrigins: ["https://app.example.com"] }),
+      CorsConfiguration: Match.objectLike({ AllowOrigins: Match.arrayWith(["https://app.example.com"]) }),
     });
+  });
+
+  it("serves the website from a private bucket through CloudFront, which may call the API and is linked from emails", () => {
+    dev.hasResourceProperties("AWS::CloudFront::Distribution", {
+      DistributionConfig: Match.objectLike({
+        DefaultRootObject: "index.html",
+        DefaultCacheBehavior: Match.objectLike({ ViewerProtocolPolicy: "redirect-to-https" }),
+      }),
+    });
+    dev.hasResourceProperties("AWS::CloudFront::OriginAccessControl", Match.anyValue());
+    const site = Object.entries(dev.findResources("AWS::S3::Bucket")).find(([id]) => id.startsWith("WebSite"))![1];
+    expect(site.Properties.PublicAccessBlockConfiguration).toMatchObject({ BlockPublicAcls: true, RestrictPublicBuckets: true });
+    const cors = JSON.stringify(Object.values(dev.findResources("AWS::ApiGatewayV2::Api"))[0]!.Properties.CorsConfiguration.AllowOrigins);
+    expect(cors).toContain("https://app.example.com");
+    expect(cors).toContain("WebSiteDistribution");
+    const apiEnv = Object.values(dev.findResources("AWS::Lambda::Function")).find((f) => JSON.stringify(f).includes("PHOTO_BUCKET"))!.Properties.Environment.Variables;
+    expect(JSON.stringify(apiEnv.WEB_URL)).toContain("WebSiteDistribution");
+    // Off unless asked: a new AWS account can't create CloudFront distributions until verified.
+    prod.resourceCountIs("AWS::CloudFront::Distribution", 0);
   });
 
   it("keeps meal photos private, TLS-only and expiring after 30 days", () => {

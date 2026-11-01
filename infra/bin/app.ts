@@ -20,6 +20,10 @@ new NeuroCalStack(app, `NeuroCal-${stage}`, {
   ...(app.node.tryGetContext("dbProxy") === undefined ? {} : { dbProxy: String(app.node.tryGetContext("dbProxy")) === "true" }),
   // -c alarmEmail=you@example.com: email alarms for API errors and throttling.
   ...(app.node.tryGetContext("alarmEmail") ? { alarmEmail: String(app.node.tryGetContext("alarmEmail")) } : {}),
+  // -c website=true hosts the website (S3 + CloudFront); needs an AWS account verified for CloudFront.
+  website: String(app.node.tryGetContext("website")) === "true",
+  // -c webUrl=https://neurocal.ai once the domain points at the website; unset, emails link to its CloudFront address.
+  ...(app.node.tryGetContext("webUrl") ? { webUrl: String(app.node.tryGetContext("webUrl")) } : {}),
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
   tags: { project: "neurocal", stage },
 });

@@ -89,6 +89,21 @@ npm run dev
 
 The API only accepts calls from the origins in `webOrigins`, so deploy with the web app's origin (for example `http://localhost:3000`). The client only allows SRP sign-in, which is what Amplify Auth (web) and the mobile SDKs use.
 
+## Website
+
+The website (landing page and admin) is `web-poc` built as plain files and served from a private S3 bucket through CloudFront. Its address is added to the API's allowed origins, and emails link to it (`WEB_URL`) unless `-c webUrl=https://neurocal.ai` says otherwise.
+
+1. **Once:** a new AWS account can't create CloudFront distributions until AWS Support verifies it. Open a support case (Account and billing) quoting "Your account must be verified before you can add new CloudFront resources".
+2. **Deploy the stack with the website** (add `"website": "true"` to `cdk.json`'s context to keep it on):
+   ```sh
+   npm run deploy -- -c stage=dev -c website=true
+   ```
+3. **Upload the site** after every web change (it reads the API address and Cognito ids from the stack's outputs):
+   ```sh
+   AWS_PROFILE=<profile> infra/scripts/deploy-web.sh dev
+   ```
+   It prints the address (`WebSiteUrl`, a `*.cloudfront.net` address until a domain points at it).
+
 ## What it costs (rough, us-east-1)
 
 | Item | Dev | Prod |
@@ -98,7 +113,7 @@ The API only accepts calls from the origins in `webOrigins`, so deploy with the 
 | CloudWatch alarms (with `alarmEmail`) | $0.10 per alarm per month | same |
 | Aurora Serverless v2 | ≥ 0.5 ACU always on, ~$45/month + storage (`warmDatabase` in `cdk.json`); with `-c warmDatabase=false`, storage only while paused and ~15 s to wake | ≥ 0.5 ACU always on, ~$45/month + storage |
 | Secrets Manager | 2 × $0.40/month | same |
-| Lambda, API Gateway, S3, Cognito | pennies at POC traffic | usage-based |
+| Lambda, API Gateway, S3, Cognito, CloudFront | pennies at POC traffic | usage-based |
 
 `npx cdk destroy -c stage=dev` removes a dev stage completely. Prod keeps a database snapshot and retains the secret, user pool and bucket.
 

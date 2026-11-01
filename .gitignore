@@ -14,3 +14,6 @@ next-env.d.ts
 
 # Reference photos dropped into the design files; personal, not part of the design system.
 design_system/**/uploads/
+
+# Static website build (infra/scripts/deploy-web.sh).
+web-poc/out/

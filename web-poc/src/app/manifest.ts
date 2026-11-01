@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-static";
+
 /** Makes the web app installable. Colours are the dark `mist` token, as in the viewport themeColor. */
 export default function manifest(): MetadataRoute.Manifest {
   return {

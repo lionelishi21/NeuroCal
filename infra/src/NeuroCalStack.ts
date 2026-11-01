@@ -5,6 +5,8 @@ import { CfnOutput, type CfnResource, Duration, RemovalPolicy, SecretValue, Stac
 import { CfnStage, CorsHttpMethod, HttpApi, HttpMethod, HttpNoneAuthorizer } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpUserPoolAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
+import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cwActions from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -40,6 +42,16 @@ export interface NeuroCalStackProps extends StackProps {
   dbProxy?: boolean;
   /** Email for alarms (API errors, throttling, Lambda errors). No alarms when unset. */
   alarmEmail?: string;
+  /**
+   * The website's address, for links in emails (unsubscribe, the weekly report). Unset, it's the
+   * stack's own CloudFront address, until a domain such as https://neurocal.ai points at it.
+   */
+  webUrl?: string;
+  /**
+   * Host the website on S3 + CloudFront. Off until the AWS account may create CloudFront
+   * distributions (new accounts need AWS Support to verify them first).
+   */
+  website?: boolean;
 }
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -95,13 +107,18 @@ export class NeuroCalStack extends Stack {
       removalPolicy: retain,
     });
 
+    // The website, once switched on (props.website).
+    const site = props.website ? webSite(this, props.stage) : undefined;
+    const webOrigins = site ? [...props.webOrigins, site.url] : props.webOrigins;
+    const webUrl = props.webUrl ?? site?.url;
+
     // Meal photos (presigned upload, ARCHITECTURE §9): private, TLS-only, expire after 30 days (§4).
     const photos = new s3.Bucket(this, "MealPhotos", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.KMS_MANAGED,
       enforceSSL: true,
       lifecycleRules: [{ expiration: Duration.days(30), abortIncompleteMultipartUploadAfter: Duration.days(1) }],
-      cors: [{ allowedMethods: [s3.HttpMethods.PUT], allowedOrigins: props.webOrigins, allowedHeaders: ["*"], maxAge: 3600 }],
+      cors: [{ allowedMethods: [s3.HttpMethods.PUT], allowedOrigins: webOrigins, allowedHeaders: ["*"], maxAge: 3600 }],
       removalPolicy: retain,
       autoDeleteObjects: !prod,
     });
@@ -142,6 +159,7 @@ export class NeuroCalStack extends Stack {
         depsLockFilePath: path.join(REPO_ROOT, "package-lock.json"),
         environment: {
           STAGE: props.stage,
+          ...(webUrl ? { WEB_URL: webUrl } : {}),
           APP_SECRET_ARN: appSecret.secretArn,
           DB_SECRET_ARN: database.secret!.secretArn,
           // Trust the RDS CA for sslmode=verify-full.
@@ -266,7 +284,7 @@ export class NeuroCalStack extends Stack {
       defaultIntegration: new HttpLambdaIntegration("ApiIntegration", api),
       defaultAuthorizer: new HttpUserPoolAuthorizer("CognitoAuthorizer", userPool, { userPoolClients: [webClient] }),
       corsPreflight: {
-        allowOrigins: props.webOrigins,
+        allowOrigins: webOrigins,
         allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST, CorsHttpMethod.PUT, CorsHttpMethod.DELETE],
         allowHeaders: ["authorization", "content-type"],
         maxAge: Duration.hours(1),
@@ -326,6 +344,11 @@ export class NeuroCalStack extends Stack {
     new CfnOutput(this, "AppSecretArn", { value: appSecret.secretArn, description: "Put the API keys here" });
     new CfnOutput(this, "CatalogSyncFunctionName", { value: catalogSync.functionName, description: "Invoke after catalog changes" });
     new CfnOutput(this, "MealPhotoBucketName", { value: photos.bucketName });
+    if (site) {
+      new CfnOutput(this, "WebSiteUrl", { value: site.url, description: "The website" });
+      new CfnOutput(this, "WebSiteBucketName", { value: site.bucket.bucketName });
+      new CfnOutput(this, "WebSiteDistributionId", { value: site.distribution.distributionId });
+    }
     if (proxy) new CfnOutput(this, "DatabaseProxyEndpoint", { value: proxy.endpoint });
 
     // Alarms, emailed: the API failing or being throttled, and Lambda errors. Confirm the subscription email AWS sends.
@@ -353,4 +376,45 @@ export class NeuroCalStack extends Stack {
       new CfnOutput(this, "AlarmTopicArn", { value: topic.topicArn });
     }
   }
+}
+
+/**
+ * The website (web-poc as a static export, uploaded by infra/scripts/deploy-web.sh): a private
+ * bucket behind CloudFront. Its address may call the API like the other web origins.
+ */
+function webSite(scope: Construct, stage: string) {
+  const siteBucket = new s3.Bucket(scope, "WebSite", {
+    blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    encryption: s3.BucketEncryption.S3_MANAGED,
+    enforceSSL: true,
+    removalPolicy: RemovalPolicy.DESTROY,
+    autoDeleteObjects: true,
+  });
+  // Next writes each page as <route>/index.html; S3 only knows exact keys, so /admin/guides → /admin/guides/index.html.
+  const rewrite = new cloudfront.Function(scope, "WebSiteRewrite", {
+    runtime: cloudfront.FunctionRuntime.JS_2_0,
+    code: cloudfront.FunctionCode.fromInline(
+      `function handler(event) {
+  var r = event.request;
+  if (r.uri.endsWith("/")) r.uri += "index.html";
+  else if (!r.uri.split("/").pop().includes(".")) r.uri += "/index.html";
+  return r;
+}`,
+    ),
+  });
+  const site = new cloudfront.Distribution(scope, "WebSiteDistribution", {
+    comment: `NeuroCal ${stage} website`,
+    defaultRootObject: "index.html",
+    defaultBehavior: {
+      origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
+      viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+      responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+      functionAssociations: [{ function: rewrite, eventType: cloudfront.FunctionEventType.VIEWER_REQUEST }],
+    },
+    // Without s3:ListBucket a missing key answers 403; both show the site's own 404 page.
+    errorResponses: [403, 404].map((httpStatus) => ({ httpStatus, responseHttpStatus: 404, responsePagePath: "/404.html", ttl: Duration.minutes(1) })),
+    priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+  });
+  return { bucket: siteBucket, distribution: site, url: `https://${site.distributionDomainName}` };
 }
