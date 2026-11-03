@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
+import '../health/sleep_sync.dart' show SleepAccess;
 import '../onboarding/bio_profile.dart';
 import '../onboarding/starting_score.dart';
 import '../plan/three_weeks.dart' show challengeKey;
@@ -14,9 +15,6 @@ import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
 import 'brain_check.dart';
 import 'first_meal.dart';
-
-/// Devices that will feed sleep and activity in automatically. Not connected yet: shown so people know it is coming.
-const _devices = [('Oura', 'Ring'), ('Whoop', 'Strap'), ('Apple Health', 'iPhone and Watch')];
 
 Duration _motion(BuildContext context, Duration duration) =>
     MediaQuery.disableAnimationsOf(context) ? Duration.zero : duration;
@@ -116,6 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             maxWaitMs: 3000,
             note:
                 'One last step: see how sharp you are right now. Your score goes into your starting point. '
+                'Find a quiet spot and turn notifications off first: interruptions lower your result. '
                 "It's a self-check, not a medical test.",
             skipLabel: 'Skip for now',
             doneLabel: 'See my starting point',
@@ -327,7 +326,6 @@ class _Identity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -340,60 +338,57 @@ class _Identity extends StatelessWidget {
           onSubmitted: (_) => onSubmitted(),
         ),
         const SizedBox(height: Space.s5),
+        const _ConnectSleep(),
+      ],
+    );
+  }
+}
+
+/// Sleep from the phone's health store (where Oura, Whoop, Garmin and watches sync), when there is one.
+class _ConnectSleep extends StatelessWidget {
+  const _ConnectSleep();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final scope = AppScope.of(context);
+    final sync = scope.sleepSync;
+    if (sync == null || !sync.available) {
+      return Text(
+        'You log sleep by hand on the Today screen.',
+        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: Space.s2,
+      children: [
         const Text(
-          'Connect your hardware',
+          'Connect your sleep',
           style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: Space.s2),
-        for (final (device, detail) in _devices)
-          Container(
-            margin: const EdgeInsets.only(bottom: Space.s2),
-            constraints: const BoxConstraints(minHeight: 64),
-            padding: const EdgeInsets.fromLTRB(Space.s3, Space.s2, Space.s4, Space.s2),
+        ListenableBuilder(
+          listenable: sync,
+          builder: (context, _) => Container(
             decoration: BoxDecoration(
               color: c.paper,
               borderRadius: BorderRadius.circular(Radii.control),
               border: Border.all(color: c.rule),
             ),
-            child: Row(
-              children: [
-                ExcludeSemantics(
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: c.track, borderRadius: BorderRadius.circular(Space.s3)),
-                    child: Text(
-                      device[0],
-                      style: const TextStyle(fontSize: TextSize.base, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: Space.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        device,
-                        style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        detail,
-                        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  'Coming soon',
-                  style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkFaint),
-                ),
-              ],
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.fromLTRB(Space.s4, Space.s1, Space.s3, Space.s1),
+              title: Text('Sleep from ${sync.source.name}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Oura, Whoop, Garmin and watches sync through it'),
+              value: sync.access == SleepAccess.connected,
+              onChanged: (on) async {
+                if (!on) return sync.disconnect();
+                if (await sync.connect(scope.api) != null) scope.analytics.track('sleep_connected');
+              },
             ),
           ),
+        ),
         Text(
-          'Until devices connect, you log sleep by hand on the Today screen.',
+          'Last night logs itself when you open the app. You can change this in Settings.',
           style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
         ),
       ],

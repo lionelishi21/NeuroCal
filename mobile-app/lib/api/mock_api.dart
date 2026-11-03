@@ -1618,6 +1618,16 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
   @override
   Future<FoodScan> scanBarcode(String code) async {
     await Future.delayed(latency * 2);
+    // Known by name only: many Open Food Facts entries have no label data.
+    if (code == '7613035935167') {
+      return const FoodScan(
+        brand: 'Nestlé',
+        productName: 'Nestum',
+        ingredients: [],
+        fromDatabase: true,
+        processing: FoodProcessing.whole,
+      );
+    }
     if (code == '0850000000017') {
       return const FoodScan(
         brand: 'Morning Roast',
@@ -2250,7 +2260,7 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
           detail: 'A few all-out minutes lift your fitness ceiling (VO2max).',
           progress: 0,
           target: 1,
-          unit: 'sessions',
+          unit: 'session',
           done: false,
           skipped: noHard ? 'Left out for your health. Ask your clinician what intensity suits you.' : null,
         ),

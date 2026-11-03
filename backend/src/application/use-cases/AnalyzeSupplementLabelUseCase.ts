@@ -61,7 +61,7 @@ export class AnalyzeSupplementLabelUseCase {
       reading = await this.reader.readLabel(photos);
     } catch (error) {
       if (error instanceof DomainError) throw error;
-      throw new UpstreamError("The label couldn't be read right now. Try again in a moment.");
+      throw new UpstreamError("The label couldn't be read right now. Try again in a moment.", { cause: error });
     }
 
     const analysis: SupplementLabelAnalysis = { reading, summary: summaryFor(reading), flags: flagsFor(reading, this.clock.now()) };

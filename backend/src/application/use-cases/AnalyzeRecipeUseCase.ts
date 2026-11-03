@@ -23,7 +23,7 @@ export class AnalyzeRecipeUseCase {
     } catch (error) {
       if (error instanceof DomainError) throw error;
       console.error(JSON.stringify({ event: "recipe_parse_failed", error: String(error).slice(0, 300) }));
-      throw new UpstreamError("The recipe couldn't be read right now. Try again in a moment.");
+      throw new UpstreamError("The recipe couldn't be read right now. Try again in a moment.", { cause: error });
     }
     if (parsed.problem || parsed.ingredients.length === 0) return { problem: "not_a_recipe" };
     return recipeNutrition({ title: parsed.title, servings: input.servings ?? parsed.servings ?? 1, ingredients: parsed.ingredients }, this.foods);

@@ -188,9 +188,10 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       );
     case Capture.foodPackage:
       // "Log it" opens Log a meal with its serving filled in.
-      final item = await showFoodScanSheet(context);
-      if (item == null || !context.mounted) return;
-      await done(await showLogMealSheet(context, initialItems: [item]), 'Meal logged');
+      String? byHand;
+      final item = await showFoodScanSheet(context, onLogByHand: (name) => byHand = name);
+      if ((item == null && byHand == null) || !context.mounted) return;
+      await done(await showLogMealSheet(context, initialItems: [?item], draftName: byHand), 'Meal logged');
     case Capture.recipe:
       await Navigator.of(context).push(
         MaterialPageRoute<void>(

@@ -15,7 +15,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'supplement_test.dart' show FakeLabelCamera, back, front, side;
 
 /// Opens the sheet; the logged item, if any, lands in [logged].
-Future<List<FoodItem?>> pumpFoodScan(WidgetTester tester, FakeLabelCamera camera) async {
+Future<List<FoodItem?>> pumpFoodScan(
+  WidgetTester tester,
+  FakeLabelCamera camera, {
+  ValueChanged<String>? onLogByHand,
+}) async {
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -34,7 +38,8 @@ Future<List<FoodItem?>> pumpFoodScan(WidgetTester tester, FakeLabelCamera camera
         home: Scaffold(
           body: Builder(
             builder: (context) => TextButton(
-              onPressed: () async => logged.add(await showFoodScanSheet(context, camera: () => camera)),
+              onPressed: () async =>
+                  logged.add(await showFoodScanSheet(context, camera: () => camera, onLogByHand: onLogByHand)),
               child: const Text('Open'),
             ),
           ),
@@ -56,6 +61,27 @@ Future<void> scanOnce(WidgetTester tester, String button) async {
 }
 
 void main() {
+  testWidgets('a product with no nutrition facts can still be logged by hand, and isn\'t called whole', (tester) async {
+    String? byHand;
+    final logged = await pumpFoodScan(
+      tester,
+      FakeLabelCamera([front], barcodes: ['7613035935167']),
+      onLogByHand: (name) => byHand = name,
+    );
+    await scanOnce(tester, 'Start scanning');
+
+    expect(find.text('Nestlé Nestum'), findsOneWidget);
+    expect(find.text('Whole food'), findsNothing);
+    expect(find.textContaining('nothing industrial'), findsNothing);
+    expect(find.textContaining('No nutrition facts for this one yet.', findRichText: true), findsOneWidget);
+    final logByHand = find.text('Log it by hand');
+    await tester.scrollUntilVisible(logByHand, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(logByHand);
+    await tester.pumpAndSettle();
+    expect(byHand, 'Nestlé Nestum');
+    expect(logged.single, isNull);
+  });
+
   testWidgets('a known barcode ends the scan at once and the serving can be logged', (tester) async {
     final logged = await pumpFoodScan(tester, FakeLabelCamera([front], barcodes: ['0123456789012']));
     await scanOnce(tester, 'Start scanning');

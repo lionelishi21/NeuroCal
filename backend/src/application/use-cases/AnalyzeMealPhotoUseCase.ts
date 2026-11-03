@@ -30,7 +30,7 @@ export class AnalyzeMealPhotoUseCase {
       return await this.vision.analyzeMealPhoto(photo);
     } catch (error) {
       if (error instanceof DomainError) throw error;
-      throw new UpstreamError("The photo couldn't be analyzed right now. Try again in a moment.");
+      throw new UpstreamError("The photo couldn't be analyzed right now. Try again in a moment.", { cause: error });
     }
   }
 }

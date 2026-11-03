@@ -173,7 +173,7 @@ import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendR
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import type { IErrorReporter } from "../application/interfaces/IErrorReporter";
-import { DomainError } from "../domain/errors";
+import { DomainError, UpstreamError } from "../domain/errors";
 import { storeEventFrom } from "../infrastructure/billing/RevenueCat";
 import { routeOf } from "../infrastructure/monitoring/SentryErrorReporter";
 import { imageTypeOf } from "../domain/photo";
@@ -1132,6 +1132,10 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       return await route[2](req, route[1].exec(path)!.slice(1));
     } catch (e) {
       if (e instanceof BadRequest) return error(400, "invalid_request", e.message);
+      if (e instanceof UpstreamError) {
+        // A model or service failed (out of credits, rate-limited, down): people see a short message, the logs say why.
+        console.error(JSON.stringify({ event: "upstream_failed", path, method: req.method, error: String(e.cause ?? e.message).slice(0, 300) }));
+      }
       if (e instanceof DomainError) return error(STATUS[e.code] ?? 500, e.code, e.message);
       console.error(JSON.stringify({ event: "unhandled_error", path, method: req.method, error: String(e) }));
       await errors?.report(e, { source: "api", method: req.method, route: routeOf(path) });

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../api/api.dart' show ApiException;
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../theme/tokens.dart';
@@ -15,12 +16,14 @@ import '../theme/theme.dart' show fontFamily;
 /// before logging. Items can also be typed in, with or without a photo. Returns true when logged.
 /// [onScanSupplement] offers a supplement label scan instead; the sheet closes first.
 /// [initialItems] start the meal already filled in (a food chosen while browsing).
+/// [draftName] opens the by-hand form with the food's name typed in (a scanned food with no nutrition).
 Future<bool?> showLogMealSheet(
   BuildContext context, {
   ImagePicker? picker,
   VoidCallback? onScanSupplement,
   VoidCallback? onScanFood,
   List<FoodItem> initialItems = const [],
+  String? draftName,
 }) => showAppSheet<bool>(
   context,
   title: 'Log a meal',
@@ -29,6 +32,7 @@ Future<bool?> showLogMealSheet(
     onScanSupplement: onScanSupplement,
     onScanFood: onScanFood,
     initialItems: initialItems,
+    draftName: draftName,
   ),
 );
 
@@ -71,6 +75,18 @@ const _Problem _unread = (
   fix: 'Check your connection and choose it again.',
   preview: false,
 );
+const _Problem _readingDown = (
+  title: "Photo reading isn't working right now",
+  fix: 'Add what you ate from foods or by hand below. The meal logs the same way.',
+  preview: false,
+);
+
+/// What to show when reading the photo failed: the reader being down isn't a connection problem.
+_Problem _readFailed(Object error) => switch (error) {
+  ApiException(code: 'upstream_failed') => _readingDown,
+  ApiException(:final message) => (title: "We couldn't read this photo", fix: message, preview: false),
+  _ => _unread,
+};
 
 const _glText = {
   GlycemicLoad.low: 'Low glycemic load',
@@ -88,7 +104,13 @@ class _Draft {
 }
 
 class _LogMeal extends StatefulWidget {
-  const _LogMeal({required this.picker, this.onScanSupplement, this.onScanFood, this.initialItems = const []});
+  const _LogMeal({
+    required this.picker,
+    this.onScanSupplement,
+    this.onScanFood,
+    this.initialItems = const [],
+    this.draftName,
+  });
 
   final ImagePicker picker;
   final VoidCallback? onScanSupplement;
@@ -96,6 +118,7 @@ class _LogMeal extends StatefulWidget {
   /// Offers a food package scan (barcode or label) instead; the sheet closes first.
   final VoidCallback? onScanFood;
   final List<FoodItem> initialItems;
+  final String? draftName;
 
   @override
   State<_LogMeal> createState() => _LogMealState();
@@ -121,7 +144,8 @@ class _LogMealState extends State<_LogMeal> {
   void initState() {
     super.initState();
     _items.addAll([for (final item in widget.initialItems) _Draft(item, manual: true)]);
-    _byHand = _items.isNotEmpty;
+    _byHand = _items.isNotEmpty || widget.draftName != null;
+    _formOpen = widget.draftName != null;
   }
 
   /// Adds a food from the catalog, then shows the items.
@@ -163,8 +187,8 @@ class _LogMealState extends State<_LogMeal> {
         _items.insertAll(0, [for (final item in result.items) _Draft(item)]);
         _problem = result.problem == null ? null : _problems[result.problem];
       });
-    } catch (_) {
-      if (mounted) setState(() => _problem = _unread);
+    } catch (error) {
+      if (mounted) setState(() => _problem = _readFailed(error));
     } finally {
       if (mounted) setState(() => _reading = false);
     }
@@ -431,6 +455,7 @@ class _LogMealState extends State<_LogMeal> {
         ],
         if (_formOpen)
           _ManualForm(
+            initialName: widget.draftName,
             onAdd: (item) => setState(() {
               _items.add(_Draft(item, manual: true));
               _formOpen = false;
@@ -707,9 +732,10 @@ class _ItemRow extends StatelessWidget {
 
 /// For food without a photo, or what the photo missed. Macros are optional and count as 0 when left empty.
 class _ManualForm extends StatefulWidget {
-  const _ManualForm({required this.onAdd, required this.onCancel});
+  const _ManualForm({required this.onAdd, required this.onCancel, this.initialName});
 
   final ValueChanged<FoodItem> onAdd;
+  final String? initialName;
   final VoidCallback onCancel;
 
   @override
@@ -717,7 +743,7 @@ class _ManualForm extends StatefulWidget {
 }
 
 class _ManualFormState extends State<_ManualForm> {
-  final _food = TextEditingController();
+  late final _food = TextEditingController(text: widget.initialName);
   final _portion = TextEditingController();
   final _kcal = TextEditingController();
   final _protein = TextEditingController();

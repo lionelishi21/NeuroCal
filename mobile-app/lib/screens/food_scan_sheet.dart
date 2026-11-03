@@ -20,12 +20,19 @@ import 'pantry.dart' show RecipeCard;
 /// Scan a packaged food: the barcode first (a product database lookup), else the label (the AI reads
 /// it). Shows how processed it is and what's worth knowing, and for a processed food, a better choice:
 /// a cleaner one to buy and a homemade one from the pantry. Returns one serving to log, or null.
-Future<FoodItem?> showFoodScanSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
-    showAppSheet<FoodItem>(
-      context,
-      title: 'Scan a food package',
-      builder: (_) => _FoodScan(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new),
-    );
+/// When the product has no nutrition facts, [onLogByHand] (if given) gets its name after the sheet closes,
+/// so it can still be logged with the numbers typed in.
+Future<FoodItem?> showFoodScanSheet(
+  BuildContext context, {
+  ImagePicker? picker,
+  LabelCamera Function()? camera,
+  ValueChanged<String>? onLogByHand,
+}) => showAppSheet<FoodItem>(
+  context,
+  title: 'Scan a food package',
+  builder: (_) =>
+      _FoodScan(picker: picker ?? ImagePicker(), camera: camera ?? DeviceLabelCamera.new, onLogByHand: onLogByHand),
+);
 
 const _flagLeads = <String, String>{
   'ultra_processed': 'Ultra-processed.',
@@ -36,7 +43,9 @@ const _flagLeads = <String, String>{
 };
 
 class _FoodScan extends StatefulWidget {
-  const _FoodScan({required this.picker, required this.camera});
+  const _FoodScan({required this.picker, required this.camera, this.onLogByHand});
+
+  final ValueChanged<String>? onLogByHand;
 
   final ImagePicker picker;
   final LabelCamera Function() camera;
@@ -191,6 +200,8 @@ class _FoodScanState extends State<_FoodScan> {
 
   Widget _resultStep(BuildContext context, FoodScan scan) {
     final c = context.colors;
+    // No ingredient list means we can't tell how processed it is: don't call it whole.
+    final unknown = scan.ingredients.isEmpty && scan.processing == FoodProcessing.whole;
     final (badgeFill, badgeInk) = switch (scan.processing) {
       FoodProcessing.whole => (c.chlorophyll, c.onAccent),
       FoodProcessing.processed => (c.glucoseSoft, c.glucoseInk),
@@ -232,7 +243,7 @@ class _FoodScanState extends State<_FoodScan> {
               spacing: 6,
               runSpacing: 6,
               children: [
-                Tag(scan.processing.label, fill: badgeFill, ink: badgeInk),
+                if (!unknown) Tag(scan.processing.label, fill: badgeFill, ink: badgeInk),
                 if (scan.servingSize != null) Tag('Per ${scan.servingSize}', fill: c.mist, ink: c.inkSoft),
                 if (scan.producedOn != null) Tag('Made on ${scan.producedOn}', fill: c.mist, ink: c.inkSoft),
                 if (scan.bestBefore != null) Tag('Best before ${scan.bestBefore}', fill: c.mist, ink: c.inkSoft),
@@ -306,7 +317,7 @@ class _FoodScanState extends State<_FoodScan> {
             label: const Text('Use it in my coffee'),
           ),
         ],
-        if (scan.processing == FoodProcessing.whole && scan.flags.isEmpty && scan.processingSummary == null)
+        if (!unknown && scan.processing == FoodProcessing.whole && scan.flags.isEmpty && scan.processingSummary == null)
           Text(
             'A whole food: nothing industrial in the ingredients.',
             style: TextStyle(fontSize: TextSize.sm, color: c.chlorophyll),
@@ -343,7 +354,24 @@ class _FoodScanState extends State<_FoodScan> {
           ].join(' '),
           style: TextStyle(fontSize: TextSize.xxs, height: 1.5, color: c.inkSoft),
         ),
-        if (scan.item != null) SheetAction(label: 'Log it', onPressed: () => Navigator.of(context).pop(scan.item)),
+        if (scan.item != null)
+          SheetAction(label: 'Log it', onPressed: () => Navigator.of(context).pop(scan.item))
+        else ...[
+          SheetNote(
+            lead: 'No nutrition facts for this one yet.',
+            detail: unknown
+                ? 'The product database has its name but not its label. Type the calories from the pack to log it.'
+                : 'The product database has no calories for it. Type them from the pack to log it.',
+          ),
+          if (widget.onLogByHand case final logByHand?)
+            SheetAction(
+              label: 'Log it by hand',
+              onPressed: () {
+                Navigator.of(context).pop();
+                logByHand(scan.name);
+              },
+            ),
+        ],
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),

@@ -70,7 +70,7 @@ export class ScanFoodUseCase {
       reading = await this.reader.readLabel(photos);
     } catch (error) {
       if (error instanceof DomainError) throw error;
-      throw new UpstreamError("The label couldn't be read right now. Try again in a moment.");
+      throw new UpstreamError("The label couldn't be read right now. Try again in a moment.", { cause: error });
     }
     return this.grade(reading);
   }

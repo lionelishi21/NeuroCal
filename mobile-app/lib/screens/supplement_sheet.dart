@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../api/api.dart' show ApiException;
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../scan/label_camera.dart';
@@ -15,7 +16,7 @@ import 'log_meal_sheet.dart' show maxPhotoBytes;
 
 /// Scan a supplement label: live scan while turning the bottle (or choose a photo), wait while it is
 /// read, then see what the label says and anything worth knowing. Nothing is saved.
-/// Returns true when the supplement was added to the stack.
+/// It can also be typed in, without a label. Returns true when the supplement was added to the stack.
 Future<bool?> showSupplementSheet(BuildContext context, {ImagePicker? picker, LabelCamera Function()? camera}) =>
     showAppSheet<bool>(
       context,
@@ -52,6 +53,7 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   String? _failure;
   var _reading = false;
   var _adding = false;
+  var _typing = false;
 
   Future<void> _liveScan() async {
     final result = await showLiveScan(context, widget.camera());
@@ -81,8 +83,15 @@ class _ScanSupplementState extends State<_ScanSupplement> {
     try {
       final label = await AppScope.of(context).api.analyzeSupplement(photos, names: names);
       if (mounted) setState(() => _label = label);
-    } catch (_) {
-      if (mounted) setState(() => _failure = "We couldn't read this label. Check your connection and try again.");
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _failure = switch (error) {
+          ApiException(code: 'upstream_failed') => "Label reading isn't working right now. Type the supplement in instead, and scan it later for the dose checks.",
+          ApiException(:final message) => message,
+          _ => "We couldn't read this label. Check your connection and try again.",
+        },
+      );
     } finally {
       if (mounted) setState(() => _reading = false);
     }
@@ -98,6 +107,13 @@ class _ScanSupplementState extends State<_ScanSupplement> {
   @override
   Widget build(BuildContext context) {
     if (_reading) return _readingStep(context);
+    if (_typing) {
+      return _AddToStack(
+        label: const SupplementLabel(summary: ''),
+        typed: true,
+        onBack: () => setState(() => _typing = false),
+      );
+    }
     if (_adding && _label != null) return _AddToStack(label: _label!, onBack: () => setState(() => _adding = false));
     final label = _label;
     if (label != null && label.problem == null) return _resultStep(context, label);
@@ -130,6 +146,11 @@ class _ScanSupplementState extends State<_ScanSupplement> {
           onPressed: _choose,
           icon: const Icon(Icons.image_outlined, size: 20),
           label: const Text('Choose a photo'),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+          onPressed: () => setState(() => _typing = true),
+          child: const Text('Type it in instead'),
         ),
       ],
     );
@@ -274,11 +295,13 @@ class _ScanSupplementState extends State<_ScanSupplement> {
 }
 
 /// Saves the scanned supplement to the stack: how many servings a day, when, and the bottle size
-/// (from the label when it was printed), for the running-low count.
+/// (from the label when it was printed), for the running-low count. [typed]: no label, so the name is
+/// typed in and there are no doses to check.
 class _AddToStack extends StatefulWidget {
-  const _AddToStack({required this.label, required this.onBack});
+  const _AddToStack({required this.label, required this.onBack, this.typed = false});
 
   final SupplementLabel label;
+  final bool typed;
   final VoidCallback onBack;
 
   @override
@@ -289,22 +312,29 @@ class _AddToStackState extends State<_AddToStack> {
   var _perDay = 1;
   var _timing = StackTiming.morning;
   late final _bottle = TextEditingController(text: widget.label.servingsPerContainer?.toString() ?? '');
+  final _name = TextEditingController();
   var _busy = false;
   var _failed = false;
+  var _nameMissing = false;
 
   @override
   void dispose() {
     _bottle.dispose();
+    _name.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
+    if (widget.typed && _name.text.trim().isEmpty) {
+      setState(() => _nameMissing = true);
+      return;
+    }
     setState(() {
       _busy = true;
       _failed = false;
     });
     final l = widget.label;
-    final name = [l.brand, l.productName].whereType<String>().join(' ');
+    final name = widget.typed ? _name.text.trim() : [l.brand, l.productName].whereType<String>().join(' ');
     try {
       await AppScope.of(context).api.addToStack(
         name: name.isEmpty ? 'Supplement' : name,
@@ -334,9 +364,25 @@ class _AddToStackState extends State<_AddToStack> {
       spacing: 14,
       children: [
         Text(
-          'We’ll add it to your checklist on Today and check it against everything else you take.',
+          widget.typed
+              ? 'We’ll add it to your checklist on Today. Without the label we can’t check its doses against the rest of your stack: scan it when you can.'
+              : 'We’ll add it to your checklist on Today and check it against everything else you take.',
           style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
         ),
+        if (widget.typed)
+          TextField(
+            controller: _name,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) {
+              if (_nameMissing) setState(() => _nameMissing = false);
+            },
+            decoration: InputDecoration(
+              labelText: 'Name',
+              hintText: 'Magnesium glycinate',
+              errorText: _nameMissing ? 'Type the name on the bottle.' : null,
+            ),
+          ),
         Text(
           serving == null ? 'Servings a day' : 'Servings a day (one is $serving)',
           style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
@@ -370,7 +416,10 @@ class _AddToStackState extends State<_AddToStack> {
         ),
         if (_failed) const SheetNote(lead: "Couldn't add it.", detail: 'Check your connection and try again.'),
         SheetAction(label: _busy ? 'Adding…' : 'Add to my stack', onPressed: _busy ? null : _save),
-        TextButton(onPressed: _busy ? null : widget.onBack, child: const Text('Back to the label')),
+        TextButton(
+          onPressed: _busy ? null : widget.onBack,
+          child: Text(widget.typed ? 'Scan the label instead' : 'Back to the label'),
+        ),
       ],
     );
   }

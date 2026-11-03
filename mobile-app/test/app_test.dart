@@ -73,23 +73,6 @@ void main() {
     expect(find.text('Lunch'), findsOneWidget);
   });
 
-  testWidgets('the appearance switch forces a mode and remembers it', (tester) async {
-    final (theme, _) = await pumpApp(tester);
-    MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(app().themeMode, ThemeMode.system);
-
-    await tester.tap(find.text('Dark'));
-    await tester.pumpAndSettle();
-    expect(app().themeMode, ThemeMode.dark);
-    expect((await SharedPreferences.getInstance()).getString(ThemeController.key), 'dark');
-
-    await tester.tap(find.text('Match device'));
-    await tester.pumpAndSettle();
-    expect(app().themeMode, ThemeMode.system);
-    expect((await SharedPreferences.getInstance()).getString(ThemeController.key), isNull);
-    expect(theme.value, ThemeMode.system);
-  });
-
   testWidgets('a saved choice applies on launch', (tester) async {
     await pumpApp(tester, saved: {ThemeController.key: 'light'});
     expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.light);
@@ -147,6 +130,24 @@ void main() {
     await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text(label)));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('the appearance setting forces a mode and remembers it', (tester) async {
+    final (theme, _) = await pumpApp(tester);
+    MaterialApp app() => tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app().themeMode, ThemeMode.system);
+    await signIn(tester);
+    await tester.tap(find.bySemanticsLabel('Me'));
+    await tester.pumpAndSettle();
+
+    await tapCentered(tester, find.text('Dark'));
+    expect(app().themeMode, ThemeMode.dark);
+    expect((await SharedPreferences.getInstance()).getString(ThemeController.key), 'dark');
+
+    await tapCentered(tester, find.text('Match device'));
+    expect(app().themeMode, ThemeMode.system);
+    expect((await SharedPreferences.getInstance()).getString(ThemeController.key), isNull);
+    expect(theme.value, ThemeMode.system);
+  });
 
   testWidgets('log a meal by hand', (tester) async {
     await pumpApp(tester);

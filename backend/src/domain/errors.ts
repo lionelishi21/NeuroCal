@@ -1,8 +1,9 @@
 /** Typed failures that presentation/ maps to HTTP status codes (ARCHITECTURE §6). */
 export abstract class DomainError extends Error {
   abstract readonly code: string;
-  constructor(message: string) {
-    super(message);
+  /** [options.cause] keeps what went wrong underneath, for the logs; the message is what people see. */
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
     this.name = new.target.name;
   }
 }

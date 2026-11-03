@@ -124,7 +124,7 @@ export function healthspanWeek(w: HealthspanInputs): HealthspanHabit[] {
       detail: joints ? "A few all-out minutes on a bike or in the pool lift your fitness ceiling." : "A few all-out minutes lift your fitness ceiling (VO2max).",
       progress: hard,
       target: 1,
-      unit: "sessions",
+      unit: "session",
       done: hard >= 1,
       ...(noHardCardio ? { skipped: "Left out for your health. Ask your clinician what intensity suits you." } : {}),
     },

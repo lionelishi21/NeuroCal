@@ -280,4 +280,27 @@ void main() {
     expect(stack.items.single.timing, StackTiming.evening);
     expect(stack.items.single.daysLeft, 30);
   });
+
+  testWidgets('a supplement can be typed in without a label, and needs a name', (tester) async {
+    final api = await pumpSheetWithApi(tester, 'label.jpg');
+    await tester.tap(find.text('Type it in instead'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('can’t check its doses'), findsOneWidget);
+
+    final add = find.widgetWithText(FilledButton, 'Add to my stack');
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(find.text('Type the name on the bottle.'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Brain 101');
+    await tester.tap(find.text('Morning').first);
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+
+    final stack = (await tester.runAsync(api.stack))!;
+    expect(stack.items.single.name, 'Brain 101');
+    expect(stack.items.single.servingsPerDay, 1);
+  });
 }
