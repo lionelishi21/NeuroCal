@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import 'plan_fast_sheet.dart' show fastEnd;
 import 'session_sheet.dart';
 import 'supplement_sheet.dart';
 
@@ -43,10 +44,13 @@ List<Widget> _flagNotes(List<StackFlag> flags) => [
 
 /// Today's supplements as a checklist, with stack-wide warnings and bottles running low.
 class StackCard extends StatefulWidget {
-  const StackCard(this.stack, {super.key, required this.onManage, this.framed = true});
+  const StackCard(this.stack, {super.key, required this.onManage, this.framed = true, this.onFastStarted});
 
   final SupplementStack stack;
   final VoidCallback onManage;
+
+  /// Ticking a fasting-mimicking supplement started a fast (so the fasting timer can refresh).
+  final VoidCallback? onFastStarted;
 
   /// False draws it as a row of Today's habits card, without its own card.
   final bool framed;
@@ -69,7 +73,11 @@ class _StackCardState extends State<StackCard> {
     // Ticks feel instant; undo if the save fails.
     setState(() => _items = [for (final i in _items) i.id == item.id ? i.copyWith(takenToday: next) : i]);
     try {
-      await AppScope.of(context).api.setTaken(item.id, next);
+      final fastUntil = await AppScope.of(context).api.setTaken(item.id, next);
+      if (fastUntil != null && mounted) {
+        showToast(context, 'Fast started, until ${fastEnd(fastUntil, DateTime.now())}');
+        widget.onFastStarted?.call();
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _items = [for (final i in _items) i.id == item.id ? i.copyWith(takenToday: !next) : i]);
@@ -707,6 +715,7 @@ class _EditStackItemState extends State<_EditStackItem> {
   late StackTiming _timing = widget.item.timing;
   late final _bottle = TextEditingController(text: widget.item.servingsPerContainer?.toString() ?? '');
   var _newBottle = false;
+  late var _startsFast = widget.item.startsFast;
   var _busy = false;
   String? _error;
 
@@ -779,6 +788,15 @@ class _EditStackItemState extends State<_EditStackItem> {
           onChanged: (v) => setState(() => _newBottle = v),
           title: const Text('I started a new bottle today'),
         ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _startsFast,
+          onChanged: (v) => setState(() => _startsFast = v),
+          title: const Text('Start a fast when I take it'),
+          subtitle: const Text(
+            'For fasting-mimicking supplements. Ticking it starts your usual fast from your last meal.',
+          ),
+        ),
         if (AppScope.of(context).reminders case final reminders?)
           ListenableBuilder(
             listenable: reminders,
@@ -802,6 +820,7 @@ class _EditStackItemState extends State<_EditStackItem> {
                     timing: _timing,
                     servingsPerContainer: int.tryParse(_bottle.text.trim()) ?? 0,
                     newBottle: _newBottle,
+                    startsFast: _startsFast == widget.item.startsFast ? null : _startsFast,
                   ),
                   'Saved',
                 ),

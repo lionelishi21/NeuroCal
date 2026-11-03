@@ -191,12 +191,15 @@ abstract interface class NeuroCalApi {
     StackTiming? timing,
     int? servingsPerContainer,
     bool newBottle = false,
+    bool? startsFast,
   });
   Future<void> removeFromStack(String id);
 
   /// Stopped taking it: off the daily list, and watched for four weeks to see if the gain lasts.
   Future<void> stopStackItem(String id);
-  Future<void> setTaken(String id, bool taken);
+
+  /// Ticks a supplement for today. Returns when a fast it started ends (a fasting-mimicking one), else null.
+  Future<DateTime?> setTaken(String id, bool taken);
 
   /// "How does it make you feel?", answered for today.
   Future<void> setFeeling(String id, Feeling feeling);
@@ -821,6 +824,7 @@ class HttpNeuroCalApi implements NeuroCalApi {
     StackTiming? timing,
     int? servingsPerContainer,
     bool newBottle = false,
+    bool? startsFast,
   }) async {
     final res = await _client.put(
       _uri('/stack/$id'),
@@ -831,6 +835,7 @@ class HttpNeuroCalApi implements NeuroCalApi {
         if (servingsPerContainer != null)
           'servingsPerContainer': servingsPerContainer == 0 ? null : servingsPerContainer,
         if (newBottle) 'newBottle': true,
+        'startsFast': ?startsFast,
       }),
     );
     return StackItem.fromJson(_decode(res) as Map<String, dynamic>);
@@ -847,14 +852,16 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<void> setTaken(String id, bool taken) async {
-    _decode(
+  Future<DateTime?> setTaken(String id, bool taken) async {
+    final body = _decode(
       await _client.put(
         _uri('/stack/$id/taken'),
         headers: await _headers(json: true),
         body: jsonEncode({'taken': taken}),
       ),
-    );
+    ) as Map<String, dynamic>;
+    final until = body['fastUntil'] as String?;
+    return until == null ? null : DateTime.parse(until).toLocal();
   }
 
   @override

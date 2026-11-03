@@ -88,6 +88,29 @@ export class GetFastingUseCase {
     return this.execute({ userId });
   }
 
+  /**
+   * A fasting-mimicking supplement was taken: a planned fast of the person's usual length (16 hours
+   * without a protocol), counted from the last meal and capped by their health limit. Nothing when
+   * fasting isn't advised, a planned fast is already running, or they've already fasted that long.
+   */
+  async startForSupplement(userId: string): Promise<Date | null> {
+    const profile = await this.profiles.get(userId);
+    if (!profile) return null;
+    const limit = plannedFastLimit(profile);
+    if (limit === 0) return null;
+    const now = this.clock.now();
+    const eaten = await this.eaten(userId, now);
+    if (activePlan(await this.plans.get(userId), eaten, now)) return null;
+    const protocol = fastingProtocolOf(profile);
+    const hours = Math.min(protocol === "none" ? FAST_HOURS["16_8"] : FAST_HOURS[protocol], limit);
+    const last = eaten.filter((m) => m <= now).at(-1);
+    const from = last ?? now;
+    const until = new Date(from.getTime() + hours * HOUR_MS);
+    if (until.getTime() - now.getTime() < MIN_PLAN_MS) return null;
+    await this.plans.set(userId, { startedAt: now, until });
+    return until;
+  }
+
   /** "End my fast": the timer goes back to counting from meals. */
   async endPlan(userId: string): Promise<FastingStatus> {
     await this.plans.set(userId, null);

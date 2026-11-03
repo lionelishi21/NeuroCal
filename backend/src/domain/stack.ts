@@ -25,6 +25,16 @@ export interface StackItem {
   addedOn: string;
   /** YYYY-MM-DD: when it was stopped; absent while it's taken. */
   stoppedOn?: string;
+  /** A fasting-mimicking supplement: ticking it as taken starts a fast. */
+  startsFast?: boolean;
+}
+
+/** Fasting mimetics, by product or ingredient: spermidine, ProLon and "fasting mimicking" or "autophagy" blends. */
+const FASTING_MIMETIC = /fasting[\s-]*mimi|prolon|l-nutra|spermidine|autophag|\bfast\s*bar/i;
+
+/** Whether a supplement is sold to mimic fasting, so taking it should start one. */
+export function mimicsFasting(name: string, ingredients: { name: string }[]): boolean {
+  return FASTING_MIMETIC.test(name) || ingredients.some((i) => FASTING_MIMETIC.test(i.name));
 }
 
 export interface StackFlag {

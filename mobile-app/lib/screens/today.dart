@@ -489,7 +489,8 @@ class _TodayScreenState extends State<TodayScreen> {
       ),
     if (day.coffee case final coffee? when day.isToday)
       _CoffeeRow(coffee, onLog: () => widget.onCapture(Capture.coffee)),
-    if (day.isToday && day.stack != null) StackCard(day.stack!, onManage: _manageStack, framed: false),
+    if (day.isToday && day.stack != null)
+      StackCard(day.stack!, onManage: _manageStack, framed: false, onFastStarted: widget.onChanged),
     if (day.isToday && day.environment != null)
       EnvironmentCard(day.environment!, onChanged: widget.onChanged, framed: false),
   ];

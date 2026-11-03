@@ -1372,7 +1372,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SetTakenRequest"
+                  "$ref": "#/components/schemas/SetTakenResponse"
                 }
               }
             }
@@ -3327,6 +3327,9 @@
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 2000
+          },
+          "startsFast": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -8143,6 +8146,21 @@
           "taken"
         ]
       },
+      "SetTakenResponse": {
+        "type": "object",
+        "properties": {
+          "taken": {
+            "type": "boolean"
+          },
+          "fastUntil": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "taken"
+        ]
+      },
       "ShoppingList": {
         "type": "object",
         "properties": {
@@ -8400,6 +8418,9 @@
           "shopUrl": {
             "type": "string",
             "format": "uri"
+          },
+          "startsFast": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -8410,7 +8431,8 @@
           "timing",
           "startedOn",
           "takenToday",
-          "addedOn"
+          "addedOn",
+          "startsFast"
         ]
       },
       "StackResponse": {
@@ -9067,6 +9089,9 @@
             ]
           },
           "newBottle": {
+            "type": "boolean"
+          },
+          "startsFast": {
             "type": "boolean"
           }
         }

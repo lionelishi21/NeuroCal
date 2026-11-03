@@ -180,6 +180,7 @@ export function buildUseCases(p: Ports): UseCases {
   const guides = new GuideUseCases(p.guides, p.guideSeeds, p.clock);
   const environment = new EnvironmentUseCases(p.environment, p.airQuality, p.geocoder, p.profiles, p.clock, p.weights, p.exercises);
   const getSubscription = new GetSubscriptionUseCase(p.subscriptions, p.subscriptionLookup, p.clock);
+  const getFasting = new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee);
   const getBioState = new GetBioStateUseCase(p.profiles, p.meals, p.checkIns, p.clock, p.coffee);
   const adminProducts = new AdminProductUseCases(p.catalog, p.embedder);
   const uc = {
@@ -197,11 +198,16 @@ export function buildUseCases(p: Ports): UseCases {
     logWeight: new LogWeightUseCase(p.profiles, p.weights, p.clock),
     getWeightHistory: new GetWeightHistoryUseCase(p.profiles, p.weights, p.clock),
     deleteWeight: new DeleteWeightUseCase(p.weights),
-    getFasting: new GetFastingUseCase(p.profiles, p.meals, p.clock, p.fastPlans, p.coffee),
+    getFasting,
     coffee: new CoffeeUseCases(p.profiles, p.coffee, p.clock, p.catalog),
     getSubscription,
-    stack: new StackUseCases(p.profiles, p.stack, p.clock, { scores: p.focusScores, brainChecks: p.brainChecks }, async () =>
-      (await p.catalog.listProducts()).filter((x) => x.ownBrand && x.enabled),
+    stack: new StackUseCases(
+      p.profiles,
+      p.stack,
+      p.clock,
+      { scores: p.focusScores, brainChecks: p.brainChecks },
+      async () => (await p.catalog.listProducts()).filter((x) => x.ownBrand && x.enabled),
+      (userId) => getFasting.startForSupplement(userId),
     ),
     brainChecks: new BrainCheckUseCases(p.brainChecks, p.clock),
     exercise: new ExerciseUseCases(p.exercises, p.weights, p.profiles, p.clock),

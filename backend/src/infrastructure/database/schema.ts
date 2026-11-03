@@ -563,6 +563,8 @@ export const stackItems = pgTable(
     addedOn: date("added_on", { mode: "string" }).notNull().default(sql`current_date`),
     /** When it was stopped; it stays for its experiment to watch the weeks after. Null while taken. */
     stoppedOn: date("stopped_on", { mode: "string" }),
+    /** A fasting-mimicking supplement: ticking it as taken starts a fast. */
+    startsFast: boolean("starts_fast").notNull().default(false),
     ...timestamps,
   },
   (t) => [index("stack_items_user_idx").on(t.userId), check("stack_items_servings_positive", sql`${t.servingsPerDay} between 1 and 6`)],

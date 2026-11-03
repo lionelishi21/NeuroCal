@@ -1270,6 +1270,8 @@ export const StackItem = z.object({
   experiment: SupplementExperiment.optional(),
   /** Where to buy more: the MitoProof store page, when this is one of our brand's products. */
   shopUrl: z.string().url().optional(),
+  /** A fasting-mimicking supplement: ticking it as taken starts a fast. */
+  startsFast: z.boolean(),
 });
 export type StackItem = z.infer<typeof StackItem>;
 
@@ -1480,6 +1482,8 @@ export const AddStackItemRequest = z.object({
   servingsPerDay: z.number().int().min(1).max(6),
   timing: StackTiming,
   servingsPerContainer: z.number().int().positive().max(2000).optional(),
+  /** Starts a fast when ticked as taken; left out, NeuroCal decides from the name and ingredients. */
+  startsFast: z.boolean().optional(),
 });
 export type AddStackItemRequest = z.infer<typeof AddStackItemRequest>;
 
@@ -1489,11 +1493,16 @@ export const UpdateStackItemRequest = z.object({
   servingsPerContainer: z.number().int().positive().max(2000).nullable().optional(),
   /** Started a new bottle today: resets the running-low count. */
   newBottle: z.boolean().optional(),
+  startsFast: z.boolean().optional(),
 });
 export type UpdateStackItemRequest = z.infer<typeof UpdateStackItemRequest>;
 
 export const SetTakenRequest = z.object({ taken: z.boolean() });
 export type SetTakenRequest = z.infer<typeof SetTakenRequest>;
+
+/** [fastUntil]: ticking a fasting-mimicking supplement started a fast, ending then. */
+export const SetTakenResponse = z.object({ taken: z.boolean(), fastUntil: IsoDateTime.optional() });
+export type SetTakenResponse = z.infer<typeof SetTakenResponse>;
 
 /** A product as the admin screen manages it. */
 export const AdminProduct = z.object({
@@ -1859,7 +1868,7 @@ export const endpoints = {
   updateStackItem: { method: "PUT", path: "/stack/:id", body: UpdateStackItemRequest, response: StackItem },
   deleteStackItem: { method: "DELETE", path: "/stack/:id" },
   /** Ticks (or unticks) a supplement as taken today. */
-  setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenRequest },
+  setStackTaken: { method: "PUT", path: "/stack/:id/taken", body: SetTakenRequest, response: SetTakenResponse },
   setStackFeeling: { method: "PUT", path: "/stack/:id/feeling", body: SetFeelingRequest, response: SetFeelingRequest },
   /** Stopped taking it: it leaves the daily list, and its experiment watches the four weeks after. */
   stopStackItem: { method: "POST", path: "/stack/:id/stop", response: StackItem },

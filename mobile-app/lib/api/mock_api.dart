@@ -1956,6 +1956,10 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
       servingsPerContainer: servingsPerContainer,
       startedOn: isoDate(DateTime.now()),
       daysLeft: servingsPerContainer == null ? null : servingsPerContainer ~/ servingsPerDay,
+      startsFast: RegExp(
+        r'fasting[\s-]*mimi|prolon|l-nutra|spermidine|autophag|\bfast\s*bar',
+        caseSensitive: false,
+      ).hasMatch([name, for (final i in ingredients) i.name].join(' ')),
     );
     _stack.add(item);
     return item;
@@ -1968,6 +1972,7 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
     StackTiming? timing,
     int? servingsPerContainer,
     bool newBottle = false,
+    bool? startsFast,
   }) async {
     await _wait();
     final i = _stack.indexWhere((s) => s.id == id);
@@ -1985,6 +1990,7 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
       startedOn: newBottle ? isoDate(DateTime.now()) : old.startedOn,
       daysLeft: container == null ? null : container ~/ perDay,
       takenToday: old.takenToday,
+      startsFast: startsFast ?? old.startsFast,
     );
   }
 
@@ -1995,10 +2001,22 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
   }
 
   @override
-  Future<void> setTaken(String id, bool taken) async {
+  Future<DateTime?> setTaken(String id, bool taken) async {
     await _wait();
     final i = _stack.indexWhere((s) => s.id == id);
-    if (i >= 0) _stack[i] = _stack[i].copyWith(takenToday: taken);
+    if (i < 0) return null;
+    _stack[i] = _stack[i].copyWith(takenToday: taken);
+    // A fasting mimetic starts a 16-hour fast from the last meal, unless one is already planned.
+    final now = DateTime.now();
+    if (!taken || !_stack[i].startsFast || (_fastPlan != null && _fastPlan!.until.isAfter(now))) return null;
+    final last = [
+      for (final m in _meals)
+        if (m.calories >= 10 && !m.eatenAt.isAfter(now)) m.eatenAt,
+    ].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
+    final until = (last ?? now).add(const Duration(hours: 16));
+    if (until.difference(now).inMinutes < 30) return null;
+    _fastPlan = (startedAt: now, until: until);
+    return until;
   }
 
   @override

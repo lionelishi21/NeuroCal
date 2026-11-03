@@ -1,0 +1,1 @@
+ALTER TABLE "stack_items" ADD COLUMN "starts_fast" boolean DEFAULT false NOT NULL;

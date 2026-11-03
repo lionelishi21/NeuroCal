@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { type StackItem, daysLeft, stackFlags } from "./stack";
+import { type StackItem, daysLeft, mimicsFasting, stackFlags } from "./stack";
 
 const item = (id: string, name: string, ingredients: StackItem["ingredients"], over: Partial<StackItem> = {}): StackItem => ({
   id,
@@ -55,5 +55,17 @@ describe("stackFlags with health conditions", () => {
     expect(stackFlags([omega]).some((f) => f.kind === "interaction")).toBe(false);
     const [flag] = stackFlags([omega], ["blood_thinners"]).filter((f) => f.kind === "interaction");
     expect(flag).toEqual({ kind: "interaction", message: expect.stringMatching(/^Omega-3: Fish oil can add to the effect of blood thinners/), itemIds: ["o"] });
+  });
+});
+
+describe("mimicsFasting", () => {
+  it("recognises fasting mimetics by product or ingredient, and nothing else", () => {
+    expect(mimicsFasting("ProLon Fast Bar", [])).toBe(true);
+    expect(mimicsFasting("Fasting Mimicking Blend", [])).toBe(true);
+    expect(mimicsFasting("Longevity Complex", [{ name: "Spermidine (wheat germ extract)" }])).toBe(true);
+    expect(mimicsFasting("Autophagy Support", [])).toBe(true);
+    expect(mimicsFasting("Magnesium glycinate", [{ name: "Magnesium" }])).toBe(false);
+    expect(mimicsFasting("Breakfast protein", [])).toBe(false);
+    expect(mimicsFasting("Breakfast Bar", [])).toBe(false);
   });
 });

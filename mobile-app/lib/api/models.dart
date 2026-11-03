@@ -819,6 +819,7 @@ class StackItem {
     this.experiment,
     this.stoppedOn,
     this.shopUrl,
+    this.startsFast = false,
   });
 
   final String id;
@@ -845,6 +846,9 @@ class StackItem {
   /// Our brand's store page, for a reorder (only MitoProof products have one).
   final String? shopUrl;
 
+  /// A fasting-mimicking supplement: ticking it as taken starts a fast.
+  final bool startsFast;
+
   bool get runningLow => daysLeft != null && daysLeft! <= 7;
 
   StackItem copyWith({bool? takenToday, SupplementExperiment? experiment}) => StackItem(
@@ -863,6 +867,7 @@ class StackItem {
     experiment: experiment ?? this.experiment,
     stoppedOn: stoppedOn,
     shopUrl: shopUrl,
+    startsFast: startsFast,
   );
 
   factory StackItem.fromJson(Map<String, dynamic> j) => StackItem(
@@ -881,6 +886,7 @@ class StackItem {
     profile: _profileFromJson(j['profile']),
     experiment: j['experiment'] == null ? null : SupplementExperiment.fromJson(j['experiment'] as Map<String, dynamic>),
     shopUrl: j['shopUrl'] as String?,
+    startsFast: j['startsFast'] as bool? ?? false,
   );
 }
 

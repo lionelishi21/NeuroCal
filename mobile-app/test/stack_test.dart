@@ -12,6 +12,62 @@ import 'package:neurocal/widgets/toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('ticking a fasting-mimicking supplement starts a fast and says until when', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = MockNeuroCalApi()..latency = Duration.zero;
+    final added = (await tester.runAsync(
+      () => api.addToStack(
+        name: 'Longevity Complex',
+        ingredients: const [(name: 'Spermidine', amount: 1, unit: 'mg', inBlend: false)],
+        servingsPerDay: 1,
+        timing: StackTiming.morning,
+      ),
+    ))!;
+    expect(added.startsFast, isTrue);
+    // A meal just now, so the 16-hour fast from it is still ahead whatever time the test runs.
+    await tester.runAsync(
+      () => api.createMeal(
+        NewMeal(
+          kind: MealKind.snack,
+          eatenAt: DateTime.now().subtract(const Duration(minutes: 1)),
+          items: const [
+            FoodItem(name: 'Apple', portion: '1', calories: 95, macros: Macros(proteinG: 0, carbsG: 25, fatG: 0)),
+          ],
+        ),
+      ),
+    );
+    var started = 0;
+    await tester.pumpWidget(
+      AppScope(
+        api: api,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        timeZone: () async => 'Europe/London',
+        openLink: (_) async => true,
+        billing: MockBilling(active: true),
+        child: MaterialApp(
+          theme: buildTheme(Brightness.light),
+          builder: (context, child) => ToastHost(child: child!),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: StackCard(
+                SupplementStack(items: (await tester.runAsync(api.stack))!.items),
+                onManage: () {},
+                onFastStarted: () => started++,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Longevity Complex'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Fast started, until'), findsOneWidget);
+    expect(started, 1);
+    expect((await tester.runAsync(api.fasting))!.planned, isTrue);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('the checklist ticks supplements off, shows stack warnings and bottles running low', (tester) async {
     tester.view.physicalSize = const Size(360, 740);
     tester.view.devicePixelRatio = 1;

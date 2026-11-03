@@ -722,6 +722,7 @@ export class DrizzleStackRepository implements IStackRepository {
       startedOn: row.startedOn,
       addedOn: row.addedOn,
       ...(row.stoppedOn ? { stoppedOn: row.stoppedOn } : {}),
+      ...(row.startsFast ? { startsFast: true } : {}),
     };
   }
 
@@ -756,6 +757,7 @@ export class DrizzleStackRepository implements IStackRepository {
         servingsPerContainer: item.servingsPerContainer ?? null,
         startedOn: item.startedOn,
         addedOn: item.addedOn,
+        startsFast: item.startsFast ?? false,
       })
       .returning();
     if (!row) throw new Error("Stack insert returned no row");
@@ -769,6 +771,7 @@ export class DrizzleStackRepository implements IStackRepository {
       ...(patch.servingsPerContainer !== undefined ? { servingsPerContainer: patch.servingsPerContainer } : {}),
       ...(patch.startedOn !== undefined ? { startedOn: patch.startedOn } : {}),
       ...(patch.stoppedOn !== undefined ? { stoppedOn: patch.stoppedOn } : {}),
+      ...(patch.startsFast !== undefined ? { startsFast: patch.startsFast } : {}),
     };
     const where = and(eq(stackItems.id, id), eq(stackItems.userId, userId));
     const [row] = Object.keys(set).length

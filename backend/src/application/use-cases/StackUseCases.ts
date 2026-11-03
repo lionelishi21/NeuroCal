@@ -14,7 +14,7 @@ import {
 } from "../../domain/experiment";
 import { localDateOf } from "../../domain/localDay";
 import { shopUrlFor } from "../../domain/shop";
-import { type StackFlag, type StackItem, daysLeft, stackFlags } from "../../domain/stack";
+import { type StackFlag, type StackItem, daysLeft, mimicsFasting, stackFlags } from "../../domain/stack";
 import type { Profile } from "../../domain/types";
 import { addDays } from "../../domain/weight";
 import type { IBrainCheckRepository } from "../interfaces/IBrainCheckRepository";
@@ -25,6 +25,7 @@ import type { IStackRepository, NewStackItem } from "../interfaces/IStackReposit
 export const MAX_STACK_ITEMS = 30;
 
 export type StackItemView = StackItem & {
+  startsFast: boolean;
   /** Our brand's store page, for a reorder. */
   shopUrl?: string;
   daysLeft?: number;
@@ -59,7 +60,7 @@ async function todayFor(profiles: IProfileRepository, userId: string, clock: ICl
 
 const view = (item: StackItem, today: string, taken: Set<string>): StackItemView => {
   const left = daysLeft(item, today);
-  return { ...item, ...(left === null ? {} : { daysLeft: left }), takenToday: taken.has(item.id) };
+  return { ...item, startsFast: item.startsFast ?? false, ...(left === null ? {} : { daysLeft: left }), takenToday: taken.has(item.id) };
 };
 
 /** The supplements someone takes, what they've ticked today, and the checks across all of them. */
@@ -71,6 +72,8 @@ export class StackUseCases {
     private readonly sources?: ExperimentSources,
     /** Our brand's supplements and their store pages, for a reorder link (domain/shop.ts). */
     private readonly ownProducts?: () => Promise<{ name: string; url?: string }[]>,
+    /** Starts a fast for a fasting-mimicking supplement; its end, or null when none was started. */
+    private readonly startFast?: (userId: string) => Promise<Date | null>,
   ) {}
 
   async get(userId: string): Promise<StackView> {
@@ -159,14 +162,16 @@ export class StackUseCases {
     if ((await this.stack.list(userId)).length >= MAX_STACK_ITEMS) {
       throw new InvalidError(`Your stack can hold ${MAX_STACK_ITEMS} supplements. Remove one to add another.`);
     }
-    const saved = await this.stack.add(userId, { ...item, name: item.name.trim(), startedOn: today, addedOn: today });
+    const name = item.name.trim();
+    const startsFast = item.startsFast ?? mimicsFasting(name, item.ingredients);
+    const saved = await this.stack.add(userId, { ...item, name, startedOn: today, addedOn: today, ...(startsFast ? { startsFast } : {}) });
     return view(saved, today, new Set());
   }
 
   async update(
     userId: string,
     id: string,
-    patch: { servingsPerDay?: number; timing?: StackItem["timing"]; servingsPerContainer?: number | null; newBottle?: boolean },
+    patch: { servingsPerDay?: number; timing?: StackItem["timing"]; servingsPerContainer?: number | null; newBottle?: boolean; startsFast?: boolean },
   ): Promise<StackItemView> {
     const { today } = await todayFor(this.profiles, userId, this.clock);
     const { newBottle, ...rest } = patch;
@@ -179,8 +184,14 @@ export class StackUseCases {
     if (!(await this.stack.delete(userId, id))) throw new NotFoundError("That supplement isn't in your stack.");
   }
 
-  async setTaken(userId: string, id: string, taken: boolean): Promise<void> {
+  /** Ticks a supplement for today. A fasting-mimicking one starts a fast; [fastUntil] is when it ends. */
+  async setTaken(userId: string, id: string, taken: boolean): Promise<{ fastUntil?: Date }> {
     const { today } = await todayFor(this.profiles, userId, this.clock);
     if (!(await this.stack.setTaken(userId, id, today, taken))) throw new NotFoundError("That supplement isn't in your stack.");
+    if (!taken || !this.startFast) return {};
+    const item = (await this.stack.list(userId)).find((i) => i.id === id);
+    if (!item?.startsFast) return {};
+    const until = await this.startFast(userId);
+    return until ? { fastUntil: until } : {};
   }
 }

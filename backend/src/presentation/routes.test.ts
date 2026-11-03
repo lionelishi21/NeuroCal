@@ -515,6 +515,25 @@ describe("API routes", () => {
     expect((await call("PUT", "/fasting/plan", { until: "2026-09-30T12:00:00.000Z" })).status).toBe(400);
   });
 
+  it("ticking a fasting-mimicking supplement starts a fast from the last meal, once", async () => {
+    // It's 22:00Z; the last meal was at 13:10Z, and there's no protocol: a 16-hour fast, to 05:10Z.
+    const supplement = { ingredients: [], servingsPerDay: 1, timing: "morning" };
+    const mimic = await call("POST", "/stack", { ...supplement, name: "Spermidine Fasting Support" });
+    expect(mimic.body).toMatchObject({ startsFast: true });
+    const plain = await call("POST", "/stack", { ...supplement, name: "Magnesium glycinate" });
+    expect(plain.body).toMatchObject({ startsFast: false });
+
+    expect((await call("PUT", `/stack/${plain.body.id}/taken`, { taken: true })).body).toEqual({ taken: true });
+    expect((await call("PUT", `/stack/${mimic.body.id}/taken`, { taken: true })).body).toEqual({ taken: true, fastUntil: "2026-09-30T05:10:00.000Z" });
+    expect((await call("GET", "/fasting")).body).toMatchObject({ plan: { until: "2026-09-30T05:10:00.000Z" } });
+    // A fast is already running: ticking it again leaves it alone.
+    expect((await call("PUT", `/stack/${mimic.body.id}/taken`, { taken: true })).body).toEqual({ taken: true });
+
+    // It can be switched off, and on for a supplement NeuroCal didn't recognise.
+    expect((await call("PUT", `/stack/${mimic.body.id}`, { startsFast: false })).body).toMatchObject({ startsFast: false });
+    expect((await call("PUT", `/stack/${plain.body.id}`, { startsFast: true })).body).toMatchObject({ startsFast: true });
+  });
+
   it("takes RevenueCat's webhook only with its secret, and reports the subscription", async () => {
     const trial = {
       event: { type: "INITIAL_PURCHASE", app_user_id: "u1", product_id: "neurocal_pro_yearly", period_type: "TRIAL", expiration_at_ms: Date.parse("2026-10-13T22:00:00Z"), event_timestamp_ms: Date.parse("2026-09-29T21:00:00Z") },
