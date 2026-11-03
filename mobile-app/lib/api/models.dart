@@ -1738,6 +1738,14 @@ enum EnvironmentItem {
   final String label;
   final String wire;
 
+  /// What fits on a tile, two to a row.
+  String get short => switch (this) {
+    daylight => 'Morning light',
+    darkBedroom => 'Dark room',
+    quietBedroom => 'Quiet room',
+    filteredWater => 'Filtered water',
+  };
+
   /// Why it matters, for the card's "Why these?" sheet.
   final String why;
 }
