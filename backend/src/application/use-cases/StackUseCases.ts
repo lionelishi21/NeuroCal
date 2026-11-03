@@ -2,12 +2,15 @@ import { conditionsOf } from "../../domain/conditions";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import {
   BEFORE_DAYS,
+  DAY_EFFECT_DAYS,
+  type DayEffect,
   type Experiment,
   type Feeling,
   type Measure,
   type SupplementProfile,
   WATCH_AFTER_STOP_DAYS,
   afterStopOf,
+  dayEffectOf,
   experimentOf,
   measureFor,
   profileOf,
@@ -34,6 +37,8 @@ export type StackItemView = StackItem & {
   profile?: SupplementProfile;
   /** Whether it's working for this person, from their own data. */
   experiment?: Experiment;
+  /** Quick-acting or unknown ones: days it was ticked against days it wasn't. */
+  dayEffect?: DayEffect;
 };
 
 /** Where an experiment's numbers come from: stored Focus Scores and Brain speed checks. */
@@ -115,10 +120,14 @@ export class StackUseCases {
   }
 
   /** Each item's profile and experiment, from one read of each source. */
-  private async experiments(profile: Profile, items: StackItem[], today: string): Promise<Map<string, { profile: SupplementProfile; experiment: Experiment }>> {
-    const out = new Map<string, { profile: SupplementProfile; experiment: Experiment }>();
+  private async experiments(
+    profile: Profile,
+    items: StackItem[],
+    today: string,
+  ): Promise<Map<string, { profile: SupplementProfile; experiment: Experiment; dayEffect?: DayEffect }>> {
+    const out = new Map<string, { profile: SupplementProfile; experiment: Experiment; dayEffect?: DayEffect }>();
     if (!this.sources || items.length === 0) return out;
-    const since = addDays(items.map((i) => i.addedOn).reduce((a, b) => (a < b ? a : b)), -BEFORE_DAYS);
+    const since = [addDays(today, -DAY_EFFECT_DAYS), ...items.map((i) => addDays(i.addedOn, -BEFORE_DAYS))].reduce((a, b) => (a < b ? a : b));
     const [scores, checks, doses, feelings] = await Promise.all([
       this.sources.scores.listSince(profile.userId, since),
       this.sources.brainChecks?.listSince(profile.userId, new Date(`${addDays(since, -1)}T00:00:00Z`)) ?? Promise.resolve([]),
@@ -139,8 +148,16 @@ export class StackUseCases {
       const p = profileOf(item);
       const measure = measureFor(p.purpose);
       const ownSeries = measure ? series[measure] : new Map<string, number>();
+      const taken = doses.filter((d) => d.itemId === item.id).map((d) => d.date);
+      // Taking it scores nothing. One that acts the same day (or one we don't know) shows what it does
+      // by the days it was taken against the days it wasn't.
+      const dayEffect =
+        measure && !item.stoppedOn && (p.purpose === null || p.onsetDays <= 1)
+          ? dayEffectOf({ measure, doneDays: taken, series: ownSeries, today, what: `you took ${item.name}` })
+          : null;
       out.set(item.id, {
         profile: p,
+        ...(dayEffect ? { dayEffect } : {}),
         experiment: item.stoppedOn
           ? afterStopOf({ name: item.name, profile: p, added: item.addedOn, stopped: item.stoppedOn, today, series: ownSeries })
           : experimentOf({
@@ -149,7 +166,7 @@ export class StackUseCases {
               added: item.addedOn,
               today,
               series: ownSeries,
-              doses: doses.filter((d) => d.itemId === item.id).map((d) => d.date),
+              doses: taken,
               feelings: feelings.filter((f) => f.itemId === item.id),
             }),
       });

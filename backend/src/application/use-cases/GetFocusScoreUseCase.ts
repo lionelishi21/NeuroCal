@@ -11,6 +11,8 @@ import {
   focusScoreFrom,
   measuredFocus,
   personalWeights,
+  scoreChangeOf,
+  type ScoreChange,
   withMeasured,
   type MeasuredFocus,
   withWeight,
@@ -72,25 +74,25 @@ export class GetFocusScoreUseCase {
 
     const { userId } = profile;
     const date = input.date ?? localDateOf(this.clock.now(), profile.timeZone);
-    const [inputs, stored, tuning, measured] = await Promise.all([
-      loadFocusInputs(
-        {
-          meals: this.meals,
-          checkIns: this.checkIns,
-          telemetry: this.telemetry,
-          exercises: this.exercises,
-          environment: this.environment,
-          glucose: this.glucose,
-          coffee: this.coffee,
-          sessions: this.sessions,
-        },
-        profile,
-        date,
-      ),
+    const repos = {
+      meals: this.meals,
+      checkIns: this.checkIns,
+      telemetry: this.telemetry,
+      exercises: this.exercises,
+      environment: this.environment,
+      glucose: this.glucose,
+      coffee: this.coffee,
+      sessions: this.sessions,
+    };
+    const yesterday = previousDate(date);
+    const [inputs, yesterdayInputs, stored, tuning, measuredDays] = await Promise.all([
+      loadFocusInputs(repos, profile, date),
+      loadFocusInputs(repos, profile, yesterday),
       this.scores.get(userId, date),
       this.weightsFor(profile, date),
-      this.measuredFor(profile, date),
+      this.measuredFor(profile, [date, yesterday]),
     ]);
+    const measured = measuredDays.get(date) ?? null;
 
     const components = computeFocusComponents(inputs);
     const foundation = focusScoreFrom(components, tuning.weights);
@@ -100,6 +102,13 @@ export class GetFocusScoreUseCase {
       ...(tuning.tuned ? { tuned: true } : {}),
       ...(inputs.previousDayGlucose !== undefined ? { glycemicFromSensor: true } : {}),
       ...(foundation !== null && measured ? { foundation, measured } : {}),
+      ...withChange(
+        scoreChangeOf({
+          today: { components, measuredPoints: foundation !== null ? (measured?.points ?? 0) : 0, score },
+          yesterday: { components: computeFocusComponents(yesterdayInputs), measuredPoints: measuredDays.get(yesterday)?.points ?? 0 },
+          weights: tuning.weights,
+        }),
+      ),
     };
 
     if (stored && stored.score === score && sameComponents(stored.components, components)) return { ...stored, ...tuned };
@@ -127,18 +136,26 @@ export class GetFocusScoreUseCase {
     return found.tuned || glycemic === null ? found : { weights: withWeight(found.weights, "glycemic", glycemic), tuned: false };
   }
 
-  /** The day's latest Brain speed check against the checks before that day, or null without one. */
-  private async measuredFor(profile: Profile, date: string): Promise<MeasuredFocus | null> {
-    if (!this.brainChecks) return null;
-    const checks = await this.brainChecks.listSince(profile.userId, new Date(`${addDays(date, -57)}T00:00:00Z`));
+  /** Each day's latest Brain speed check against the checks before that day; days without one are left out. */
+  private async measuredFor(profile: Profile, dates: string[]): Promise<Map<string, MeasuredFocus>> {
+    const out = new Map<string, MeasuredFocus>();
+    if (!this.brainChecks || dates.length === 0) return out;
+    const earliest = dates.reduce((a, b) => (a < b ? a : b));
+    const checks = await this.brainChecks.listSince(profile.userId, new Date(`${addDays(earliest, -57)}T00:00:00Z`));
     const dayOf = (c: { takenAt: Date }) => localDateOf(c.takenAt, profile.timeZone);
-    // Newest first: the first check on the day is its latest.
-    const today = checks.find((c) => dayOf(c) === date);
-    if (!today) return null;
-    return measuredFocus(
-      today.score,
-      checks.filter((c) => dayOf(c) < date).map((c) => c.score),
-    );
+    for (const date of dates) {
+      // Newest first: the first check on the day is its latest.
+      const latest = checks.find((c) => dayOf(c) === date);
+      if (!latest) continue;
+      out.set(
+        date,
+        measuredFocus(
+          latest.score,
+          checks.filter((c) => dayOf(c) < date && dayOf(c) >= addDays(date, -57)).map((c) => c.score),
+        ),
+      );
+    }
+    return out;
   }
 
   private async personalWeightsFor(profile: Profile, date: string): Promise<{ weights: FocusWeights; tuned: boolean }> {
@@ -170,6 +187,8 @@ export class GetFocusScoreUseCase {
     }
   }
 }
+
+const withChange = (change: ScoreChange | null) => (change ? { change } : {});
 
 const sameComponents = (a: FocusComponents, b: FocusComponents) =>
   a.sleep === b.sleep && a.timing === b.timing && a.glycemic === b.glycemic && a.stress === b.stress && (a.movement ?? null) === (b.movement ?? null) && (a.environment ?? null) === (b.environment ?? null);

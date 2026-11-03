@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { addDays } from "./weight";
-import { afterStopOf, experimentOf, profileOf } from "./experiment";
+import { afterStopOf, dayEffectOf, experimentOf, profileOf } from "./experiment";
 
 const ing = (name: string) => ({ name });
 
@@ -106,5 +106,32 @@ describe("afterStopOf", () => {
   it("watches the first week after stopping, and spots a rise that came later", () => {
     expect(run(68, 76, 75, "2026-10-04")).toMatchObject({ verdict: "watching", summary: expect.stringContaining("3 days ago") });
     expect(run(68, 68, 76)).toMatchObject({ verdict: "no_change", summary: expect.stringContaining("something else") });
+  });
+});
+
+describe("dayEffectOf", () => {
+  const today = "2026-10-31";
+  const days = (n: number, from = 0) => Array.from({ length: n }, (_, i) => addDays(today, -(from + i)));
+
+  it("compares the days it was taken with the days it wasn't", () => {
+    const taken = days(5);
+    const series = new Map([...taken.map((d) => [d, 76] as const), ...days(5, 10).map((d) => [d, 68] as const)]);
+    const effect = dayEffectOf({ measure: "brain_speed", doneDays: taken, series, today, what: "you had coffee" })!;
+    expect(effect).toMatchObject({ verdict: "helping", change: 8, with: { mean: 76, days: 5 }, without: { mean: 68, days: 5 } });
+    expect(effect.summary).toBe("Your Brain speed is higher on days you had coffee: 76 against 68 on other days (5 vs 5).");
+  });
+
+  it("measures sleep the night after", () => {
+    const taken = days(5, 1);
+    const series = new Map([...days(5).map((d) => [d, 80] as const), ...days(5, 10).map((d) => [d, 80] as const)]);
+    expect(dayEffectOf({ measure: "sleep", doneDays: taken, series, today, what: "you took Glycine" })!.summary).toMatch(
+      /^No clear difference in your sleep score on nights after you took Glycine/,
+    );
+  });
+
+  it("waits until both sides have enough days", () => {
+    const taken = days(10);
+    const series = new Map(days(12).map((d) => [d, 70] as const));
+    expect(dayEffectOf({ measure: "brain_speed", doneDays: taken, series, today, what: "you had coffee" })).toBeNull();
   });
 });

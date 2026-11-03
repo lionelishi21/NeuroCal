@@ -181,6 +181,8 @@ export interface FocusScore {
   foundation?: number;
   /** The day's Brain speed check against the person's usual, and the points it moved the score. Not stored. */
   measured?: { brainScore: number; usual: number | null; points: number };
+  /** What moved the score since the day before (domain/focusScore.ts scoreChangeOf). Not stored. */
+  change?: { previous: number; points: number; reasons: { input: keyof FocusComponents | "brain_speed"; points: number }[] };
 }
 
 /** NeuroCal-authored habit protocol (ARCHITECTURE §3). Content lives in the repo, not generated. */

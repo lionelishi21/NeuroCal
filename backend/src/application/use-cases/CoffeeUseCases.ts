@@ -1,7 +1,10 @@
 import { COFFEE_PRODUCT_IDS, type CoffeeAddIn, type CoffeeCup, type CoffeeKind, MAX_CUPS_A_DAY, afterCurfew, cupNutrition, curfewClock, wakeHourOf } from "../../domain/coffee";
+import { DAY_EFFECT_DAYS, type DayEffect, dayEffectOf } from "../../domain/experiment";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { isIsoDate, isOnLocalDay, localDateOf, localTimeOf } from "../../domain/localDay";
 import type { Product } from "../../domain/types";
+import { addDays } from "../../domain/weight";
+import type { IBrainCheckRepository } from "../interfaces/IBrainCheckRepository";
 import type { ICatalogRepository } from "../interfaces/ICatalogRepository";
 import type { IClock } from "../interfaces/IClock";
 import type { ICoffeeRepository, IProfileRepository } from "../interfaces/IRepositories";
@@ -17,6 +20,8 @@ export interface CoffeeDay {
   kcal: number;
   /** The caffeine curfew, local "HH:MM". */
   curfew: string;
+  /** Brain speed on days with coffee against days without; coffee adds no points, this shows what it does. */
+  effect?: DayEffect;
 }
 
 /** The coffee log: a cup with its add-ins in one tap, and the day's cups, caffeine and curfew. */
@@ -26,6 +31,7 @@ export class CoffeeUseCases {
     private readonly coffee: ICoffeeRepository,
     private readonly clock: IClock,
     private readonly catalog?: Pick<ICatalogRepository, "productsByIds">,
+    private readonly brainChecks?: Pick<IBrainCheckRepository, "listSince">,
   ) {}
 
   /** What goes in a good cup: mould-tested coffee, pure C8, grass-fed butter or ghee, creatine. */
@@ -61,13 +67,33 @@ export class CoffeeUseCases {
     const wake = wakeHourOf(profile.bioProfile);
     const cups = (await this.cupsOn(userId, day, profile.timeZone)).map((c) => ({ ...c, afterCurfew: afterCurfew(localTimeOf(c.takenAt, profile.timeZone), wake) }));
     const totals = cups.map(cupNutrition);
+    const effect = await this.effect(userId, day, profile.timeZone);
     return {
       date: day,
       cups,
       caffeineMg: totals.reduce((s, n) => s + n.caffeineMg, 0),
       kcal: Math.round(totals.reduce((s, n) => s + n.kcal, 0)),
       curfew: curfewClock(wake),
+      ...(effect ? { effect } : {}),
     };
+  }
+
+  /** The last eight weeks' Brain speed checks, days with a caffeinated cup against days without. */
+  private async effect(userId: string, today: string, timeZone: string): Promise<DayEffect | null> {
+    if (!this.brainChecks) return null;
+    const from = new Date(`${addDays(today, -DAY_EFFECT_DAYS - 1)}T00:00:00Z`);
+    const [checks, cups] = await Promise.all([
+      this.brainChecks.listSince(userId, from),
+      this.coffee.listBetween(userId, from, new Date(Date.parse(`${today}T12:00:00Z`) + 26 * HOUR_MS)),
+    ]);
+    const series = new Map<string, number>();
+    // Newest first: the first check seen on a day is its latest.
+    for (const c of checks) {
+      const d = localDateOf(c.takenAt, timeZone);
+      if (!series.has(d)) series.set(d, c.score);
+    }
+    const coffeeDays = cups.filter((c) => cupNutrition(c).caffeineMg > 0).map((c) => localDateOf(c.takenAt, timeZone));
+    return dayEffectOf({ measure: "brain_speed", doneDays: coffeeDays, series, today, what: "you had coffee" });
   }
 
   /** Cups on a local day: a window wide enough for any time zone, then the exact day. */

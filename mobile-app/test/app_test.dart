@@ -68,6 +68,8 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Focus Score'), 200);
     expect(find.text('Focus Score'), findsOneWidget);
+    // What moved it since yesterday: in the sample, a longer night.
+    expect(find.textContaining(RegExp(r'^Up \d+ since yesterday: sleep \+\d+'), findRichText: true), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Lunch'), 200);
     expect(find.text('Breakfast'), findsOneWidget);
     expect(find.text('Lunch'), findsOneWidget);
@@ -828,6 +830,7 @@ void main() {
   testWidgets('Up next: one step with the button that does it, and the next one appears by itself', (tester) async {
     await pumpApp(tester);
     await signIn(tester);
+    await tester.scrollUntilVisible(find.text('Up next'), 200);
     expect(find.text('Up next'), findsOneWidget);
     // Seven sample days and today, each with something logged.
     expect(find.text('8-day streak. Today counts'), findsOneWidget);
@@ -900,6 +903,7 @@ void main() {
     expect(shown.score, isNotNull);
     expect(shown.word, isNot('No score yet'));
     expect(shown.streakDays, 8);
+    await tester.scrollUntilVisible(find.text(shown.next), 200);
     expect(find.text(shown.next), findsWidgets);
   });
 

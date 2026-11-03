@@ -70,6 +70,13 @@ describe("GetFocusScoreUseCase", () => {
   const build = (explainer = new FakeExplainer()) =>
     new GetFocusScoreUseCase(profiles, meals, checkIns, telemetry, scores, explainer, clock);
 
+  it("says what moved the score since yesterday: a full night after a short one", async () => {
+    // The night before last: 3 h. Last night: 6 h.
+    await telemetry.upsertSleep("u1", [{ ...sleepNight, start: new Date("2026-09-28T07:00:00Z"), end: new Date("2026-09-28T10:00:00Z") }, sleepNight]);
+    const result = await build().execute({ userId: "u1" });
+    expect(result.change).toEqual({ previous: 38, points: 37, reasons: [{ input: "sleep", points: 37 }] });
+  });
+
   it("counts yesterday's exercise as movement (v1), and says when the weights are tuned to the person", async () => {
     const exercises = new InMemoryExercises();
     const brainChecks = new InMemoryBrainChecks();

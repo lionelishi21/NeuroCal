@@ -204,6 +204,7 @@ class FocusScore {
     this.glycemicFromSensor = false,
     this.foundation,
     this.measured,
+    this.change,
   });
 
   final String date;
@@ -226,6 +227,9 @@ class FocusScore {
   /// points it moved the score: half the difference, at most 10 either way.
   final MeasuredFocus? measured;
 
+  /// What moved the score since yesterday; null without a score on both days.
+  final ScoreChange? change;
+
   factory FocusScore.fromJson(Map<String, dynamic> j) => FocusScore(
     date: j['date'] as String,
     score: (j['score'] as num?)?.toInt(),
@@ -242,8 +246,33 @@ class FocusScore {
       ),
       _ => null,
     },
+    change: switch (j['change']) {
+      {'previous': final num previous, 'points': final num points, 'reasons': final List reasons} => (
+        previous: previous.toInt(),
+        points: points.toInt(),
+        reasons: [for (final r in reasons) (input: r['input'] as String, points: (r['points'] as num).toInt())],
+      ),
+      _ => null,
+    },
   );
 }
+
+/// What moved the Focus Score since yesterday: whole points per input (`sleep`, `timing`, `glycemic`,
+/// `stress`, `movement`, `environment` or `brain_speed`), biggest first, adding up to [points].
+typedef ScoreChange = ({int previous, int points, List<({String input, int points})> reasons});
+
+/// Days something was taken against days it wasn't, on its measure; it adds no points, this is how
+/// it shows what it does. [verdict] is helping, no_change or worse; [summary] is shown as is.
+typedef DayEffect = ({String verdict, double change, String summary});
+
+DayEffect? dayEffectFromJson(Object? j) => switch (j) {
+  {'verdict': final String verdict, 'change': final num change, 'summary': final String summary} => (
+    verdict: verdict,
+    change: change.toDouble(),
+    summary: summary,
+  ),
+  _ => null,
+};
 
 /// Today's Brain speed against the usual, and the points it moved the Focus Score.
 typedef MeasuredFocus = ({int brainScore, int? usual, int points});
@@ -817,6 +846,7 @@ class StackItem {
     this.addedOn,
     this.profile,
     this.experiment,
+    this.dayEffect,
     this.stoppedOn,
     this.shopUrl,
     this.startsFast = false,
@@ -843,6 +873,9 @@ class StackItem {
   final SupplementProfile? profile;
   final SupplementExperiment? experiment;
 
+  /// Quick-acting or unknown supplements: the days it was ticked against the days it wasn't.
+  final DayEffect? dayEffect;
+
   /// Our brand's store page, for a reorder (only MitoProof products have one).
   final String? shopUrl;
 
@@ -865,6 +898,7 @@ class StackItem {
     addedOn: addedOn,
     profile: profile,
     experiment: experiment ?? this.experiment,
+    dayEffect: dayEffect,
     stoppedOn: stoppedOn,
     shopUrl: shopUrl,
     startsFast: startsFast,
@@ -885,6 +919,7 @@ class StackItem {
     stoppedOn: j['stoppedOn'] as String?,
     profile: _profileFromJson(j['profile']),
     experiment: j['experiment'] == null ? null : SupplementExperiment.fromJson(j['experiment'] as Map<String, dynamic>),
+    dayEffect: dayEffectFromJson(j['dayEffect']),
     shopUrl: j['shopUrl'] as String?,
     startsFast: j['startsFast'] as bool? ?? false,
   );
@@ -2140,7 +2175,14 @@ typedef CoffeeCup = ({
 
 /// A day's coffee (`CoffeeDay` in the contracts).
 class CoffeeDay {
-  const CoffeeDay({required this.date, this.cups = const [], this.caffeineMg = 0, this.kcal = 0, required this.curfew});
+  const CoffeeDay({
+    required this.date,
+    this.cups = const [],
+    this.caffeineMg = 0,
+    this.kcal = 0,
+    required this.curfew,
+    this.effect,
+  });
 
   final String date;
 
@@ -2151,6 +2193,9 @@ class CoffeeDay {
 
   /// Local "HH:MM".
   final String curfew;
+
+  /// Brain speed on days with coffee against days without.
+  final DayEffect? effect;
 
   factory CoffeeDay.fromJson(Map<String, dynamic> j) => CoffeeDay(
     date: j['date'] as String,
@@ -2171,6 +2216,7 @@ class CoffeeDay {
     caffeineMg: (j['caffeineMg'] as num).toInt(),
     kcal: (j['kcal'] as num).toInt(),
     curfew: j['curfew'] as String,
+    effect: dayEffectFromJson(j['effect']),
   );
 }
 

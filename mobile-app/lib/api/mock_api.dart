@@ -284,7 +284,25 @@ class MockNeuroCalApi implements NeuroCalApi {
             points: usual == null ? 0 : ((today.score - usual) / 2).clamp(-10, 10).round(),
           );
     final score = measured == null ? foundation : (foundation + measured.points).clamp(0, 100);
+    // Yesterday in the sample: a shorter night (0.62), everything else the same and no Brain speed check.
+    final previous = sleep == null
+        ? null
+        : (100 * (weighted - 0.3 * (sleep - 0.62)) / (1 - (environment == null ? 0.1 : 0))).round();
+    final brainPoints = measured?.points ?? 0;
     return FocusScore(
+      change: previous == null
+          ? null
+          : (
+              previous: previous,
+              points: score - previous,
+              reasons: [
+                for (final r in [
+                  (input: 'sleep', points: score - previous - brainPoints),
+                  (input: 'brain_speed', points: brainPoints),
+                ])
+                  if (r.points != 0) r,
+              ]..sort((a, b) => b.points.abs().compareTo(a.points.abs())),
+            ),
       foundation: measured == null ? null : foundation,
       measured: measured,
       date: isoDate(day),
@@ -756,6 +774,14 @@ class MockNeuroCalApi implements NeuroCalApi {
       caffeineMg: today.fold(0, (s, c) => s + c.caffeineMg),
       kcal: today.fold(0, (s, c) => s + c.kcal),
       curfew: '15:00',
+      // As the API, once there are enough Brain speed checks on days with and without coffee.
+      effect: _cups.isEmpty
+          ? null
+          : (
+              verdict: 'helping',
+              change: 6.0,
+              summary: 'Your Brain speed is higher on days you had coffee: 74 against 68 on other days (9 vs 6).',
+            ),
     );
   }
 
@@ -1916,6 +1942,15 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
       profile: (purpose: purpose, onsetDays: onset, ingredients: found),
       // The server matches the name to our brand's catalog; here any MitoProof name gets the store.
       shopUrl: RegExp('mito ?proof', caseSensitive: false).hasMatch(item.name) ? 'https://www.mitoproof.com/' : null,
+      // As the API: a quick-acting or unknown one, two weeks in, compares the days it was ticked.
+      dayEffect: (purpose == null || onset <= 1) && measure == 'brain_speed' && day >= 14
+          ? (
+              verdict: 'helping',
+              change: 5.0,
+              summary:
+                  'Your Brain speed is higher on days you took ${item.name}: 73 against 68 on other days (10 vs 4).',
+            )
+          : null,
       experiment: SupplementExperiment(
         measure: measure,
         day: day,

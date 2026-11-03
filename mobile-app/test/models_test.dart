@@ -52,6 +52,48 @@ void main() {
     );
   });
 
+  test('a Focus Score says what moved it, and coffee and supplements carry their day comparison', () {
+    final f = FocusScore.fromJson({
+      'date': '2026-10-26',
+      'score': 79,
+      'components': {'sleep': 0.8, 'timing': 1, 'glycemic': 0.7, 'stress': 0.75},
+      'explanation': 'x',
+      'change': {
+        'previous': 72,
+        'points': 7,
+        'reasons': [
+          {'input': 'sleep', 'points': 8},
+          {'input': 'timing', 'points': -1},
+        ],
+      },
+    });
+    expect(f.change?.points, 7);
+    expect(f.change?.reasons.first, (input: 'sleep', points: 8));
+    final effect = {
+      'measure': 'brain_speed',
+      'with': {'mean': 74, 'days': 9},
+      'without': {'mean': 68, 'days': 6},
+      'change': 6,
+      'verdict': 'helping',
+      'summary': 'Your Brain speed is higher on days you had coffee.',
+    };
+    expect(
+      CoffeeDay.fromJson({
+        'date': '2026-10-26',
+        'cups': [],
+        'caffeineMg': 0,
+        'kcal': 0,
+        'curfew': '15:00',
+        'effect': effect,
+      }).effect,
+      (verdict: 'helping', change: 6.0, summary: 'Your Brain speed is higher on days you had coffee.'),
+    );
+    expect(
+      CoffeeDay.fromJson({'date': '2026-10-26', 'cups': [], 'caffeineMg': 0, 'kcal': 0, 'curfew': '15:00'}).effect,
+      isNull,
+    );
+  });
+
   test('flags use the contract wire names', () {
     expect(CognitiveFlag.brainFog.wire, 'brain_fog');
     expect(CognitiveFlag.lowEnergy.wire, 'low_energy');

@@ -179,6 +179,40 @@ void main() {
     },
   );
 
+  testWidgets('an unknown supplement scores nothing but shows the days it was taken against the days it wasn\'t', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final api = MockNeuroCalApi()..latency = Duration.zero;
+    final nad = (await tester.runAsync(
+      () => api.addToStack(name: 'NAD+ Boost', ingredients: const [], servingsPerDay: 1, timing: StackTiming.morning),
+    ))!;
+    api.stackAddedOn[nad.id] = DateTime.now().subtract(const Duration(days: 20));
+    await tester.pumpWidget(
+      AppScope(
+        api: api,
+        auth: MockAuthClient(),
+        theme: ThemeController(await SharedPreferences.getInstance()),
+        timeZone: () async => 'Europe/London',
+        openLink: (_) async => true,
+        billing: MockBilling(active: true),
+        child: MaterialApp(
+          theme: buildTheme(Brightness.light),
+          builder: (context, child) => ToastHost(child: child!),
+          home: const StackScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NAD+ Boost'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Days you took it'), 200, scrollable: find.byType(Scrollable).last);
+    expect(find.textContaining('Your Brain speed is higher on days you took NAD+ Boost'), findsOneWidget);
+  });
+
   testWidgets('stopping a supplement keeps watching it: did the gain last?', (tester) async {
     tester.view.physicalSize = const Size(360, 1000);
     tester.view.devicePixelRatio = 1;

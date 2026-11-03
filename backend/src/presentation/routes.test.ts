@@ -523,15 +523,15 @@ describe("API routes", () => {
     const plain = await call("POST", "/stack", { ...supplement, name: "Magnesium glycinate" });
     expect(plain.body).toMatchObject({ startsFast: false });
 
-    expect((await call("PUT", `/stack/${plain.body.id}/taken`, { taken: true })).body).toEqual({ taken: true });
-    expect((await call("PUT", `/stack/${mimic.body.id}/taken`, { taken: true })).body).toEqual({ taken: true, fastUntil: "2026-09-30T05:10:00.000Z" });
+    expect((await call("PUT", `/stack/${(plain.body as { id: string }).id}/taken`, { taken: true })).body).toEqual({ taken: true });
+    expect((await call("PUT", `/stack/${(mimic.body as { id: string }).id}/taken`, { taken: true })).body).toEqual({ taken: true, fastUntil: "2026-09-30T05:10:00.000Z" });
     expect((await call("GET", "/fasting")).body).toMatchObject({ plan: { until: "2026-09-30T05:10:00.000Z" } });
     // A fast is already running: ticking it again leaves it alone.
-    expect((await call("PUT", `/stack/${mimic.body.id}/taken`, { taken: true })).body).toEqual({ taken: true });
+    expect((await call("PUT", `/stack/${(mimic.body as { id: string }).id}/taken`, { taken: true })).body).toEqual({ taken: true });
 
     // It can be switched off, and on for a supplement NeuroCal didn't recognise.
-    expect((await call("PUT", `/stack/${mimic.body.id}`, { startsFast: false })).body).toMatchObject({ startsFast: false });
-    expect((await call("PUT", `/stack/${plain.body.id}`, { startsFast: true })).body).toMatchObject({ startsFast: true });
+    expect((await call("PUT", `/stack/${(mimic.body as { id: string }).id}`, { startsFast: false })).body).toMatchObject({ startsFast: false });
+    expect((await call("PUT", `/stack/${(plain.body as { id: string }).id}`, { startsFast: true })).body).toMatchObject({ startsFast: true });
   });
 
   it("takes RevenueCat's webhook only with its secret, and reports the subscription", async () => {

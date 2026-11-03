@@ -1088,7 +1088,17 @@ class _FocusCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: Space.s4),
+          // What moved it since yesterday, right above the inputs it names.
+          if (focus.change case final change?)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.s3),
+              child: _ChangeLine(
+                change,
+                sinceYesterday: focus.date == isoDate(DateTime.now()),
+                sugarFromSensor: focus.glycemicFromSensor,
+              ),
+            ),
+          SizedBox(height: focus.change == null ? Space.s4 : Space.s3),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1136,6 +1146,68 @@ const _inputWhy = {
 
 /// One of the six inputs as a small ring in its body system's colour: full and green from 0.75,
 /// amber below; a "+" when there's nothing yet and it can be logged.
+/// Why the score moved since yesterday: "Up 7 since yesterday: sleep +8, evening −1". The parts add
+/// up to the change; the biggest three are named.
+class _ChangeLine extends StatelessWidget {
+  const _ChangeLine(this.change, {required this.sinceYesterday, required this.sugarFromSensor});
+
+  final ScoreChange change;
+
+  /// Today's score; a past day's says "the day before".
+  final bool sinceYesterday;
+  final bool sugarFromSensor;
+
+  static String signed(int n) => n > 0 ? '+$n' : '−${-n}';
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final since = sinceYesterday ? 'yesterday' : 'the day before';
+    final p = change.points;
+    final head = p > 0 ? 'Up $p since $since' : (p < 0 ? 'Down ${-p} since $since' : 'Same as $since');
+    String name(String input) => switch (input) {
+      'sleep' => 'sleep',
+      'timing' => 'evening',
+      'glycemic' => sugarFromSensor ? 'blood sugar' : 'food',
+      'stress' => 'stress',
+      'movement' => 'movement',
+      'environment' => 'air',
+      'brain_speed' => 'Brain speed',
+      _ => input,
+    };
+    final why = [for (final r in change.reasons.take(3)) '${name(r.input)} ${signed(r.points)}'].join(', ');
+    final (icon, color) = p > 0
+        ? (Icons.trending_up_rounded, c.ionInk)
+        : p < 0
+        ? (Icons.trending_down_rounded, c.glucoseInk)
+        : (Icons.trending_flat_rounded, c.inkSoft);
+    return Semantics(
+      container: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 4,
+        children: [
+          Icon(icon, size: 14, color: color),
+          Flexible(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: head,
+                    style: TextStyle(fontWeight: FontWeight.w700, color: color),
+                  ),
+                  if (why.isNotEmpty) TextSpan(text: ': $why'),
+                ],
+              ),
+              style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// What today's Brain speed check did to the score: the measured layer on top of the inputs.
 class _MeasuredLine extends StatelessWidget {
   const _MeasuredLine(this.m);

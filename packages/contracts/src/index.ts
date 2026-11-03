@@ -319,6 +319,22 @@ export const FocusScore = z.object({
   measured: z
     .object({ brainScore: z.number().int().min(0).max(100), usual: z.number().int().min(0).max(100).nullable(), points: z.number().int().min(-10).max(10) })
     .optional(),
+  /**
+   * What moved the score since the day before: whole points per input (or the day's Brain speed check)
+   * that add up to `points`, biggest first. Absent without a score on both days.
+   */
+  change: z
+    .object({
+      previous: z.number().int().min(0).max(100),
+      points: z.number().int().min(-100).max(100),
+      reasons: z.array(
+        z.object({
+          input: z.enum(["sleep", "timing", "glycemic", "stress", "movement", "environment", "brain_speed"]),
+          points: z.number().int().min(-100).max(100),
+        }),
+      ),
+    })
+    .optional(),
 });
 export type FocusScore = z.infer<typeof FocusScore>;
 
@@ -486,6 +502,23 @@ export const CoffeeCup = z.object({
 });
 export type CoffeeCup = z.infer<typeof CoffeeCup>;
 
+/**
+ * Days it was taken against days it wasn't, on its measure (Brain speed for most): how anything that
+ * isn't scored shows what it does for this person. Only once both sides have enough days.
+ */
+export const DayEffect = z.object({
+  measure: z.enum(["brain_speed", "sleep", "stress"]),
+  /** Means on a 0–100 scale and how many days each has. */
+  with: z.object({ mean: z.number(), days: z.number().int() }),
+  without: z.object({ mean: z.number(), days: z.number().int() }),
+  /** with − without, in points. */
+  change: z.number(),
+  verdict: z.enum(["helping", "no_change", "worse"]),
+  /** One plain sentence; show as is. */
+  summary: z.string(),
+});
+export type DayEffect = z.infer<typeof DayEffect>;
+
 /** A day's coffee: the cups (oldest first), caffeine, the add-ins' calories and the curfew. */
 export const CoffeeDay = z.object({
   date: IsoDate,
@@ -494,6 +527,8 @@ export const CoffeeDay = z.object({
   kcal: z.number().int().nonnegative(),
   /** Local "HH:MM". */
   curfew: z.string(),
+  /** Brain speed on days with coffee against days without, over the last eight weeks. */
+  effect: DayEffect.optional(),
 });
 export type CoffeeDay = z.infer<typeof CoffeeDay>;
 
@@ -1268,6 +1303,8 @@ export const StackItem = z.object({
   profile: SupplementProfile.optional(),
   /** Whether it's working for this person, from their own data (backend domain/experiment.ts). */
   experiment: SupplementExperiment.optional(),
+  /** Quick-acting or unknown supplements: the days it was ticked against the days it wasn't. */
+  dayEffect: DayEffect.optional(),
   /** Where to buy more: the MitoProof store page, when this is one of our brand's products. */
   shopUrl: z.string().url().optional(),
   /** A fasting-mimicking supplement: ticking it as taken starts a fast. */

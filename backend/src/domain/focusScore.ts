@@ -230,6 +230,81 @@ export function measuredFocus(today: number, earlier: number[]): MeasuredFocus {
 /** The foundation moved by the measured points, kept within 0–100. */
 export const withMeasured = (foundation: number, measured: MeasuredFocus) => Math.max(0, Math.min(100, foundation + measured.points));
 
+/** What moved the score since the day before: an input, or the day's Brain speed check. */
+export type ScoreInput = keyof FocusComponents | "brain_speed";
+
+export interface ScoreChange {
+  /** The day before's score, scored the same way. */
+  previous: number;
+  /** score − previous. */
+  points: number;
+  /** Whole points per input that moved, biggest first; they add up to `points`. */
+  reasons: { input: ScoreInput; points: number }[];
+}
+
+/** The weighted average, unrounded (0–100), of the components that have data; null when none do. */
+function rawFoundation(components: FocusComponents, weights: FocusWeights): number | null {
+  let weighted = 0;
+  let total = 0;
+  for (const key of Object.keys(weights) as (keyof FocusComponents)[]) {
+    const value = components[key];
+    if (value === null || value === undefined) continue;
+    weighted += weights[key] * value;
+    total += weights[key];
+  }
+  return total === 0 ? null : (100 * weighted) / total;
+}
+
+/**
+ * Why the score moved since the day before ("+6 from sleep, −4 from evening timing"), with the day's
+ * weights for both days so only the inputs differ. Inputs are swapped from the day before's values to
+ * the day's one at a time (changed ones first, then new ones, then ones that went missing), and each
+ * gets the move its swap made, so the parts add up exactly; the Brain speed check gets the change in
+ * its points. Rounded so the whole points still add up to the change. Null without a score either day.
+ */
+export function scoreChangeOf(o: {
+  today: { components: FocusComponents; measuredPoints: number; score: number | null };
+  yesterday: { components: FocusComponents; measuredPoints: number };
+  weights: FocusWeights;
+}): ScoreChange | null {
+  const before = rawFoundation(o.yesterday.components, o.weights);
+  if (before === null || o.today.score === null) return null;
+  const previous = Math.max(0, Math.min(100, Math.round(before) + o.yesterday.measuredPoints));
+  const has = (c: FocusComponents, k: keyof FocusComponents) => c[k] !== null && c[k] !== undefined;
+  const keys = Object.keys(o.weights) as (keyof FocusComponents)[];
+  const ordered = [
+    ...keys.filter((k) => has(o.yesterday.components, k) && has(o.today.components, k)),
+    ...keys.filter((k) => !has(o.yesterday.components, k) && has(o.today.components, k)),
+    ...keys.filter((k) => has(o.yesterday.components, k) && !has(o.today.components, k)),
+  ];
+  const raw: { input: ScoreInput; raw: number }[] = [];
+  let state: FocusComponents = { ...o.yesterday.components };
+  let at = before;
+  for (const k of ordered) {
+    const next = { ...state, [k]: o.today.components[k] ?? null };
+    // Dropping the last input leaves nothing to average: nothing is left to move.
+    const moved = rawFoundation(next, o.weights) ?? at;
+    raw.push({ input: k, raw: moved - at });
+    state = next;
+    at = moved;
+  }
+  raw.push({ input: "brain_speed", raw: o.today.measuredPoints - o.yesterday.measuredPoints });
+
+  const points = o.today.score - previous;
+  const rounded = raw.map((r) => ({ ...r, points: Math.round(r.raw) }));
+  // Hand out what rounding (and the 0–100 limits) left over to the parts rounded furthest from it.
+  for (let left = points - rounded.reduce((s, r) => s + r.points, 0); left !== 0; left -= Math.sign(left)) {
+    const step = Math.sign(left);
+    const pick = rounded.reduce((a, b) => ((b.raw - b.points) * step > (a.raw - a.points) * step ? b : a));
+    pick.points += step;
+  }
+  const reasons = rounded
+    .filter((r) => r.points !== 0)
+    .sort((a, b) => Math.abs(b.points) - Math.abs(a.points))
+    .map(({ input, points: p }) => ({ input, points: p }));
+  return { previous, points, reasons };
+}
+
 /** Days of a score and a Brain speed check together before the weights are tuned to a person. */
 export const MIN_TUNING_DAYS = 14;
 /** Days a single input needs data on before its own weight can move. */

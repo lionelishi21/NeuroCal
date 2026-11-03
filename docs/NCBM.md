@@ -18,7 +18,7 @@ NeuroCal is a self-improvement tool, not a medical device. It doesn't diagnose o
 
 ## 3. The model
 
-Seven pillars feed the signals. The signals make one daily score, two outcomes check it, and the loop turns weak spots into actions. Supplements aren't scored: they're checked for safety across the whole stack.
+Seven pillars feed the signals. The signals make one daily score, two outcomes check it, and the loop turns weak spots into actions. Supplements and coffee aren't scored: taking something earns no points. They're checked for safety across the whole stack, and they show what they do instead: the days you took one (a quick-acting supplement, one NeuroCal doesn't know, or a cup of coffee) against the days you didn't, on Brain speed, or on sleep the night after for sleep aids.
 
 ```mermaid
 flowchart LR
@@ -70,6 +70,8 @@ flowchart LR
 ```
 
 *Every pillar but supplements is in the score (v1.1).*
+
+The score says what moved it since yesterday ("Up 7 since yesterday: sleep +8, evening −1"). Each input is swapped from yesterday's value to today's, one at a time with today's weights, and gets the points its swap moved; the Brain speed check gets the change in its points. The parts are rounded so they add up to the change.
 
 ### 3.1 The Focus Score (v1.1, built)
 

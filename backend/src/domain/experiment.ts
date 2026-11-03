@@ -327,3 +327,57 @@ export function afterStopOf(o: {
       : `No clear change from ${name}, on it or off it: ${numbers}.`,
   };
 }
+
+/**
+ * Days with against days without (docs/NCBM.md): how something that isn't scored, like a supplement
+ * that acts the same day or a cup of coffee, shows what it does for this person. Taking it adds no
+ * points; this says whether the days they took it measured differently.
+ */
+export interface DayEffect {
+  measure: Measure;
+  /** Means on the measure's 0–100 scale, and how many days each has. */
+  with: { mean: number; days: number };
+  without: { mean: number; days: number };
+  /** with − without, in points. */
+  change: number;
+  verdict: "helping" | "no_change" | "worse";
+  summary: string;
+}
+
+/** How far back a day comparison reaches. */
+export const DAY_EFFECT_DAYS = 56;
+
+/**
+ * [doneDays]: local dates it was taken; [series]: the measure by local date; [what]: "you took Lion's
+ * Mane", "you had coffee". Sleep is measured the night after, so it compares the next day's sleep
+ * score. Null until each side has MIN_DAYS measured days.
+ */
+export function dayEffectOf(o: { measure: Measure; doneDays: string[]; series: Map<string, number>; today: string; what: string }): DayEffect | null {
+  const lag = o.measure === "sleep" ? 1 : 0;
+  const withDays = new Set(o.doneDays.map((d) => addDaysTo(d, lag)));
+  const from = dayIndex(o.today) - DAY_EFFECT_DAYS;
+  const inRange = [...o.series.entries()].filter(([d]) => dayIndex(d) > from && dayIndex(d) <= dayIndex(o.today));
+  const withValues = inRange.filter(([d]) => withDays.has(d)).map(([, v]) => v);
+  const withoutValues = inRange.filter(([d]) => !withDays.has(d)).map(([, v]) => v);
+  if (withValues.length < MIN_DAYS || withoutValues.length < MIN_DAYS) return null;
+  const change = Math.round((mean(withValues) - mean(withoutValues)) * 10) / 10;
+  const real = Math.abs(change) >= Math.max(MIN_CHANGE[o.measure], 0.5 * sd(withoutValues));
+  const verdict = !real ? "no_change" : change > 0 ? "helping" : "worse";
+  const label = LABEL[o.measure];
+  const on = lag ? `on nights after ${o.what}` : `on days ${o.what}`;
+  const compare = `${Math.round(mean(withValues))} against ${Math.round(mean(withoutValues))} on other ${lag ? "nights" : "days"} (${withValues.length} vs ${withoutValues.length})`;
+  const stat = (xs: number[]) => ({ mean: Math.round(mean(xs) * 10) / 10, days: xs.length });
+  return {
+    measure: o.measure,
+    with: stat(withValues),
+    without: stat(withoutValues),
+    change,
+    verdict,
+    summary:
+      verdict === "no_change"
+        ? `No clear difference in your ${label} ${on}: ${compare}.`
+        : `Your ${label} is ${verdict === "helping" ? "higher" : "lower"} ${on}: ${compare}.`,
+  };
+}
+
+const addDaysTo = (date: string, days: number) => new Date((dayIndex(date) + days) * DAY_MS).toISOString().slice(0, 10);

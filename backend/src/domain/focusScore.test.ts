@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  scoreChangeOf,
   withWeight,
   computeFocusComponents,
   fallbackExplanation,
@@ -199,5 +200,54 @@ describe("withWeight", () => {
     expect(w.glycemic).toBe(0.25);
     expect(Object.values(w).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
     expect(w.sleep / w.timing).toBeCloseTo(1.5, 10);
+  });
+});
+
+describe("scoreChangeOf", () => {
+  const none = { sleep: null, timing: null, glycemic: null, stress: null, movement: null, environment: null };
+  const scored = (c: typeof none, measured = 0) => {
+    const f = focusScoreFrom(c);
+    return f === null ? null : Math.max(0, Math.min(100, f + measured));
+  };
+
+  it("splits the move between the inputs that changed, adding up to the change", () => {
+    const yesterday = { ...none, sleep: 0.6, timing: 0.8, glycemic: 0.7, stress: 0.75 };
+    const today = { ...none, sleep: 0.9, timing: 0.6, glycemic: 0.7, stress: 0.75 };
+    const change = scoreChangeOf({
+      today: { components: today, measuredPoints: 0, score: scored(today) },
+      yesterday: { components: yesterday, measuredPoints: 0 },
+      weights: FOCUS_WEIGHTS,
+    })!;
+    expect(change.previous).toBe(scored(yesterday));
+    expect(change.points).toBe(scored(today)! - scored(yesterday)!);
+    expect(change.reasons[0]).toMatchObject({ input: "sleep" });
+    expect(change.reasons[0]!.points).toBeGreaterThan(0);
+    expect(change.reasons.find((r) => r.input === "timing")!.points).toBeLessThan(0);
+    expect(change.reasons.some((r) => r.input === "glycemic" || r.input === "stress")).toBe(false);
+    expect(change.reasons.reduce((s, r) => s + r.points, 0)).toBe(change.points);
+  });
+
+  it("counts a new input and the Brain speed check, still adding up", () => {
+    const yesterday = { ...none, sleep: 0.8, timing: 0.8 };
+    const today = { ...none, sleep: 0.8, timing: 0.8, stress: 0.25 };
+    const change = scoreChangeOf({
+      today: { components: today, measuredPoints: 4, score: scored(today, 4) },
+      yesterday: { components: yesterday, measuredPoints: -2 },
+      weights: FOCUS_WEIGHTS,
+    })!;
+    expect(change.previous).toBe(scored(yesterday, -2));
+    expect(change.reasons).toEqual(
+      expect.arrayContaining([
+        { input: "brain_speed", points: 6 },
+        expect.objectContaining({ input: "stress" }),
+      ]),
+    );
+    expect(change.reasons.find((r) => r.input === "stress")!.points).toBeLessThan(0);
+    expect(change.reasons.reduce((s, r) => s + r.points, 0)).toBe(change.points);
+  });
+
+  it("has nothing to say without a score the day before", () => {
+    const today = { ...none, sleep: 0.8 };
+    expect(scoreChangeOf({ today: { components: today, measuredPoints: 0, score: 80 }, yesterday: { components: none, measuredPoints: 0 }, weights: FOCUS_WEIGHTS })).toBeNull();
   });
 });

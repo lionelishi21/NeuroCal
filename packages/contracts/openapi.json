@@ -4336,6 +4336,9 @@
           },
           "curfew": {
             "type": "string"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/DayEffect"
           }
         },
         "required": [
@@ -4521,6 +4524,71 @@
         "required": [
           "mediaType",
           "sizeBytes"
+        ]
+      },
+      "DayEffect": {
+        "type": "object",
+        "properties": {
+          "measure": {
+            "type": "string",
+            "enum": [
+              "brain_speed",
+              "sleep",
+              "stress"
+            ]
+          },
+          "with": {
+            "type": "object",
+            "properties": {
+              "mean": {
+                "type": "number"
+              },
+              "days": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mean",
+              "days"
+            ]
+          },
+          "without": {
+            "type": "object",
+            "properties": {
+              "mean": {
+                "type": "number"
+              },
+              "days": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mean",
+              "days"
+            ]
+          },
+          "change": {
+            "type": "number"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "helping",
+              "no_change",
+              "worse"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "measure",
+          "with",
+          "without",
+          "change",
+          "verdict",
+          "summary"
         ]
       },
       "DeviceCandidate": {
@@ -5273,6 +5341,55 @@
               "brainScore",
               "usual",
               "points"
+            ]
+          },
+          "change": {
+            "type": "object",
+            "properties": {
+              "previous": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "points": {
+                "type": "integer",
+                "minimum": -100,
+                "maximum": 100
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "input": {
+                      "type": "string",
+                      "enum": [
+                        "sleep",
+                        "timing",
+                        "glycemic",
+                        "stress",
+                        "movement",
+                        "environment",
+                        "brain_speed"
+                      ]
+                    },
+                    "points": {
+                      "type": "integer",
+                      "minimum": -100,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "points"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "previous",
+              "points",
+              "reasons"
             ]
           }
         },
@@ -8414,6 +8531,9 @@
           },
           "experiment": {
             "$ref": "#/components/schemas/SupplementExperiment"
+          },
+          "dayEffect": {
+            "$ref": "#/components/schemas/DayEffect"
           },
           "shopUrl": {
             "type": "string",

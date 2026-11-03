@@ -4,6 +4,7 @@ import '../api/models.dart';
 import '../app_scope.dart';
 import '../coffee_fats.dart';
 import '../theme/tokens.dart';
+import '../widgets/day_effect.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
@@ -190,6 +191,11 @@ class _LogCoffeeState extends State<_LogCoffee> {
         ),
         if (_problem != null) SheetNote(lead: "Couldn't log it.", detail: _problem!),
         SheetAction(label: _busy ? 'Logging…' : 'Log cup', onPressed: _busy ? null : _log),
+        // Coffee adds no points: this is what it does for you, from your Brain speed checks.
+        if (day?.effect case final effect?) ...[
+          const GroupLabel('What coffee does for you', top: Space.s2),
+          DayEffectNote(effect),
+        ],
         if (day != null && day.cups.isNotEmpty) ...[
           GroupLabel('Today · ${day.caffeineMg} mg caffeine · curfew ${day.curfew}', top: Space.s2),
           for (final cup in day.cups)

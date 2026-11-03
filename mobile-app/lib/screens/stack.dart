@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import '../widgets/day_effect.dart';
 import 'plan_fast_sheet.dart' show fastEnd;
 import 'session_sheet.dart';
 import 'supplement_sheet.dart';
@@ -649,6 +650,7 @@ class _Working extends StatelessWidget {
             'You said it makes you feel: ${f.label.toLowerCase()}.',
             style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
           ),
+        if (item.dayEffect case final d?) ...[const GroupLabel('Days you took it', top: Space.s2), DayEffectNote(d)],
         if (profile != null && profile.ingredients.isNotEmpty) ...[
           const GroupLabel('What to expect', top: Space.s2),
           for (final i in profile.ingredients)
