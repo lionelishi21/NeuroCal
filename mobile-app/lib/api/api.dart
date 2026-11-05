@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -274,10 +275,16 @@ class HttpNeuroCalApi implements NeuroCalApi {
     required this.token,
     http.Client? client,
     this.retryDelays = const [Duration(milliseconds: 600), Duration(milliseconds: 1800)],
-  }) : _client = client ?? http.Client();
+    Duration timeout = const Duration(seconds: 35),
+    this.onUnauthorized,
+  }) : _client = _TimeoutClient(client ?? http.Client(), timeout);
 
   final String baseUrl;
   final Future<String?> Function() token;
+
+  /// The API turned the sign-in down (401): it has ended (Amplify refreshes live tokens itself), so the
+  /// app signs out and shows sign-in, instead of every screen failing.
+  final void Function()? onUnauthorized;
   final http.Client _client;
 
   /// The pauses before each retry of a read the server turned away for a moment: too many requests at
@@ -305,6 +312,7 @@ class HttpNeuroCalApi implements NeuroCalApi {
       Uri.parse(baseUrl.replaceAll(RegExp(r'/+$'), '') + path).replace(queryParameters: query);
 
   dynamic _decode(http.Response res) {
+    if (res.statusCode == 401) onUnauthorized?.call();
     if (res.statusCode >= 400) {
       // The API answers errors as {code, message}; anything else (a gateway page) keeps its reason phrase.
       Object? body;
@@ -1032,4 +1040,22 @@ class HttpNeuroCalApi implements NeuroCalApi {
       },
     ],
   });
+}
+
+/// Gives up on a request with no answer after [timeout], so a screen on a weak connection shows its
+/// "try again" state instead of loading forever. 35 seconds: the API itself stops at 29 (API Gateway),
+/// which a slow photo reading can come close to.
+class _TimeoutClient extends http.BaseClient {
+  _TimeoutClient(this._inner, this.timeout);
+
+  final http.Client _inner;
+  final Duration timeout;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) => _inner
+      .send(request)
+      .timeout(timeout, onTimeout: () => throw TimeoutException('No answer from the server', timeout));
+
+  @override
+  void close() => _inner.close();
 }

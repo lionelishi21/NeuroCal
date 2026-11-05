@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -43,16 +44,19 @@ void main() {
     expect(meals.single.highGlycemic, isTrue);
   });
 
-  test('a 401 surfaces as unauthorized', () async {
+  test('a 401 surfaces as unauthorized, and signs out', () async {
+    var signedOut = 0;
     final api = HttpNeuroCalApi(
       baseUrl: 'https://api.example.com',
       token: () async => null,
       client: MockClient((_) async => http.Response('', 401)),
+      onUnauthorized: () => signedOut++,
     );
     await expectLater(
       api.focusScore(DateTime(2026, 9, 29)),
       throwsA(isA<ApiException>().having((e) => e.unauthorized, 'unauthorized', isTrue)),
     );
+    expect(signedOut, 1);
   });
 
   test('an API error surfaces its sentence and code, not the raw body', () async {
@@ -149,5 +153,15 @@ void main() {
     expect(today.stack, isNull);
     await api.today(DateTime(2026, 10, 12));
     expect(urls, ['https://api.example.com/today', 'https://api.example.com/today?date=2026-10-12']);
+  });
+
+  test('gives up on a request that gets no answer, instead of waiting forever', () async {
+    final api = HttpNeuroCalApi(
+      baseUrl: 'https://api.example.com',
+      token: () async => 'id-token',
+      timeout: const Duration(milliseconds: 50),
+      client: MockClient((_) => Completer<http.Response>().future),
+    );
+    await expectLater(api.meals(DateTime(2026, 9, 29)), throwsA(isA<TimeoutException>()));
   });
 }

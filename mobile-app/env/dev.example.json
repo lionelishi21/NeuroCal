@@ -5,5 +5,6 @@
   "POSTHOG_KEY": "<optional: PostHog project API key, phc_...; leave out to send no analytics>",
   "POSTHOG_HOST": "https://us.i.posthog.com",
   "SENTRY_DSN": "<optional: Sentry DSN for crash reports; leave out to send none>",
-  "SENTRY_ENVIRONMENT": "dev"
+  "SENTRY_ENVIRONMENT": "dev",
+  "WEB_URL": "<WebSiteUrl output, or https://neurocal.ai once the domain points at the site>"
 }

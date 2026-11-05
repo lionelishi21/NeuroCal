@@ -141,14 +141,13 @@ class _WeekScreenState extends State<WeekScreen> {
                 const SizedBox(height: Space.s3),
                 _Columns(
                   title: 'Calories',
-                  note: 'Against your target',
                   max: (top / 400).ceil() * 400,
                   values: [for (final d in days) d.hasData ? d.caloriesEaten : null],
                   days: initials,
                   format: thousands,
                   reference: (
                     value: days.last.calorieTarget.toDouble(),
-                    label: '${thousands(days.last.calorieTarget)} target',
+                    label: 'your ${thousands(days.last.calorieTarget)} target',
                   ),
                   selected: selected,
                   onPick: pick,
@@ -370,6 +369,13 @@ class _Columns extends StatelessWidget {
   static const _height = 120.0;
   static const _label = 16.0;
 
+  String? get _note {
+    final parts = [?note, if (reference case final ref?) 'line at ${ref.label}'];
+    if (parts.isEmpty) return null;
+    final text = parts.join(', ');
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -379,23 +385,22 @@ class _Columns extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          // Title and note side by side when they fit, the note below when they don't (large text).
+          // The dashed line's value is in the note: drawn on the chart it ran into the bars.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: Space.s3,
+            runSpacing: 2,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
-                ),
+              Text(
+                title,
+                style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
               ),
-              if (note != null)
-                Flexible(
-                  child: Text(
-                    note!,
-                    textAlign: TextAlign.end,
-                    style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
-                  ),
+              if (_note case final note?)
+                Text(
+                  note,
+                  style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
                 ),
             ],
           ),
@@ -463,25 +468,6 @@ class _Columns extends StatelessWidget {
                       right: 0,
                       bottom: (ref.value / max).clamp(0.0, 1.0) * (_height - _label - 1) + 4,
                       child: IgnorePointer(child: DashedLine(color: c.inkFaint)),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: (ref.value / max).clamp(0.0, 1.0) * (_height - _label - 1) + 7,
-                      child: IgnorePointer(
-                        child: Container(
-                          color: c.paper,
-                          padding: const EdgeInsets.only(left: Space.s1),
-                          child: Text(
-                            ref.label,
-                            style: TextStyle(
-                              fontSize: TextSize.xxxs,
-                              fontWeight: FontWeight.w700,
-                              color: c.inkSoft,
-                              height: 1,
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ],

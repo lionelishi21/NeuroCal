@@ -182,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onOpenMealPlan: () => openMealPlan(context, onChanged: _changed),
           onOpenPantry: () => openPantry(context, onChanged: _changed),
           onOpenRecipe: () => _capture(Capture.recipe),
+          onCookThis: () => _capture(Capture.cookThis),
           onOpenShopping: () => openShopping(context),
           onScanPackage: () => _capture(Capture.foodPackage),
           onBrowseFoods: () => openFoods(context, onChanged: _changed),

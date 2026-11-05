@@ -546,7 +546,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   ScreenFailed(
                     title: today ? "Couldn't load today" : "Couldn't load this day",
                     detail: snapshot.error is ApiException && (snapshot.error as ApiException).unauthorized
-                        ? 'Your session has ended. Sign out in Me and sign in again.'
+                        ? 'Your session has ended. Sign in again to carry on.'
                         : 'Your meals and score are safe. Check your connection and try again.',
                     onRetry: _refresh,
                   )
@@ -605,7 +605,10 @@ class _TodayScreenState extends State<TodayScreen> {
                     day.fastPlanned ? 'Fasting' : 'Food',
                     note: day.meals.isEmpty
                         ? null
-                        : '${day.meals.length} logged · ${_kcal(day.bio.caloriesEaten)} kcal',
+                        // The calories are in the card below; here, only how many.
+                        : day.meals.length == 1
+                        ? '1 meal logged'
+                        : '${day.meals.length} meals logged',
                   ),
                   if (day.fastPlanned)
                     FastingCard(day.fasting!, onBoundary: _refresh, onEnd: _endFast)
@@ -1024,10 +1027,15 @@ class _FocusCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
+                        // One line beside the two buttons: shrunk a little on narrow phones rather than broken in two.
                         Expanded(
-                          child: Text(
-                            'Focus Score',
-                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Focus Score',
+                              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.synapseInk),
+                            ),
                           ),
                         ),
                         // No check yet today: one tap measures the day.
@@ -1399,26 +1407,28 @@ class _Calories extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
-                child: CountUp(
-                  value: left.abs().toDouble(),
-                  format: (v) => over ? '${_kcal(v)} kcal over' : '${_kcal(v)} kcal left',
-                  style: TextStyle(
-                    fontSize: TextSize.xl,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    color: over ? c.beet : c.ink,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: CountUp(
+                    value: left.abs().toDouble(),
+                    format: (v) => over ? '${_kcal(v)} kcal over' : '${_kcal(v)} kcal left',
+                    style: TextStyle(
+                      fontSize: TextSize.xl,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      color: over ? c.beet : c.ink,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ),
-              Flexible(
-                child: Text(
-                  bio.caloriesEaten > 0
-                      ? '${_kcal(bio.caloriesEaten)} of ${_kcal(bio.calorieTarget)} eaten'
-                      : 'Nothing eaten yet',
-                  textAlign: TextAlign.end,
-                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-                ),
+              const SizedBox(width: Space.s2),
+              // What's eaten is the target less what's left: only the target is new here.
+              Text(
+                'of ${_kcal(bio.calorieTarget)}',
+                textAlign: TextAlign.end,
+                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
               ),
             ],
           ),
@@ -1852,14 +1862,16 @@ class _Processing extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: Space.s2,
           children: [
-            const Expanded(
+            // 2 : 3, so neither side breaks into two lines at normal text sizes; both may wrap with large text.
+            const Flexible(
+              flex: 2,
               child: Text(
                 'How processed',
                 style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
               ),
             ),
-            // Both sides may wrap: with large text the label alone can be wider than the card.
             Flexible(
+              flex: 3,
               child: Text(
                 ultra == 0 ? 'No ultra-processed food' : '$ultra% ultra-processed',
                 textAlign: TextAlign.end,

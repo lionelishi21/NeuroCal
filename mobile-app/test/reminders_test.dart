@@ -159,6 +159,9 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Me'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Reminders and email'), 200);
+    // Scrolled fully into view: a row just at the edge misses the tap.
+    await tester.ensureVisible(find.text('Reminders and email'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Reminders and email'));
     await tester.pumpAndSettle();
   }

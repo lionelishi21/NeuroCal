@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../app_scope.dart';
 import '../billing/billing.dart';
+import '../config.dart';
 import '../onboarding/starting_score.dart';
 import '../theme/tokens.dart';
 import '../weight_units.dart';
@@ -228,11 +229,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   children: [
                     TextButton(onPressed: _busy ? null : _restore, child: const Text('Restore purchases')),
                     TextButton(
-                      onPressed: () => AppScope.of(context).openLink(Uri.parse('https://neurocal.ai/terms')),
+                      onPressed: () => AppScope.of(context).openLink(AppConfig.webPage('terms')),
                       child: const Text('Terms'),
                     ),
                     TextButton(
-                      onPressed: () => AppScope.of(context).openLink(Uri.parse('https://neurocal.ai/privacy')),
+                      onPressed: () => AppScope.of(context).openLink(AppConfig.webPage('privacy')),
                       child: const Text('Privacy'),
                     ),
                     TextButton(onPressed: AppScope.of(context).auth.signOut, child: const Text('Sign out')),

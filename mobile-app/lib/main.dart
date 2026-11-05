@@ -51,7 +51,7 @@ Future<void> main() async {
   await auth.restore();
   final NeuroCalApi api = AppConfig.usesMockApi
       ? MockNeuroCalApi(newUser: AppConfig.mockNewUser)
-      : HttpNeuroCalApi(baseUrl: AppConfig.apiUrl, token: auth.idToken);
+      : HttpNeuroCalApi(baseUrl: AppConfig.apiUrl, token: auth.idToken, onUnauthorized: auth.signOut);
   final revenueCatKey = Platform.isIOS ? AppConfig.revenueCatIosKey : AppConfig.revenueCatAndroidKey;
   // Test mode starts locked, so the paywall shows; its "purchase" is free, instant and kept on the phone.
   final Billing billing = revenueCatKey.isEmpty ? MockBilling(prefs: prefs) : RevenueCatBilling(revenueCatKey);

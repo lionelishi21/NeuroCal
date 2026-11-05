@@ -24,6 +24,12 @@ abstract final class AppConfig {
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
   static const sentryEnvironment = String.fromEnvironment('SENTRY_ENVIRONMENT', defaultValue: 'dev');
 
+  /// The website, for the privacy policy and terms (the stack's WebSiteUrl output until a domain points at it).
+  static const webUrl = String.fromEnvironment('WEB_URL', defaultValue: 'https://neurocal.ai');
+
+  /// A page on the website, e.g. `webPage('privacy')`.
+  static Uri webPage(String path) => Uri.parse('${webUrl.replaceAll(RegExp(r'/+$'), '')}/$path');
+
   static bool get usesMockApi => apiUrl.isEmpty;
   static bool get usesMockAuth => userPoolId.isEmpty || clientId.isEmpty;
 }

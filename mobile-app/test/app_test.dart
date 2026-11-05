@@ -611,7 +611,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(start);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Fasting until'), findsOneWidget);
+    // Today swaps the calories card for the fast's (the "Fasting until" toast is gone by the time it settles).
+    expect(find.text('Planned fast'), findsOneWidget);
+    expect(find.textContaining('Until '), findsOneWidget);
 
     // Today shows the fast instead of calories left, and water is counted, not logged as a meal.
     await tester.scrollUntilVisible(find.text('Focus Score'), -300);

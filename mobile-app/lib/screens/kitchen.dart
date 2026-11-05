@@ -18,6 +18,7 @@ class KitchenScreen extends StatefulWidget {
     required this.onOpenMealPlan,
     required this.onOpenPantry,
     required this.onOpenRecipe,
+    this.onCookThis,
     required this.onOpenShopping,
     required this.onScanPackage,
     required this.onBrowseFoods,
@@ -28,6 +29,9 @@ class KitchenScreen extends StatefulWidget {
   final VoidCallback onOpenMealPlan;
   final VoidCallback onOpenPantry;
   final VoidCallback onOpenRecipe;
+
+  /// A photo of a dish → a recipe and shopping list; also under the + button.
+  final VoidCallback? onCookThis;
   final VoidCallback onOpenShopping;
   final VoidCallback onScanPackage;
   final VoidCallback onBrowseFoods;
@@ -102,6 +106,16 @@ class _KitchenScreenState extends State<KitchenScreen> {
               FastingCard(fasting, onBoundary: _reload, onPlan: () => _plan(fasting), onEnd: _end),
             ],
             const BlockTitle('Plan and cook'),
+            if (widget.onCookThis case final cookThis?) ...[
+              _LinkCard(
+                icon: Icons.restaurant_menu_rounded,
+                title: 'Cook this',
+                detail: 'A photo of a dish becomes a recipe and a shopping list',
+                tone: _Tone.amber,
+                onTap: cookThis,
+              ),
+              const SizedBox(height: Space.s3),
+            ],
             _LinkCard(
               icon: Icons.calendar_month_rounded,
               title: 'Meal plan',
