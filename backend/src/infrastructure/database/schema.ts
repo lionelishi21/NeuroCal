@@ -49,7 +49,7 @@ export const profiles = pgTable(
     carbsTargetG: decimal("carbs_target_g", 6, 1).notNull(),
     fatTargetG: decimal("fat_target_g", 6, 1).notNull(),
     /** Bio-profile onboarding answers (packages/contracts BioProfile), or null. */
-    bioProfile: jsonb("bio_profile").$type<Record<string, string | boolean | string[]>>(),
+    bioProfile: jsonb("bio_profile").$type<Record<string, string | boolean | string[] | number>>(),
     /** Weight-loss plan (packages/contracts WeightGoal), or null. */
     weightGoal: jsonb("weight_goal").$type<WeightGoal>(),
     /** Health conditions (domain/conditions.ts), or null when never asked. */

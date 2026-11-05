@@ -3912,6 +3912,28 @@
               "longevity",
               "weight_loss"
             ]
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "female",
+              "male"
+            ]
+          },
+          "birthYear": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "heightCm": {
+            "type": "number",
+            "minimum": 100,
+            "maximum": 250
+          },
+          "weightKg": {
+            "type": "number",
+            "minimum": 25,
+            "maximum": 350
           }
         },
         "required": [

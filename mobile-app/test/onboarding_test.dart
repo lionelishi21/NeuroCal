@@ -53,6 +53,24 @@ void main() {
     expect(dayPlan({}).first.value, 'Open, last meal by 19:00');
   });
 
+  test('the calorie target follows the body, training and goal, with a safe minimum', () {
+    const woman = (male: false, age: 40, heightCm: 165.0, weightKg: 68.0);
+    // 680 + 1,031 - 200 - 161 = 1,350 resting × 1.4 (mobility) = 1,890 → 1,900.
+    expect(calorieTarget(woman, movement: 'mobility'), 1900);
+    // Losing weight takes 15% off: 1,606.5 → 1,600.
+    expect(calorieTarget(woman, movement: 'mobility', goal: 'weight_loss'), 1600);
+    // Never while pregnant or after an eating disorder.
+    expect(calorieTarget(woman, movement: 'mobility', goal: 'weight_loss', conditions: ['pregnant']), 1900);
+    // Never under 1,200 for a woman, 1,500 for a man.
+    const small = (male: false, age: 70, heightCm: 150.0, weightKg: 45.0);
+    expect(calorieTarget(small, movement: 'none', goal: 'weight_loss'), 1200);
+    // Unanswered: the old fixed target.
+    expect(calorieTargetOf({'movement': 'none'}), dailyCalories);
+    // Stored facts, from a birth year.
+    expect(storedBodyOf({'sex': 'female', 'birthYear': 1986, 'heightCm': 165, 'weightKg': 68}, year: 2026), woman);
+    expect(storedBodyOf({'sex': 'female'}, year: 2026), isNull);
+  });
+
   test('GET /me is null for an account without a profile', () async {
     var status = 404;
     final api = HttpNeuroCalApi(
@@ -70,7 +88,9 @@ void main() {
     expect((await api.me())?.displayName, 'Sam');
   });
 
-  testWidgets('a new account walks through the twelve steps, saves the bio-profile and lands on Today', (tester) async {
+  testWidgets('a new account walks through the thirteen steps, saves the bio-profile and lands on Today', (
+    tester,
+  ) async {
     // A small phone, so layout overflows fail the test.
     tester.view.physicalSize = const Size(360, 740);
     tester.view.devicePixelRatio = 1;
@@ -104,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    expect(find.text('Step 1 of 12'), findsOneWidget);
+    expect(find.text('Step 1 of 13'), findsOneWidget);
     expect(tester.widget<FilledButton>(next).onPressed, isNull);
     await tester.enterText(find.widgetWithText(TextField, 'First name'), 'Sam');
     await tester.pump();
@@ -142,16 +162,32 @@ void main() {
     await advance();
     await pick('Heavy lifting');
     await advance();
+    // The body, for the calorie target: a US phone asks in pounds and feet.
+    expect(find.text('Your body'), findsWidgets);
+    await pick('Male');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Age'), '34');
+    expect(tester.widget<FilledButton>(next).onPressed, isNull);
+    await pick('5 ft');
+    await tester.enterText(find.widgetWithText(TextFormField, 'And inches'), '10');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Weight'), '1800');
+    await tester.pump();
+    // Out of range: Next waits.
+    expect(tester.widget<FilledButton>(next).onPressed, isNull);
+    await tester.enterText(find.widgetWithText(TextFormField, 'Weight'), '180');
+    await tester.pump();
+    await advance();
     await pick('Brain fog after meals');
 
     // Back keeps the answers.
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 10 of 12'), findsOneWidget);
+    expect(find.text('Step 11 of 13'), findsOneWidget);
+    // The typed answers are still there.
+    expect(find.text('180'), findsOneWidget);
     await advance();
     await advance();
 
-    expect(find.text('Step 12 of 12'), findsOneWidget);
+    expect(find.text('Step 13 of 13'), findsOneWidget);
     await pick('Unshakable focus');
     await tester.scrollUntilVisible(find.text('Amber light from'), 200);
     expect(find.text('40%'), findsOneWidget);
@@ -173,8 +209,9 @@ void main() {
       'timeZone': 'America/Chicago',
       'dietaryPreference': 'paleo',
       'cognitiveGoals': ['focus'],
-      'dailyCalorieTarget': 2200,
-      'macroTargets': {'proteinG': 165, 'carbsG': 165, 'fatG': 98},
+      // Mifflin-St Jeor for 34, 177.8 cm, 81.6 kg, male: 1,763 kcal resting × 1.55 (heavy lifting).
+      'dailyCalorieTarget': 2750,
+      'macroTargets': {'proteinG': 206, 'carbsG': 206, 'fatG': 122},
       'bioProfile': {
         'wake': 'before_6',
         'fasting': '16_8',
@@ -192,6 +229,10 @@ void main() {
         'movement': 'heavy_lifting',
         'friction': 'post_meal_fog',
         'goal': 'focus',
+        'sex': 'male',
+        'birthYear': DateTime.now().year - 34,
+        'heightCm': 177.8,
+        'weightKg': 81.6,
       },
       'healthConditions': ['joint_pain', 'type2_diabetes'],
     });
@@ -219,7 +260,7 @@ void main() {
     await tester.pumpAndSettle();
     // The funnel, in order: each step, the starting point, onboarding done; no health values in events.
     final names = analytics.names.toList();
-    expect(names.where((n) => n == 'onboarding_step'), hasLength(12));
+    expect(names.where((n) => n == 'onboarding_step'), hasLength(13));
     expect(names.indexOf('starting_brain_check_skipped'), lessThan(names.indexOf('starting_point_seen')));
     expect(names.indexOf('starting_point_seen'), lessThan(names.indexOf('committed')));
     expect(names.indexOf('committed'), lessThan(names.indexOf('onboarding_completed')));

@@ -1,4 +1,4 @@
-/// The bio-profile onboarding, as data: eleven steps, each a list of questions.
+/// The bio-profile onboarding, as data: twelve steps, each a list of questions.
 /// A mirror of `web-poc/src/lib/bioProfile.ts`: option values are the contract's ids
 /// (`BioProfile` in `packages/contracts`), labels are what the person reads.
 library;
@@ -6,14 +6,26 @@ library;
 typedef Choice = (String value, String label, String? detail);
 
 /// rows: stacked cards with a radio mark. pills: wrapping chips. segments: equal columns.
-/// grid: two-column tiles. multi: chips, pick any.
-enum QuestionKind { rows, pills, segments, grid, multi }
+/// grid: two-column tiles. multi: chips, pick any. number: a typed number in [Question.unit],
+/// kept as text in [Answers] only while it is between [Question.min] and [Question.max].
+enum QuestionKind { rows, pills, segments, grid, multi, number }
 
 /// What the form holds while it is being filled in: one id per question, a list for "pick any".
 typedef Answers = Map<String, Object>;
 
 class Question {
-  const Question(this.key, this.kind, this.options, {this.prompt, this.note, this.optional = false, this.when});
+  const Question(
+    this.key,
+    this.kind,
+    this.options, {
+    this.prompt,
+    this.note,
+    this.optional = false,
+    this.when,
+    this.unit,
+    this.min,
+    this.max,
+  });
 
   /// The answer's key in [Answers].
   final String key;
@@ -25,6 +37,18 @@ class Question {
 
   /// Shown only when this returns true.
   final bool Function(Answers answers)? when;
+
+  /// For [QuestionKind.number]: what the number is in, and the range it must be in.
+  final String? unit;
+  final num? min;
+  final num? max;
+
+  /// A typed answer, if it is a number in range.
+  num? parse(String text) {
+    final value = num.tryParse(text.trim().replaceAll(',', '.'));
+    if (value == null || (min != null && value < min!) || (max != null && value > max!)) return null;
+    return value;
+  }
 }
 
 class OnboardingStep {
@@ -49,8 +73,10 @@ const diets = <Choice>[
 ];
 
 bool _drinksCoffee(Answers a) => a['coffeeType'] != 'none';
+bool _metric(Answers a) => a['units'] != 'imperial';
+bool _imperial(Answers a) => a['units'] == 'imperial';
 
-/// Step 1 (name and devices) is its own form; these are steps 2 to 11.
+/// Step 1 (name and devices) is its own form; these are the steps after it.
 final steps = <OnboardingStep>[
   const OnboardingStep(
     'Chronotype',
@@ -183,6 +209,68 @@ final steps = <OnboardingStep>[
       ('none', 'None', null),
     ]),
   ]),
+  OnboardingStep(
+    'Your body',
+    'Your body',
+    detail: 'Your daily calorie target is worked out from these and how you train. You can change it later in Me.',
+    [
+      const Question('sex', QuestionKind.segments, prompt: 'Sex', note: 'For the calorie formula', [
+        ('female', 'Female', null),
+        ('male', 'Male', null),
+      ]),
+      const Question('age', QuestionKind.number, [], prompt: 'Age', unit: 'years', min: 16, max: 100),
+      const Question('units', QuestionKind.segments, prompt: 'Units', [
+        ('metric', 'kg and cm', null),
+        ('imperial', 'lb and ft', null),
+      ]),
+      Question(
+        'heightCm',
+        QuestionKind.number,
+        const [],
+        prompt: 'Height',
+        unit: 'cm',
+        min: 120,
+        max: 230,
+        when: _metric,
+      ),
+      Question('heightFt', QuestionKind.pills, prompt: 'Height', when: _imperial, const [
+        ('4', '4 ft', null),
+        ('5', '5 ft', null),
+        ('6', '6 ft', null),
+        ('7', '7 ft', null),
+      ]),
+      Question(
+        'heightIn',
+        QuestionKind.number,
+        const [],
+        prompt: 'And inches',
+        unit: 'in',
+        min: 0,
+        max: 11,
+        when: _imperial,
+      ),
+      Question(
+        'weightKg',
+        QuestionKind.number,
+        const [],
+        prompt: 'Weight',
+        unit: 'kg',
+        min: 30,
+        max: 300,
+        when: _metric,
+      ),
+      Question(
+        'weightLb',
+        QuestionKind.number,
+        const [],
+        prompt: 'Weight',
+        unit: 'lb',
+        min: 66,
+        max: 660,
+        when: _imperial,
+      ),
+    ],
+  ),
   const OnboardingStep(
     'Friction',
     'What is your biggest daily friction point?',
@@ -239,7 +327,58 @@ List<Question> visibleQuestions(OnboardingStep step, Answers answers) => [
 bool stepComplete(OnboardingStep step, Answers answers) =>
     visibleQuestions(step, answers).every((q) => q.optional || answers[q.key] != null);
 
+/// The target when the body facts aren't known (profiles made before the question).
 const dailyCalories = 2200;
+
+typedef Body = ({bool male, int age, double heightCm, double weightKg});
+
+/// The body step's answers in metric, or null until they're all there.
+Body? bodyOf(Answers a) {
+  num? n(String key) => a[key] is String ? num.tryParse(a[key] as String) : a[key] as num?;
+  final age = n('age');
+  final sex = a['sex'];
+  final heightCm = _imperial(a)
+      ? (n('heightFt') == null || n('heightIn') == null ? null : (n('heightFt')! * 12 + n('heightIn')!) * 2.54)
+      : n('heightCm');
+  final weightKg = _imperial(a) ? (n('weightLb') == null ? null : n('weightLb')! / 2.20462) : n('weightKg');
+  if (age == null || sex == null || heightCm == null || weightKg == null) return null;
+  return (male: sex == 'male', age: age.round(), heightCm: heightCm.toDouble(), weightKg: weightKg.toDouble());
+}
+
+/// Daily energy use for each training style, as a multiple of resting energy (PAL).
+const _activity = {'heavy_lifting': 1.55, 'rehit': 1.5, 'chronic_cardio': 1.65, 'mobility': 1.4, 'none': 1.25};
+
+/// The daily calorie target: Mifflin-St Jeor resting energy × activity, 15% less to lose weight
+/// (never when pregnant or after an eating disorder), never under 1,200 (women) or 1,500 (men) kcal,
+/// to the nearest 50.
+int calorieTarget(Body body, {String? movement, String? goal, List<String> conditions = const []}) {
+  final resting = 10 * body.weightKg + 6.25 * body.heightCm - 5 * body.age + (body.male ? 5 : -161);
+  var kcal = resting * (_activity[movement] ?? 1.4);
+  final noDeficit = conditions.contains('pregnant') || conditions.contains('eating_disorder_history');
+  if (goal == 'weight_loss' && !noDeficit) kcal *= 0.85;
+  final floor = body.male ? 1500 : 1200;
+  return ((kcal < floor ? floor : kcal) / 50).round() * 50;
+}
+
+/// The onboarding answers' calorie target, or [dailyCalories] until the body step is done.
+int calorieTargetOf(Answers a) {
+  final body = bodyOf(a);
+  if (body == null) return dailyCalories;
+  return calorieTarget(
+    body,
+    movement: a['movement'] as String?,
+    goal: a['goal'] as String?,
+    conditions: conditionsOf(a),
+  );
+}
+
+/// A stored bio-profile's body facts (`sex`, `birthYear`, `heightCm`, `weightKg`), or null.
+Body? storedBodyOf(Map<String, dynamic>? bio, {required int year}) {
+  if (bio == null) return null;
+  final (sex, born, height, weight) = (bio['sex'], bio['birthYear'], bio['heightCm'], bio['weightKg']);
+  if (sex is! String || born is! num || height is! num || weight is! num) return null;
+  return (male: sex == 'male', age: year - born.round(), heightCm: height.toDouble(), weightKg: weight.toDouble());
+}
 
 /// Share of calories from fat, protein and carbs for each diet protocol.
 const _ratios = <String, (int fat, int protein, int carbs)>{
@@ -303,14 +442,16 @@ const _goals = <String, List<String>>{
 
 /// The completed form as the API's profile fields (`UpdateProfileRequest`).
 /// Call only when every step is complete.
-Map<String, dynamic> toProfileFields(Answers answers) {
+Map<String, dynamic> toProfileFields(Answers answers, {int? year}) {
   final drinksCoffee = _drinksCoffee(answers);
   final takes = answers['takesSupplements'] == 'yes';
-  final [fat, protein, carbs] = macroRatio(answers['diet'] as String?);
+  final kcal = calorieTargetOf(answers);
+  final [fat, protein, carbs] = macroRatio(answers['diet'] as String?, kcal);
+  final body = bodyOf(answers);
   return {
     'dietaryPreference': answers['diet'],
     'cognitiveGoals': _goals[answers['goal']] ?? const <String>[],
-    'dailyCalorieTarget': dailyCalories,
+    'dailyCalorieTarget': kcal,
     'macroTargets': {'proteinG': protein.grams, 'carbsG': carbs.grams, 'fatG': fat.grams},
     'bioProfile': <String, dynamic>{
       'wake': answers['wake'],
@@ -333,6 +474,12 @@ Map<String, dynamic> toProfileFields(Answers answers) {
       'movement': answers['movement'],
       'friction': answers['friction'],
       'goal': answers['goal'],
+      if (body != null) ...{
+        'sex': body.male ? 'male' : 'female',
+        'birthYear': (year ?? DateTime.now().year) - body.age,
+        'heightCm': (body.heightCm * 10).round() / 10,
+        'weightKg': (body.weightKg * 10).round() / 10,
+      },
     },
     'healthConditions': conditionsOf(answers),
   };

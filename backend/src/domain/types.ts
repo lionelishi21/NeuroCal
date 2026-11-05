@@ -66,7 +66,7 @@ export interface Profile {
   healthConditions?: string[];
 }
 
-export type BioProfileAnswers = Readonly<Record<string, string | boolean | string[]>>;
+export type BioProfileAnswers = Readonly<Record<string, string | boolean | string[] | number>>;
 
 export interface FoodItem {
   name: string;

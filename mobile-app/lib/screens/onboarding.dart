@@ -13,6 +13,7 @@ import '../plan/three_weeks.dart' show challengeKey;
 import '../theme/tokens.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/food_image.dart';
+import '../widgets/ui.dart' show thousands;
 import 'brain_check.dart';
 import 'first_meal.dart';
 
@@ -57,6 +58,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pounds and feet where people weigh themselves in them (as WeightUnit does), else kg and cm.
+    final country = Localizations.maybeLocaleOf(context)?.countryCode;
+    _answers.putIfAbsent('units', () => const {'US', 'LR', 'MM'}.contains(country) ? 'imperial' : 'metric');
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _scroll.dispose();
@@ -78,7 +87,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _pick(Question question, String value) => setState(() {
-    if (question.kind == QuestionKind.multi) {
+    if (question.kind == QuestionKind.number) {
+      // Kept only while it is a number in range, so Next waits for a usable answer.
+      question.parse(value) == null ? _answers.remove(question.key) : _answers[question.key] = value.trim();
+    } else if (question.kind == QuestionKind.multi) {
       final picked = [...(_answers[question.key] as List<String>?) ?? const <String>[]];
       picked.contains(value) ? picked.remove(value) : picked.add(value);
       _answers[question.key] = picked;
@@ -445,6 +457,18 @@ class _QuestionField extends StatelessWidget {
     final detailStyle = TextStyle(fontSize: TextSize.xs, color: c.inkSoft);
 
     final options = switch (question.kind) {
+      QuestionKind.number => TextFormField(
+        key: ValueKey(question.key),
+        initialValue: answers[question.key] as String?,
+        decoration: InputDecoration(labelText: question.prompt, suffixText: question.unit),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textInputAction: TextInputAction.next,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (text) => text == null || text.trim().isEmpty || question.parse(text) != null
+            ? null
+            : 'Between ${question.min} and ${question.max} ${question.unit ?? ''}'.trim(),
+        onChanged: onPick,
+      ),
       QuestionKind.rows => Column(
         spacing: Space.s2,
         children: [
@@ -581,7 +605,7 @@ class _QuestionField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (question.prompt != null) ...[
+          if (question.prompt != null && question.kind != QuestionKind.number) ...[
             ExcludeSemantics(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -718,7 +742,8 @@ class _BioProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
-    final ratio = macroRatio(answers['diet'] as String?);
+    final kcal = calorieTargetOf(answers);
+    final ratio = macroRatio(answers['diet'] as String?, kcal);
     final colors = {'Fat': c.glucose, 'Protein': c.synapse, 'Carbs': c.ion};
     final caption = TextStyle(fontSize: TextSize.xs, color: c.inkSoft, fontWeight: FontWeight.w500);
     return AnimatedOpacity(
@@ -792,7 +817,7 @@ class _BioProfileCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Divider(height: 1, color: c.rule),
-            for (final row in dayPlan(answers))
+            for (final row in [(label: 'Daily calories', value: '${thousands(kcal)} kcal'), ...dayPlan(answers)])
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(

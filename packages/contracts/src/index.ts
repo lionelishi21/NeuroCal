@@ -90,6 +90,11 @@ export const BioProfile = z.object({
   /** The daily problem to watch for first. */
   friction: z.enum(["afternoon_crash", "night_waking", "post_meal_fog", "slow_recovery"]),
   goal: z.enum(["focus", "deep_sleep", "steady_energy", "longevity", "weight_loss"]),
+  /** Body facts behind the daily calorie target (Mifflin-St Jeor); absent for profiles made before the question. */
+  sex: z.enum(["female", "male"]).optional(),
+  birthYear: z.number().int().min(1900).max(2100).optional(),
+  heightCm: z.number().min(100).max(250).optional(),
+  weightKg: z.number().min(25).max(350).optional(),
 });
 export type BioProfile = z.infer<typeof BioProfile>;
 

@@ -34,16 +34,9 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final c = context.colors;
-    final macros = profile.macroTargets;
     final rows = [
       if (profile.diet != null) ('Diet', dietLabels[profile.diet] ?? profile.diet!),
       ('Goals', profile.goals.isEmpty ? 'None chosen' : profile.goals.map((g) => goalLabels[g] ?? g).join(', ')),
-      if (profile.calorieTarget != null) ('Calories', '${_thousands(profile.calorieTarget!)} kcal a day'),
-      if (macros != null)
-        (
-          'Macros',
-          'Protein ${_whole(macros.proteinG)} g · Carbs ${_whole(macros.carbsG)} g · Fat ${_whole(macros.fatG)} g',
-        ),
     ];
     return SafeArea(
       bottom: false,
@@ -133,6 +126,10 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (profile.calorieTarget != null) ...[
+            const GroupLabel('Daily target'),
+            _Target(profile, onChanged: onChanged),
+          ],
           const GroupLabel('Appearance'),
           AppCard(
             padding: const EdgeInsets.all(6),
@@ -309,6 +306,15 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          Wrap(
+            children: [
+              TextButton(
+                onPressed: () => scope.openLink(AppConfig.webPage('privacy')),
+                child: const Text('Privacy policy'),
+              ),
+              TextButton(onPressed: () => scope.openLink(AppConfig.webPage('terms')), child: const Text('Terms')),
+            ],
           ),
           if (AppConfig.usesMockApi || AppConfig.usesMockAuth)
             Padding(
@@ -563,6 +569,186 @@ class _HealthSheetState extends State<_HealthSheet> {
         if (_failed) const SheetNote(lead: "Couldn't save.", detail: 'Check your connection and try again.'),
         const SizedBox(height: Space.s2),
         SheetAction(label: _saving ? 'Saving…' : 'Save', onPressed: _saving ? null : _save),
+      ],
+    );
+  }
+}
+
+/// The daily calorie target and the macros that follow from it, and a way to change it: a number of
+/// your own, or the one worked out from the body facts given in onboarding.
+class _Target extends StatefulWidget {
+  const _Target(this.profile, {this.onChanged});
+
+  final Profile profile;
+  final VoidCallback? onChanged;
+
+  @override
+  State<_Target> createState() => _TargetState();
+}
+
+class _TargetState extends State<_Target> {
+  late var _kcal = widget.profile.calorieTarget!;
+  late var _macros = widget.profile.macroTargets;
+
+  Future<void> _change() async {
+    final saved = await showAppSheet<(int, Macros)>(
+      context,
+      title: 'Daily calories',
+      builder: (_) => _TargetSheet(widget.profile, current: _kcal),
+    );
+    if (saved == null || !mounted) return;
+    setState(() {
+      _kcal = saved.$1;
+      _macros = saved.$2;
+    });
+    widget.onChanged?.call();
+    showToast(context, 'Saved. Your target is ${_thousands(saved.$1)} kcal a day');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final m = _macros;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s3, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text(
+                  '${_thousands(_kcal)} kcal a day',
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
+                ),
+                if (m != null)
+                  Text(
+                    'Protein ${_whole(m.proteinG)} g, carbs ${_whole(m.carbsG)} g, fat ${_whole(m.fatG)} g',
+                    style: TextStyle(fontSize: TextSize.xs, height: 1.35, color: c.inkSoft),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Space.s3),
+          TextButton(onPressed: _change, child: const Text('Change')),
+        ],
+      ),
+    );
+  }
+}
+
+class _TargetSheet extends StatefulWidget {
+  const _TargetSheet(this.profile, {required this.current});
+
+  final Profile profile;
+  final int current;
+
+  @override
+  State<_TargetSheet> createState() => _TargetSheetState();
+}
+
+class _TargetSheetState extends State<_TargetSheet> {
+  static const _min = 1000;
+  static const _max = 5000;
+
+  late final _field = TextEditingController(text: '${widget.current}');
+  var _saving = false;
+  var _failed = false;
+
+  /// What the body facts from onboarding give, when they were answered.
+  late final int? _worked = () {
+    final bio = widget.profile.bioProfile;
+    final body = storedBodyOf(bio, year: DateTime.now().year);
+    if (body == null) return null;
+    return calorieTarget(
+      body,
+      movement: bio?['movement'] as String?,
+      goal: bio?['goal'] as String?,
+      conditions: widget.profile.healthConditions ?? const [],
+    );
+  }();
+
+  int? get _value {
+    final v = int.tryParse(_field.text.trim().replaceAll(',', ''));
+    return v == null || v < _min || v > _max ? null : v;
+  }
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save(int kcal) async {
+    setState(() {
+      _saving = true;
+      _failed = false;
+    });
+    final [fat, protein, carbs] = macroRatio(widget.profile.diet, kcal);
+    final macros = Macros(
+      proteinG: protein.grams.toDouble(),
+      carbsG: carbs.grams.toDouble(),
+      fatG: fat.grams.toDouble(),
+    );
+    try {
+      await AppScope.of(context).api.saveProfile({
+        'dailyCalorieTarget': kcal,
+        'macroTargets': {'proteinG': macros.proteinG, 'carbsG': macros.carbsG, 'fatG': macros.fatG},
+      });
+      if (mounted) Navigator.of(context).pop((kcal, macros));
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final worked = _worked;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          worked == null
+              ? 'Type the calories you aim for each day. Your protein, carbs and fat follow from it and your diet.'
+              : 'From your body and how you train, about ${_thousands(worked)} kcal a day. Use that, or type your own.',
+          style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+        ),
+        if (worked != null && worked != widget.current) ...[
+          const SizedBox(height: Space.s2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _saving ? null : () => _save(worked),
+              child: Text('Use ${_thousands(worked)} kcal'),
+            ),
+          ),
+        ],
+        const SizedBox(height: Space.s3),
+        TextField(
+          controller: _field,
+          decoration: InputDecoration(
+            labelText: 'Calories a day',
+            suffixText: 'kcal',
+            errorText: _field.text.isEmpty || _value != null
+                ? null
+                : 'Between ${_thousands(_min)} and ${_thousands(_max)}',
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+        ),
+        if (_failed) const SheetNote(lead: "Couldn't save.", detail: 'Check your connection and try again.'),
+        const SizedBox(height: Space.s3),
+        SheetAction(
+          label: _saving ? 'Saving…' : 'Save',
+          onPressed: _saving || _value == null ? null : () => _save(_value!),
+        ),
       ],
     );
   }
