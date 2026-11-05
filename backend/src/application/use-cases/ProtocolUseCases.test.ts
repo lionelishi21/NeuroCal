@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import { PRODUCTS, PROTOCOLS } from "../../infrastructure/catalog/catalog";
 import {
   FakeEmbedder,
@@ -84,6 +84,29 @@ describe("GetProtocolsUseCase", () => {
     expect(ids).toHaveLength(2);
     expect(ids.some((id) => ["box-breathing", "focus-blocks"].includes(id))).toBe(true);
     expect(ids.some((id) => ["wind-down-hour", "consistent-wake-time"].includes(id))).toBe(true);
+  });
+
+  it("returns the weak points without matches when embedding fails, instead of failing the request", async () => {
+    const { useCase, embedder } = await setup([5, 5.5, 6, 5, 6, 5.5, 6]);
+    embedder.embed = async () => {
+      throw new Error("401 Incorrect API key provided");
+    };
+    const errors = jest.spyOn(console, "error").mockImplementation(() => {});
+    const result = await useCase.execute({ userId: "u1" });
+    errors.mockRestore();
+    expect(result.weakPoints.map((w) => w.component)).toEqual(["sleep"]);
+    expect(result.protocols).toEqual([]);
+    expect(result.products).toEqual([]);
+  });
+
+  it("doesn't call the embedder before the catalog is synced", async () => {
+    const profiles = new InMemoryProfiles();
+    await profiles.save(profile({ timeZone: "UTC" }));
+    const embedder = new FakeEmbedder();
+    const clock = new FixedClock(new Date("2026-09-29T12:00:00Z"));
+    const useCase = new GetProtocolsUseCase(profiles, new InMemoryMeals(), new InMemoryCheckIns(), new InMemoryTelemetry(), new InMemoryCatalog(), embedder, clock);
+    expect(await useCase.execute({ userId: "u1" })).toEqual({ weakPoints: expect.any(Array), protocols: [], products: [] });
+    expect(embedder.calls).toEqual([]);
   });
 
   it("still suggests something when nothing is weak", async () => {

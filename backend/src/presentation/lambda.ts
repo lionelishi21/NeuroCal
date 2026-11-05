@@ -20,6 +20,8 @@ import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
 import { OpenAiDishRecipeWriter } from "../infrastructure/ai/OpenAiDishRecipeWriter";
 import { applyAwsSecrets } from "../infrastructure/aws/secrets";
+import { UpstreamError } from "../domain/errors";
+import type { ISearchEngineAdapter } from "../application/interfaces/ISearchEngineAdapter";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
 import { DrizzleCatalogRepository } from "../infrastructure/database/DrizzleCatalogRepository";
@@ -76,6 +78,22 @@ const required = <T>(name: string, value: T | undefined): T => {
   if (!value) throw new Error(`Missing required setting ${name}`);
   return value;
 };
+/**
+ * An AI or search key that isn't in the app secret yet. The API still starts: the features that need it
+ * fail on their own, politely (their providers' errors become "not available right now"), and the
+ * cold-start log names what's missing.
+ */
+const missing: string[] = [];
+const aiKey = (name: string, value: string | undefined): string => {
+  if (value) return value;
+  if (!missing.includes(name)) missing.push(name);
+  return "not-set";
+};
+const unavailableSearch: ISearchEngineAdapter = {
+  searchRecipes: async () => {
+    throw new UpstreamError("Recipe search isn't set up yet.");
+  },
+};
 const errors = errorReporterFor(config.sentryDsn, config.stage);
 const db = createDatabase(required("DATABASE_URL", config.databaseUrl));
 const users = new DrizzleUserRepository(db);
@@ -90,10 +108,10 @@ const useCases = buildUseCases({
     telemetry: new DrizzleTelemetryRepository(db),
     focusScores: new DrizzleFocusScoreRepository(db),
     catalog: new DrizzleCatalogRepository(db),
-    embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    embedder: new OpenAiEmbeddingProvider({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
-    vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
-    dishRecipes: new OpenAiDishRecipeWriter({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey), ...(config.cookThisModel ? { model: config.cookThisModel } : {}) }),
+    vision: new OpenAiVisionProvider({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
+    dishRecipes: new OpenAiDishRecipeWriter({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey), ...(config.cookThisModel ? { model: config.cookThisModel } : {}) }),
     foods: FOODS,
     eatingOut: EATING_OUT,
     eatingOutItems: new DrizzleEatingOutRepository(db),
@@ -103,11 +121,11 @@ const useCases = buildUseCases({
     brainChecks: new DrizzleBrainCheckRepository(db),
     exercises: new DrizzleExerciseRepository(db),
     pantry: new DrizzlePantryRepository(db),
-    pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    betterChoice: new ClaudeBetterChoiceAdvisor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    recipeParser: new ClaudeRecipeParser({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    mealPlanner: new ClaudeMealPlanner({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    pantryRecipes: new ClaudePantryRecipeAssistant({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    betterChoice: new ClaudeBetterChoiceAdvisor({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    shoppingReviewer: new ClaudeShoppingListReviewer({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    recipeParser: new ClaudeRecipeParser({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    mealPlanner: new ClaudeMealPlanner({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     mealPlans: new DrizzleMealPlanRepository(db),
     environment: new DrizzleEnvironmentRepository(db),
     notificationSettings: new DrizzleNotificationSettingsRepository(db),
@@ -122,24 +140,24 @@ const useCases = buildUseCases({
     airQuality: new OpenMeteoAirQuality(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
     geocoder: new OpenMeteoGeocoder(config.openMeteoApiKey ? { apiKey: config.openMeteoApiKey } : {}),
     knowledge: new DrizzleKnowledgeRepository(db),
-    techniqueExtractor: new ClaudeTechniqueExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    techniqueExtractor: new ClaudeTechniqueExtractor({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     videoFeed: config.youTubeApiKey ? new YouTubeVideoFeed({ apiKey: config.youTubeApiKey }) : null,
     knowledgeChannels: config.knowledgeChannels,
     glucose: new DrizzleGlucoseRepository(db),
     markers: new DrizzleMarkerRepository(db),
     aiUsage: new DrizzleAiUsageRepository(db),
     deviceCandidates: new DrizzleDeviceCandidateRepository(db),
-    deviceExtractor: new ClaudeDeviceExtractor({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    deviceExtractor: new ClaudeDeviceExtractor({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     webSearch: config.tavilyApiKey ? new TavilyWebSearch({ apiKey: config.tavilyApiKey }) : null,
     subscriptionLookup: config.revenueCatSecretKey ? new RevenueCatLookup({ secretKey: config.revenueCatSecretKey }) : null,
     ...(config.revenueCatWebhookAuth ? { storeWebhookAuth: config.revenueCatWebhookAuth } : {}),
     paywall: config.paywall,
-    labels: new OpenAiSupplementLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
-    foodLabels: new OpenAiFoodLabelReader({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    labels: new OpenAiSupplementLabelReader({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
+    foodLabels: new OpenAiFoodLabelReader({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
     products: new OpenFoodFactsDatabase(),
-    explainer: new ClaudeFocusExplainer({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    reasoning: new ClaudeReasoningProvider({ apiKey: required("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    search: required("TAVILY_API_KEY (or BRAVE_SEARCH_API_KEY, or GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID)", createRecipeSearch(config)),
+    explainer: new ClaudeFocusExplainer({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    reasoning: new ClaudeReasoningProvider({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    search: createRecipeSearch(config) ?? (missing.push("TAVILY_API_KEY"), unavailableSearch),
     clock: systemClock,
     waitlist: new DrizzleWaitlistRepository(db),
     // Without a Resend key the waitlist still fills; its emails go out once the key is set.
@@ -151,6 +169,8 @@ const useCases = buildUseCases({
     recipeDomains: config.recipeDomains,
   });
 const api = createApi(useCases, errors);
+if (missing.length) console.warn(JSON.stringify({ event: "settings_missing", keys: missing }));
+
 const userIds = new Map<string, string>();
 
 /** Admins are the verified emails listed in ADMIN_EMAILS (set by the stack). */

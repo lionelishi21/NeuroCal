@@ -9,6 +9,9 @@
 /** Keys accepted from the app secret; anything else in it is ignored. */
 const APP_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "TAVILY_API_KEY", "BRAVE_SEARCH_API_KEY", "GOOGLE_CSE_API_KEY", "GOOGLE_CSE_ID", "RECIPE_ALLOWED_DOMAINS", "ADMIN_EMAILS", "RESEND_API_KEY", "EMAIL_FROM", "WEB_URL", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_SECRET_KEY", "PAYWALL", "YOUTUBE_API_KEY", "KNOWLEDGE_CHANNELS", "OPEN_METEO_API_KEY", "SENTRY_DSN", "FIREBASE_SERVICE_ACCOUNT", "DATABASE_URL", "DATABASE_URL_UNPOOLED"] as const;
 
+/** What the stack puts in the app secret for each key until a real one is added (infra NeuroCalStack.ts). */
+const PLACEHOLDER = "set-me";
+
 /** Shape of the secret Aurora generates for its admin user. */
 interface DbSecret {
   username: string;
@@ -31,7 +34,8 @@ export async function resolveAwsSecrets(env: NodeJS.ProcessEnv, getSecret: GetSe
     const app = parseJson(await getSecret(env.APP_SECRET_ARN), "app secret") as Record<string, unknown>;
     for (const key of APP_KEYS) {
       const value = app[key];
-      if (typeof value === "string" && value && !env[key]) out[key] = value;
+      // "set-me" is the stack's placeholder for a key not added yet: treat it as missing, not as a key.
+      if (typeof value === "string" && value && value !== PLACEHOLDER && !env[key]) out[key] = value;
     }
   }
 

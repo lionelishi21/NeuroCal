@@ -16,6 +16,11 @@ describe("resolveAwsSecrets", () => {
     expect(await resolveAwsSecrets({ APP_SECRET_ARN: "app" }, get)).toEqual({ OPENAI_API_KEY: "sk-openai", ANTHROPIC_API_KEY: "sk-ant" });
   });
 
+  it("treats the stack's set-me placeholders as missing keys", async () => {
+    const placeholders = async () => JSON.stringify({ OPENAI_API_KEY: "set-me", ANTHROPIC_API_KEY: "sk-ant" });
+    expect(await resolveAwsSecrets({ APP_SECRET_ARN: "app" }, placeholders)).toEqual({ ANTHROPIC_API_KEY: "sk-ant" });
+  });
+
   it("builds an encoded, TLS-verified DATABASE_URL from the Aurora secret", async () => {
     const out = await resolveAwsSecrets({ DB_SECRET_ARN: "db" }, get);
     expect(out.DATABASE_URL).toBe("postgres://neurocal:p%40ss%2Fword@db.cluster.local:5432/neurocal?sslmode=verify-full");

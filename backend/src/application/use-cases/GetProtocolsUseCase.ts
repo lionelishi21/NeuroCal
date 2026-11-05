@@ -55,13 +55,23 @@ export class GetProtocolsUseCase {
     const week = await Promise.all(dates.map(async (date) => computeFocusComponents(await loadFocusInputs(repos, profile, date))));
 
     const points = weakPoints(week);
+    // Nothing to match against until the catalog is embedded (catalog sync): skip the embedding call.
+    const synced = await this.catalog.hashes();
+    if (synced.protocols.size === 0 && synced.products.size === 0) return { weakPoints: points, protocols: [], products: [] };
     // One query per weak point (one batched embedding call), so each gets its own
     // best match instead of the strongest one crowding the other out.
     // The friction point named in onboarding goes first: it is all there is to go on before a week of data exists.
     const friction = frictionNeed(profile.bioProfile);
     const needs = [...(friction ? [{ label: friction }] : []), ...points];
     const queries = needs.length ? needs.map((n) => needText([n], profile.cognitiveGoals)) : [needText([], profile.cognitiveGoals)];
-    const vectors = await this.embedder.embed(queries);
+    let vectors: number[][];
+    try {
+      vectors = await this.embedder.embed(queries);
+    } catch (error) {
+      // The weak points still explain the week; the matches come back once embeddings work again.
+      console.error(JSON.stringify({ event: "protocol_embedding_failed", error: String(error) }));
+      return { weakPoints: points, protocols: [], products: [] };
+    }
     // Health conditions: what doesn't suit them is left out, what does goes first (domain/conditions.ts).
     const conditions = conditionsOf(profile);
     const fitting = async <T extends Parameters<typeof unsuitable>[0]>(found: Promise<{ item: T; similarity: number }[]>) => {
