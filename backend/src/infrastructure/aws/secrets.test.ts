@@ -26,6 +26,13 @@ describe("resolveAwsSecrets", () => {
     expect(out.DATABASE_URL).toBe("postgres://neurocal:p%40ss%2Fword@proxy.proxy-abc.us-east-1.rds.amazonaws.com:5432/neurocal?sslmode=verify-full");
   });
 
+  it("takes an external database's DATABASE_URL (Neon) from the app secret, over the Aurora secret", async () => {
+    const neon = "postgresql://neurocal:pw@ep-x.us-east-2.aws.neon.tech/neurocal?sslmode=require";
+    const withUrl = async (arn: string) => (arn === "app" ? JSON.stringify({ DATABASE_URL: neon }) : secrets[arn] ?? "");
+    expect(await resolveAwsSecrets({ APP_SECRET_ARN: "app" }, withUrl)).toEqual({ DATABASE_URL: neon });
+    expect((await resolveAwsSecrets({ APP_SECRET_ARN: "app", DB_SECRET_ARN: "db" }, withUrl)).DATABASE_URL).toBe(neon);
+  });
+
   it("lets values already in the environment win", async () => {
     const out = await resolveAwsSecrets(
       { APP_SECRET_ARN: "app", DB_SECRET_ARN: "db", OPENAI_API_KEY: "from-env", DATABASE_URL: "postgres://local" },

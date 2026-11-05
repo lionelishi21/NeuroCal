@@ -52,6 +52,12 @@ export interface NeuroCalStackProps extends StackProps {
    * distributions (new accounts need AWS Support to verify them first).
    */
   website?: boolean;
+  /**
+   * Use a Postgres database outside AWS (Neon) instead of Aurora: its connection string is
+   * `DATABASE_URL` in the app secret. No VPC, Aurora or NAT gateway, so it costs nothing at POC
+   * scale; the Lambdas reach the database and the AI APIs over the internet, with TLS.
+   */
+  externalDatabase?: boolean;
 }
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -72,35 +78,14 @@ export class NeuroCalStack extends Stack {
     const prod = props.stage === "prod";
     const retain = prod ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
 
-    // Network: Lambdas in private subnets with one NAT for OpenAI, Anthropic and Google; the database has no internet route.
-    const vpc = new ec2.Vpc(this, "Vpc", {
-      maxAzs: 2,
-      natGateways: 1,
-      subnetConfiguration: [
-        { name: "public", subnetType: ec2.SubnetType.PUBLIC },
-        { name: "app", subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-        { name: "data", subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      ],
-    });
-
-    // Database: Aurora Serverless v2. Dev pauses when idle (min 0 ACU) unless warmDatabase; prod stays warm.
-    const database = new rds.DatabaseCluster(this, "Database", {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_17_9 }),
-      credentials: rds.Credentials.fromGeneratedSecret("neurocal"),
-      defaultDatabaseName: "neurocal",
-      writer: rds.ClusterInstance.serverlessV2("writer"),
-      serverlessV2MinCapacity: prod || props.warmDatabase ? 0.5 : 0,
-      serverlessV2MaxCapacity: prod ? 8 : 2,
-      vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      storageEncrypted: true,
-      backup: { retention: Duration.days(prod ? 14 : 1) }, // The delete-account page (web-poc DeleteAccount.tsx) promises 14 days.
-      deletionProtection: prod,
-      removalPolicy: prod ? RemovalPolicy.SNAPSHOT : RemovalPolicy.DESTROY,
-    });
+    // Aurora needs a VPC with a NAT gateway (~$80/month for dev); an external database (props.externalDatabase) needs neither.
+    const aurora = props.externalDatabase ? undefined : auroraDatabase(this, props);
+    const database = aurora?.database;
+    const vpc = aurora?.vpc;
 
     // API keys: one JSON secret. The template only ever holds placeholders; real values are
     // set with `aws secretsmanager put-secret-value` and survive later deploys (infra/README.md).
+    // With an external database its DATABASE_URL goes here too.
     const appSecret = new secretsmanager.Secret(this, "AppSecret", {
       description: `NeuroCal ${props.stage} API keys`,
       secretObjectValue: Object.fromEntries(APP_SECRET_KEYS.map((k) => [k, SecretValue.unsafePlainText("set-me")])),
@@ -124,13 +109,13 @@ export class NeuroCalStack extends Stack {
     });
 
     // Lambdas share one bundling setup: ESM, arm64, secrets by ARN (never values) in the environment.
-    const lambdaSecurityGroup = new ec2.SecurityGroup(this, "LambdaSecurityGroup", { vpc, description: "NeuroCal Lambdas" });
-    database.connections.allowDefaultPortFrom(lambdaSecurityGroup, "NeuroCal Lambdas");
+    const lambdaSecurityGroup = vpc && new ec2.SecurityGroup(this, "LambdaSecurityGroup", { vpc, description: "NeuroCal Lambdas" });
+    if (database && lambdaSecurityGroup) database.connections.allowDefaultPortFrom(lambdaSecurityGroup, "NeuroCal Lambdas");
 
     // RDS Proxy: Lambdas connect to it instead of Aurora, and it shares a few real connections between them.
     // Migrations still go straight to Aurora (DDL shouldn't run through pooled connections).
     let proxy: rds.DatabaseProxy | undefined;
-    if (props.dbProxy ?? prod) {
+    if (database && vpc && lambdaSecurityGroup && (props.dbProxy ?? prod)) {
       const proxySecurityGroup = new ec2.SecurityGroup(this, "DatabaseProxySecurityGroup", { vpc, description: "NeuroCal RDS Proxy" });
       proxySecurityGroup.addIngressRule(lambdaSecurityGroup, ec2.Port.tcp(5432), "NeuroCal Lambdas");
       database.connections.allowDefaultPortFrom(proxySecurityGroup, "NeuroCal RDS Proxy");
@@ -152,16 +137,17 @@ export class NeuroCalStack extends Stack {
         runtime: Runtime.NODEJS_22_X,
         architecture: Architecture.ARM_64,
         memorySize: 1024,
-        vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-        securityGroups: [lambdaSecurityGroup],
+        // Inside Aurora's VPC; with an external database the Lambdas reach it over the internet.
+        ...(vpc && lambdaSecurityGroup
+          ? { vpc, vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }, securityGroups: [lambdaSecurityGroup] }
+          : {}),
         projectRoot: REPO_ROOT,
         depsLockFilePath: path.join(REPO_ROOT, "package-lock.json"),
         environment: {
           STAGE: props.stage,
           ...(webUrl ? { WEB_URL: webUrl } : {}),
           APP_SECRET_ARN: appSecret.secretArn,
-          DB_SECRET_ARN: database.secret!.secretArn,
+          ...(database ? { DB_SECRET_ARN: database.secret!.secretArn } : {}),
           // Trust the RDS CA for sslmode=verify-full.
           NODE_EXTRA_CA_CERTS: "/var/runtime/ca-cert.pem",
           NODE_OPTIONS: "--enable-source-maps",
@@ -183,7 +169,7 @@ export class NeuroCalStack extends Stack {
         },
       });
       appSecret.grantRead(f);
-      database.secret!.grantRead(f);
+      database?.secret!.grantRead(f);
       return f;
     };
 
@@ -212,7 +198,7 @@ export class NeuroCalStack extends Stack {
       },
     });
     // Apply migrations on every deploy that changes them, after the database exists.
-    new Trigger(this, "MigrateOnDeploy", { handler: migrate, executeAfter: [database], executeOnHandlerChange: true, timeout: Duration.minutes(5) });
+    new Trigger(this, "MigrateOnDeploy", { handler: migrate, executeAfter: [database ?? appSecret], executeOnHandlerChange: true, timeout: Duration.minutes(5) });
 
     const catalogSync = fn("CatalogSyncFunction", "syncCatalogLambda.ts", { timeout: Duration.minutes(5) });
 
@@ -342,6 +328,7 @@ export class NeuroCalStack extends Stack {
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: webClient.userPoolClientId });
     new CfnOutput(this, "AppSecretArn", { value: appSecret.secretArn, description: "Put the API keys here" });
+    new CfnOutput(this, "MigrateFunctionName", { value: migrate.functionName, description: "Invoke after setting DATABASE_URL" });
     new CfnOutput(this, "CatalogSyncFunctionName", { value: catalogSync.functionName, description: "Invoke after catalog changes" });
     new CfnOutput(this, "MealPhotoBucketName", { value: photos.bucketName });
     if (site) {
@@ -376,6 +363,37 @@ export class NeuroCalStack extends Stack {
       new CfnOutput(this, "AlarmTopicArn", { value: topic.topicArn });
     }
   }
+}
+
+/** Aurora Serverless v2 in its own VPC: Lambdas in private subnets with one NAT for the AI APIs; the database has no internet route. */
+function auroraDatabase(scope: Construct, props: NeuroCalStackProps) {
+  const prod = props.stage === "prod";
+  const vpc = new ec2.Vpc(scope, "Vpc", {
+    maxAzs: 2,
+    natGateways: 1,
+    subnetConfiguration: [
+      { name: "public", subnetType: ec2.SubnetType.PUBLIC },
+      { name: "app", subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      { name: "data", subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+    ],
+  });
+
+  // Database: Aurora Serverless v2. Dev pauses when idle (min 0 ACU) unless warmDatabase; prod stays warm.
+  const database = new rds.DatabaseCluster(scope, "Database", {
+    engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_17_9 }),
+    credentials: rds.Credentials.fromGeneratedSecret("neurocal"),
+    defaultDatabaseName: "neurocal",
+    writer: rds.ClusterInstance.serverlessV2("writer"),
+    serverlessV2MinCapacity: prod || props.warmDatabase ? 0.5 : 0,
+    serverlessV2MaxCapacity: prod ? 8 : 2,
+    vpc,
+    vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+    storageEncrypted: true,
+    backup: { retention: Duration.days(prod ? 14 : 1) }, // The delete-account page (web-poc DeleteAccount.tsx) promises 14 days.
+    deletionProtection: prod,
+    removalPolicy: prod ? RemovalPolicy.SNAPSHOT : RemovalPolicy.DESTROY,
+  });
+  return { vpc, database };
 }
 
 /**

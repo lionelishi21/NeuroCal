@@ -55,6 +55,19 @@ describe("NeuroCalStack", () => {
     dev.hasResourceProperties("AWS::Events::Rule", { ScheduleExpression: "cron(0 9 2 * ? *)" });
   });
 
+  it("with an external database (Neon), builds no VPC, NAT or Aurora, and Lambdas read DATABASE_URL from the app secret", () => {
+    const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
+    const t = Template.fromStack(new NeuroCalStack(app, "NeuroCal-neon", { stage: "dev", webOrigins: ["https://app.example.com"], externalDatabase: true }));
+    for (const type of ["AWS::EC2::VPC", "AWS::EC2::NatGateway", "AWS::RDS::DBCluster", "AWS::RDS::DBProxy"]) t.resourceCountIs(type, 0);
+    const lambdas = Object.values(t.findResources("AWS::Lambda::Function"));
+    for (const f of lambdas) expect(f.Properties.VpcConfig).toBeUndefined();
+    const api = lambdas.find((f) => JSON.stringify(f).includes("PHOTO_BUCKET"))!;
+    expect(api.Properties.Environment.Variables.APP_SECRET_ARN).toBeDefined();
+    expect(api.Properties.Environment.Variables.DB_SECRET_ARN).toBeUndefined();
+    t.resourceCountIs("Custom::Trigger", 1);
+    t.hasOutput("MigrateFunctionName", {});
+  });
+
   it("keeps a dev database awake when asked", () => {
     const app = new App({ context: { "aws:cdk:bundling-stacks": [] } });
     const warm = new NeuroCalStack(app, "NeuroCal-warm", { stage: "dev", webOrigins: ["https://app.example.com"], warmDatabase: true });

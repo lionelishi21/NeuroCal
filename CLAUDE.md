@@ -10,7 +10,7 @@ This repository is organized as a monorepo (npm workspaces) containing three cor
 
 ## Core Tech Stack
 - **Backend:** Node.js (v20+ LTS), TypeScript (Strict Mode), AWS Serverless (Lambda, API Gateway, S3, EventBridge)
-- **Database:** PostgreSQL (AWS Aurora Serverless v2) + `pgvector` extension via Drizzle ORM
+- **Database:** PostgreSQL + `pgvector` via Drizzle ORM. Dev runs on Neon (free, outside AWS: `DATABASE_URL` in the app secret, `externalDatabase` in `infra/cdk.json`); the stack can still build Aurora Serverless v2 instead
 - **Inference & APIs:** OpenAI (`gpt-4o`, `text-embedding-3-small`), Anthropic (`claude-haiku-4-5`), Resend API (waitlist email, from `hello@neurocal.ai`), Tavily Search API (recipe search; Brave and Google Custom Search adapters kept as fallbacks)
 - **Web & Mobile:** Next.js / React (Web POC) & Flutter (Mobile App)
 

@@ -11,8 +11,17 @@ import { loadConfig } from "../infrastructure/config";
  */
 export async function handler() {
   await applyAwsSecrets();
-  const { databaseUrl } = loadConfig();
-  if (!databaseUrl) throw new Error("Set DATABASE_URL or DB_SECRET_ARN.");
+  // Neon's pooled URL goes through PgBouncer; DDL runs on a direct connection when there is one.
+  const databaseUrl = process.env.DATABASE_URL_UNPOOLED || loadConfig().databaseUrl;
+  if (!databaseUrl) {
+    // An external database's URL is added to the app secret after the first deploy creates it.
+    // Skip instead of failing that deploy; invoke this function once the URL is there.
+    if (!process.env.DB_SECRET_ARN) {
+      console.log("No DATABASE_URL in the app secret yet; migrations skipped.");
+      return;
+    }
+    throw new Error("Set DATABASE_URL or DB_SECRET_ARN.");
+  }
   const migrationsFolder = process.env.MIGRATIONS_DIR ?? path.join(process.env.LAMBDA_TASK_ROOT ?? process.cwd(), "drizzle");
   // Own pool, closed afterwards, so a warm container doesn't leave connections open.
   const pool = new Pool({ connectionString: databaseUrl, max: 1, connectionTimeoutMillis: 20_000 });

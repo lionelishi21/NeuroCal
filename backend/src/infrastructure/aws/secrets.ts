@@ -1,12 +1,13 @@
 /**
  * Secrets for the deployed Lambdas (ARCHITECTURE §10): API keys live in one
- * Secrets Manager JSON secret, and Aurora's generated credentials in another.
+ * Secrets Manager JSON secret, with DATABASE_URL for an external database (Neon),
+ * or Aurora's generated credentials in another.
  * Both are read once per cold start and turned into the same settings
  * `loadConfig` reads locally, so nothing else needs to know about AWS.
  */
 
 /** Keys accepted from the app secret; anything else in it is ignored. */
-const APP_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "TAVILY_API_KEY", "BRAVE_SEARCH_API_KEY", "GOOGLE_CSE_API_KEY", "GOOGLE_CSE_ID", "RECIPE_ALLOWED_DOMAINS", "ADMIN_EMAILS", "RESEND_API_KEY", "EMAIL_FROM", "WEB_URL", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_SECRET_KEY", "PAYWALL", "YOUTUBE_API_KEY", "KNOWLEDGE_CHANNELS", "OPEN_METEO_API_KEY", "SENTRY_DSN", "FIREBASE_SERVICE_ACCOUNT"] as const;
+const APP_KEYS = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "TAVILY_API_KEY", "BRAVE_SEARCH_API_KEY", "GOOGLE_CSE_API_KEY", "GOOGLE_CSE_ID", "RECIPE_ALLOWED_DOMAINS", "ADMIN_EMAILS", "RESEND_API_KEY", "EMAIL_FROM", "WEB_URL", "REVENUECAT_WEBHOOK_AUTH", "REVENUECAT_SECRET_KEY", "PAYWALL", "YOUTUBE_API_KEY", "KNOWLEDGE_CHANNELS", "OPEN_METEO_API_KEY", "SENTRY_DSN", "FIREBASE_SERVICE_ACCOUNT", "DATABASE_URL", "DATABASE_URL_UNPOOLED"] as const;
 
 /** Shape of the secret Aurora generates for its admin user. */
 interface DbSecret {
@@ -34,7 +35,8 @@ export async function resolveAwsSecrets(env: NodeJS.ProcessEnv, getSecret: GetSe
     }
   }
 
-  if (env.DB_SECRET_ARN && !env.DATABASE_URL) {
+  // An external database (Neon) puts DATABASE_URL in the app secret; Aurora's comes from DB_SECRET_ARN.
+  if (env.DB_SECRET_ARN && !env.DATABASE_URL && !out.DATABASE_URL) {
     const db = parseJson(await getSecret(env.DB_SECRET_ARN), "database secret") as Partial<DbSecret>;
     if (!db.username || !db.password || !db.host || !db.port) throw new Error("Database secret is missing username, password, host or port.");
     const user = encodeURIComponent(db.username);

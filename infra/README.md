@@ -1,6 +1,6 @@
 # NeuroCal infrastructure (AWS CDK)
 
-One stack per stage deploys the backend: HTTP API with a Cognito JWT authorizer, the API Lambda, Aurora PostgreSQL Serverless v2 with pgvector, Secrets Manager, a migration Lambda that runs on deploy, a catalog-sync Lambda and a private meal-photo bucket. Design notes: `ARCHITECTURE.md` §12.
+One stack per stage deploys the backend: HTTP API with a Cognito JWT authorizer, the API Lambda, PostgreSQL with pgvector (Neon, or Aurora Serverless v2), Secrets Manager, a migration Lambda that runs on deploy, a catalog-sync Lambda and a private meal-photo bucket. Design notes: `ARCHITECTURE.md` §12.
 
 ## Commands
 
@@ -19,6 +19,7 @@ Context options:
 - `adminEmails`: comma-separated sign-in emails allowed to manage products at `/admin`. Set it in `cdk.json` under `context` so every deploy keeps it.
 - `warmDatabase`: `true` (set in `cdk.json`) keeps a non-prod database awake at 0.5 ACU; `false` lets dev pause when idle. Prod never pauses.
 - `dbProxy`: `true` or `false` to put RDS Proxy in front of Aurora. Unset, it is on for prod only.
+- `externalDatabase`: `true` (set in `cdk.json`) uses a Postgres database outside AWS, such as Neon's free tier, instead of Aurora: no VPC, NAT gateway or Aurora, so about $80/month less. Put its connection string in the app secret as `DATABASE_URL` (see "Neon database" below). Remove it to build Aurora again, for example for prod.
 - `alarmEmail`: an address to email alarms to (API 5xx, throttling, Lambda errors). No alarms without it.
 
 ## First deploy
@@ -57,6 +58,20 @@ Context options:
    ```sh
    aws lambda invoke --function-name <CatalogSyncFunctionName> /dev/stdout
    ```
+
+## Neon database
+
+With `externalDatabase` on, the stack has no database of its own:
+
+1. At https://neon.tech, create a project in **AWS US East 2 (Ohio)**, next to the Lambdas, and copy its connection string (Dashboard → Connect). It ends in `?sslmode=require`.
+2. Add it to the app secret as `DATABASE_URL`, keeping the other keys (read the secret, add the key, put it back).
+3. Run the migrations, which the first deploy skipped because the URL wasn't there yet. They also enable pgvector:
+   ```sh
+   aws lambda invoke --function-name <MigrateFunctionName> /dev/stdout
+   ```
+4. Embed the catalog (step 5 above) once OpenAI has credits.
+
+Neon's free plan holds 0.5 GB and pauses the database when idle; the first request after a pause takes about half a second longer.
 
 ## Production
 
