@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
+import type { FocusComponents } from "./types";
 import {
   scoreChangeOf,
   withWeight,
@@ -204,8 +205,8 @@ describe("withWeight", () => {
 });
 
 describe("scoreChangeOf", () => {
-  const none = { sleep: null, timing: null, glycemic: null, stress: null, movement: null, environment: null };
-  const scored = (c: typeof none, measured = 0) => {
+  const none: FocusComponents = { sleep: null, timing: null, glycemic: null, stress: null, movement: null, environment: null };
+  const scored = (c: FocusComponents, measured = 0) => {
     const f = focusScoreFrom(c);
     return f === null ? null : Math.max(0, Math.min(100, f + measured));
   };

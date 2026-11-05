@@ -106,6 +106,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Work out a recipe's nutrition",
     description: "Ingredients are read (Claude, schema-checked) and converted to grams. Those that match the food catalog use its USDA FoodData Central values scaled by weight; the rest use estimates, and each ingredient says which. Per serving, with the dish graded by its most processed ingredient. Nothing is saved.",
   },
+  cookThis: {
+    summary: "Turn a dish photo into a recipe",
+    description: "\"Cook this\": the photo (an uploaded key, or multipart) is read by an OpenAI vision model (schema-checked) and written up as a recipe for the dish, adjusted to the person's diet, protein aim and health food rules, with each change listed. Nutrition per serving uses the food catalog's USDA values where ingredients match. Ingredients already in the pantry are marked. Nothing is saved.",
+  },
   getAdminKnowledge: { summary: "Videos and techniques for review", description: "Admins only. Newest first, each video with the techniques taken from its transcript and their review status." },
   addKnowledgeSource: {
     summary: "Add a video or episode",

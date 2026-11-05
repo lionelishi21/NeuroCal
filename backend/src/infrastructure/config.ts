@@ -13,6 +13,8 @@ export const DEFAULT_RECIPE_DOMAINS = [
 export interface AppConfig {
   databaseUrl?: string;
   openAiApiKey?: string;
+  /** The OpenAI vision model "Cook this" uses; gpt-4o when unset. */
+  cookThisModel?: string;
   anthropicApiKey?: string;
   tavilyApiKey?: string;
   braveSearchApiKey?: string;
@@ -61,6 +63,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     databaseUrl: opt("DATABASE_URL"),
     openAiApiKey: opt("OPENAI_API_KEY"),
+    cookThisModel: opt("COOK_THIS_MODEL"),
     anthropicApiKey: opt("ANTHROPIC_API_KEY"),
     tavilyApiKey: opt("TAVILY_API_KEY"),
     braveSearchApiKey: opt("BRAVE_SEARCH_API_KEY"),

@@ -13,6 +13,7 @@ import 'foods.dart';
 import 'log_meal_sheet.dart';
 import 'meal_plan.dart';
 import 'pantry.dart';
+import 'cook_this.dart';
 import 'recipe.dart';
 import 'shopping.dart';
 import 'sleep_sheets.dart';
@@ -38,6 +39,7 @@ enum Capture {
   meal('Log a meal', 'Photo or a few words', Icons.photo_camera_outlined, CaptureGroup.food),
   foodPackage('Scan a food package', 'Barcode or label', Icons.qr_code_scanner_rounded, CaptureGroup.food),
   coffee('Log coffee', 'A cup, with what’s in it', Icons.coffee_rounded, CaptureGroup.food),
+  cookThis('Cook this', 'A recipe from a photo of a dish', Icons.restaurant_menu_rounded, CaptureGroup.food),
   recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined, CaptureGroup.food),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined, CaptureGroup.food),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined, CaptureGroup.body),
@@ -58,7 +60,7 @@ enum Capture {
 
   /// The body system's colour: (icon, tile behind it).
   (Color, Color) tint(NeuroCalColors c) => switch (this) {
-    meal || foodPackage || recipe => (c.glucoseInk, c.glucoseSoft),
+    meal || foodPackage || recipe || cookThis => (c.glucoseInk, c.glucoseSoft),
     coffee => (c.oil, c.glucoseSoft),
     supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
     checkIn || brain || performance => (c.synapseInk, c.synapseSoft),
@@ -196,6 +198,20 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (route) => RecipeScreen(
+            onLog: (recipe) async {
+              final logged = await showLogMealSheet(route, initialItems: [recipe.toItem()]);
+              if (logged == true && route.mounted) {
+                Navigator.of(route).pop();
+                await done(true, 'Meal logged');
+              }
+            },
+          ),
+        ),
+      );
+    case Capture.cookThis:
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (route) => CookThisScreen(
             onLog: (recipe) async {
               final logged = await showLogMealSheet(route, initialItems: [recipe.toItem()]);
               if (logged == true && route.mounted) {

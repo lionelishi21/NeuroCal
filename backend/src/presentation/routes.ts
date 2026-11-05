@@ -50,6 +50,7 @@ import {
   EmailUnsubscribeRequest,
   RegisterDeviceRequest,
   RecipeAnalysis,
+  CookThisResponse,
   AddKnowledgeSourceRequest,
   AddTranscriptRequest,
   AdminKnowledge,
@@ -147,6 +148,7 @@ import type { MarkerUseCases } from "../application/use-cases/MarkerUseCases";
 import type { GlucoseUseCases } from "../application/use-cases/GlucoseUseCases";
 import { MARKERS, type MarkerSummary as MarkerSummaryRecord } from "../domain/markers";
 import type { AnalyzeRecipeUseCase } from "../application/use-cases/AnalyzeRecipeUseCase";
+import type { CookThisUseCase } from "../application/use-cases/CookThisUseCase";
 import type { EnvironmentUseCases } from "../application/use-cases/EnvironmentUseCases";
 import type { NotificationSettingsUseCases } from "../application/use-cases/NotificationSettingsUseCases";
 import type { GuideUseCases } from "../application/use-cases/GuideUseCases";
@@ -240,6 +242,7 @@ export interface UseCases {
   markers: MarkerUseCases;
   glucose: GlucoseUseCases;
   analyzeRecipe: AnalyzeRecipeUseCase;
+  cookThis: CookThisUseCase;
   environment: EnvironmentUseCases;
   mealPlans: MealPlanUseCases;
   handleStoreEvent: HandleStoreEventUseCase;
@@ -577,6 +580,19 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         await uc.aiAllowance.spend(req, "generate");
         const result = await uc.analyzeRecipe.execute(json(req, AnalyzeRecipeRequest));
         return ok(RecipeAnalysis, "problem" in result ? { problem: result.problem, ingredients: [] } : result);
+      },
+    ],
+    [
+      "POST",
+      /^\/recipes\/from-photo$/,
+      async (req) => {
+        await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "generate");
+        // Same two ways in as a meal photo: a key from an upload, or multipart.
+        const result = (req.headers["content-type"] ?? "").startsWith("application/json")
+          ? await uc.cookThis.executeForKey({ userId: req.userId, photoKey: json(req, AnalyzeMealRequest).photoKey })
+          : await uc.cookThis.execute({ userId: req.userId, photo: await photoFrom(req) });
+        return ok(CookThisResponse, "problem" in result ? { problem: result.problem } : { recipe: result });
       },
     ],
     [

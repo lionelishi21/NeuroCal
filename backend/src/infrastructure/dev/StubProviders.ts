@@ -5,6 +5,7 @@ import type { IDeviceExtractor } from "../../application/interfaces/IDevices";
  */
 import type { IMealPlanner } from "../../application/interfaces/IMealPlans";
 import type { IRecipeParser } from "../../application/interfaces/IRecipeParser";
+import type { IDishRecipeWriter } from "../../application/interfaces/IDishRecipeWriter";
 import type { ITechniqueExtractor } from "../../application/interfaces/IKnowledge";
 import type { IShoppingListReviewer } from "../../application/interfaces/IShoppingListReviewer";
 import type { IPantryRecipeAssistant } from "../../application/interfaces/IPantry";
@@ -23,6 +24,42 @@ export const stubVision: IAiVisionProvider = {
         { name: "Quinoa", portion: "¾ cup", calories: 166, macros: { proteinG: 6, carbsG: 29, fatG: 2.7 }, confidence: 0.81, glycemicLoad: "medium", processing: "whole" },
         { name: "Roasted broccoli", portion: "1 cup", calories: 55, macros: { proteinG: 3.7, carbsG: 11, fatG: 0.6 }, confidence: 0.88, glycemicLoad: "low", processing: "whole" },
       ],
+    };
+  },
+};
+
+/** "Cook this" without a vision key: the same sample dish for any photo. */
+export const stubDishRecipes: IDishRecipeWriter = {
+  async write() {
+    const ing = (name: string, quantity: string, grams: number, catalogId: string | null, calories: number, proteinG: number, carbsG: number, fatG: number) => ({
+      name,
+      quantity,
+      grams,
+      catalogId,
+      estimate: { calories, proteinG, carbsG, fatG },
+      processing: "whole" as const,
+    });
+    return {
+      dish: "Chicken stir-fry with rice",
+      title: "Chicken and broccoli stir-fry with brown rice",
+      minutes: 25,
+      servings: 2,
+      ingredients: [
+        ing("Chicken breast", "300 g", 300, "chicken-breast", 495, 93, 0, 11),
+        ing("Brown rice", "1 cup cooked", 195, "brown-rice", 216, 5, 45, 2),
+        ing("Broccoli", "2 cups", 180, "broccoli", 61, 5, 12, 1),
+        ing("Zucchini", "1 medium", 200, "zucchini", 34, 2, 6, 1),
+        ing("Olive oil", "1 tbsp", 14, "olive-oil", 119, 0, 0, 14),
+        ing("Garlic", "2 cloves", 6, null, 9, 0, 2, 0),
+      ],
+      steps: [
+        "Cook the rice.",
+        "Slice the chicken and stir-fry it in the oil until golden, about 6 minutes.",
+        "Add the garlic, broccoli and zucchini and cook until just tender.",
+        "Serve over the rice.",
+      ],
+      swaps: ["Brown rice for white, and zucchini for half the rice, for steadier energy.", "Olive oil instead of seed oil."],
+      glycemicLoad: "medium" as const,
     };
   },
 };

@@ -1130,6 +1130,38 @@
         }
       }
     },
+    "/recipes/from-photo": {
+      "post": {
+        "operationId": "cookThis",
+        "summary": "Turn a dish photo into a recipe",
+        "description": "\"Cook this\": the photo (an uploaded key, or multipart) is read by an OpenAI vision model (schema-checked) and written up as a recipe for the dish, adjusted to the person's diet, protein aim and health food rules, with each change listed. Nutrition per serving uses the food catalog's USDA values where ingredients match. Ingredients already in the pantry are marked. Nothing is saved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CookThisResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/shopping/review": {
       "post": {
         "operationId": "reviewShoppingList",
@@ -4392,6 +4424,115 @@
           "energy",
           "sleep"
         ]
+      },
+      "CookThisRecipe": {
+        "type": "object",
+        "properties": {
+          "dish": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer"
+          },
+          "servings": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                },
+                "inPantry": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "quantity",
+                "inPantry"
+              ]
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "swaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "calories": {
+            "type": "integer"
+          },
+          "macros": {
+            "$ref": "#/components/schemas/Macros"
+          },
+          "processing": {
+            "type": "string",
+            "enum": [
+              "whole",
+              "processed",
+              "ultra_processed"
+            ]
+          },
+          "glycemicLoad": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "catalogShare": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "dish",
+          "title",
+          "minutes",
+          "servings",
+          "ingredients",
+          "steps",
+          "swaps",
+          "calories",
+          "macros",
+          "processing",
+          "glycemicLoad",
+          "catalogShare"
+        ]
+      },
+      "CookThisResponse": {
+        "type": "object",
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/CookThisRecipe"
+          },
+          "problem": {
+            "type": "string",
+            "enum": [
+              "too_dark",
+              "no_food_found",
+              "blurry"
+            ]
+          }
+        }
       },
       "CreateAdminProductRequest": {
         "type": "object",

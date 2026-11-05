@@ -1070,6 +1070,40 @@ export const RecipeAnalysis = z.object({
 });
 export type RecipeAnalysis = z.infer<typeof RecipeAnalysis>;
 
+/**
+ * "Cook this": a photo of a dish (a restaurant plate, a friend's dinner, a screenshot) → a recipe to
+ * cook it, adjusted to the person, with nutrition per serving and which ingredients are in the pantry.
+ * Sent like a meal photo: `{ photoKey }` after an upload, or multipart with one `photo` field.
+ */
+export const CookThisRecipe = z.object({
+  /** What the photo shows: "Chicken pad thai". */
+  dish: z.string(),
+  /** The recipe's name after any swaps. */
+  title: z.string(),
+  minutes: z.number().int(),
+  servings: z.number().int().min(1),
+  /** For all servings; inPantry is worked out by the API from the pantry, not by the model. */
+  ingredients: z.array(z.object({ name: z.string(), quantity: z.string(), inPantry: z.boolean() })),
+  steps: z.array(z.string()),
+  /** What was changed from the usual dish and why; empty when nothing was. */
+  swaps: z.array(z.string()),
+  /** Per serving, from USDA catalog values where the ingredients match them. */
+  calories: z.number().int(),
+  macros: Macros,
+  processing: z.enum(["whole", "processed", "ultra_processed"]),
+  glycemicLoad: z.enum(["low", "medium", "high"]),
+  /** Share of calories from catalog values rather than estimates, 0–1. */
+  catalogShare: z.number().min(0).max(1),
+});
+export type CookThisRecipe = z.infer<typeof CookThisRecipe>;
+
+export const CookThisResponse = z.object({
+  recipe: CookThisRecipe.optional(),
+  /** Set instead of `recipe` when no dish could be made out in the photo. */
+  problem: z.enum(["too_dark", "no_food_found", "blurry"]).optional(),
+});
+export type CookThisResponse = z.infer<typeof CookThisResponse>;
+
 /** A typed or pasted list; send a photo of the list as multipart `photo` instead. */
 export const ShoppingReviewRequest = z.object({ text: z.string().min(1).max(4000) });
 export type ShoppingReviewRequest = z.infer<typeof ShoppingReviewRequest>;
@@ -1893,6 +1927,8 @@ export const endpoints = {
   finishShopping: { method: "POST", path: "/shopping-list/finish", body: FinishShoppingRequest, response: ShoppingList },
   /** Calories and macros per serving of a typed or pasted recipe. Paid; nothing is saved. */
   analyzeRecipe: { method: "POST", path: "/recipes/analyze", body: AnalyzeRecipeRequest, response: RecipeAnalysis },
+  /** "Cook this": a dish photo → a recipe that suits the person (same body as analyzeMeal, or multipart). */
+  cookThis: { method: "POST", path: "/recipes/from-photo", body: AnalyzeMealRequest, response: CookThisResponse },
   /** Grades a shopping list item by item, with kitchen devices that would help. Paid; nothing is saved. */
   reviewShoppingList: { method: "POST", path: "/shopping/review", body: ShoppingReviewRequest, response: ShoppingReviewResponse },
   addPantryItems: { method: "POST", path: "/pantry", body: AddPantryItemsRequest, response: PantryResponse },

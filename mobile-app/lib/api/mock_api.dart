@@ -1599,6 +1599,52 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
     return AnalyzeMealResult(items: [for (final (n, p, k, pr, c, f) in plate) _item(n, p, k, pr, c, f, 0.88)]);
   }
 
+  /// As the API's dev stub: the same dish for any photo, marked against the sample pantry. A file named
+  /// with "dark" reads as too dark, as for meals.
+  @override
+  Future<CookThisResult> cookThis(Uint8List photo, String filename) async {
+    await Future.delayed(latency * 4);
+    if (RegExp('dark', caseSensitive: false).hasMatch(filename)) return (recipe: null, problem: 'too_dark');
+    bool has(String name) => _pantry.any((p) => _key(name).contains(_key(p.name)) || _key(p.name).contains(_key(name)));
+    final ingredients = [
+      ('Salmon fillets', '2 (about 300 g)'),
+      ('Spinach', '150 g'),
+      ('Cherry tomatoes', '200 g'),
+      ('Quinoa', '½ cup dry'),
+      ('Olive oil', '1 tbsp'),
+      ('Lemon', '1'),
+      ('Garlic', '2 cloves'),
+    ];
+    return (
+      recipe: CookThisRecipe(
+        dish: 'Salmon with rice and greens',
+        title: 'Lemon salmon with quinoa and spinach',
+        minutes: 25,
+        servings: 2,
+        ingredients: [
+          for (final (name, quantity) in ingredients) (name: name, quantity: quantity, inPantry: has(name)),
+        ],
+        steps: const [
+          'Rinse the quinoa and simmer it in 1 cup of water for 15 minutes.',
+          'Season the salmon with salt, pepper and lemon zest.',
+          'Cook it skin-side down in the oil for 4 minutes, then turn and cook 3 more.',
+          'Wilt the spinach with the garlic and tomatoes in the same pan.',
+          'Serve the salmon on the quinoa and greens, with lemon squeezed over.',
+        ],
+        swaps: const [
+          'Quinoa instead of white rice, for steadier energy and more protein.',
+          'Olive oil instead of seed oil.',
+        ],
+        calories: 540,
+        macros: const Macros(proteinG: 42, carbsG: 34, fatG: 25),
+        processing: FoodProcessing.whole,
+        glycemicLoad: GlycemicLoad.low,
+        catalogShare: 0.9,
+      ),
+      problem: null,
+    );
+  }
+
   final _brainChecks = <BrainCheck>[];
 
   /// Scored like the API (backend/src/domain/brainCheck.ts).

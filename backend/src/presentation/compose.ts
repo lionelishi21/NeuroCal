@@ -35,6 +35,8 @@ import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { ShoppingListUseCases } from "../application/use-cases/ShoppingListUseCases";
 import type { IShoppingListReviewer } from "../application/interfaces/IShoppingListReviewer";
 import type { IRecipeParser } from "../application/interfaces/IRecipeParser";
+import type { IDishRecipeWriter } from "../application/interfaces/IDishRecipeWriter";
+import { CookThisUseCase } from "../application/use-cases/CookThisUseCase";
 import type { IMealPlanRepository, IMealPlanner } from "../application/interfaces/IMealPlans";
 import type { IAirQuality, IEnvironmentRepository, IGeocoder } from "../application/interfaces/IEnvironment";
 import type { INotificationSettingsRepository } from "../application/interfaces/INotificationSettings";
@@ -133,6 +135,8 @@ export interface Ports {
   betterChoice: IBetterChoiceAdvisor;
   shoppingReviewer: IShoppingListReviewer;
   recipeParser: IRecipeParser;
+  /** "Cook this": a dish photo → a recipe (OpenAiDishRecipeWriter). */
+  dishRecipes: IDishRecipeWriter;
   mealPlanner: IMealPlanner;
   mealPlans: IMealPlanRepository;
   environment: IEnvironmentRepository;
@@ -215,6 +219,7 @@ export function buildUseCases(p: Ports): UseCases {
     pantry: new PantryUseCases(p.pantry, p.profiles, getBioState, p.pantryRecipes),
     reviewShoppingList: new ReviewShoppingListUseCase(p.profiles, p.shoppingReviewer, p.catalog),
     analyzeRecipe: new AnalyzeRecipeUseCase(p.recipeParser, p.foods),
+    cookThis: new CookThisUseCase(p.dishRecipes, p.storage, p.profiles, p.pantry, getBioState, p.foods),
     environment,
     mealPlans: new MealPlanUseCases(p.profiles, p.pantry, p.mealPlanner, p.mealPlans, p.foods, p.clock),
     knowledge: new KnowledgeUseCases(p.knowledge, p.techniqueExtractor, p.catalog, p.embedder, p.videoFeed, p.knowledgeChannels),

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse } from "@neurocal/contracts";
+import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse, CookThisResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
+import { stubDishRecipes } from "../infrastructure/dev/StubProviders";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { EATING_OUT } from "../infrastructure/catalog/eatingOut";
 import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase";
@@ -178,6 +179,7 @@ beforeEach(async () => {
     betterChoice: new FakeBetterChoice(),
     shoppingReviewer: new FakeShoppingReviewer(),
     recipeParser: new FakeRecipeParser(),
+    dishRecipes: stubDishRecipes,
     mealPlanner: new FakeMealPlanner(),
     mealPlans: new InMemoryMealPlans(),
     environment: new InMemoryEnvironment(),
@@ -716,6 +718,20 @@ describe("API routes", () => {
       status: 400,
       body: { code: "invalid_request" },
     });
+  });
+
+  it("POST /recipes/from-photo turns a dish photo into a recipe, marking what's in the pantry", async () => {
+    await call("POST", "/pantry", { names: ["Brown rice", "garlic"] });
+    storage.objects.set("uploads/u1/dish", { bytes: new Uint8Array([1, 2, 3]), mediaType: "image/jpeg" });
+    const res = await call("POST", "/recipes/from-photo", { photoKey: "uploads/u1/dish" });
+    expect(res.status).toBe(200);
+    const body = CookThisResponse.parse(res.body);
+    expect(body.recipe).toMatchObject({ dish: "Chicken stir-fry with rice", servings: 2, glycemicLoad: "medium" });
+    expect(body.recipe!.ingredients.filter((i) => i.inPantry).map((i) => i.name)).toEqual(["Brown rice", "Garlic"]);
+    expect(body.recipe!.calories).toBeGreaterThan(300);
+    expect(body.recipe!.catalogShare).toBeGreaterThan(0.9);
+    // Someone else's photo reads as missing.
+    expect((await call("POST", "/recipes/from-photo", { photoKey: "uploads/u2/dish" })).status).toBe(404);
   });
 
   it("POST /meals/analyze reads a multipart photo and returns contract items", async () => {

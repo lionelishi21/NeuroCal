@@ -18,6 +18,7 @@ import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReade
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
+import { OpenAiDishRecipeWriter } from "../infrastructure/ai/OpenAiDishRecipeWriter";
 import { applyAwsSecrets } from "../infrastructure/aws/secrets";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
@@ -92,6 +93,7 @@ const useCases = buildUseCases({
     embedder: new OpenAiEmbeddingProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey) }),
+    dishRecipes: new OpenAiDishRecipeWriter({ apiKey: required("OPENAI_API_KEY", config.openAiApiKey), ...(config.cookThisModel ? { model: config.cookThisModel } : {}) }),
     foods: FOODS,
     eatingOut: EATING_OUT,
     eatingOutItems: new DrizzleEatingOutRepository(db),

@@ -1517,6 +1517,89 @@ class PantryItem {
   factory PantryItem.fromJson(Map<String, dynamic> j) => PantryItem(id: j['id'] as String, name: j['name'] as String);
 }
 
+/// "Cook this": a dish from a photo, written as a recipe that suits the person (`CookThisRecipe`).
+class CookThisRecipe {
+  const CookThisRecipe({
+    required this.dish,
+    required this.title,
+    required this.minutes,
+    required this.servings,
+    required this.ingredients,
+    required this.steps,
+    this.swaps = const [],
+    required this.calories,
+    required this.macros,
+    this.processing,
+    this.glycemicLoad,
+    this.catalogShare = 0,
+  });
+
+  /// What the photo shows.
+  final String dish;
+
+  /// The recipe's name after any swaps.
+  final String title;
+  final int minutes;
+  final int servings;
+
+  /// For all servings; [inPantry] comes from the pantry.
+  final List<({String name, String quantity, bool inPantry})> ingredients;
+  final List<String> steps;
+
+  /// What was changed from the usual dish and why.
+  final List<String> swaps;
+
+  /// Per serving.
+  final int calories;
+  final Macros macros;
+  final FoodProcessing? processing;
+  final GlycemicLoad? glycemicLoad;
+
+  /// Share of the calories from USDA catalog values, 0–1.
+  final double catalogShare;
+
+  List<({String name, String quantity, bool inPantry})> get missing => [
+    for (final i in ingredients)
+      if (!i.inPantry) i,
+  ];
+
+  /// One serving, to log.
+  FoodItem toItem() => FoodItem(
+    name: title,
+    portion: '1 serving',
+    calories: calories.toDouble(),
+    macros: macros,
+    glycemicLoad: glycemicLoad,
+    processing: processing,
+  );
+
+  factory CookThisRecipe.fromJson(Map<String, dynamic> j) => CookThisRecipe(
+    dish: j['dish'] as String,
+    title: j['title'] as String,
+    minutes: (j['minutes'] as num).toInt(),
+    servings: (j['servings'] as num).toInt(),
+    ingredients: [
+      for (final i in j['ingredients'] as List)
+        (name: i['name'] as String, quantity: i['quantity'] as String, inPantry: i['inPantry'] as bool),
+    ],
+    steps: [for (final s in j['steps'] as List) s as String],
+    swaps: [for (final s in j['swaps'] as List? ?? const []) s as String],
+    calories: (j['calories'] as num).toInt(),
+    macros: Macros.fromJson(j['macros'] as Map<String, dynamic>),
+    processing: FoodProcessing.fromWire(j['processing']),
+    glycemicLoad: GlycemicLoad.values.asNameMap()[j['glycemicLoad']],
+    catalogShare: (j['catalogShare'] as num?)?.toDouble() ?? 0,
+  );
+}
+
+/// The recipe, or why no dish could be made out (too_dark, no_food_found or blurry).
+typedef CookThisResult = ({CookThisRecipe? recipe, String? problem});
+
+CookThisResult cookThisResultFromJson(Map<String, dynamic> j) => (
+  recipe: j['recipe'] == null ? null : CookThisRecipe.fromJson(j['recipe'] as Map<String, dynamic>),
+  problem: j['problem'] as String?,
+);
+
 /// A recipe cooked mostly from the pantry (`PantryRecipe` in the contracts).
 class PantryRecipe {
   const PantryRecipe({

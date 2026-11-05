@@ -10,8 +10,9 @@ import { ClaudeRecipeParser } from "./ClaudeRecipeParser";
 import { ClaudeMealPlanner } from "./ClaudeMealPlanner";
 import { MEAL_VISION_MODEL, OpenAiVisionProvider, type ParseCompletion } from "./OpenAiVisionProvider";
 import { FOOD_LABEL_MODEL, OpenAiFoodLabelReader } from "./OpenAiFoodLabelReader";
+import { COOK_THIS_MODEL, OpenAiDishRecipeWriter } from "./OpenAiDishRecipeWriter";
 import { OpenAiSupplementLabelReader, SUPPLEMENT_LABEL_MODEL } from "./OpenAiSupplementLabelReader";
-import { BETTER_CHOICE_PROMPT, DEVICE_EXTRACTION_PROMPT, FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
+import { COOK_THIS_PROMPT, BETTER_CHOICE_PROMPT, DEVICE_EXTRACTION_PROMPT, FOOD_LABEL_PROMPT, MEAL_VISION_PROMPT, PANTRY_RECIPES_PROMPT, RECIPE_QUERY_PROMPT, SUPPLEMENT_LABEL_PROMPT } from "./prompts";
 
 beforeEach(() => {
   jest.spyOn(console, "info").mockImplementation(() => {});
@@ -448,5 +449,47 @@ describe("ClaudeDeviceExtractor", () => {
     ["output outside the schema", { stop_reason: "end_turn", parsed_output: { devices: [{ ...device, description: "short" }] } }],
   ])("rejects %s", async (_, response) => {
     await expect(extractorWith(response).extractor.extract(input)).rejects.toThrow();
+  });
+});
+
+describe("OpenAiDishRecipeWriter", () => {
+  const context = { dietaryPreference: "omnivore" as const, cognitiveGoals: ["focus"], proteinPerServingG: 35 };
+  const catalog = [{ id: "eggs", name: "Eggs", serving: "1 large" }];
+  const recipe = {
+    problem: null,
+    dish: "Shakshuka",
+    title: "Shakshuka with extra eggs",
+    minutes: 25,
+    servings: 2,
+    ingredients: [{ name: "Eggs", quantity: "4", grams: 200, catalogId: "eggs", estimate: { calories: 286, proteinG: 25, carbsG: 1.4, fatG: 19 }, processing: "whole" }],
+    steps: ["Simmer the sauce.", "Crack in the eggs."],
+    swaps: ["Two more eggs, for protein."],
+    glycemicLoad: "low",
+  };
+  const writerWith = (message: object, model?: string) => {
+    const parse = jest.fn(async (_params: unknown) => ({ choices: [{ finish_reason: "stop", ...message }], usage: { prompt_tokens: 900, completion_tokens: 300 } }));
+    return { parse, writer: new OpenAiDishRecipeWriter({ completions: { parse } as unknown as ParseCompletion, ...(model ? { model } : {}) }) };
+  };
+
+  it("sends the photo, the person and the catalog with a strict schema, and returns the checked recipe", async () => {
+    const { parse, writer } = writerWith({ message: { parsed: recipe, refusal: null } });
+    const { problem: _, ...expected } = recipe;
+    await expect(writer.write({ photo, context, catalog })).resolves.toEqual(expected);
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params.model).toBe(COOK_THIS_MODEL);
+    expect(params.messages[0]).toEqual({ role: "system", content: COOK_THIS_PROMPT });
+    expect(JSON.parse(params.messages[1].content[1].text)).toEqual({ person: context, catalog });
+    expect(params.response_format.type).toBe("json_schema");
+  });
+
+  it("uses a newer model when one is set, and passes a photo problem on", async () => {
+    const { parse, writer } = writerWith({ message: { parsed: { ...recipe, problem: "no_food_found", ingredients: [], steps: [], swaps: [] }, refusal: null } }, "gpt-next");
+    await expect(writer.write({ photo, context, catalog })).resolves.toEqual({ problem: "no_food_found" });
+    expect((parse.mock.calls[0]![0] as Record<string, any>).model).toBe("gpt-next");
+  });
+
+  it("rejects output outside the schema", async () => {
+    const { writer } = writerWith({ message: { parsed: { ...recipe, servings: 40 }, refusal: null } });
+    await expect(writer.write({ photo, context, catalog })).rejects.toThrow();
   });
 });

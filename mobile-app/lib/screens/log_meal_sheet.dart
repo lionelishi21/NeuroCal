@@ -256,7 +256,7 @@ class _LogMealState extends State<_LogMeal> {
           spacing: 10,
           children: [
             Expanded(
-              child: _PhotoTile(
+              child: PhotoTile(
                 label: problem == null ? 'Take a photo' : 'Take it again',
                 icon: Icons.photo_camera_outlined,
                 fill: c.synapse,
@@ -265,7 +265,7 @@ class _LogMealState extends State<_LogMeal> {
               ),
             ),
             Expanded(
-              child: _PhotoTile(
+              child: PhotoTile(
                 label: 'Choose a photo',
                 icon: Icons.image_outlined,
                 fill: c.synapseSoft,
@@ -591,9 +591,10 @@ class _LogMealState extends State<_LogMeal> {
   }
 }
 
-/// One of the two big photo choices.
-class _PhotoTile extends StatelessWidget {
-  const _PhotoTile({
+/// A big tile that takes or chooses a photo (Log a meal, Cook this).
+class PhotoTile extends StatelessWidget {
+  const PhotoTile({
+    super.key,
     required this.label,
     required this.icon,
     required this.fill,

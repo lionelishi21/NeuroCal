@@ -24,6 +24,7 @@ import { OpenAiFoodLabelReader } from "../infrastructure/ai/OpenAiFoodLabelReade
 import { OpenAiSupplementLabelReader } from "../infrastructure/ai/OpenAiSupplementLabelReader";
 import { OpenFoodFactsDatabase } from "../infrastructure/food/OpenFoodFacts";
 import { OpenAiVisionProvider } from "../infrastructure/ai/OpenAiVisionProvider";
+import { OpenAiDishRecipeWriter } from "../infrastructure/ai/OpenAiDishRecipeWriter";
 import { loadConfig } from "../infrastructure/config";
 import { createDatabase } from "../infrastructure/database/client";
 import { DrizzleCatalogRepository } from "../infrastructure/database/DrizzleCatalogRepository";
@@ -62,7 +63,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubBetterChoice, stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision } from "../infrastructure/dev/StubProviders";
+import { stubBetterChoice, stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision, stubDishRecipes } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -191,6 +192,7 @@ async function main() {
       catalog: new DrizzleCatalogRepository(db),
       embedder,
       vision,
+      dishRecipes: config.openAiApiKey ? new OpenAiDishRecipeWriter({ apiKey: config.openAiApiKey, ...(config.cookThisModel ? { model: config.cookThisModel } : {}) }) : stubDishRecipes,
       labels,
       foodLabels: config.openAiApiKey ? new OpenAiFoodLabelReader({ apiKey: config.openAiApiKey }) : stubFoodLabels,
       // Real lookups even locally: Open Food Facts needs no key.
