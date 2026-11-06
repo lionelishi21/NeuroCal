@@ -8,7 +8,8 @@
  */
 
 export type Purpose = "sleep" | "focus" | "energy" | "stress" | "long_term";
-export type Evidence = "strong" | "some" | "early";
+/** "none": no independent studies, only the maker's own claims; your own numbers are all there is. */
+export type Evidence = "strong" | "some" | "early" | "none";
 
 export interface IngredientProfile {
   /** As we name it: "Magnesium". */

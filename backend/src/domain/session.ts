@@ -8,7 +8,7 @@
  */
 import { type Evidence, type Experiment, type Measure, MIN_DAYS, type Purpose, measureFor } from "./experiment";
 
-export const SESSION_KINDS = ["sauna", "cold_plunge", "meditation", "breathwork", "braintap", "blue_blocking", "red_light"] as const;
+export const SESSION_KINDS = ["sauna", "cold_plunge", "meditation", "breathwork", "braintap", "quantum_upgrade", "blue_blocking", "red_light"] as const;
 export type SessionKind = (typeof SESSION_KINDS)[number];
 
 export interface SessionKindProfile {
@@ -62,6 +62,16 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     evidence: "early",
     expectation: "Guided light-and-sound sessions for relaxing; small studies so far, so your own numbers matter most.",
     usualMinutes: 20,
+    lagDays: 0,
+  },
+  // quantumupgrade.io: "frequencies" streamed from a phone app. Nothing independent to go on, so it is
+  // logged like the rest and judged only on this person's own days with and without it.
+  quantum_upgrade: {
+    label: "Quantum Upgrade",
+    purpose: "energy",
+    evidence: "none",
+    expectation: "A frequency service sold for energy and balance. There are no independent studies yet, so log the days you run it and NeuroCal compares them with the days you don't.",
+    usualMinutes: 30,
     lagDays: 0,
   },
   blue_blocking: {

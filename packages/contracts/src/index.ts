@@ -1290,7 +1290,7 @@ export const SupplementProfile = z.object({
   onsetDays: z.number().int().nonnegative(),
   /** The known ingredients: what each is for, when, the evidence, and what to expect (never a promised percentage). */
   ingredients: z.array(
-    z.object({ name: z.string(), purpose: Purpose, onsetDays: z.number().int().nonnegative(), evidence: z.enum(["strong", "some", "early"]), expectation: z.string() }),
+    z.object({ name: z.string(), purpose: Purpose, onsetDays: z.number().int().nonnegative(), evidence: z.enum(["strong", "some", "early", "none"]), expectation: z.string() }),
   ),
 });
 
@@ -1352,7 +1352,7 @@ export const StackItem = z.object({
 export type StackItem = z.infer<typeof StackItem>;
 
 /** Gadgets and practices (backend domain/session.ts). */
-export const SessionKind = z.enum(["sauna", "cold_plunge", "meditation", "breathwork", "braintap", "blue_blocking", "red_light"]);
+export const SessionKind = z.enum(["sauna", "cold_plunge", "meditation", "breathwork", "braintap", "quantum_upgrade", "blue_blocking", "red_light"]);
 
 export const LogSessionRequest = z.object({
   kind: SessionKind,
@@ -1369,7 +1369,7 @@ export const SessionKindInfo = z.object({
   kind: SessionKind,
   label: z.string(),
   purpose: Purpose,
-  evidence: z.enum(["strong", "some", "early"]),
+  evidence: z.enum(["strong", "some", "early", "none"]),
   expectation: z.string(),
   usualMinutes: z.number().int(),
 });

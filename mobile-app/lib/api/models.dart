@@ -2318,6 +2318,7 @@ enum SessionKind {
   meditation('meditation'),
   breathwork('breathwork'),
   braintap('braintap'),
+  quantumUpgrade('quantum_upgrade'),
   blueBlocking('blue_blocking'),
   redLight('red_light');
 

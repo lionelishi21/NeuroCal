@@ -910,6 +910,14 @@ class MockNeuroCalApi implements NeuroCalApi {
       usualMinutes: 20,
     ),
     (
+      kind: SessionKind.quantumUpgrade,
+      label: 'Quantum Upgrade',
+      purpose: SupplementPurpose.energy,
+      evidence: 'none',
+      expectation: 'A frequency service sold for energy and balance. There are no independent studies yet, so log the days you run it and NeuroCal compares them with the days you don’t.',
+      usualMinutes: 30,
+    ),
+    (
       kind: SessionKind.blueBlocking,
       label: 'Blue-blocking glasses',
       purpose: SupplementPurpose.sleep,

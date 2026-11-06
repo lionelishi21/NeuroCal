@@ -185,7 +185,7 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   logSession: {
     summary: "Log a session",
-    description: "A sauna, cold plunge, meditation, breathwork, BrainTap, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
+    description: "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
   },
   deleteSession: { summary: "Remove a session", status: 204, params: { id: "The session's id." } },
   getPerformance: {

@@ -22,6 +22,7 @@ IconData sessionIcon(SessionKind kind) => switch (kind) {
   SessionKind.meditation => Icons.self_improvement_rounded,
   SessionKind.breathwork => Icons.air_rounded,
   SessionKind.braintap => Icons.headphones_rounded,
+  SessionKind.quantumUpgrade => Icons.graphic_eq_rounded,
   SessionKind.blueBlocking => Icons.dark_mode_rounded,
   SessionKind.redLight => Icons.wb_twilight_rounded,
 };

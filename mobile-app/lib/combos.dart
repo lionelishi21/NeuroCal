@@ -6,7 +6,10 @@ import 'api/models.dart';
 enum Evidence {
   strong('Strong evidence'),
   some('Some evidence'),
-  early('Early evidence');
+  early('Early evidence'),
+
+  /// Only the maker's own claims: your own numbers are all there is.
+  none('No independent studies');
 
   const Evidence(this.label);
   final String label;
