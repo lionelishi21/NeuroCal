@@ -1,8 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+import '../config.dart';
 import '../theme/tokens.dart';
 
-/// A food's photo (`assets/foods/<id>.webp`), or a tinted tile with its emoji while there is no photo.
+/// A food's photo, from the website (`<WEB_URL>/foods/<id>.webp`, uploaded by
+/// infra/scripts/upload-food-images.sh), or a tinted tile with its emoji while there is no photo.
 class FoodImage extends StatelessWidget {
   const FoodImage({super.key, required this.id, required this.category, this.size, this.radius = Radii.option});
 
@@ -16,14 +23,67 @@ class FoodImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final placeholder = _Placeholder(id: id, category: category);
-    final image = Image.asset(
-      'assets/foods/$id.webp',
-      fit: BoxFit.cover,
-      excludeFromSemantics: true,
-      errorBuilder: (_, _, _) => placeholder,
+    final image = FutureBuilder<File?>(
+      future: FoodPhotos.instance.file(id),
+      initialData: FoodPhotos.instance.cached(id),
+      builder: (context, snap) => switch (snap.data) {
+        final file? => Image.file(
+          file,
+          fit: BoxFit.cover,
+          excludeFromSemantics: true,
+          errorBuilder: (_, _, _) => placeholder,
+        ),
+        null => placeholder,
+      },
     );
     final clipped = ClipRRect(borderRadius: BorderRadius.circular(radius), child: image);
     return size == null ? clipped : SizedBox.square(dimension: size, child: clipped);
+  }
+}
+
+/// Food photos, each downloaded once and kept in the app's own folder, so lists don't fetch them again
+/// and they show offline. A photo the server doesn't have yet is asked for again on the next launch.
+class FoodPhotos {
+  FoodPhotos._();
+
+  static final instance = FoodPhotos._();
+
+  final _files = <String, Future<File?>>{};
+  final _ready = <String, File>{};
+  Future<Directory?>? _dir;
+
+  /// The photo when it's already on the phone, so it shows on the first frame.
+  File? cached(String id) => _ready[id];
+
+  Future<File?> file(String id) => _files[id] ??= _load(id);
+
+  Future<Directory?> _folder() async {
+    try {
+      final dir = Directory('${(await getApplicationSupportDirectory()).path}/foods');
+      await dir.create(recursive: true);
+      return dir;
+    } catch (_) {
+      return null; // No file system (tests): emoji tiles.
+    }
+  }
+
+  Future<File?> _load(String id) async {
+    final dir = await (_dir ??= _folder());
+    if (dir == null) return null;
+    final file = File('${dir.path}/$id.webp');
+    try {
+      if (!await file.exists()) {
+        final res = await http.get(AppConfig.webPage('foods/$id.webp')).timeout(const Duration(seconds: 20));
+        // A missing photo answers with the site's 404 page.
+        if (res.statusCode != 200 || !(res.headers['content-type'] ?? '').startsWith('image/')) return null;
+        final part = File('${file.path}.part');
+        await part.writeAsBytes(res.bodyBytes, flush: true);
+        await part.rename(file.path);
+      }
+      return _ready[id] = file;
+    } catch (_) {
+      return null; // Offline or failed: the emoji tile, and another try on the next launch.
+    }
   }
 }
 

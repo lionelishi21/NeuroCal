@@ -35,7 +35,8 @@ rm -f out/mockServiceWorker.js
 echo "Uploading to s3://${BUCKET}…"
 # Hashed build files never change, so they're cached for a year; pages are checked on every visit.
 aws s3 sync out/_next "s3://$BUCKET/_next" --delete --cache-control "public,max-age=31536000,immutable"
-aws s3 sync out "s3://$BUCKET" --delete --exclude "_next/*" --cache-control "public,max-age=0,must-revalidate"
+# foods/ holds the food photos (upload-food-images.sh), which aren't part of the build.
+aws s3 sync out "s3://$BUCKET" --delete --exclude "_next/*" --exclude "foods/*" --cache-control "public,max-age=0,must-revalidate"
 aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths "/*" --query "Invalidation.Id" --output text >/dev/null
 
 echo "Live at $(output WebSiteUrl)"

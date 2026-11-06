@@ -1,8 +1,9 @@
 /**
  * `npm run foods:images -w @neurocal/backend [-- id id …] [--force]`: makes one photo per catalog
  * food (src/infrastructure/catalog/foods.ts) with OpenAI's image model, in one shared style, and
- * saves them as mobile-app/assets/foods/<id>.webp. Skips foods that already have a photo unless
- * --force. Needs OPENAI_API_KEY (backend/.env). About 4 US cents a photo.
+ * saves them as backend/food-images/<id>.webp (not committed). Skips foods that already have a photo
+ * unless --force. Needs OPENAI_API_KEY (backend/.env). About 4 US cents a photo.
+ * Then put them on the website, where the app loads them: infra/scripts/upload-food-images.sh.
  */
 import { mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
@@ -12,7 +13,7 @@ import type { Food } from "../domain/foods";
 import { FOODS } from "../infrastructure/catalog/foods";
 import { loadConfig } from "../infrastructure/config";
 
-const OUT = path.resolve(process.cwd(), "../mobile-app/assets/foods");
+const OUT = path.resolve(process.cwd(), "food-images");
 const SIZE = 512;
 const AT_ONCE = 3;
 

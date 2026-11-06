@@ -118,6 +118,12 @@ The website (landing page and admin) is `web-poc` built as plain files and serve
    AWS_PROFILE=<profile> infra/scripts/deploy-web.sh dev
    ```
    It prints the address (`WebSiteUrl`, a `*.cloudfront.net` address until a domain points at it).
+4. **Food photos** live on the site too, at `/foods/<id>.webp`; the app downloads each one once and shows an emoji tile until it's there. Make the missing ones (needs `OPENAI_API_KEY`, about 4 US cents each), then upload them:
+   ```sh
+   npm run foods:images -w @neurocal/backend
+   AWS_PROFILE=<profile> infra/scripts/upload-food-images.sh dev
+   ```
+   `deploy-web.sh` leaves `foods/` alone.
 
 ## What it costs (rough, us-east-1)
 

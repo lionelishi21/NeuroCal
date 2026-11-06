@@ -4,7 +4,8 @@ import type { Food } from "../../domain/foods";
  * The food catalog: everyday and brain-friendly foods people can search, browse and log.
  * Nutrition is per serving, computed from USDA FoodData Central SR Legacy (April 2018, public
  * domain); `fdcId` is the source entry. Keep wording practical and free of medical claims.
- * Photos live in the apps (mobile-app/assets/foods/<id>.webp), named by `id`.
+ * Photos live on the website (<WEB_URL>/foods/<id>.webp, from `npm run foods:images` and
+ * infra/scripts/upload-food-images.sh), named by `id`.
  */
 export const FOODS: Food[] = [
   { id: "salmon", name: "Salmon", category: "fish", kind: "fish", serving: "1 fillet (120 g)", grams: 120, calories: 247, macros: { proteinG: 26.5, carbsG: 0.0, fatG: 14.8 }, fiberG: 0.0, processing: "whole", glycemicLoad: "low", goals: ["focus", "calm"], why: "Oily fish with omega-3 fats (EPA and DHA), which make up much of the brain's cell membranes.", fdcId: 175168 },

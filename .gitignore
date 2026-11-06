@@ -18,3 +18,6 @@ design_system/**/uploads/
 # Static website build (infra/scripts/deploy-web.sh).
 web-poc/out/
 .neon
+
+# Generated food photos (npm run foods:images); they live on the website (infra/scripts/upload-food-images.sh).
+backend/food-images/
