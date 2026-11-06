@@ -38,18 +38,18 @@ enum CaptureGroup {
 enum Capture {
   meal('Log a meal', 'Photo or a few words', Icons.photo_camera_outlined, CaptureGroup.food),
   foodPackage('Scan a food package', 'Barcode or label', Icons.qr_code_scanner_rounded, CaptureGroup.food),
-  coffee('Log coffee', 'A cup, with what’s in it', Icons.coffee_rounded, CaptureGroup.food),
-  cookThis('Cook this', 'A recipe from a photo of a dish', Icons.restaurant_menu_rounded, CaptureGroup.food),
+  coffee('Log coffee', 'A cup and what’s in it', Icons.coffee_rounded, CaptureGroup.food),
+  cookThis('Cook this', 'From a photo of a dish', Icons.restaurant_menu_rounded, CaptureGroup.food),
   recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined, CaptureGroup.food),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined, CaptureGroup.food),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined, CaptureGroup.body),
-  exercise('Log exercise', 'A walk, run or calf pump', Icons.directions_run_rounded, CaptureGroup.body),
+  exercise('Log exercise', 'Walk, run or calf pump', Icons.directions_run_rounded, CaptureGroup.body),
   weight('Log weight', 'A weigh-in', Icons.monitor_weight_outlined, CaptureGroup.body),
   screenTime('Log screen time', 'Late screens', Icons.phone_iphone_rounded, CaptureGroup.body),
   checkIn('Check in', 'How you feel now', Icons.mood_rounded, CaptureGroup.mind),
   brain('Brain speed check', '2 minutes', Icons.bolt_rounded, CaptureGroup.mind),
-  session('Log a session', 'Sauna, cold, meditation, glasses', Icons.spa_rounded, CaptureGroup.mind),
-  performance('Log performance', 'Work, study, training or gaming', Icons.trending_up_rounded, CaptureGroup.mind);
+  session('Log a session', 'Sauna, cold or meditation', Icons.spa_rounded, CaptureGroup.mind),
+  performance('Log performance', 'Work, study or training', Icons.trending_up_rounded, CaptureGroup.mind);
 
   const Capture(this.label, this.detail, this.icon, this.group);
 
@@ -96,37 +96,34 @@ Future<Capture?> showCaptureMenu(BuildContext context) => showAppSheet<Capture>(
           child: InkWell(
             borderRadius: BorderRadius.circular(Radii.option),
             onTap: () => Navigator.of(context).pop(option),
+            // The icon on top gives the words the tile's full width; the words sit at the bottom so
+            // every tile in a row lines up whether its name takes one line or two.
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.s3),
-              child: Row(
-                spacing: 10,
+              padding: const EdgeInsets.fromLTRB(Space.s3, Space.s2, Space.s3, Space.s2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 24,
+                    height: 24,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(color: option.tint(c).$2, shape: BoxShape.circle),
-                    child: Icon(option.icon, size: 20, color: option.tint(c).$1),
+                    child: Icon(option.icon, size: 15, color: option.tint(c).$1),
                   ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          option.label,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, height: 1.2),
-                        ),
-                        Text(
-                          option.detail,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 6),
+                  const Spacer(),
+                  Text(
+                    option.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, height: 1.2),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    option.detail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: TextSize.xxs, color: c.inkSoft),
                   ),
                 ],
               ),
@@ -149,19 +146,24 @@ Future<Capture?> showCaptureMenu(BuildContext context) => showAppSheet<Capture>(
               ),
             ),
           ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: Space.s2,
-            crossAxisSpacing: Space.s2,
-            // Taller tiles as text grows, so two lines of large text still fit.
-            childAspectRatio: 1.75 / MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.5),
-            children: [
-              for (final (i, option) in Capture.values.indexed)
-                if (option.group == group) tile(i, option),
-            ],
-          ),
+          // Two to a row, each row as tall as its longer name needs.
+          for (final row in _pairs([
+            for (final (i, option) in Capture.values.indexed)
+              if (option.group == group) tile(i, option),
+          ]))
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.s2),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: Space.s2,
+                  children: [
+                    Expanded(child: row.$1),
+                    Expanded(child: row.$2 ?? const SizedBox()),
+                  ],
+                ),
+              ),
+            ),
         ],
       ],
     );
@@ -308,3 +310,8 @@ Future<void> openFoods(BuildContext context, {required VoidCallback onChanged}) 
     ),
   ),
 );
+
+/// [items] two at a time; the last pair may have one.
+List<(Widget, Widget?)> _pairs(List<Widget> items) => [
+  for (var i = 0; i < items.length; i += 2) (items[i], i + 1 < items.length ? items[i + 1] : null),
+];

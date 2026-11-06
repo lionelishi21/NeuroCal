@@ -309,23 +309,24 @@ class _DayCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
+            // A wrap: the date keeps one line beside the pill, and the pill drops below it with large text.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Space.s2,
+              runSpacing: Space.s1,
               children: [
-                Expanded(
-                  child: Text(
-                    _full(day.day),
-                    style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
-                  ),
+                Text(
+                  _full(day.day),
+                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700),
                 ),
                 if (today)
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: c.synapseSoft, borderRadius: BorderRadius.circular(Radii.pill)),
-                      child: Text(
-                        'Today so far',
-                        style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
-                      ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: c.synapseSoft, borderRadius: BorderRadius.circular(Radii.pill)),
+                    child: Text(
+                      'Today so far',
+                      style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: c.synapseInk),
                     ),
                   ),
               ],

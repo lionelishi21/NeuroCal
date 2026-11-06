@@ -747,87 +747,90 @@ class _TopBar extends StatelessWidget {
       ),
       _ => null,
     };
-    return Row(
+    // The greeting gets the full width below the date row, so it stays on one or two lines.
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: Space.s2,
+      spacing: Space.s1,
       children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: Space.s1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [
-                Text(
+        Row(
+          spacing: Space.s2,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: Space.s1),
+                child: Text(
                   date,
                   style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w600, color: c.inkSoft),
                 ),
-                Semantics(
-                  header: true,
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: TextSize.xxl,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      height: 1.15,
+              ),
+            ),
+            if (chip case (final icon, final label, final fill, final ink))
+              Semantics(
+                container: true,
+                button: true,
+                label: label,
+                excludeSemantics: true,
+                child: Material(
+                  color: fill,
+                  shape: const StadiumBorder(),
+                  child: InkWell(
+                    customBorder: const StadiumBorder(),
+                    onTap: onOpenFasting,
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: Space.s1,
+                        children: [
+                          Icon(icon, size: 16, color: ink),
+                          Text(
+                            label,
+                            style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        if (chip case (final icon, final label, final fill, final ink))
-          Semantics(
-            container: true,
-            button: true,
-            label: label,
-            excludeSemantics: true,
-            child: Material(
-              color: fill,
-              shape: const StadiumBorder(),
-              child: InkWell(
-                customBorder: const StadiumBorder(),
-                onTap: onOpenFasting,
-                child: Container(
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: Space.s1,
-                    children: [
-                      Icon(icon, size: 16, color: ink),
-                      Text(
-                        label,
-                        style: TextStyle(fontSize: TextSize.xxs, fontWeight: FontWeight.w700, color: ink),
-                      ),
-                    ],
+              ),
+            // Its own node: otherwise the date and greeting merge into it for screen readers.
+            Semantics(
+              container: true,
+              button: true,
+              label: 'Me',
+              excludeSemantics: true,
+              child: Material(
+                color: c.synapseSoft,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onOpenMe,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    child: Text(
+                      initials,
+                      style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        // Its own node: otherwise the date and greeting merge into it for screen readers.
-        Semantics(
-          container: true,
-          button: true,
-          label: 'Me',
-          excludeSemantics: true,
-          child: Material(
-            color: c.synapseSoft,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onOpenMe,
-              child: Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                child: Text(
-                  initials,
-                  style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w800, color: c.synapseInk),
-                ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: Space.s1),
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: TextSize.xxl,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                height: 1.15,
               ),
             ),
           ),
@@ -2030,19 +2033,19 @@ class _PlanCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               spacing: 2,
                               children: [
+                                // The weigh-in just entered, big; then the trend, which moves a tenth of the
+                                // way toward each weigh-in so a day's water doesn't swing it.
+                                Text(switch (w!.entries.lastOrNull) {
+                                  final last? => '${unit.format(last.kg)} ${_weighedOn(last.date)}',
+                                  null => unit.format(w.trendKg!),
+                                }, style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800)),
                                 Text(
                                   [
-                                    // The weigh-in just entered, then the trend, which moves a tenth of the way
-                                    // toward each weigh-in so a day's water doesn't swing it.
-                                    if (w!.entries.lastOrNull case final last?) ...[
-                                      '${unit.format(last.kg)} ${_weighedOn(last.date)}',
-                                      'trend ${unit.format(w.trendKg!)}',
-                                    ] else
-                                      unit.format(w.trendKg!),
+                                    if (w.entries.isNotEmpty) 'Trend ${unit.format(w.trendKg!)}',
                                     if (goal.startKg - w.trendKg! >= 0.05)
                                       '${unit.format(goal.startKg - w.trendKg!)} down since ${_since(goal.startedOn)}',
                                   ].join(' · '),
-                                  style: const TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w800),
+                                  style: TextStyle(fontSize: TextSize.xs, height: 1.35, fontWeight: FontWeight.w600),
                                 ),
                                 Text(
                                   w.toGoKg == null || w.toGoKg! <= 0

@@ -129,7 +129,10 @@ void main() {
   Future<void> add(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel('Add'));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text(label)));
+    final tile = find.descendant(of: find.byType(BottomSheet), matching: find.text(label));
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(tile);
     await tester.pumpAndSettle();
   }
 
@@ -528,7 +531,7 @@ void main() {
     expect(find.textContaining('down since'), findsOneWidget);
     // The last weigh-in itself shows, beside the slower trend.
     expect(find.textContaining('94.2 kg on '), findsOneWidget);
-    expect(find.textContaining(' · trend '), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^Trend ')), findsOneWidget);
     // The last weigh-in was 9 days ago: Up next asks for this week's.
     expect(find.text('Weigh in'), findsOneWidget);
     expect(find.text('Log weight'), findsWidgets);

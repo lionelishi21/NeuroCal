@@ -66,9 +66,9 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect your sleep'), findsOneWidget);
-    expect(find.text('Log it by hand'), findsOneWidget);
     // Up next sits under the score, below the fold on this small phone.
+    await tester.scrollUntilVisible(find.text('Connect your sleep'), 200);
+    expect(find.text('Log it by hand'), findsOneWidget);
     await tester.ensureVisible(find.text('Connect Health Connect'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Connect Health Connect'));

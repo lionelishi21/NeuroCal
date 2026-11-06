@@ -143,6 +143,8 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     for (final option in const [ThemeMode.light, ThemeMode.dark, ThemeMode.system])
                       Expanded(
+                        // "Match device" is the longest label: a little more room keeps it off the edges.
+                        flex: option == ThemeMode.system ? 4 : 3,
                         child: Semantics(
                           button: true,
                           selected: mode == option,
@@ -156,7 +158,7 @@ class SettingsScreen extends StatelessWidget {
                               child: Container(
                                 height: 44,
                                 alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: Space.s1),
+                                padding: const EdgeInsets.symmetric(horizontal: Space.s2),
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Text(
