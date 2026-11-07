@@ -2,6 +2,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import { DrizzleGuideRepository, DrizzleProgramRepository } from "../infrastructure/database/DrizzleGuideRepositories";
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
+import { ClaudeCoach } from "../infrastructure/ai/ClaudeCoach";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
@@ -156,6 +157,14 @@ const useCases = buildUseCases({
     foodLabels: new OpenAiFoodLabelReader({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
     products: new OpenFoodFactsDatabase(),
     explainer: new ClaudeFocusExplainer({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    coach:
+      aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) === "not-set"
+        ? {
+            reply: async () => {
+              throw new UpstreamError("Ask NeuroCal isn't switched on yet. Try again later.");
+            },
+          }
+        : new ClaudeCoach({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     reasoning: new ClaudeReasoningProvider({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     search: createRecipeSearch(config) ?? (missing.push("TAVILY_API_KEY"), unavailableSearch),
     clock: systemClock,

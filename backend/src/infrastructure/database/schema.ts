@@ -524,7 +524,7 @@ export const aiUsage = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     day: text("day").notNull(),
-    feature: text("feature", { enum: ["read", "generate"] }).notNull(),
+    feature: text("feature", { enum: ["read", "generate", "chat"] }).notNull(),
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day, t.feature] })],

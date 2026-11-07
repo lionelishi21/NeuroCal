@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ClaudeDeviceExtractor, DEVICE_MODEL } from "./ClaudeDeviceExtractor";
 import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
+import { COACH_MODEL, ClaudeCoach, type BetaParseMessage } from "./ClaudeCoach";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
@@ -88,6 +89,36 @@ describe("OpenAiVisionProvider", () => {
     ["negative calories", { finish_reason: "stop", message: { parsed: { items: [{ name: "x", portion: "1", calories: -5, proteinG: 0, carbsG: 0, fatG: 0, confidence: 1, glycemicLoad: "low" }], problem: null }, refusal: null } }],
   ])("rejects %s", async (_, choice) => {
     await expect(openAiWith(choice).provider.analyzeMealPhoto(photo)).rejects.toThrow();
+  });
+});
+
+describe("ClaudeCoach", () => {
+  const turns = [
+    { role: "user" as const, content: "Why did my weight go up?" },
+    { role: "assistant" as const, content: "Mostly water." },
+    { role: "user" as const, content: "How long until it goes?" },
+  ];
+  const coachWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ model: COACH_MODEL, usage: { input_tokens: 900, output_tokens: 120 }, ...response }));
+    return { parse, coach: new ClaudeCoach({ messages: { parse } as unknown as BetaParseMessage }) };
+  };
+
+  it("puts the data summary before the first question, keeps the turns, and asks for low effort with fallbacks", async () => {
+    const { parse, coach } = coachWith({ stop_reason: "end_turn", parsed_output: { reply: "Two to four days." } });
+    await expect(coach.reply({ context: "Weigh-ins: …", turns })).resolves.toBe("Two to four days.");
+    const params = parse.mock.calls[0]![0] as Record<string, any>;
+    expect(params).toMatchObject({ model: "claude-opus-5-5", fallbacks: "default", betas: ["server-side-fallback-2026-07-01"], output_config: { effort: "low" } });
+    expect(params.thinking).toBeUndefined();
+    expect(params.messages).toEqual([
+      { role: "user", content: "My data:\n\nWeigh-ins: …\n\nWhy did my weight go up?" },
+      { role: "assistant", content: "Mostly water." },
+      { role: "user", content: "How long until it goes?" },
+    ]);
+  });
+
+  it("answers a decline plainly and fails on a cut-off reply", async () => {
+    await expect(coachWith({ stop_reason: "refusal", parsed_output: null }).coach.reply({ context: "", turns })).resolves.toMatch(/talk to your doctor/);
+    await expect(coachWith({ stop_reason: "max_tokens", parsed_output: null }).coach.reply({ context: "", turns })).rejects.toThrow(/stopped early/);
   });
 });
 

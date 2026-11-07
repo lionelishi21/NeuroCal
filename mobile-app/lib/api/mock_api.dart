@@ -1031,6 +1031,20 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
+  Future<String> ask(List<ChatMessage> messages, {required String unit}) async {
+    await _wait();
+    final q = messages.last.text.toLowerCase();
+    if (q.contains('weight') || q.contains('pound') || q.contains(' lb') || q.contains('kg')) {
+      return 'Almost certainly water, not fat. A pound of fat takes about 3,500 kcal more than you burn, so a '
+          'jump of several ${unit == 'lb' ? 'pounds' : 'kilos'} overnight is water and food still in your gut. '
+          'Yesterday you had more carbs and salt than usual, and a late dinner; each gram of stored carbs holds '
+          'about 3 g of water. Expect it to settle over 2 to 4 days, and watch your trend line rather than one weigh-in.';
+    }
+    return 'From what you’ve logged this week, your sleep is the biggest lever: nights under 6 hours line up with '
+        'your lower Focus Scores. Ask me about your weight, meals, fasting or sleep any time.';
+  }
+
+  @override
   Future<SessionsDay> endSession(String id) async {
     await _wait();
     final i = _sessions.indexWhere((s) => s.id == id);

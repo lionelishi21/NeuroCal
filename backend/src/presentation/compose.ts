@@ -29,6 +29,8 @@ import type { IPantryRecipeAssistant, IPantryRepository } from "../application/i
 import { BetterChoiceUseCase } from "../application/use-cases/BetterChoiceUseCase";
 import { CoffeeUseCases } from "../application/use-cases/CoffeeUseCases";
 import { SessionUseCases } from "../application/use-cases/SessionUseCases";
+import { AskCoachUseCase } from "../application/use-cases/AskCoachUseCase";
+import type { ICoach } from "../application/interfaces/ICoach";
 import { PerformanceUseCases } from "../application/use-cases/PerformanceUseCases";
 import { GetWeeklyReportUseCase } from "../application/use-cases/GetWeeklyReportUseCase";
 import { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
@@ -148,6 +150,8 @@ export interface Ports {
   fastPlans: IFastPlanRepository;
   coffee: ICoffeeRepository;
   sessions: ISessionRepository;
+  /** Ask NeuroCal. */
+  coach: ICoach;
   performance: IPerformanceRepository;
   shoppingList: IShoppingListRepository;
   airQuality: IAirQuality;
@@ -241,6 +245,7 @@ export function buildUseCases(p: Ports): UseCases {
     performance: new PerformanceUseCases(p.profiles, p.performance, p.clock, { scores: p.focusScores, coffee: p.coffee, meals: p.meals }),
     adminProducts,
     aiAllowance: new AiAllowanceUseCase(p.aiUsage, p.clock),
+    askCoach: new AskCoachUseCase(p.profiles, p.weights, p.meals, p.telemetry, p.sessions, p.coach, p.clock),
     markers: new MarkerUseCases(p.markers, p.clock),
     glucose: new GlucoseUseCases(p.glucose, p.profiles, p.clock),
     getHealthspan: new GetHealthspanUseCase(p.profiles, p.meals, p.telemetry, p.exercises, p.environment, p.clock),

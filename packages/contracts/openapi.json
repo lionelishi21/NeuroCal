@@ -1608,6 +1608,38 @@
         }
       }
     },
+    "/chat": {
+      "post": {
+        "operationId": "askCoach",
+        "summary": "Ask NeuroCal",
+        "description": "Answers a question about the person's own data (recent weigh-ins, meals, sleep and sessions), e.g. why their weight went up overnight. Send the conversation so far, ending with the question. Needs a subscription; 40 questions a day.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/sessions/{id}": {
       "delete": {
         "operationId": "deleteSession",
@@ -4315,6 +4347,59 @@
           "goals",
           "why",
           "diets"
+        ]
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "minItems": 1,
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            }
+          },
+          "unit": {
+            "default": "kg",
+            "type": "string",
+            "enum": [
+              "kg",
+              "lb"
+            ]
+          }
+        },
+        "required": [
+          "messages"
+        ]
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "reply": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
         ]
       },
       "CheckIn": {

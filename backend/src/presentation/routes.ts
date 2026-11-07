@@ -2,6 +2,7 @@ import type { ShoppingListUseCases, ShoppingListView } from "../application/use-
 import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
+import type { AskCoachUseCase } from "../application/use-cases/AskCoachUseCase";
 import type { PerformanceUseCases, PerformanceView } from "../application/use-cases/PerformanceUseCases";
 import type { GetWeeklyReportUseCase } from "../application/use-cases/GetWeeklyReportUseCase";
 import { ACTIVITIES, ACTIVITY } from "../domain/performance";
@@ -73,6 +74,8 @@ import {
   CoffeeDay,
   CoffeeProducts,
   LogSessionRequest,
+  ChatRequest,
+  ChatResponse,
   EndSessionRequest,
   LogPerformanceRequest,
   PerformanceResponse,
@@ -239,6 +242,7 @@ export interface UseCases {
   knowledge: KnowledgeUseCases;
   devices: DeviceScoutUseCases;
   aiAllowance: AiAllowanceUseCase;
+  askCoach: AskCoachUseCase;
   getHealthspan: GetHealthspanUseCase;
   markers: MarkerUseCases;
   glucose: GlucoseUseCases;
@@ -819,6 +823,16 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       async (req, [id]) => {
         await uc.performance.remove(req.userId, id!);
         return { status: 204 };
+      },
+    ],
+    [
+      "POST",
+      /^\/chat$/,
+      async (req) => {
+        const body = json(req, ChatRequest);
+        await uc.gate.require(req);
+        await uc.aiAllowance.spend(req, "chat");
+        return ok(ChatResponse, await uc.askCoach.execute(req.userId, { turns: body.messages, unit: body.unit }));
       },
     ],
     ["GET", /^\/sessions$/, async (req) => ok(SessionsResponse, toSessionDay(await uc.sessions.day(req.userId)))],

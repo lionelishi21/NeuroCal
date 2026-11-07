@@ -76,6 +76,10 @@ abstract interface class NeuroCalApi {
   /// Stops a running period now; returns the day without it.
   Future<SessionsDay> endSession(String id);
 
+  /// Ask NeuroCal: answers the last question in [messages] (roles "user" and "assistant", oldest first)
+  /// from the person's own data, in [unit] ("kg" or "lb").
+  Future<String> ask(List<ChatMessage> messages, {required String unit});
+
   Future<void> deleteSession(String id);
 
   /// Performance sessions: the last two weeks, and what goes with the best ones.
@@ -530,6 +534,23 @@ class HttpNeuroCalApi implements NeuroCalApi {
       }),
     );
     return SessionsDay.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<String> ask(List<ChatMessage> messages, {required String unit}) async {
+    final res = await _client
+        .post(
+          _uri('/chat'),
+          headers: await _headers(json: true),
+          body: jsonEncode({
+            'messages': [
+              for (final m in messages) {'role': m.fromMe ? 'user' : 'assistant', 'content': m.text},
+            ],
+            'unit': unit,
+          }),
+        )
+        .timeout(const Duration(seconds: 60));
+    return (_decode(res) as Map<String, dynamic>)['reply'] as String;
   }
 
   @override

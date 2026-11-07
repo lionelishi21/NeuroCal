@@ -2311,6 +2311,9 @@ class CoffeeDay {
   );
 }
 
+/// One message in Ask NeuroCal: the person's question ([fromMe]) or the answer.
+typedef ChatMessage = ({bool fromMe, String text});
+
 /// A gadget or practice (`SessionKind` in the contracts).
 enum SessionKind {
   sauna('sauna'),

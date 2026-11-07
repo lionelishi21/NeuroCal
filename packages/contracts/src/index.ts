@@ -1365,6 +1365,20 @@ export const LogSessionRequest = z.object({
 });
 export type LogSessionRequest = z.infer<typeof LogSessionRequest>;
 
+/** Ask NeuroCal: the conversation so far, ending with the question. Earlier turns past the last 20 are dropped. */
+export const ChatRequest = z.object({
+  messages: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) }))
+    .min(1)
+    .max(40),
+  /** The person's weight unit, so answers use it. */
+  unit: z.enum(["kg", "lb"]).default("kg"),
+});
+export type ChatRequest = z.infer<typeof ChatRequest>;
+
+export const ChatResponse = z.object({ reply: z.string() });
+export type ChatResponse = z.infer<typeof ChatResponse>;
+
 /** Stops a period: it ends at `endsAt`, now when left out. */
 export const EndSessionRequest = z.object({ endsAt: IsoDateTime.optional() });
 export type EndSessionRequest = z.infer<typeof EndSessionRequest>;
@@ -1976,6 +1990,7 @@ export const endpoints = {
   getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
   endSession: { method: "POST", path: "/sessions/:id/end", body: EndSessionRequest, response: SessionsResponse },
+  askCoach: { method: "POST", path: "/chat", body: ChatRequest, response: ChatResponse },
   deleteSession: { method: "DELETE", path: "/sessions/:id" },
   getPerformance: { method: "GET", path: "/performance", response: PerformanceResponse },
   logPerformance: { method: "POST", path: "/performance", body: LogPerformanceRequest, response: PerformanceResponse },

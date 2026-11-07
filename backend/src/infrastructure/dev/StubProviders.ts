@@ -1,4 +1,5 @@
 import type { IDeviceExtractor } from "../../application/interfaces/IDevices";
+import type { ICoach } from "../../application/interfaces/ICoach";
 /**
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
@@ -247,5 +248,13 @@ export const stubDeviceExtractor: IDeviceExtractor = {
   async extract({ category, results }) {
     const first = results[0];
     return first ? [{ name: `${first.title} (stub)`, maker: "Stub", url: first.url, description: `Stub ${category.toLowerCase()}: set ANTHROPIC_API_KEY to read real search results.` }] : [];
+  },
+};
+
+/** Ask NeuroCal without an Anthropic key: says what it would have read. */
+export const stubCoach: ICoach = {
+  async reply({ context, turns }) {
+    const weighIns = context.split("\n").filter((l) => /^\d{4}-\d{2}-\d{2}: .*(kg|lb)/.test(l)).length;
+    return `Stub coach: you asked "${turns.at(-1)!.content.slice(0, 80)}". With a key, the answer would draw on your ${weighIns} recent weigh-ins, meals and sleep.`;
   },
 };

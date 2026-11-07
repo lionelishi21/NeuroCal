@@ -9,6 +9,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import {
   FakeEmail,
   FakeEmbedder,
+  FakeCoach,
   FakeExplainer,
   FakeReasoning,
   FakeSearch,
@@ -80,7 +81,10 @@ let waitlist: InMemoryWaitlist;
 let email: FakeEmail;
 let eatingOutItems: InMemoryEatingOut;
 
+let coach: FakeCoach;
+
 beforeEach(async () => {
+  coach = new FakeCoach();
   profiles = new InMemoryProfiles();
   storage = new InMemoryStorage();
   waitlist = new InMemoryWaitlist();
@@ -109,6 +113,7 @@ beforeEach(async () => {
     catalog,
     embedder: new FakeEmbedder(),
     explainer: new FakeExplainer("Short sleep is holding you back."),
+    coach,
     storage,
     foods: FOODS,
     eatingOut: EATING_OUT,
@@ -463,6 +468,21 @@ describe("API routes", () => {
     expect((await call("DELETE", `/sessions/${day.sessions[0]!.id}`)).status).toBe(204);
     expect(SessionsResponse.parse((await call("GET", "/sessions")).body).sessions).toEqual([]);
     expect((await call("DELETE", "/sessions/nope")).status).toBe(404);
+  });
+
+  it("answers a question about the person's own weigh-ins, in their unit", async () => {
+    await call("POST", "/weights", { kg: 105.2, date: "2026-09-28" });
+    await call("POST", "/weights", { kg: 107.9, date: "2026-09-29" });
+    const asked = await call("POST", "/chat", { messages: [{ role: "user", content: "Why did my weight go up 6 pounds overnight?" }], unit: "lb" });
+    expect(asked).toMatchObject({ status: 200, body: { reply: "Mostly water: a salty, high-carb day." } });
+    const { context, turns } = coach.calls[0]!;
+    expect(context).toContain("answer in lb");
+    expect(context).toContain("2026-09-29: 237.9 lb (+6 lb since 2026-09-28)");
+    expect(turns).toEqual([{ role: "user", content: "Why did my weight go up 6 pounds overnight?" }]);
+
+    // The conversation must end with the person's question.
+    expect((await call("POST", "/chat", { messages: [{ role: "assistant", content: "Hi" }] })).status).toBe(400);
+    expect((await call("POST", "/chat", { messages: [] })).status).toBe(400);
   });
 
   it("starts Quantum Upgrade as a period, keeps it running, and stops it", async () => {

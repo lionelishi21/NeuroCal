@@ -21,6 +21,7 @@ import '../plan/three_weeks.dart';
 import '../weight_units.dart';
 import '../reminders/reminders.dart';
 import '../reminders/today_nudges.dart';
+import 'ask.dart';
 import 'calf_routine.dart';
 import 'capture.dart';
 import 'environment_card.dart';
@@ -794,6 +795,15 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
+            IconButton.filledTonal(
+              tooltip: 'Ask NeuroCal',
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              padding: EdgeInsets.zero,
+              iconSize: 18,
+              style: IconButton.styleFrom(backgroundColor: c.ionSoft, foregroundColor: c.ionInk),
+              onPressed: () => openAsk(context),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+            ),
             // Its own node: otherwise the date and greeting merge into it for screen readers.
             Semantics(
               container: true,
@@ -1949,6 +1959,17 @@ class _PlanCard extends StatelessWidget {
     return '${d.day} ${_months[d.month - 1]}';
   }
 
+  /// Up (true) or down (false) when the last two weigh-ins, at most two days apart, differ by 1 kg
+  /// (about 2 lb) or more: a swing worth asking about. Null otherwise.
+  bool? _jump(WeightHistory? w) {
+    final e = w?.entries ?? const [];
+    if (e.length < 2) return null;
+    final (a, b) = (e[e.length - 2], e.last);
+    if (DateTime.parse(b.date).difference(DateTime.parse(a.date)).inDays > 2) return null;
+    final change = b.kg - a.kg;
+    return change.abs() < 1 ? null : change > 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -2061,6 +2082,16 @@ class _PlanCard extends StatelessWidget {
                     Icon(Icons.add_rounded, color: c.synapseInk),
                   ],
                 ),
+              ),
+            ),
+          if (_jump(goal == null ? null : w) case final up?)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () =>
+                    openAsk(context, question: up ? 'Why did my weight go up?' : 'Why did my weight drop?'),
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                label: Text(up ? 'Why did it go up?' : 'Why did it drop?'),
               ),
             ),
         ],
