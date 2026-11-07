@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ClaudeDeviceExtractor, DEVICE_MODEL } from "./ClaudeDeviceExtractor";
 import { ClaudeFocusExplainer } from "./ClaudeFocusExplainer";
-import { COACH_MODEL, ClaudeCoach, type BetaParseMessage } from "./ClaudeCoach";
+import { ClaudeWhyExplainer } from "./ClaudeWhyExplainer";
 import { OpenAiEmbeddingProvider, type CreateEmbeddings } from "./OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider, RECIPE_QUERY_MODEL, type ParseMessage } from "./ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant, PANTRY_RECIPES_MODEL } from "./ClaudePantryRecipeAssistant";
@@ -92,33 +92,26 @@ describe("OpenAiVisionProvider", () => {
   });
 });
 
-describe("ClaudeCoach", () => {
-  const turns = [
-    { role: "user" as const, content: "Why did my weight go up?" },
-    { role: "assistant" as const, content: "Mostly water." },
-    { role: "user" as const, content: "How long until it goes?" },
-  ];
-  const coachWith = (response: object) => {
-    const parse = jest.fn(async (_params: unknown) => ({ model: COACH_MODEL, usage: { input_tokens: 900, output_tokens: 120 }, ...response }));
-    return { parse, coach: new ClaudeCoach({ messages: { parse } as unknown as BetaParseMessage }) };
+describe("ClaudeWhyExplainer", () => {
+  const whyWith = (response: object) => {
+    const parse = jest.fn(async (_params: unknown) => ({ usage: { input_tokens: 1500, output_tokens: 90 }, ...response }));
+    return { parse, why: new ClaudeWhyExplainer({ messages: { parse } as unknown as ParseMessage }) };
   };
+  const reasons = { headline: "Up 6 lb: most likely water, not fat", reasons: ["Salty food yesterday (Pizza)."] };
 
-  it("puts the data summary before the first question, keeps the turns, and asks for low effort with fallbacks", async () => {
-    const { parse, coach } = coachWith({ stop_reason: "end_turn", parsed_output: { reply: "Two to four days." } });
-    await expect(coach.reply({ context: "Weigh-ins: …", turns })).resolves.toBe("Two to four days.");
+  it("sends the data summary, what the app already shows and the topic's question, on Haiku 5.5 at low effort", async () => {
+    const { parse, why } = whyWith({ stop_reason: "end_turn", parsed_output: { explanation: "Mostly water." } });
+    await expect(why.explain({ topic: "weight", context: "Weigh-ins: …", reasons })).resolves.toBe("Mostly water.");
     const params = parse.mock.calls[0]![0] as Record<string, any>;
-    expect(params).toMatchObject({ model: "claude-opus-5-5", fallbacks: "default", betas: ["server-side-fallback-2026-07-01"], output_config: { effort: "low" } });
-    expect(params.thinking).toBeUndefined();
-    expect(params.messages).toEqual([
-      { role: "user", content: "My data:\n\nWeigh-ins: …\n\nWhy did my weight go up?" },
-      { role: "assistant", content: "Mostly water." },
-      { role: "user", content: "How long until it goes?" },
-    ]);
+    expect(params).toMatchObject({ model: "claude-haiku-5-5", output_config: { effort: "low" } });
+    expect(params.messages[0].content).toBe(
+      "My data:\n\nWeigh-ins: …\n\nWhat the app already shows them:\nUp 6 lb: most likely water, not fat\n- Salty food yesterday (Pizza).\n\nWhy did my weight change at my latest weigh-in?",
+    );
   });
 
   it("answers a decline plainly and fails on a cut-off reply", async () => {
-    await expect(coachWith({ stop_reason: "refusal", parsed_output: null }).coach.reply({ context: "", turns })).resolves.toMatch(/talk to your doctor/);
-    await expect(coachWith({ stop_reason: "max_tokens", parsed_output: null }).coach.reply({ context: "", turns })).rejects.toThrow(/stopped early/);
+    await expect(whyWith({ stop_reason: "refusal", parsed_output: null }).why.explain({ topic: "focus", context: "", reasons: null })).resolves.toMatch(/talk to your doctor/);
+    await expect(whyWith({ stop_reason: "max_tokens", parsed_output: null }).why.explain({ topic: "focus", context: "", reasons: null })).rejects.toThrow(/stopped early/);
   });
 });
 

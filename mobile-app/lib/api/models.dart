@@ -2311,8 +2311,27 @@ class CoffeeDay {
   );
 }
 
-/// One message in Ask NeuroCal: the person's question ([fromMe]) or the answer.
-typedef ChatMessage = ({bool fromMe, String text});
+/// Likely reasons for a result, worked out by rules from what's logged (`WhyReasons` in the contracts).
+typedef WhyReasons = ({String headline, List<String> reasons});
+
+WhyReasons? _whyFromJson(Object? j) => j is Map<String, dynamic>
+    ? (headline: j['headline'] as String, reasons: [for (final r in j['reasons'] as List) r as String])
+    : null;
+
+/// The day's "Why?" lines (`WhyResponse`): the latest weigh-in's move and where the calories came from.
+class WhyDay {
+  const WhyDay({required this.date, this.weight, this.calories});
+
+  final String date;
+  final WhyReasons? weight;
+  final WhyReasons? calories;
+
+  factory WhyDay.fromJson(Map<String, dynamic> j) =>
+      WhyDay(date: j['date'] as String, weight: _whyFromJson(j['weight']), calories: _whyFromJson(j['calories']));
+}
+
+/// Results with a "Why?" (`WhyTopic` in the contracts).
+enum WhyTopic { weight, calories, focus }
 
 /// A gadget or practice (`SessionKind` in the contracts).
 enum SessionKind {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
-import { BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse, CookThisResponse } from "@neurocal/contracts";
+import { WhyResponse, BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse, CookThisResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { stubDishRecipes } from "../infrastructure/dev/StubProviders";
 import { FOODS } from "../infrastructure/catalog/foods";
@@ -9,7 +9,8 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import {
   FakeEmail,
   FakeEmbedder,
-  FakeCoach,
+  FakeWhyExplainer,
+  InMemoryWhyCache,
   FakeExplainer,
   FakeReasoning,
   FakeSearch,
@@ -81,10 +82,10 @@ let waitlist: InMemoryWaitlist;
 let email: FakeEmail;
 let eatingOutItems: InMemoryEatingOut;
 
-let coach: FakeCoach;
+let whyExplainer: FakeWhyExplainer;
 
 beforeEach(async () => {
-  coach = new FakeCoach();
+  whyExplainer = new FakeWhyExplainer();
   profiles = new InMemoryProfiles();
   storage = new InMemoryStorage();
   waitlist = new InMemoryWaitlist();
@@ -113,7 +114,8 @@ beforeEach(async () => {
     catalog,
     embedder: new FakeEmbedder(),
     explainer: new FakeExplainer("Short sleep is holding you back."),
-    coach,
+    whyExplainer,
+    whyCache: new InMemoryWhyCache(),
     storage,
     foods: FOODS,
     eatingOut: EATING_OUT,
@@ -470,19 +472,28 @@ describe("API routes", () => {
     expect((await call("DELETE", "/sessions/nope")).status).toBe(404);
   });
 
-  it("answers a question about the person's own weigh-ins, in their unit", async () => {
+  it("says why a weigh-in moved, free, and explains it once per day on a tap", async () => {
     await call("POST", "/weights", { kg: 105.2, date: "2026-09-28" });
     await call("POST", "/weights", { kg: 107.9, date: "2026-09-29" });
-    const asked = await call("POST", "/chat", { messages: [{ role: "user", content: "Why did my weight go up 6 pounds overnight?" }], unit: "lb" });
-    expect(asked).toMatchObject({ status: 200, body: { reply: "Mostly water: a salty, high-carb day." } });
-    const { context, turns } = coach.calls[0]!;
-    expect(context).toContain("answer in lb");
-    expect(context).toContain("2026-09-29: 237.9 lb (+6 lb since 2026-09-28)");
-    expect(turns).toEqual([{ role: "user", content: "Why did my weight go up 6 pounds overnight?" }]);
+    const why = WhyResponse.parse((await call("GET", "/why?unit=lb")).body);
+    expect(why.date).toBe("2026-09-29");
+    expect(why.weight?.headline).toBe("Up 6 lb: most likely water, not fat");
+    expect(why.weight?.reasons).toContain("Gaining 6 lb of fat would take about 21,000 kcal more than you burn, so this is mostly water.");
+    expect(whyExplainer.calls).toEqual([]);
 
-    // The conversation must end with the person's question.
-    expect((await call("POST", "/chat", { messages: [{ role: "assistant", content: "Hi" }] })).status).toBe(400);
-    expect((await call("POST", "/chat", { messages: [] })).status).toBe(400);
+    const first = await call("POST", "/why/explain", { topic: "weight", unit: "lb" });
+    expect(first).toMatchObject({ status: 200, body: { explanation: "Mostly water from a salty, high-carb day." } });
+    expect(whyExplainer.calls[0]!.context).toContain("2026-09-29: 237.9 lb (+6 lb since 2026-09-28)");
+    // Again with the same data: the saved one, with no new AI call.
+    await call("POST", "/why/explain", { topic: "weight", unit: "lb" });
+    expect(whyExplainer.calls).toHaveLength(1);
+    // New data behind it: written again.
+    await call("POST", "/weights", { kg: 107.5, date: "2026-09-29" });
+    await call("POST", "/why/explain", { topic: "weight", unit: "lb" });
+    expect(whyExplainer.calls).toHaveLength(2);
+
+    expect((await call("POST", "/why/explain", { topic: "mood" })).status).toBe(400);
+    expect((await call("GET", "/why?date=2026-10-30")).status).toBe(400);
   });
 
   it("starts Quantum Upgrade as a period, keeps it running, and stops it", async () => {

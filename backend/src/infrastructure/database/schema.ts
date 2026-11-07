@@ -524,7 +524,7 @@ export const aiUsage = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     day: text("day").notNull(),
-    feature: text("feature", { enum: ["read", "generate", "chat"] }).notNull(),
+    feature: text("feature", { enum: ["read", "generate", "why"] }).notNull(),
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day, t.feature] })],
@@ -743,3 +743,19 @@ export const programs = pgTable("programs", {
   checks: jsonb("checks").$type<{ checkpoint: 1 | 15 | 30; date: string; answers: number[] }[]>().notNull().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** "Why?" explanations, one per person, topic and day, reused while the data behind them (hash) is the same. */
+export const whyExplanations = pgTable(
+  "why_explanations",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    topic: text("topic").notNull(),
+    date: text("date").notNull(),
+    hash: text("hash").notNull(),
+    text: text("text").notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.topic, t.date] })],
+);

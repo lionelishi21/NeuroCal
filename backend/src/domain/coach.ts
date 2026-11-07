@@ -1,10 +1,9 @@
 /**
- * Ask NeuroCal: a person asks about their own numbers ("why did my weight jump 6 lb overnight?") and the
- * answer is grounded in what they've logged. This file turns their recent data into the short, plain
- * summary the model reads. It holds facts only (dates, weights, meals, sleep); the model does the
- * explaining, and works only from what is here plus general knowledge.
+ * A person's recent data as a short, plain summary: what the rules in domain/why.ts read, and what the
+ * model reads when someone taps "Why?". Facts only (dates, weights, meals, sleep, Focus Scores); the
+ * model does the explaining, from what is here plus general knowledge.
  */
-import type { Meal, Profile, SleepSession } from "./types";
+import type { FocusScore, Meal, Profile, SleepSession } from "./types";
 import type { Session } from "./session";
 import { SESSION_KIND } from "./session";
 import { type WeightEntry, trendOf } from "./weight";
@@ -16,16 +15,6 @@ export const LB_PER_KG = 2.20462;
 export const COACH_WEIGH_IN_DAYS = 21;
 export const COACH_MEAL_DAYS = 4;
 export const COACH_SLEEP_NIGHTS = 4;
-
-/** The longest question, the most earlier turns kept, and the longest earlier turn. */
-export const MAX_QUESTION_CHARS = 1000;
-export const MAX_TURNS = 20;
-export const MAX_TURN_CHARS = 4000;
-
-export interface ChatTurn {
-  role: "user" | "assistant";
-  content: string;
-}
 
 export interface CoachData {
   profile: Profile;
@@ -40,6 +29,8 @@ export interface CoachData {
   sleep: { date: string; sessions: SleepSession[] }[];
   /** Gadget and practice sessions lately (a sitting, or a period such as a subscription). */
   sessions: Session[];
+  /** Focus Scores lately, oldest first. */
+  focus?: FocusScore[];
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -106,6 +97,17 @@ export function coachContext(d: CoachData): string {
   for (const night of d.sleep) {
     const minutes = night.sessions.reduce((a, s) => a + (s.end.getTime() - s.start.getTime()) / 60_000, 0);
     lines.push(`${night.date}: ${night.sessions.length ? `${round1(minutes / 60)} h` : "not recorded"}`);
+  }
+
+  if (d.focus?.length) {
+    lines.push("", "Focus Score (0–100; each input 0–1, higher is better, blank without data):");
+    for (const f of d.focus) {
+      const parts = Object.entries(f.components)
+        .filter(([, v]) => v !== null && v !== undefined)
+        .map(([k, v]) => `${k} ${Math.round((v as number) * 100) / 100}`)
+        .join(", ");
+      lines.push(`${f.date}: ${f.score ?? "no score"}${parts ? ` (${parts})` : ""}`);
+    }
   }
 
   if (d.sessions.length) {

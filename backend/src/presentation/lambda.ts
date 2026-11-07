@@ -2,7 +2,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import { DrizzleGuideRepository, DrizzleProgramRepository } from "../infrastructure/database/DrizzleGuideRepositories";
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
-import { ClaudeCoach } from "../infrastructure/ai/ClaudeCoach";
+import { ClaudeWhyExplainer } from "../infrastructure/ai/ClaudeWhyExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
@@ -48,6 +48,7 @@ import {
   DrizzleFastPlanRepository,
   DrizzleCoffeeRepository,
   DrizzleSessionRepository,
+  DrizzleWhyCache,
   DrizzlePerformanceRepository,
   DrizzleShoppingListRepository,
   DrizzleMealPlanRepository,
@@ -157,14 +158,15 @@ const useCases = buildUseCases({
     foodLabels: new OpenAiFoodLabelReader({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
     products: new OpenFoodFactsDatabase(),
     explainer: new ClaudeFocusExplainer({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
-    coach:
+    whyExplainer:
       aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) === "not-set"
         ? {
-            reply: async () => {
-              throw new UpstreamError("Ask NeuroCal isn't switched on yet. Try again later.");
+            explain: async () => {
+              throw new UpstreamError("Explanations aren't switched on yet. The reasons under each result still show.");
             },
           }
-        : new ClaudeCoach({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+        : new ClaudeWhyExplainer({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
+    whyCache: new DrizzleWhyCache(db),
     reasoning: new ClaudeReasoningProvider({ apiKey: aiKey("ANTHROPIC_API_KEY", config.anthropicApiKey) }),
     search: createRecipeSearch(config) ?? (missing.push("TAVILY_API_KEY"), unavailableSearch),
     clock: systemClock,

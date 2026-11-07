@@ -4,7 +4,7 @@
  */
 const PRICES: Record<string, { input: number; output: number }> = {
   "claude-haiku-4-5": { input: 1.0, output: 5.0 },
-  "claude-opus-5-5": { input: 4.0, output: 20.0 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
   "gpt-4o": { input: 2.5, output: 10.0 },
   "text-embedding-3-small": { input: 0.02, output: 0 },
 };

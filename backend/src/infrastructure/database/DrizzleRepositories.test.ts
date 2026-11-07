@@ -5,6 +5,7 @@ import {
   DrizzleFastPlanRepository,
   DrizzlePerformanceRepository,
   DrizzleSessionRepository,
+  DrizzleWhyCache,
   DrizzleCheckInRepository,
   DrizzleFocusScoreRepository,
   DrizzleMealRepository,
@@ -281,6 +282,17 @@ describe("DrizzleSessionRepository", () => {
     expect(await since("2026-10-02T00:00:00Z")).toEqual([]);
     // Sittings keep no end.
     expect((await repo.listBetween(alice, t("2026-10-01T00:00:00Z"), t("2026-10-02T00:00:00Z")))[0]).not.toHaveProperty("endsAt");
+  });
+});
+
+describe("DrizzleWhyCache", () => {
+  it("keeps one explanation per person, topic and day, replaced when written again", async () => {
+    const cache = new DrizzleWhyCache(db);
+    expect(await cache.get(alice, "weight", "2026-11-06")).toBeNull();
+    await cache.put(alice, "weight", "2026-11-06", { hash: "a", text: "Water." });
+    await cache.put(alice, "weight", "2026-11-06", { hash: "b", text: "Salt." });
+    expect(await cache.get(alice, "weight", "2026-11-06")).toEqual({ hash: "b", text: "Salt." });
+    expect(await cache.get(alice, "focus", "2026-11-06")).toBeNull();
   });
 });
 

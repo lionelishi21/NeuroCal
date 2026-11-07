@@ -302,6 +302,13 @@
       "when": 1794009875881,
       "tag": "0042_light_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794018406180,
+      "tag": "0043_omniscient_invaders",
+      "breakpoints": true
     }
   ]
 }

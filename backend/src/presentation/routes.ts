@@ -2,7 +2,7 @@ import type { ShoppingListUseCases, ShoppingListView } from "../application/use-
 import type { GetLearnUseCase } from "../application/use-cases/GetLearnUseCase";
 import { SESSION_KIND, SESSION_KINDS } from "../domain/session";
 import type { SessionDay as SessionDayRecord, SessionUseCases } from "../application/use-cases/SessionUseCases";
-import type { AskCoachUseCase } from "../application/use-cases/AskCoachUseCase";
+import type { WhyUseCases } from "../application/use-cases/WhyUseCases";
 import type { PerformanceUseCases, PerformanceView } from "../application/use-cases/PerformanceUseCases";
 import type { GetWeeklyReportUseCase } from "../application/use-cases/GetWeeklyReportUseCase";
 import { ACTIVITIES, ACTIVITY } from "../domain/performance";
@@ -74,8 +74,9 @@ import {
   CoffeeDay,
   CoffeeProducts,
   LogSessionRequest,
-  ChatRequest,
-  ChatResponse,
+  WhyResponse,
+  ExplainWhyRequest,
+  ExplainWhyResponse,
   EndSessionRequest,
   LogPerformanceRequest,
   PerformanceResponse,
@@ -242,7 +243,7 @@ export interface UseCases {
   knowledge: KnowledgeUseCases;
   devices: DeviceScoutUseCases;
   aiAllowance: AiAllowanceUseCase;
-  askCoach: AskCoachUseCase;
+  why: WhyUseCases;
   getHealthspan: GetHealthspanUseCase;
   markers: MarkerUseCases;
   glucose: GlucoseUseCases;
@@ -826,13 +827,24 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
       },
     ],
     [
-      "POST",
-      /^\/chat$/,
+      "GET",
+      /^\/why$/,
       async (req) => {
-        const body = json(req, ChatRequest);
+        const unit = req.query.get("unit") === "lb" ? "lb" : "kg";
+        const date = req.query.get("date");
+        return ok(WhyResponse, await uc.why.reasons(req.userId, { unit, ...(date ? { date } : {}) }));
+      },
+    ],
+    [
+      "POST",
+      /^\/why\/explain$/,
+      async (req) => {
+        const body = json(req, ExplainWhyRequest);
         await uc.gate.require(req);
-        await uc.aiAllowance.spend(req, "chat");
-        return ok(ChatResponse, await uc.askCoach.execute(req.userId, { turns: body.messages, unit: body.unit }));
+        return ok(
+          ExplainWhyResponse,
+          await uc.why.explain(req.userId, { topic: body.topic, unit: body.unit, ...(body.date ? { date: body.date } : {}) }, () => uc.aiAllowance.spend(req, "why")),
+        );
       },
     ],
     ["GET", /^\/sessions$/, async (req) => ok(SessionsResponse, toSessionDay(await uc.sessions.day(req.userId)))],

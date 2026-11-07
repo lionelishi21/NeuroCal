@@ -8,8 +8,8 @@ export const AI_ALLOWANCE = {
   read: 60,
   /** Writing: pantry recipes, meal plans, the recipe calculator, the shopping review, better choices (Claude). */
   generate: 30,
-  /** Ask NeuroCal questions (Claude). */
-  chat: 40,
+  /** "Why?" explanations written by Claude; reopening one already written doesn't count. */
+  why: 30,
 } as const;
 
 /**
@@ -21,7 +21,7 @@ export const FREE_READS = 3;
 export type AiFeature = keyof typeof AI_ALLOWANCE;
 
 export function limitMessage(feature: AiFeature): string {
-  if (feature === "chat") return `That's today's limit of ${AI_ALLOWANCE.chat} questions. It resets tomorrow.`;
+  if (feature === "why") return `That's today's limit of ${AI_ALLOWANCE.why} explanations. It resets tomorrow; the reasons under each result still show.`;
   return feature === "read"
     ? `That's today's limit of ${AI_ALLOWANCE.read} photo and label reads. It resets tomorrow; you can still add food by hand.`
     : `That's today's limit of ${AI_ALLOWANCE.generate} plans and recipes. It resets tomorrow.`;

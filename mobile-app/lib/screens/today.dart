@@ -16,12 +16,12 @@ import '../widgets/share_card.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import '../widgets/why.dart';
 import '../health/sleep_sync.dart';
 import '../plan/three_weeks.dart';
 import '../weight_units.dart';
 import '../reminders/reminders.dart';
 import '../reminders/today_nudges.dart';
-import 'ask.dart';
 import 'calf_routine.dart';
 import 'capture.dart';
 import 'environment_card.dart';
@@ -60,6 +60,7 @@ class _Day {
     this.weighInDue = false,
     this.coffee,
     this.program,
+    this.why,
   });
 
   final DateTime date;
@@ -106,6 +107,9 @@ class _Day {
 
   /// Where the 3-week challenge from onboarding stands; today only.
   final ThreeWeeks? plan;
+
+  /// The "Why?" lines under the weight and calories; null when they didn't load.
+  final WhyDay? why;
   final WeightGoal? weightGoal;
 
   /// A weight goal and no weigh-in for a week: Up next asks for one.
@@ -275,6 +279,10 @@ class _TodayScreenState extends State<TodayScreen> {
         ? _api.weights(days: 120).then<WeightHistory?>((w) => w).catchError((Object _) => null)
         : Future<WeightHistory?>.value(null);
     final unitLoad = WeightUnit.load(Localizations.localeOf(context));
+    final whyLoad = unitLoad
+        .then((u) => _api.why(date: _date == null ? null : isoDate(date), unit: u.label))
+        .then<WhyDay?>((w) => w)
+        .catchError((Object _) => null);
     final coffeeLoad = _date == null
         ? _api.coffee().then<CoffeeDay?>((c) => c).catchError((Object _) => null)
         : Future<CoffeeDay?>.value(null);
@@ -367,6 +375,7 @@ class _TodayScreenState extends State<TodayScreen> {
       weighInDue: weighInDue,
       coffee: await coffeeLoad,
       program: await programLoad,
+      why: await whyLoad,
     );
   }
 
@@ -614,7 +623,7 @@ class _TodayScreenState extends State<TodayScreen> {
                   if (day.fastPlanned)
                     FastingCard(day.fasting!, onBoundary: _refresh, onEnd: _endFast)
                   else ...[
-                    _Calories(day.bio),
+                    _Calories(day.bio, why: day.why, unit: day.unit),
                     if (day.isToday && day.planLimitHours > 0)
                       Align(
                         alignment: Alignment.centerLeft,
@@ -795,15 +804,6 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
-            IconButton.filledTonal(
-              tooltip: 'Ask NeuroCal',
-              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-              padding: EdgeInsets.zero,
-              iconSize: 18,
-              style: IconButton.styleFrom(backgroundColor: c.ionSoft, foregroundColor: c.ionInk),
-              onPressed: () => openAsk(context),
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-            ),
             // Its own node: otherwise the date and greeting merge into it for screen readers.
             Semantics(
               container: true,
@@ -1083,6 +1083,8 @@ class _FocusCard extends StatelessWidget {
                       focus.explanation,
                       style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
                     ),
+                    if (score != null)
+                      WhyButton(topic: WhyTopic.focus, title: 'Why your score is $score', unit: 'kg', date: focus.date),
                     if (focus.measured case final m?) _MeasuredLine(m),
                     if (focus.tuned)
                       Padding(
@@ -1396,9 +1398,11 @@ class _Input extends StatelessWidget {
 }
 
 class _Calories extends StatelessWidget {
-  const _Calories(this.bio);
+  const _Calories(this.bio, {this.why, this.unit = WeightUnit.kg});
 
   final BioState bio;
+  final WhyDay? why;
+  final WeightUnit unit;
 
   @override
   Widget build(BuildContext context) {
@@ -1453,6 +1457,17 @@ class _Calories extends StatelessWidget {
               child: Text(
                 "Over today's target. No need to make up for it tomorrow.",
                 style: TextStyle(fontSize: TextSize.xs, color: c.beet),
+              ),
+            ),
+          if (why?.calories case final reasons?)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.s3),
+              child: WhyBlock(
+                reasons,
+                topic: WhyTopic.calories,
+                title: 'Where your calories came from',
+                unit: unit.label,
+                date: why!.date,
               ),
             ),
           const SizedBox(height: 14),
@@ -1959,17 +1974,6 @@ class _PlanCard extends StatelessWidget {
     return '${d.day} ${_months[d.month - 1]}';
   }
 
-  /// Up (true) or down (false) when the last two weigh-ins, at most two days apart, differ by 1 kg
-  /// (about 2 lb) or more: a swing worth asking about. Null otherwise.
-  bool? _jump(WeightHistory? w) {
-    final e = w?.entries ?? const [];
-    if (e.length < 2) return null;
-    final (a, b) = (e[e.length - 2], e.last);
-    if (DateTime.parse(b.date).difference(DateTime.parse(a.date)).inDays > 2) return null;
-    final change = b.kg - a.kg;
-    return change.abs() < 1 ? null : change > 0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -2084,16 +2088,8 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
             ),
-          if (_jump(goal == null ? null : w) case final up?)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () =>
-                    openAsk(context, question: up ? 'Why did my weight go up?' : 'Why did my weight drop?'),
-                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                label: Text(up ? 'Why did it go up?' : 'Why did it drop?'),
-              ),
-            ),
+          if ((goal == null ? null : day.why?.weight) case final why?)
+            WhyBlock(why, topic: WhyTopic.weight, title: 'Why your weight changed', unit: unit.label),
         ],
       ),
     );

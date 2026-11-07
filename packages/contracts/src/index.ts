@@ -1365,19 +1365,29 @@ export const LogSessionRequest = z.object({
 });
 export type LogSessionRequest = z.infer<typeof LogSessionRequest>;
 
-/** Ask NeuroCal: the conversation so far, ending with the question. Earlier turns past the last 20 are dropped. */
-export const ChatRequest = z.object({
-  messages: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) }))
-    .min(1)
-    .max(40),
-  /** The person's weight unit, so answers use it. */
+/** Results with a "Why?" (backend domain/why.ts). */
+export const WhyTopic = z.enum(["weight", "calories", "focus"]);
+export type WhyTopic = z.infer<typeof WhyTopic>;
+
+/** Likely reasons for a result, worked out by rules from what's logged. */
+export const WhyReasons = z.object({ headline: z.string(), reasons: z.array(z.string()) });
+
+/** The day's "Why?" lines: why the latest weigh-in moved (null when it barely did) and where the calories came from. */
+export const WhyResponse = z.object({ date: IsoDate, weight: WhyReasons.nullable(), calories: WhyReasons.nullable() });
+export type WhyResponse = z.infer<typeof WhyResponse>;
+
+/** A tapped "Why?": a fuller explanation of one result. */
+export const ExplainWhyRequest = z.object({
+  topic: WhyTopic,
+  /** The day; the person's today when left out. */
+  date: IsoDate.optional(),
   unit: z.enum(["kg", "lb"]).default("kg"),
 });
-export type ChatRequest = z.infer<typeof ChatRequest>;
+export type ExplainWhyRequest = z.infer<typeof ExplainWhyRequest>;
 
-export const ChatResponse = z.object({ reply: z.string() });
-export type ChatResponse = z.infer<typeof ChatResponse>;
+export const ExplainWhyResponse = z.object({ explanation: z.string() });
+export type ExplainWhyResponse = z.infer<typeof ExplainWhyResponse>;
+
 
 /** Stops a period: it ends at `endsAt`, now when left out. */
 export const EndSessionRequest = z.object({ endsAt: IsoDateTime.optional() });
@@ -1990,7 +2000,8 @@ export const endpoints = {
   getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
   endSession: { method: "POST", path: "/sessions/:id/end", body: EndSessionRequest, response: SessionsResponse },
-  askCoach: { method: "POST", path: "/chat", body: ChatRequest, response: ChatResponse },
+  getWhy: { method: "GET", path: "/why", response: WhyResponse },
+  explainWhy: { method: "POST", path: "/why/explain", body: ExplainWhyRequest, response: ExplainWhyResponse },
   deleteSession: { method: "DELETE", path: "/sessions/:id" },
   getPerformance: { method: "GET", path: "/performance", response: PerformanceResponse },
   logPerformance: { method: "POST", path: "/performance", body: LogPerformanceRequest, response: PerformanceResponse },

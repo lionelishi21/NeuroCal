@@ -1031,17 +1031,41 @@ class MockNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<String> ask(List<ChatMessage> messages, {required String unit}) async {
+  Future<WhyDay> why({String? date, required String unit}) async {
     await _wait();
-    final q = messages.last.text.toLowerCase();
-    if (q.contains('weight') || q.contains('pound') || q.contains(' lb') || q.contains('kg')) {
-      return 'Almost certainly water, not fat. A pound of fat takes about 3,500 kcal more than you burn, so a '
-          'jump of several ${unit == 'lb' ? 'pounds' : 'kilos'} overnight is water and food still in your gut. '
-          'Yesterday you had more carbs and salt than usual, and a late dinner; each gram of stored carbs holds '
-          'about 3 g of water. Expect it to settle over 2 to 4 days, and watch your trend line rather than one weigh-in.';
-    }
-    return 'From what you’ve logged this week, your sleep is the biggest lever: nights under 6 hours line up with '
-        'your lower Focus Scores. Ask me about your weight, meals, fasting or sleep any time.';
+    final lb = unit == 'lb';
+    return WhyDay(
+      date: date ?? isoDate(DateTime.now()),
+      weight: (
+        headline: lb ? 'Up 2.4 lb: most likely water, not fat' : 'Up 1.1 kg: most likely water, not fat',
+        reasons: [
+          '240 g of carbs yesterday, against about 150 g usually. Each gram the body stores holds about 3 g of water.',
+          'Salty food yesterday (Pepperoni pizza). Salt makes the body hold water for a day or two.',
+          'Last meal at 21:30, so more food was still in your gut at the weigh-in.',
+        ],
+      ),
+      calories: (
+        headline: '1,240 kcal so far today',
+        reasons: ['Most came from Salmon rice bowl (640 kcal) and Greek yogurt with berries (310 kcal).'],
+      ),
+    );
+  }
+
+  @override
+  Future<String> explainWhy(WhyTopic topic, {String? date, required String unit}) async {
+    await _wait();
+    return switch (topic) {
+      WhyTopic.weight =>
+        'Yesterday’s pizza brought more salt and carbs than usual, and you ate late, so your body is holding extra water '
+            'and food. It isn’t fat: that would take thousands of extra calories. Drink water, eat as planned today and '
+            'it should settle in 2 to 4 days.',
+      WhyTopic.calories =>
+        'Lunch carried most of today’s calories, so you have room for a normal dinner. Make it protein first: you’re '
+            'at about half your protein target.',
+      WhyTopic.focus =>
+        'Short sleep is the main drag on today’s score: 6.5 hours against your usual 7.5. A walk in daylight before '
+            'lunch and no caffeine after 2 pm will help tonight’s sleep, which moves tomorrow’s score most.',
+    };
   }
 
   @override

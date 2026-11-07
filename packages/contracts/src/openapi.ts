@@ -187,10 +187,19 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Log a session",
     description: "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing. Quantum Upgrade is a period, not a sitting: it takes a start (takenAt) and an end (endsAt, or null to run until stopped) instead of minutes, and can't overlap another of the same kind.",
   },
-  askCoach: {
-    summary: "Ask NeuroCal",
+  getWhy: {
+    summary: "Why your results moved",
     description:
-      "Answers a question about the person's own data (recent weigh-ins, meals, sleep and sessions), e.g. why their weight went up overnight. Send the conversation so far, ending with the question. Needs a subscription; 40 questions a day.",
+      "Likely reasons, worked out by rules from what's logged: why the latest weigh-in moved from the one before (carbs, salty food, a late meal, short sleep, the trend) and where the day's calories came from. No AI, so it's free and instant.",
+    query: {
+      date: { description: "The day (YYYY-MM-DD); today when left out.", schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" } },
+      unit: { description: "kg or lb, for the weights in the text.", schema: { type: "string", enum: ["kg", "lb"] } },
+    },
+  },
+  explainWhy: {
+    summary: "Explain a result",
+    description:
+      "A fuller explanation of a weigh-in, the day's calories or the Focus Score, written by Claude Haiku from the person's recent data. Written once per topic and day and reused until the data changes; only new ones count toward the day's 30. Needs a subscription.",
   },
   endSession: {
     summary: "Stop a running period",

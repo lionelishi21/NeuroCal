@@ -1,5 +1,5 @@
 import type { IDeviceExtractor } from "../../application/interfaces/IDevices";
-import type { ICoach } from "../../application/interfaces/ICoach";
+import type { IWhyExplainer } from "../../application/interfaces/IWhy";
 /**
  * Canned AI and search responses so the dev server runs without API keys.
  * Never used in the Lambda build.
@@ -251,10 +251,9 @@ export const stubDeviceExtractor: IDeviceExtractor = {
   },
 };
 
-/** Ask NeuroCal without an Anthropic key: says what it would have read. */
-export const stubCoach: ICoach = {
-  async reply({ context, turns }) {
-    const weighIns = context.split("\n").filter((l) => /^\d{4}-\d{2}-\d{2}: .*(kg|lb)/.test(l)).length;
-    return `Stub coach: you asked "${turns.at(-1)!.content.slice(0, 80)}". With a key, the answer would draw on your ${weighIns} recent weigh-ins, meals and sleep.`;
+/** "Why?" without an Anthropic key: restates the rule-based reasons. */
+export const stubWhy: IWhyExplainer = {
+  async explain({ topic, reasons }) {
+    return `Stub explanation of your ${topic}: ${reasons ? `${reasons.headline}. ${reasons.reasons[0] ?? ""}` : "nothing stands out in your log."}`;
   },
 };

@@ -8,7 +8,7 @@ import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { createServer } from "node:http";
 import type { Database } from "../infrastructure/database/client";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
-import { ClaudeCoach } from "../infrastructure/ai/ClaudeCoach";
+import { ClaudeWhyExplainer } from "../infrastructure/ai/ClaudeWhyExplainer";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
@@ -51,6 +51,7 @@ import {
   DrizzleFastPlanRepository,
   DrizzleCoffeeRepository,
   DrizzleSessionRepository,
+  DrizzleWhyCache,
   DrizzlePerformanceRepository,
   DrizzleShoppingListRepository,
   DrizzleMealPlanRepository,
@@ -64,7 +65,7 @@ import { SyncCatalogUseCase } from "../application/use-cases/SyncCatalogUseCase"
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { DevObjectStorage } from "../infrastructure/dev/DevObjectStorage";
-import { stubBetterChoice, stubCoach, stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision, stubDishRecipes } from "../infrastructure/dev/StubProviders";
+import { stubBetterChoice, stubWhy, stubExplainer, stubPantryRecipes, stubReasoning, stubShoppingReviewer, stubTechniqueExtractor, stubDeviceExtractor, stubRecipeParser, stubMealPlanner, stubSearch, stubFoodLabels, stubLabels, stubVision, stubDishRecipes } from "../infrastructure/dev/StubProviders";
 import { createRecipeSearch } from "../infrastructure/search/createRecipeSearch";
 import { ResendEmailSender, noEmail } from "../infrastructure/email/ResendEmailSender";
 import { buildUseCases, systemClock } from "./compose";
@@ -240,7 +241,8 @@ async function main() {
       paywall: config.paywall,
       storage,
       explainer,
-      coach: config.anthropicApiKey ? new ClaudeCoach({ apiKey: config.anthropicApiKey }) : stubCoach,
+      whyExplainer: config.anthropicApiKey ? new ClaudeWhyExplainer({ apiKey: config.anthropicApiKey }) : stubWhy,
+      whyCache: new DrizzleWhyCache(db),
       reasoning,
       search,
       clock: systemClock,

@@ -76,9 +76,11 @@ abstract interface class NeuroCalApi {
   /// Stops a running period now; returns the day without it.
   Future<SessionsDay> endSession(String id);
 
-  /// Ask NeuroCal: answers the last question in [messages] (roles "user" and "assistant", oldest first)
-  /// from the person's own data, in [unit] ("kg" or "lb").
-  Future<String> ask(List<ChatMessage> messages, {required String unit});
+  /// The day's rule-based "Why?" lines (today when [date] is null), with weights in [unit] ("kg" or "lb").
+  Future<WhyDay> why({String? date, required String unit});
+
+  /// A fuller explanation of one result, written by the AI once per day and reused after that.
+  Future<String> explainWhy(WhyTopic topic, {String? date, required String unit});
 
   Future<void> deleteSession(String id);
 
@@ -537,20 +539,21 @@ class HttpNeuroCalApi implements NeuroCalApi {
   }
 
   @override
-  Future<String> ask(List<ChatMessage> messages, {required String unit}) async {
+  Future<WhyDay> why({String? date, required String unit}) async {
+    final query = {'unit': unit, 'date': ?date};
+    return WhyDay.fromJson(await _get('/why?${Uri(queryParameters: query).query}') as Map<String, dynamic>);
+  }
+
+  @override
+  Future<String> explainWhy(WhyTopic topic, {String? date, required String unit}) async {
     final res = await _client
         .post(
-          _uri('/chat'),
+          _uri('/why/explain'),
           headers: await _headers(json: true),
-          body: jsonEncode({
-            'messages': [
-              for (final m in messages) {'role': m.fromMe ? 'user' : 'assistant', 'content': m.text},
-            ],
-            'unit': unit,
-          }),
+          body: jsonEncode({'topic': topic.name, 'unit': unit, 'date': ?date}),
         )
-        .timeout(const Duration(seconds: 60));
-    return (_decode(res) as Map<String, dynamic>)['reply'] as String;
+        .timeout(const Duration(seconds: 30));
+    return (_decode(res) as Map<String, dynamic>)['explanation'] as String;
   }
 
   @override

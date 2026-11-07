@@ -1,3 +1,5 @@
+import type { IWhyCache } from "../../application/interfaces/IWhy";
+import type { WhyTopic } from "../../domain/why";
 import type { Aisle, ShoppingListItem } from "../../domain/shoppingList";
 import { type Session, type SessionKind, isPeriod } from "../../domain/session";
 import type { Activity, PerformanceSession } from "../../domain/performance";
@@ -114,6 +116,7 @@ import {
   users,
   waitlist,
   weightEntries,
+  whyExplanations,
 } from "./schema";
 
 /** Rows from a user's local calendar day, whatever time zone the database runs in. */
@@ -1584,5 +1587,24 @@ export class DrizzleCoffeeRepository implements ICoffeeRepository {
   async delete(userId: string, id: string) {
     const gone = await this.db.delete(coffeeCups).where(and(eq(coffeeCups.userId, userId), eq(coffeeCups.id, id))).returning({ id: coffeeCups.id });
     return gone.length > 0;
+  }
+}
+
+export class DrizzleWhyCache implements IWhyCache {
+  constructor(private readonly db: Database) {}
+
+  async get(userId: string, topic: WhyTopic, date: string) {
+    const [row] = await this.db
+      .select({ hash: whyExplanations.hash, text: whyExplanations.text })
+      .from(whyExplanations)
+      .where(and(eq(whyExplanations.userId, userId), eq(whyExplanations.topic, topic), eq(whyExplanations.date, date)));
+    return row ?? null;
+  }
+
+  async put(userId: string, topic: WhyTopic, date: string, entry: { hash: string; text: string }) {
+    await this.db
+      .insert(whyExplanations)
+      .values({ userId, topic, date, ...entry })
+      .onConflictDoUpdate({ target: [whyExplanations.userId, whyExplanations.topic, whyExplanations.date], set: { ...entry, createdAt: new Date() } });
   }
 }

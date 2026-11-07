@@ -1,5 +1,5 @@
-import type { ICoach } from "../interfaces/ICoach";
-import type { ChatTurn } from "../../domain/coach";
+import type { IWhyCache, IWhyExplainer } from "../interfaces/IWhy";
+import type { WhyReasons, WhyTopic } from "../../domain/why";
 import type { IGuideRepository, IProgramRepository, ProgramState } from "../interfaces/IGuides";
 import type { GuideRecord } from "../../domain/guides";
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
@@ -1285,12 +1285,22 @@ export class InMemoryPrograms implements IProgramRepository {
   }
 }
 
-/** Ask NeuroCal: records what it was asked and with what data, and answers with a fixed reply. */
-export class FakeCoach implements ICoach {
-  readonly calls: { context: string; turns: ChatTurn[] }[] = [];
-  constructor(private readonly answer = "Mostly water: a salty, high-carb day.") {}
-  async reply(input: { context: string; turns: ChatTurn[] }) {
+/** "Why?": records what it was given and answers with a fixed explanation. */
+export class FakeWhyExplainer implements IWhyExplainer {
+  readonly calls: { topic: WhyTopic; context: string; reasons: WhyReasons | null }[] = [];
+  constructor(private readonly answer = "Mostly water from a salty, high-carb day.") {}
+  async explain(input: { topic: WhyTopic; context: string; reasons: WhyReasons | null }) {
     this.calls.push(input);
     return this.answer;
+  }
+}
+
+export class InMemoryWhyCache implements IWhyCache {
+  readonly rows = new Map<string, { hash: string; text: string }>();
+  async get(userId: string, topic: WhyTopic, date: string) {
+    return this.rows.get(`${userId}|${topic}|${date}`) ?? null;
+  }
+  async put(userId: string, topic: WhyTopic, date: string, entry: { hash: string; text: string }) {
+    this.rows.set(`${userId}|${topic}|${date}`, entry);
   }
 }

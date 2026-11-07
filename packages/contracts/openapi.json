@@ -1608,17 +1608,64 @@
         }
       }
     },
-    "/chat": {
+    "/why": {
+      "get": {
+        "operationId": "getWhy",
+        "summary": "Why your results moved",
+        "description": "Likely reasons, worked out by rules from what's logged: why the latest weigh-in moved from the one before (carbs, salty food, a late meal, short sleep, the trend) and where the day's calories came from. No AI, so it's free and instant.",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "The day (YYYY-MM-DD); today when left out.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "required": false,
+            "description": "kg or lb, for the weights in the text.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "kg",
+                "lb"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/why/explain": {
       "post": {
-        "operationId": "askCoach",
-        "summary": "Ask NeuroCal",
-        "description": "Answers a question about the person's own data (recent weigh-ins, meals, sleep and sessions), e.g. why their weight went up overnight. Send the conversation so far, ending with the question. Needs a subscription; 40 questions a day.",
+        "operationId": "explainWhy",
+        "summary": "Explain a result",
+        "description": "A fuller explanation of a weigh-in, the day's calories or the Focus Score, written by Claude Haiku from the person's recent data. Written once per topic and day and reused until the data changes; only new ones count toward the day's 30. Needs a subscription.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
+                "$ref": "#/components/schemas/ExplainWhyRequest"
               }
             }
           }
@@ -1629,7 +1676,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatResponse"
+                  "$ref": "#/components/schemas/ExplainWhyResponse"
                 }
               }
             }
@@ -4349,59 +4396,6 @@
           "diets"
         ]
       },
-      "ChatRequest": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "minItems": 1,
-            "maxItems": 40,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "user",
-                    "assistant"
-                  ]
-                },
-                "content": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 4000
-                }
-              },
-              "required": [
-                "role",
-                "content"
-              ]
-            }
-          },
-          "unit": {
-            "default": "kg",
-            "type": "string",
-            "enum": [
-              "kg",
-              "lb"
-            ]
-          }
-        },
-        "required": [
-          "messages"
-        ]
-      },
-      "ChatResponse": {
-        "type": "object",
-        "properties": {
-          "reply": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "reply"
-        ]
-      },
       "CheckIn": {
         "type": "object",
         "properties": {
@@ -5319,6 +5313,40 @@
           "sport",
           "calf",
           "other"
+        ]
+      },
+      "ExplainWhyRequest": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "$ref": "#/components/schemas/WhyTopic"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "unit": {
+            "default": "kg",
+            "type": "string",
+            "enum": [
+              "kg",
+              "lb"
+            ]
+          }
+        },
+        "required": [
+          "topic"
+        ]
+      },
+      "ExplainWhyResponse": {
+        "type": "object",
+        "properties": {
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "explanation"
         ]
       },
       "FastingStatus": {
@@ -9904,6 +9932,66 @@
         },
         "required": [
           "entries"
+        ]
+      },
+      "WhyReasons": {
+        "type": "object",
+        "properties": {
+          "headline": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "headline",
+          "reasons"
+        ]
+      },
+      "WhyResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhyReasons"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "calories": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhyReasons"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "weight",
+          "calories"
+        ]
+      },
+      "WhyTopic": {
+        "type": "string",
+        "enum": [
+          "weight",
+          "calories",
+          "focus"
         ]
       }
     }
