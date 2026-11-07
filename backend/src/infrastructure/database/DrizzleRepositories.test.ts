@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
+import { NO_END } from "../../domain/session";
 import type { Database } from "./client";
 import {
   DrizzleFastPlanRepository,
@@ -272,7 +273,8 @@ describe("DrizzleSessionRepository", () => {
     const old = await repo.add(alice, { kind: "quantum_upgrade", takenAt: t("2026-06-01T00:00:00Z"), endsAt: t("2026-07-01T00:00:00Z") });
     const now = await repo.add(alice, { kind: "quantum_upgrade", takenAt: t("2026-09-01T00:00:00Z"), endsAt: null });
     expect(now.endsAt).toBeNull();
-    const since = (from: string) => repo.listPeriods(alice, ["quantum_upgrade"], t(from), t("9999-01-01T00:00:00Z"));
+    // NO_END is what the use case passes for "no end", so it has to be a date Postgres accepts.
+    const since = (from: string) => repo.listPeriods(alice, ["quantum_upgrade"], t(from), NO_END);
     expect((await since("2026-08-01T00:00:00Z")).map((s) => s.id)).toEqual([now.id]);
     expect((await since("2026-06-15T00:00:00Z")).map((s) => s.id)).toEqual([old.id, now.id]);
     expect(await repo.setEnd(alice, now.id, t("2026-10-01T00:00:00Z"))).toBe(true);

@@ -124,6 +124,8 @@ export const MAX_SESSION_MINUTES = 600;
 /** How far back a period can start, and how long one can be set to run. */
 export const MAX_PERIOD_BACK_DAYS = 365;
 export const MAX_PERIOD_DAYS = 366;
+/** Stands for "no end" in a query; the last day Postgres and JavaScript both write the same way. */
+export const NO_END = new Date("9999-12-31T00:00:00Z");
 export const isPeriod = (kind: SessionKind) => SESSION_KIND[kind].timing === "period";
 /** Kinds logged as periods. */
 export const PERIOD_KINDS = SESSION_KINDS.filter(isPeriod);

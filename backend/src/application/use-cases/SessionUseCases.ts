@@ -6,6 +6,7 @@ import {
   MAX_PERIOD_BACK_DAYS,
   MAX_PERIOD_DAYS,
   MAX_SESSION_MINUTES,
+  NO_END,
   PERIOD_COMPARE_DAYS,
   PERIOD_KINDS,
   SESSION_KIND,
@@ -23,8 +24,6 @@ import type { ExperimentSources } from "./StackUseCases";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
-/** Far enough ahead to stand for "no end". */
-const NEVER = new Date(8.64e15);
 
 /** A kind someone has used lately: what to expect, and the days after it against the days without. */
 export interface SessionInsight {
@@ -82,7 +81,7 @@ export class SessionUseCases {
     if (now.getTime() - startsAt.getTime() > MAX_PERIOD_BACK_DAYS * DAY_MS) throw new InvalidError("Start it within the last year.");
     if (endsAt && endsAt.getTime() <= startsAt.getTime()) throw new InvalidError("The end is before the start.");
     if (endsAt && endsAt.getTime() - startsAt.getTime() > MAX_PERIOD_DAYS * DAY_MS) throw new InvalidError("Set it to run for a year at most, or until you stop it.");
-    if ((await this.sessions.listPeriods(userId, [input.kind], startsAt, endsAt ?? NEVER)).length) {
+    if ((await this.sessions.listPeriods(userId, [input.kind], startsAt, endsAt ?? NO_END)).length) {
       throw new InvalidError(`Those dates overlap ${label} you've already added. Change or remove that one first.`);
     }
     await this.sessions.add(userId, { kind: input.kind, takenAt: startsAt, endsAt });
@@ -92,7 +91,7 @@ export class SessionUseCases {
   /** Stops a period: it ends at [at] (now when left out). */
   async end(userId: string, id: string, at?: Date): Promise<SessionDay> {
     const endsAt = at ?? this.clock.now();
-    const found = (await this.sessions.listPeriods(userId, PERIOD_KINDS, new Date(0), NEVER)).find((s) => s.id === id);
+    const found = (await this.sessions.listPeriods(userId, PERIOD_KINDS, new Date(0), NO_END)).find((s) => s.id === id);
     if (!found) throw new NotFoundError("No such session.");
     if (endsAt.getTime() <= found.takenAt.getTime()) throw new InvalidError("The end is before the start.");
     if (endsAt.getTime() - found.takenAt.getTime() > MAX_PERIOD_DAYS * DAY_MS) throw new InvalidError("Set it to run for a year at most, or until you stop it.");
@@ -114,7 +113,7 @@ export class SessionUseCases {
     const end = new Date(now.getTime() + 26 * HOUR_MS);
     const [all, periods] = await Promise.all([
       this.sessions.listBetween(userId, new Date(Date.parse(`${since}T00:00:00Z`) - 26 * HOUR_MS), end),
-      this.sessions.listPeriods(userId, PERIOD_KINDS, new Date(Date.parse(`${periodSince}T00:00:00Z`) - 26 * HOUR_MS), NEVER),
+      this.sessions.listPeriods(userId, PERIOD_KINDS, new Date(Date.parse(`${periodSince}T00:00:00Z`) - 26 * HOUR_MS), NO_END),
     ]);
     const sittings = all.filter((s) => !isPeriod(s.kind));
     const started = periods.filter((p) => p.takenAt <= now);
