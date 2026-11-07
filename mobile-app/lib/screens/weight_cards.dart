@@ -98,7 +98,7 @@ class _FastingCardState extends State<FastingCard> {
         'Closes at ${_clock(s.closesAt!)}, ${_hm(s.closesAt!.difference(now))} left. Your fast starts after your last meal.',
         null,
       ),
-      _ => ('Fasting $label', 'Log a meal and the timer starts from it.', null),
+      _ => ('Starts after your next meal', 'Log a meal and the timer counts from it.', null),
     };
 
     return AppCard(

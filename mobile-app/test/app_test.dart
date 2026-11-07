@@ -295,7 +295,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    expect(find.text('Plan and cook'), findsOneWidget);
+    expect(find.text('Next up'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Browse foods'), 300);
     expect(find.text('Browse foods'), findsOneWidget);
   });
@@ -338,8 +338,8 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.bySemanticsLabel('Your pantry: What can I make from it?'), 300);
-    await tester.tap(find.bySemanticsLabel('Your pantry: What can I make from it?'));
+    await tester.scrollUntilVisible(find.bySemanticsLabel(RegExp('^Pantry: ')), 300);
+    await tester.tap(find.bySemanticsLabel(RegExp('^Pantry: ')));
     await tester.pumpAndSettle();
 
     expect(find.text('7 items'), findsOneWidget);
@@ -376,10 +376,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(
-      tester,
-      find.bySemanticsLabel('Shopping list: By aisle, ticked off as you shop, into your pantry'),
-    );
+    await tapCentered(tester, find.bySemanticsLabel('Shopping list: Nothing to buy'));
     expect(find.text('Your list is empty'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextField, 'Add an item'), 'Frozen fries, Spinach, Flavoured yogurt');
@@ -544,7 +541,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(tester, find.text('Your coffee'));
+    await tapCentered(tester, find.bySemanticsLabel(RegExp('^Coffee: ')));
     expect(find.text('Mould-tested coffee'), findsOneWidget);
     expect(find.text('Scan coffee, MCT oil or butter'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Last cup by'), 200);
@@ -672,7 +669,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+    await tapCentered(tester, find.text('Make a meal plan'));
 
     await tester.tap(find.text('Plan my meals'));
     await tester.pumpAndSettle();
@@ -723,7 +720,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+    await tapCentered(tester, find.text('Make a meal plan'));
     await tester.tap(find.text('Plan my meals'));
     await tester.pumpAndSettle();
 
@@ -744,7 +741,7 @@ void main() {
     await signIn(tester);
     await tester.tap(find.widgetWithText(InkWell, 'Kitchen'));
     await tester.pumpAndSettle();
-    await tapCentered(tester, find.bySemanticsLabel('Meal plan: Up to 3 days, with a shopping list'));
+    await tapCentered(tester, find.text('Make a meal plan'));
     await tester.tap(find.text('Plan my meals'));
     await tester.pumpAndSettle();
 
