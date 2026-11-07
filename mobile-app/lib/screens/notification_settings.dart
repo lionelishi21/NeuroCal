@@ -29,47 +29,50 @@ class NotificationSettingsScreen extends StatelessWidget {
     );
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: ListenableBuilder(
-        listenable: reminders,
-        builder: (context, _) => ListView(
-          padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
-          children: [
-            const GroupLabel('Check-in windows'),
-            _CheckInWindows(reminders),
-            note(
-              'Set from when you wake up. While a window is open, we nudge up to three times; checking in stops it for the day.',
-            ),
-            const GroupLabel('Reminders'),
-            _Switches(
-              rows: [
-                for (final kind in NudgeKind.values)
+      body: SafeArea(
+        top: false,
+        child: ListenableBuilder(
+          listenable: reminders,
+          builder: (context, _) => ListView(
+            padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
+            children: [
+              const GroupLabel('Check-in windows'),
+              _CheckInWindows(reminders),
+              note(
+                'Set from when you wake up. While a window is open, we nudge up to three times; checking in stops it for the day.',
+              ),
+              const GroupLabel('Reminders'),
+              _Switches(
+                rows: [
+                  for (final kind in NudgeKind.values)
+                    (
+                      title: kind.label,
+                      detail: kind.when,
+                      on: reminders.isOn(kind),
+                      set: (bool on) => _set(context, () => reminders.setKind(kind, on)),
+                    ),
+                ],
+              ),
+              note(
+                'At most $nudgeDailyLimit a day, the most useful first. Supplement reminders are set for each supplement in your Stack.',
+              ),
+              const GroupLabel('Quiet hours'),
+              _Switches(
+                rows: [
                   (
-                    title: kind.label,
-                    detail: kind.when,
-                    on: reminders.isOn(kind),
-                    set: (bool on) => _set(context, () => reminders.setKind(kind, on)),
+                    title: 'Quiet hours · ${reminders.quietRange}',
+                    detail: 'Nothing from bedtime until you wake, except a fast you planned',
+                    on: reminders.quietHours,
+                    set: (bool on) => _set(context, () async {
+                      await reminders.setQuietHours(on);
+                      return true;
+                    }),
                   ),
-              ],
-            ),
-            note(
-              'At most $nudgeDailyLimit a day, the most useful first. Supplement reminders are set for each supplement in your Stack.',
-            ),
-            const GroupLabel('Quiet hours'),
-            _Switches(
-              rows: [
-                (
-                  title: 'Quiet hours · ${reminders.quietRange}',
-                  detail: 'Nothing from bedtime until you wake, except a fast you planned',
-                  on: reminders.quietHours,
-                  set: (bool on) => _set(context, () async {
-                    await reminders.setQuietHours(on);
-                    return true;
-                  }),
-                ),
-              ],
-            ),
-            const _FromServer(),
-          ],
+                ],
+              ),
+              const _FromServer(),
+            ],
+          ),
         ),
       ),
     );

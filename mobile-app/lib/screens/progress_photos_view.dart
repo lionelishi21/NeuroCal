@@ -238,13 +238,16 @@ class _PhotoPageState extends State<_PhotoPage> {
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: widget.store.read(widget.photo.id),
-        builder: (context, s) => s.data == null
-            ? const SizedBox.expand()
-            : InteractiveViewer(
-                child: Center(child: Image.memory(s.data!, fit: BoxFit.contain)),
-              ),
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: widget.store.read(widget.photo.id),
+          builder: (context, s) => s.data == null
+              ? const SizedBox.expand()
+              : InteractiveViewer(
+                  child: Center(child: Image.memory(s.data!, fit: BoxFit.contain)),
+                ),
+        ),
       ),
     );
   }

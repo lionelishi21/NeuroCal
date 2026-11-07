@@ -37,24 +37,27 @@ class _GuidesScreenState extends State<GuidesScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Guides'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _guides,
-        builder: (context, snapshot) => ListView(
-          padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
-          children: [
-            if (snapshot.hasError)
-              ScreenFailed(
-                title: "Couldn't load the guides",
-                detail: 'Check your connection and try again.',
-                onRetry: () => setState(() => _guides = AppScope.of(context).api.guides()),
-              )
-            else if (!snapshot.hasData)
-              const ScreenLoading(label: 'Loading guides', heights: [132])
-            else if (snapshot.data!.isEmpty)
-              const EmptyCard(title: 'No guides yet', detail: 'Guides appear here once they’re ready to read.')
-            else
-              for (final guide in snapshot.data!) ...[_GuideCard(guide), const SizedBox(height: Space.s3)],
-          ],
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _guides,
+          builder: (context, snapshot) => ListView(
+            padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
+            children: [
+              if (snapshot.hasError)
+                ScreenFailed(
+                  title: "Couldn't load the guides",
+                  detail: 'Check your connection and try again.',
+                  onRetry: () => setState(() => _guides = AppScope.of(context).api.guides()),
+                )
+              else if (!snapshot.hasData)
+                const ScreenLoading(label: 'Loading guides', heights: [132])
+              else if (snapshot.data!.isEmpty)
+                const EmptyCard(title: 'No guides yet', detail: 'Guides appear here once they’re ready to read.')
+              else
+                for (final guide in snapshot.data!) ...[_GuideCard(guide), const SizedBox(height: Space.s3)],
+            ],
+          ),
         ),
       ),
     );
@@ -166,65 +169,68 @@ class _GuideScreenState extends State<GuideScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _load,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(Space.s4),
-              child: ScreenFailed(
-                title: "Couldn't load this guide",
-                detail: 'Check your connection and try again.',
-                onRetry: () => setState(() => _load = _fetch()),
-              ),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Padding(
-              padding: EdgeInsets.all(Space.s4),
-              child: ScreenLoading(label: 'Loading the guide', heights: [48, 200, 200]),
-            );
-          }
-          final (guide, program) = snapshot.data!;
-          final s = guide.summary;
-          final running = program != null && program.guideId == s.id && !program.finished;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(20, Space.s1, 20, Space.s7),
-            children: [
-              _Tags(s),
-              const SizedBox(height: Space.s2),
-              Semantics(
-                header: true,
-                child: Text(
-                  s.title,
-                  style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, height: 1.15),
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _load,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(Space.s4),
+                child: ScreenFailed(
+                  title: "Couldn't load this guide",
+                  detail: 'Check your connection and try again.',
+                  onRetry: () => setState(() => _load = _fetch()),
                 ),
-              ),
-              if (s.subtitle.isNotEmpty) ...[
-                const SizedBox(height: Space.s1),
-                Text(
-                  s.subtitle,
-                  style: TextStyle(fontSize: TextSize.md, color: c.inkSoft),
-                ),
-              ],
-              if (s.program) ...[
-                const SizedBox(height: Space.s4),
-                FilledButton(
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                  onPressed: _starting ? null : (running ? () => openProgram(context) : _start),
-                  child: Text(running ? 'Open the 30-day program · day ${program.day}' : 'Start the 30-day program'),
-                ),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(Space.s4),
+                child: ScreenLoading(label: 'Loading the guide', heights: [48, 200, 200]),
+              );
+            }
+            final (guide, program) = snapshot.data!;
+            final s = guide.summary;
+            final running = program != null && program.guideId == s.id && !program.finished;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, Space.s1, 20, Space.s7),
+              children: [
+                _Tags(s),
                 const SizedBox(height: Space.s2),
-                Text(
-                  'NeuroCal ticks off the habits it can see in what you log, and asks you the rest.',
-                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    s.title,
+                    style: const TextStyle(fontSize: TextSize.xxl, fontWeight: FontWeight.w800, height: 1.15),
+                  ),
                 ),
+                if (s.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: Space.s1),
+                  Text(
+                    s.subtitle,
+                    style: TextStyle(fontSize: TextSize.md, color: c.inkSoft),
+                  ),
+                ],
+                if (s.program) ...[
+                  const SizedBox(height: Space.s4),
+                  FilledButton(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                    onPressed: _starting ? null : (running ? () => openProgram(context) : _start),
+                    child: Text(running ? 'Open the 30-day program · day ${program.day}' : 'Start the 30-day program'),
+                  ),
+                  const SizedBox(height: Space.s2),
+                  Text(
+                    'NeuroCal ticks off the habits it can see in what you log, and asks you the rest.',
+                    style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                  ),
+                ],
+                const SizedBox(height: Space.s2),
+                GuideText(guide.body),
               ],
-              const SizedBox(height: Space.s2),
-              GuideText(guide.body),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

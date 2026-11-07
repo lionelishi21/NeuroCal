@@ -61,22 +61,25 @@ class _WeeklyReportScreenState extends State<WeeklyReportScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Weekly report'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _report,
-        builder: (context, snapshot) => ListView(
-          padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
-          children: [
-            if (snapshot.hasError)
-              ScreenFailed(
-                title: "Couldn't load your report",
-                detail: 'Check your connection and try again.',
-                onRetry: () => setState(() => _report = _load()),
-              )
-            else if (!snapshot.hasData)
-              const ScreenLoading(label: 'Loading your report', heights: [160, 280, 180])
-            else
-              ..._body(context, snapshot.data!.$1, snapshot.data!.$2),
-          ],
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _report,
+          builder: (context, snapshot) => ListView(
+            padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s6),
+            children: [
+              if (snapshot.hasError)
+                ScreenFailed(
+                  title: "Couldn't load your report",
+                  detail: 'Check your connection and try again.',
+                  onRetry: () => setState(() => _report = _load()),
+                )
+              else if (!snapshot.hasData)
+                const ScreenLoading(label: 'Loading your report', heights: [160, 280, 180])
+              else
+                ..._body(context, snapshot.data!.$1, snapshot.data!.$2),
+            ],
+          ),
         ),
       ),
     );

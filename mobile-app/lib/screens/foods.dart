@@ -92,171 +92,174 @@ class _FoodsScreenState extends State<FoodsScreen> {
         backgroundColor: c.mist,
         surfaceTintColor: Colors.transparent,
       ),
-      body: FutureBuilder(
-        future: _load,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(Space.s4),
-              child: ScreenFailed(
-                title: "Couldn't load foods",
-                detail: 'Check your connection and try again.',
-                onRetry: () => setState(() => _load = _fetch()),
-              ),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Padding(
-              padding: EdgeInsets.all(Space.s4),
-              child: ScreenLoading(label: 'Loading foods', heights: [48, 220, 220]),
-            );
-          }
-          final (foods, diet) = snapshot.data!;
-          final term = _search.text.trim().toLowerCase();
-          final region = _region ?? _regionOf(Localizations.localeOf(context));
-          final regions = [
-            for (final r in _regionNames.keys)
-              if (foods.any((f) => f.regions.contains(r))) r,
-          ];
-          final menu = [
-            for (final f in foods)
-              if (f.eatingOut && f.regions.contains(region)) f,
-          ];
-          final chains = <String, String>{for (final f in menu) f.chain!.id: f.chain!.name};
-          final shown = _eatingOut
-              ? [
-                  for (final f in menu)
-                    if ((_chain == null || f.chain!.id == _chain) &&
-                        (term.isEmpty || f.fullName.toLowerCase().contains(term)))
-                      f,
-                ]
-              : [
-                  for (final f in foods)
-                    // Chain items only show up for a search, so browsing stays on whole foods.
-                    if ((term.isEmpty
-                            ? !f.eatingOut
-                            : f.fullName.toLowerCase().contains(term) &&
-                                  (!f.eatingOut || f.regions.contains(region))) &&
-                        (_goal == null || f.goals.contains(_goal)) &&
-                        (!_myDiet || diet == null || f.diets.contains(diet)))
-                      f,
-                ];
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s3),
-                sliver: SliverList.list(
-                  children: [
-                    TextField(
-                      controller: _search,
-                      onChanged: (_) => setState(() {}),
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: _eatingOut ? 'Search menus' : 'Search foods, or a place like KFC',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: Space.s3),
-                    Wrap(
-                      spacing: Space.s2,
-                      runSpacing: Space.s2,
-                      children: [
-                        ChoicePill(
-                          label: 'All',
-                          selected: _goal == null && !_eatingOut,
-                          onTap: () => setState(() {
-                            _goal = null;
-                            _eatingOut = false;
-                          }),
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _load,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(Space.s4),
+                child: ScreenFailed(
+                  title: "Couldn't load foods",
+                  detail: 'Check your connection and try again.',
+                  onRetry: () => setState(() => _load = _fetch()),
+                ),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(Space.s4),
+                child: ScreenLoading(label: 'Loading foods', heights: [48, 220, 220]),
+              );
+            }
+            final (foods, diet) = snapshot.data!;
+            final term = _search.text.trim().toLowerCase();
+            final region = _region ?? _regionOf(Localizations.localeOf(context));
+            final regions = [
+              for (final r in _regionNames.keys)
+                if (foods.any((f) => f.regions.contains(r))) r,
+            ];
+            final menu = [
+              for (final f in foods)
+                if (f.eatingOut && f.regions.contains(region)) f,
+            ];
+            final chains = <String, String>{for (final f in menu) f.chain!.id: f.chain!.name};
+            final shown = _eatingOut
+                ? [
+                    for (final f in menu)
+                      if ((_chain == null || f.chain!.id == _chain) &&
+                          (term.isEmpty || f.fullName.toLowerCase().contains(term)))
+                        f,
+                  ]
+                : [
+                    for (final f in foods)
+                      // Chain items only show up for a search, so browsing stays on whole foods.
+                      if ((term.isEmpty
+                              ? !f.eatingOut
+                              : f.fullName.toLowerCase().contains(term) &&
+                                    (!f.eatingOut || f.regions.contains(region))) &&
+                          (_goal == null || f.goals.contains(_goal)) &&
+                          (!_myDiet || diet == null || f.diets.contains(diet)))
+                        f,
+                  ];
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s3),
+                  sliver: SliverList.list(
+                    children: [
+                      TextField(
+                        controller: _search,
+                        onChanged: (_) => setState(() {}),
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: _eatingOut ? 'Search menus' : 'Search foods, or a place like KFC',
+                          prefixIcon: const Icon(Icons.search_rounded),
                         ),
-                        if (menu.isNotEmpty)
+                      ),
+                      const SizedBox(height: Space.s3),
+                      Wrap(
+                        spacing: Space.s2,
+                        runSpacing: Space.s2,
+                        children: [
                           ChoicePill(
-                            label: 'Eating out',
-                            selected: _eatingOut,
+                            label: 'All',
+                            selected: _goal == null && !_eatingOut,
                             onTap: () => setState(() {
-                              _eatingOut = !_eatingOut;
                               _goal = null;
-                              _chain = null;
+                              _eatingOut = false;
                             }),
                           ),
-                        if (!_eatingOut)
-                          for (final g in _goals)
+                          if (menu.isNotEmpty)
                             ChoicePill(
-                              label: _goalNames[g]!,
-                              selected: _goal == g,
-                              onTap: () => setState(() => _goal = _goal == g ? null : g),
+                              label: 'Eating out',
+                              selected: _eatingOut,
+                              onTap: () => setState(() {
+                                _eatingOut = !_eatingOut;
+                                _goal = null;
+                                _chain = null;
+                              }),
                             ),
-                        if (!_eatingOut && diet != null && diet != 'omnivore' && diet != 'standard')
-                          ChoicePill(
-                            label: 'Fits my diet',
-                            selected: _myDiet,
-                            onTap: () => setState(() => _myDiet = !_myDiet),
+                          if (!_eatingOut)
+                            for (final g in _goals)
+                              ChoicePill(
+                                label: _goalNames[g]!,
+                                selected: _goal == g,
+                                onTap: () => setState(() => _goal = _goal == g ? null : g),
+                              ),
+                          if (!_eatingOut && diet != null && diet != 'omnivore' && diet != 'standard')
+                            ChoicePill(
+                              label: 'Fits my diet',
+                              selected: _myDiet,
+                              onTap: () => setState(() => _myDiet = !_myDiet),
+                            ),
+                        ],
+                      ),
+                      if (_eatingOut) ...[
+                        const SizedBox(height: Space.s3),
+                        _Chains(
+                          chains: chains,
+                          selected: _chain,
+                          onSelect: (id) => setState(() => _chain = _chain == id ? null : id),
+                        ),
+                        if (regions.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Space.s2),
+                            child: Wrap(
+                              spacing: Space.s2,
+                              runSpacing: Space.s2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  'Menus in',
+                                  style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                                ),
+                                for (final r in regions)
+                                  ChoicePill(
+                                    label: _regionNames[r]!,
+                                    height: 36,
+                                    selected: r == region,
+                                    onTap: () => setState(() {
+                                      _region = r;
+                                      _chain = null;
+                                    }),
+                                  ),
+                              ],
+                            ),
                           ),
                       ],
-                    ),
-                    if (_eatingOut) ...[
-                      const SizedBox(height: Space.s3),
-                      _Chains(
-                        chains: chains,
-                        selected: _chain,
-                        onSelect: (id) => setState(() => _chain = _chain == id ? null : id),
-                      ),
-                      if (regions.length > 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Space.s2),
-                          child: Wrap(
-                            spacing: Space.s2,
-                            runSpacing: Space.s2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                'Menus in',
-                                style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
-                              ),
-                              for (final r in regions)
-                                ChoicePill(
-                                  label: _regionNames[r]!,
-                                  height: 36,
-                                  selected: r == region,
-                                  onTap: () => setState(() {
-                                    _region = r;
-                                    _chain = null;
-                                  }),
-                                ),
-                            ],
-                          ),
-                        ),
                     ],
-                  ],
-                ),
-              ),
-              if (shown.isEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.all(Space.s4),
-                  sliver: SliverToBoxAdapter(
-                    child: EmptyCard(
-                      title: 'No foods match',
-                      detail: widget.picking ? 'Try another word, or add it by hand.' : 'Try another word or filter.',
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-                  sliver: SliverGrid.builder(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 220,
-                      mainAxisSpacing: Space.s3,
-                      crossAxisSpacing: Space.s3,
-                      childAspectRatio: 0.74,
-                    ),
-                    itemCount: shown.length,
-                    itemBuilder: (context, i) => _FoodTile(shown[i], onTap: () => _open(shown[i], foods)),
                   ),
                 ),
-            ],
-          );
-        },
+                if (shown.isEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.all(Space.s4),
+                    sliver: SliverToBoxAdapter(
+                      child: EmptyCard(
+                        title: 'No foods match',
+                        detail: widget.picking ? 'Try another word, or add it by hand.' : 'Try another word or filter.',
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+                    sliver: SliverGrid.builder(
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 220,
+                        mainAxisSpacing: Space.s3,
+                        crossAxisSpacing: Space.s3,
+                        childAspectRatio: 0.74,
+                      ),
+                      itemCount: shown.length,
+                      itemBuilder: (context, i) => _FoodTile(shown[i], onTap: () => _open(shown[i], foods)),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

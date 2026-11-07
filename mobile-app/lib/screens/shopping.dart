@@ -222,134 +222,137 @@ class _ShoppingScreenState extends State<ShoppingScreen> {
             IconButton(tooltip: 'Share the list', onPressed: _share, icon: const Icon(Icons.ios_share_rounded)),
         ],
       ),
-      body: _problem != null
-          ? Padding(
-              padding: const EdgeInsets.all(Space.s4),
-              child: ScreenFailed(
-                title: "Couldn't load your list",
-                detail: _problem!,
-                onRetry: () {
-                  setState(() => _problem = null);
-                  _load();
-                },
-              ),
-            )
-          : list == null
-          ? const Padding(
-              padding: EdgeInsets.all(Space.s4),
-              child: ScreenLoading(label: 'Loading your list', heights: [56, 160]),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-              children: [
-                Row(
-                  spacing: Space.s2,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _text,
-                        textCapitalization: TextCapitalization.sentences,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _add(),
-                        decoration: const InputDecoration(
-                          labelText: 'Add an item',
-                          hintText: 'Spinach, eggs, 2 lemons',
+      body: SafeArea(
+        top: false,
+        child: _problem != null
+            ? Padding(
+                padding: const EdgeInsets.all(Space.s4),
+                child: ScreenFailed(
+                  title: "Couldn't load your list",
+                  detail: _problem!,
+                  onRetry: () {
+                    setState(() => _problem = null);
+                    _load();
+                  },
+                ),
+              )
+            : list == null
+            ? const Padding(
+                padding: EdgeInsets.all(Space.s4),
+                child: ScreenLoading(label: 'Loading your list', heights: [56, 160]),
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+                children: [
+                  Row(
+                    spacing: Space.s2,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _text,
+                          textCapitalization: TextCapitalization.sentences,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _add(),
+                          decoration: const InputDecoration(
+                            labelText: 'Add an item',
+                            hintText: 'Spinach, eggs, 2 lemons',
+                          ),
                         ),
                       ),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
-                      onPressed: _busy ? null : _add,
-                      child: const Text('Add'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Space.s2),
-                Row(
-                  spacing: Space.s2,
-                  children: [
-                    Expanded(
-                      child: _Secondary(
-                        icon: Icons.photo_camera_outlined,
-                        label: 'From a photo',
-                        onPressed: _checking ? null : () => _fromPhoto(ImageSource.camera),
+                      FilledButton(
+                        style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
+                        onPressed: _busy ? null : _add,
+                        child: const Text('Add'),
                       ),
-                    ),
-                    Expanded(
-                      child: _Secondary(
-                        icon: Icons.fact_check_outlined,
-                        label: _checking ? 'Checking…' : 'Check my list',
-                        onPressed: _checking || !hasOpen ? null : _check,
+                    ],
+                  ),
+                  const SizedBox(height: Space.s2),
+                  Row(
+                    spacing: Space.s2,
+                    children: [
+                      Expanded(
+                        child: _Secondary(
+                          icon: Icons.photo_camera_outlined,
+                          label: 'From a photo',
+                          onPressed: _checking ? null : () => _fromPhoto(ImageSource.camera),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                if (list.items.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: Space.s4),
-                    child: EmptyCard(
-                      title: 'Your list is empty',
-                      detail: 'Add items above, snap a written list or a receipt, or add a meal plan’s ingredients from Kitchen › Meal plan.',
-                    ),
-                  )
-                else
-                  for (final aisle in Aisle.values)
-                    if (list.items.where((i) => i.aisle == aisle).toList() case final inAisle
-                        when inAisle.isNotEmpty) ...[
-                      GroupLabel(aisle.label, top: Space.s4),
-                      AppCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            for (final (n, item) in inAisle.indexed)
-                              _Row(
-                                item,
-                                divider: n > 0,
-                                grade: _grades[item.name.toLowerCase()],
-                                onTick: (v) => _tick(item, v),
-                                onRemove: () => _change(() => _api.deleteShoppingItem(item.id)),
-                              ),
-                          ],
+                      Expanded(
+                        child: _Secondary(
+                          icon: Icons.fact_check_outlined,
+                          label: _checking ? 'Checking…' : 'Check my list',
+                          onPressed: _checking || !hasOpen ? null : _check,
                         ),
                       ),
                     ],
-                if (_devices.isNotEmpty) ...[
-                  const BlockTitle('Gadgets that make the swaps easy'),
-                  for (final d in _devices)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Space.s3),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        spacing: Space.s1,
-                        children: [
-                          Text(
-                            'For ${d.because.join(', ')}',
-                            style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                  ),
+                  if (list.items.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: Space.s4),
+                      child: EmptyCard(
+                        title: 'Your list is empty',
+                        detail: 'Add items above, snap a written list or a receipt, or add a meal plan’s ingredients from Kitchen › Meal plan.',
+                      ),
+                    )
+                  else
+                    for (final aisle in Aisle.values)
+                      if (list.items.where((i) => i.aisle == aisle).toList() case final inAisle
+                          when inAisle.isNotEmpty) ...[
+                        GroupLabel(aisle.label, top: Space.s4),
+                        AppCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (final (n, item) in inAisle.indexed)
+                                _Row(
+                                  item,
+                                  divider: n > 0,
+                                  grade: _grades[item.name.toLowerCase()],
+                                  onTick: (v) => _tick(item, v),
+                                  onRemove: () => _change(() => _api.deleteShoppingItem(item.id)),
+                                ),
+                            ],
                           ),
-                          ProductCard(d.product),
-                        ],
+                        ),
+                      ],
+                  if (_devices.isNotEmpty) ...[
+                    const BlockTitle('Gadgets that make the swaps easy'),
+                    for (final d in _devices)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Space.s3),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          spacing: Space.s1,
+                          children: [
+                            Text(
+                              'For ${d.because.join(', ')}',
+                              style: TextStyle(fontSize: TextSize.xs, fontWeight: FontWeight.w700, color: c.inkSoft),
+                            ),
+                            ProductCard(d.product),
+                          ],
+                        ),
+                      ),
+                  ],
+                  if (list.checked > 0) ...[
+                    const SizedBox(height: Space.s4),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                      onPressed: _busy ? null : _finish,
+                      icon: const Icon(Icons.done_all_rounded, size: 20),
+                      label: Text('Done shopping (${list.checked} bought)'),
+                    ),
+                  ],
+                  if (_grades.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Space.s3),
+                      child: Text(
+                        'Grades are judged from the item names; brands vary, so check the label when it matters.',
+                        style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkFaint),
                       ),
                     ),
                 ],
-                if (list.checked > 0) ...[
-                  const SizedBox(height: Space.s4),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    onPressed: _busy ? null : _finish,
-                    icon: const Icon(Icons.done_all_rounded, size: 20),
-                    label: Text('Done shopping (${list.checked} bought)'),
-                  ),
-                ],
-                if (_grades.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Space.s3),
-                    child: Text(
-                      'Grades are judged from the item names; brands vary, so check the label when it matters.',
-                      style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkFaint),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+      ),
     );
   }
 }

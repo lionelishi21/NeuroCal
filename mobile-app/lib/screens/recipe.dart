@@ -48,62 +48,65 @@ class _RecipeScreenState extends State<RecipeScreen> {
         backgroundColor: c.mist,
         surfaceTintColor: Colors.transparent,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-        children: [
-          Text(
-            'Paste or type the ingredients with their amounts. We’ll work out the calories and macros per serving.',
-            style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
-          ),
-          const SizedBox(height: Space.s3),
-          TextField(
-            controller: _text,
-            minLines: 5,
-            maxLines: 14,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Ingredients',
-              hintText: 'e.g.\n1 cup rolled oats\n2 eggs\n1 tbsp olive oil\n200 g spinach',
-              alignLabelWithHint: true,
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+          children: [
+            Text(
+              'Paste or type the ingredients with their amounts. We’ll work out the calories and macros per serving.',
+              style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
             ),
-          ),
-          const SizedBox(height: Space.s3),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Servings',
-                  style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+            const SizedBox(height: Space.s3),
+            TextField(
+              controller: _text,
+              minLines: 5,
+              maxLines: 14,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Ingredients',
+                hintText: 'e.g.\n1 cup rolled oats\n2 eggs\n1 tbsp olive oil\n200 g spinach',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: Space.s3),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Servings',
+                    style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700, color: c.inkSoft),
+                  ),
                 ),
-              ),
-              IconButton(
-                tooltip: 'Fewer servings',
-                onPressed: (_servings ?? 2) > 1 ? () => setState(() => _servings = (_servings ?? 2) - 1) : null,
-                icon: const Icon(Icons.remove_circle_outline_rounded),
-              ),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _servings == null ? 'As written' : '$_servings',
-                  style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                IconButton(
+                  tooltip: 'Fewer servings',
+                  onPressed: (_servings ?? 2) > 1 ? () => setState(() => _servings = (_servings ?? 2) - 1) : null,
+                  icon: const Icon(Icons.remove_circle_outline_rounded),
                 ),
-              ),
-              IconButton(
-                tooltip: 'More servings',
-                onPressed: (_servings ?? 1) < 24 ? () => setState(() => _servings = (_servings ?? 1) + 1) : null,
-                icon: const Icon(Icons.add_circle_outline_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: Space.s2),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            onPressed: _work,
-            icon: const Icon(Icons.calculate_outlined, size: 20),
-            label: const Text('Work it out'),
-          ),
-          if (_result != null) _Result(_result!, onRetry: _work, onLog: widget.onLog),
-        ],
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    _servings == null ? 'As written' : '$_servings',
+                    style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'More servings',
+                  onPressed: (_servings ?? 1) < 24 ? () => setState(() => _servings = (_servings ?? 1) + 1) : null,
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.s2),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              onPressed: _work,
+              icon: const Icon(Icons.calculate_outlined, size: 20),
+              label: const Text('Work it out'),
+            ),
+            if (_result != null) _Result(_result!, onRetry: _work, onLog: widget.onLog),
+          ],
+        ),
       ),
     );
   }

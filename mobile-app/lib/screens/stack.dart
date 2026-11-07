@@ -291,7 +291,7 @@ class _StackScreenState extends State<StackScreen> {
               backgroundColor: c.mist,
               surfaceTintColor: Colors.transparent,
             ),
-            body: body,
+            body: SafeArea(top: false, child: body),
           );
   }
 

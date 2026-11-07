@@ -62,33 +62,36 @@ class _CookThisScreenState extends State<CookThisScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Cook this'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-        children: [
-          if (_photo == null) ...[
-            Text(
-              'Snap a dish you’d like to make: a restaurant plate, a friend’s dinner or a screenshot. '
-              'NeuroCal writes the recipe, tuned for steady energy, and what you need to buy.',
-              style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
-            ),
-            const SizedBox(height: Space.s4),
-            _Choose(onChoose: _choose),
-          ] else ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(Radii.card),
-              child: Image.memory(
-                _photo!,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                semanticLabel: 'Your photo',
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+          children: [
+            if (_photo == null) ...[
+              Text(
+                'Snap a dish you’d like to make: a restaurant plate, a friend’s dinner or a screenshot. '
+                'NeuroCal writes the recipe, tuned for steady energy, and what you need to buy.',
+                style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
               ),
-            ),
-            const SizedBox(height: Space.s3),
-            _Result(_result!, onRetry: _retry, onAgain: _again, onChoose: _choose, onLog: widget.onLog),
+              const SizedBox(height: Space.s4),
+              _Choose(onChoose: _choose),
+            ] else ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.card),
+                child: Image.memory(
+                  _photo!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  semanticLabel: 'Your photo',
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: Space.s3),
+              _Result(_result!, onRetry: _retry, onAgain: _again, onChoose: _choose, onLog: widget.onLog),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

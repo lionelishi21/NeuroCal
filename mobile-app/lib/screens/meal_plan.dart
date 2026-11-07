@@ -128,41 +128,44 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Meal plan'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _plan,
-        builder: (context, snapshot) {
-          // A swap keeps showing the plan (and where you'd scrolled to) while the new one arrives.
-          if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
-            return const Padding(
-              padding: EdgeInsets.all(Space.s4),
-              child: ScreenLoading(label: 'Loading your plan', heights: [120, 200]),
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _plan,
+          builder: (context, snapshot) {
+            // A swap keeps showing the plan (and where you'd scrolled to) while the new one arrives.
+            if (snapshot.connectionState != ConnectionState.done && !snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(Space.s4),
+                child: ScreenLoading(label: 'Loading your plan', heights: [120, 200]),
+              );
+            }
+            final plan = snapshot.data;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+              children: [
+                if (plan == null)
+                  Text(
+                    'Plan up to three days of meals sized to your calories and protein, from what’s in your pantry first, and fitting your fasting window. You get a shopping list for the rest.',
+                    style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
+                  ),
+                _MakePlan(
+                  days: _days,
+                  onDays: (d) => setState(() => _days = d),
+                  making: _making,
+                  again: plan != null,
+                  onMake: _make,
+                ),
+                if (_problem != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.s3),
+                    child: SheetNote(lead: 'No plan made.', detail: _problem!),
+                  ),
+                if (plan != null && !_making) ..._planView(context, plan),
+              ],
             );
-          }
-          final plan = snapshot.data;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-            children: [
-              if (plan == null)
-                Text(
-                  'Plan up to three days of meals sized to your calories and protein, from what’s in your pantry first, and fitting your fasting window. You get a shopping list for the rest.',
-                  style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
-                ),
-              _MakePlan(
-                days: _days,
-                onDays: (d) => setState(() => _days = d),
-                making: _making,
-                again: plan != null,
-                onMake: _make,
-              ),
-              if (_problem != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: Space.s3),
-                  child: SheetNote(lead: 'No plan made.', detail: _problem!),
-                ),
-              if (plan != null && !_making) ..._planView(context, plan),
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }

@@ -234,31 +234,34 @@ class _ProgramScreenState extends State<ProgramScreen> {
         backgroundColor: c.mist,
         surfaceTintColor: Colors.transparent,
       ),
-      body: FutureBuilder(
-        future: _load,
-        builder: (context, snapshot) {
-          final program = _latest ?? snapshot.data;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s7),
-            children: [
-              if (snapshot.hasError && _latest == null)
-                ScreenFailed(
-                  title: "Couldn't load the program",
-                  detail: 'Check your connection and try again.',
-                  onRetry: () => setState(() => _load = _api.program()),
-                )
-              else if (snapshot.connectionState != ConnectionState.done && program == null)
-                const ScreenLoading(label: 'Loading the program', heights: [96, 280, 96])
-              else if (program == null)
-                const EmptyCard(
-                  title: 'No program running',
-                  detail: 'Start one from a guide, such as The Mitoproof Protocol, under Me → Guides.',
-                )
-              else
-                ..._body(program),
-            ],
-          );
-        },
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _load,
+          builder: (context, snapshot) {
+            final program = _latest ?? snapshot.data;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(Space.s4, Space.s2, Space.s4, Space.s7),
+              children: [
+                if (snapshot.hasError && _latest == null)
+                  ScreenFailed(
+                    title: "Couldn't load the program",
+                    detail: 'Check your connection and try again.',
+                    onRetry: () => setState(() => _load = _api.program()),
+                  )
+                else if (snapshot.connectionState != ConnectionState.done && program == null)
+                  const ScreenLoading(label: 'Loading the program', heights: [96, 280, 96])
+                else if (program == null)
+                  const EmptyCard(
+                    title: 'No program running',
+                    detail: 'Start one from a guide, such as The Mitoproof Protocol, under Me → Guides.',
+                  )
+                else
+                  ..._body(program),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

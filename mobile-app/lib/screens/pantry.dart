@@ -107,112 +107,115 @@ class _PantryScreenState extends State<PantryScreen> {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Your pantry'), backgroundColor: c.mist, surfaceTintColor: Colors.transparent),
-      body: FutureBuilder(
-        future: _items,
-        builder: (context, snapshot) {
-          final items = snapshot.data ?? const <PantryItem>[];
-          final have = items.map((i) => _key(i.name)).toSet();
-          final staples = [
-            for (final s in _staples)
-              if (!have.contains(_key(s))) s,
-          ];
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
-            children: [
-              Text(
-                'Add what’s in your kitchen and we’ll suggest meals that use it and fit what’s left of today.',
-                style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
-              ),
-              const SizedBox(height: Space.s3),
-              Row(
-                spacing: Space.s2,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _field,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(labelText: 'Add items', hintText: 'e.g. eggs, spinach, rice'),
-                      onSubmitted: (v) => _add(v.split(',')),
-                    ),
-                  ),
-                  SoftButton(label: 'Add', onPressed: () => _add(_field.text.split(','))),
-                ],
-              ),
-              if (snapshot.hasError)
-                Padding(
-                  padding: const EdgeInsets.only(top: Space.s3),
-                  child: ScreenFailed(
-                    title: "Couldn't load your pantry",
-                    detail: 'Check your connection and try again.',
-                    onRetry: _reload,
-                  ),
-                )
-              else if (!snapshot.hasData)
-                const Padding(
-                  padding: EdgeInsets.only(top: Space.s3),
-                  child: ScreenLoading(label: 'Loading your pantry', heights: [96]),
-                )
-              else ...[
-                BlockTitle('In your kitchen', note: items.isEmpty ? null : '${items.length} items'),
-                if (items.isEmpty)
-                  Text(
-                    'Nothing yet. Type items above or tap a staple below.',
-                    style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
-                  )
-                else
-                  Wrap(
-                    spacing: Space.s2,
-                    runSpacing: Space.s2,
-                    children: [
-                      for (final item in items)
-                        InputChip(
-                          label: Text(item.name),
-                          deleteButtonTooltipMessage: 'Remove ${item.name}',
-                          onDeleted: () => _remove(item),
-                          backgroundColor: c.paper,
-                          side: BorderSide(color: c.rule),
-                        ),
-                    ],
-                  ),
-                if (staples.isNotEmpty) ...[
-                  const BlockTitle('Quick add'),
-                  Wrap(
-                    spacing: Space.s2,
-                    runSpacing: Space.s2,
-                    children: [
-                      for (final s in staples)
-                        ActionChip(
-                          avatar: Icon(Icons.add_rounded, size: 16, color: c.synapseInk),
-                          label: Text(s),
-                          onPressed: () => _add([s]),
-                          backgroundColor: c.synapseSoft,
-                          side: BorderSide.none,
-                        ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: Space.s5),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-                  onPressed: items.length < 3 ? null : _cookSomething,
-                  icon: const Icon(Icons.restaurant_menu_rounded, size: 20),
-                  label: const Text('What can I make?'),
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder(
+          future: _items,
+          builder: (context, snapshot) {
+            final items = snapshot.data ?? const <PantryItem>[];
+            final have = items.map((i) => _key(i.name)).toSet();
+            final staples = [
+              for (final s in _staples)
+                if (!have.contains(_key(s))) s,
+            ];
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(Space.s4, 0, Space.s4, Space.s6),
+              children: [
+                Text(
+                  'Add what’s in your kitchen and we’ll suggest meals that use it and fit what’s left of today.',
+                  style: TextStyle(fontSize: TextSize.sm, height: 1.4, color: c.inkSoft),
                 ),
-                if (items.length < 3)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Space.s2),
-                    child: Text(
-                      'Add at least 3 items first.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                const SizedBox(height: Space.s3),
+                Row(
+                  spacing: Space.s2,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _field,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(labelText: 'Add items', hintText: 'e.g. eggs, spinach, rice'),
+                        onSubmitted: (v) => _add(v.split(',')),
+                      ),
                     ),
+                    SoftButton(label: 'Add', onPressed: () => _add(_field.text.split(','))),
+                  ],
+                ),
+                if (snapshot.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.s3),
+                    child: ScreenFailed(
+                      title: "Couldn't load your pantry",
+                      detail: 'Check your connection and try again.',
+                      onRetry: _reload,
+                    ),
+                  )
+                else if (!snapshot.hasData)
+                  const Padding(
+                    padding: EdgeInsets.only(top: Space.s3),
+                    child: ScreenLoading(label: 'Loading your pantry', heights: [96]),
+                  )
+                else ...[
+                  BlockTitle('In your kitchen', note: items.isEmpty ? null : '${items.length} items'),
+                  if (items.isEmpty)
+                    Text(
+                      'Nothing yet. Type items above or tap a staple below.',
+                      style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft),
+                    )
+                  else
+                    Wrap(
+                      spacing: Space.s2,
+                      runSpacing: Space.s2,
+                      children: [
+                        for (final item in items)
+                          InputChip(
+                            label: Text(item.name),
+                            deleteButtonTooltipMessage: 'Remove ${item.name}',
+                            onDeleted: () => _remove(item),
+                            backgroundColor: c.paper,
+                            side: BorderSide(color: c.rule),
+                          ),
+                      ],
+                    ),
+                  if (staples.isNotEmpty) ...[
+                    const BlockTitle('Quick add'),
+                    Wrap(
+                      spacing: Space.s2,
+                      runSpacing: Space.s2,
+                      children: [
+                        for (final s in staples)
+                          ActionChip(
+                            avatar: Icon(Icons.add_rounded, size: 16, color: c.synapseInk),
+                            label: Text(s),
+                            onPressed: () => _add([s]),
+                            backgroundColor: c.synapseSoft,
+                            side: BorderSide.none,
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: Space.s5),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                    onPressed: items.length < 3 ? null : _cookSomething,
+                    icon: const Icon(Icons.restaurant_menu_rounded, size: 20),
+                    label: const Text('What can I make?'),
                   ),
-                if (_recipes != null) _Recipes(_recipes!, onRetry: _cookSomething, onCook: widget.onCook),
+                  if (items.length < 3)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Space.s2),
+                      child: Text(
+                        'Add at least 3 items first.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: TextSize.xs, color: c.inkSoft),
+                      ),
+                    ),
+                  if (_recipes != null) _Recipes(_recipes!, onRetry: _cookSomething, onCook: widget.onCook),
+                ],
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
