@@ -2,7 +2,7 @@ import type { IGuideRepository, IProgramRepository, ProgramState } from "../inte
 import type { GuideRecord } from "../../domain/guides";
 /** In-memory fakes of every port, for use-case tests (CLAUDE.md: use cases are tested with fake providers). */
 import type { ShoppingListItem } from "../../domain/shoppingList";
-import type { Session } from "../../domain/session";
+import type { Session, SessionKind } from "../../domain/session";
 import type { PerformanceSession } from "../../domain/performance";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeCup } from "../../domain/coffee";
@@ -1191,6 +1191,18 @@ export class InMemorySessions implements ISessionRepository {
       .filter((r) => r.userId === userId && r.takenAt >= from && r.takenAt < to)
       .sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime())
       .map(({ userId: _, ...s }) => s);
+  }
+  async listPeriods(userId: string, kinds: readonly SessionKind[], from: Date, to: Date) {
+    return this.rows
+      .filter((r) => r.userId === userId && kinds.includes(r.kind) && r.takenAt < to && (!r.endsAt || r.endsAt > from))
+      .sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime())
+      .map(({ userId: _, ...s }) => s);
+  }
+  async setEnd(userId: string, id: string, endsAt: Date) {
+    const row = this.rows.find((r) => r.userId === userId && r.id === id);
+    if (!row) return false;
+    row.endsAt = endsAt;
+    return true;
   }
   async delete(userId: string, id: string) {
     const i = this.rows.findIndex((r) => r.userId === userId && r.id === id);

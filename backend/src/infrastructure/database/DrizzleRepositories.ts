@@ -1,10 +1,10 @@
 import type { Aisle, ShoppingListItem } from "../../domain/shoppingList";
-import type { Session, SessionKind } from "../../domain/session";
+import { type Session, type SessionKind, isPeriod } from "../../domain/session";
 import type { Activity, PerformanceSession } from "../../domain/performance";
 import type { Feeling } from "../../domain/experiment";
 import type { CoffeeAddIn, CoffeeCup, CoffeeKind } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import type {
   ICheckInRepository,
   IFocusScoreRepository,
@@ -1461,11 +1461,15 @@ export class DrizzleSessionRepository implements ISessionRepository {
   constructor(private readonly db: Database) {}
 
   private static toSession(r: typeof sessions.$inferSelect): Session {
-    return { id: r.id, kind: r.kind as SessionKind, takenAt: r.takenAt, ...(r.minutes === null ? {} : { minutes: r.minutes }) };
+    const kind = r.kind as SessionKind;
+    return { id: r.id, kind, takenAt: r.takenAt, ...(r.minutes === null ? {} : { minutes: r.minutes }), ...(isPeriod(kind) ? { endsAt: r.endsAt } : {}) };
   }
 
   async add(userId: string, s: Omit<Session, "id">) {
-    const [row] = await this.db.insert(sessions).values({ userId, kind: s.kind, takenAt: s.takenAt, minutes: s.minutes ?? null }).returning();
+    const [row] = await this.db
+      .insert(sessions)
+      .values({ userId, kind: s.kind, takenAt: s.takenAt, minutes: s.minutes ?? null, endsAt: s.endsAt ?? null })
+      .returning();
     return DrizzleSessionRepository.toSession(row!);
   }
 
@@ -1476,6 +1480,25 @@ export class DrizzleSessionRepository implements ISessionRepository {
       .where(and(eq(sessions.userId, userId), gte(sessions.takenAt, from), lt(sessions.takenAt, to)))
       .orderBy(asc(sessions.takenAt));
     return rows.map(DrizzleSessionRepository.toSession);
+  }
+
+  async listPeriods(userId: string, kinds: readonly SessionKind[], from: Date, to: Date) {
+    if (!kinds.length) return [];
+    const rows = await this.db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.userId, userId), inArray(sessions.kind, [...kinds]), lt(sessions.takenAt, to), or(isNull(sessions.endsAt), gt(sessions.endsAt, from))))
+      .orderBy(asc(sessions.takenAt));
+    return rows.map(DrizzleSessionRepository.toSession);
+  }
+
+  async setEnd(userId: string, id: string, endsAt: Date) {
+    const done = await this.db
+      .update(sessions)
+      .set({ endsAt })
+      .where(and(eq(sessions.userId, userId), eq(sessions.id, id)))
+      .returning({ id: sessions.id });
+    return done.length > 0;
   }
 
   async delete(userId: string, id: string) {

@@ -295,6 +295,13 @@
       "when": 1793667460488,
       "tag": "0041_clever_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794009875881,
+      "tag": "0042_light_nekra",
+      "breakpoints": true
     }
   ]
 }

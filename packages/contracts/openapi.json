@@ -1515,7 +1515,7 @@
       "post": {
         "operationId": "logSession",
         "summary": "Log a session",
-        "description": "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
+        "description": "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing. Quantum Upgrade is a period, not a sitting: it takes a start (takenAt) and an end (endsAt, or null to run until stopped) instead of minutes, and can't overlap another of the same kind.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1555,6 +1555,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LearnResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/sessions/{id}/end": {
+      "post": {
+        "operationId": "endSession",
+        "summary": "Stop a running period",
+        "description": "Ends a period such as a Quantum Upgrade subscription now, or at endsAt. Its days up to the end still count as days with it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The session's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
                 }
               }
             }
@@ -4866,6 +4909,15 @@
           "token"
         ]
       },
+      "EndSessionRequest": {
+        "type": "object",
+        "properties": {
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "EnergyCheckRequest": {
         "type": "object",
         "properties": {
@@ -6721,6 +6773,17 @@
           "takenAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8268,6 +8331,17 @@
           },
           "minutes": {
             "type": "integer"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8322,6 +8396,16 @@
           },
           "usualMinutes": {
             "type": "integer"
+          },
+          "timing": {
+            "type": "string",
+            "enum": [
+              "minutes",
+              "period"
+            ]
+          },
+          "usualDays": {
+            "type": "integer"
           }
         },
         "required": [
@@ -8330,7 +8414,8 @@
           "purpose",
           "evidence",
           "expectation",
-          "usualMinutes"
+          "usualMinutes",
+          "timing"
         ]
       },
       "SessionsResponse": {
@@ -8341,6 +8426,12 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "running": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Session"
@@ -8383,6 +8474,7 @@
         "required": [
           "date",
           "sessions",
+          "running",
           "kinds",
           "insights"
         ]

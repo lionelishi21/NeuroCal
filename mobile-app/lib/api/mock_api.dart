@@ -874,6 +874,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       evidence: 'some',
       expectation: 'Many people sleep more deeply the night after; regular use is linked to a healthier heart. Drink water and skip it after alcohol.',
       usualMinutes: 20,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.coldPlunge,
@@ -882,6 +884,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       evidence: 'early',
       expectation: 'A sharp lift in alertness and mood for a few hours; longer-term effects are less clear. Start with 1 to 2 minutes, and not if you have a heart condition.',
       usualMinutes: 3,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.meditation,
@@ -890,6 +894,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       evidence: 'strong',
       expectation: 'Lower stress and steadier attention with regular practice; ten minutes a day is enough to start.',
       usualMinutes: 10,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.breathwork,
@@ -899,6 +905,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       expectation:
           'Slow breathing (about six breaths a minute) calms you within minutes and can lower stress over weeks.',
       usualMinutes: 5,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.braintap,
@@ -908,14 +916,18 @@ class MockNeuroCalApi implements NeuroCalApi {
       expectation:
           'Guided light-and-sound sessions for relaxing; small studies so far, so your own numbers matter most.',
       usualMinutes: 20,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.quantumUpgrade,
       label: 'Quantum Upgrade',
       purpose: SupplementPurpose.energy,
       evidence: 'none',
-      expectation: 'A frequency service sold for energy and balance. There are no independent studies yet, so log the days you run it and NeuroCal compares them with the days you don’t.',
+      expectation: 'A monthly frequency subscription sold for energy and balance. There are no independent studies yet, so add the dates it runs and NeuroCal compares those days with the days it doesn’t.',
       usualMinutes: 30,
+      period: true,
+      usualDays: 30,
     ),
     (
       kind: SessionKind.blueBlocking,
@@ -924,6 +936,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       evidence: 'some',
       expectation: 'Worn for the last hour or two before bed, they keep screens and bright rooms from delaying your sleep. They halve the cost of late screens in your score.',
       usualMinutes: 120,
+      period: false,
+      usualDays: null,
     ),
     (
       kind: SessionKind.redLight,
@@ -932,6 +946,8 @@ class MockNeuroCalApi implements NeuroCalApi {
       evidence: 'early',
       expectation: 'Dim red light in the evening doesn’t hold back sleep the way white light does; claims beyond that are early.',
       usualMinutes: 15,
+      period: false,
+      usualDays: null,
     ),
   ];
 
@@ -940,19 +956,32 @@ class MockNeuroCalApi implements NeuroCalApi {
     await _wait();
     final now = DateTime.now();
     bool today(DateTime t) => t.year == now.year && t.month == now.month && t.day == now.day;
+    bool isPeriod(SessionKind k) => _sessionKinds.firstWhere((i) => i.kind == k).period;
     final used = {for (final s in _sessions) s.kind};
     return SessionsDay(
       date: isoDate(now),
       sessions: [
         for (final s in _sessions)
-          if (today(s.takenAt)) s,
+          if (!isPeriod(s.kind) && today(s.takenAt)) s,
+      ],
+      running: [
+        for (final s in _sessions)
+          if (isPeriod(s.kind) && (s.endsAt == null || s.endsAt!.isAfter(now))) s,
       ],
       kinds: _sessionKinds,
       insights: [
         for (final kind in used)
           (
             kind: kind,
-            sessions: _sessions.where((s) => s.kind == kind).length,
+            sessions: isPeriod(kind)
+                ? _sessions
+                      .where((s) => s.kind == kind && !s.takenAt.isAfter(now))
+                      .fold(
+                        0,
+                        (n, s) =>
+                            n + ((s.endsAt ?? now).isBefore(now) ? s.endsAt! : now).difference(s.takenAt).inDays + 1,
+                      )
+                : _sessions.where((s) => s.kind == kind).length,
             lastAt: _sessions.lastWhere((s) => s.kind == kind).takenAt,
             experiment: SupplementExperiment(
               measure: switch (_sessionKinds.firstWhere((k) => k.kind == kind).purpose) {
@@ -974,7 +1003,40 @@ class MockNeuroCalApi implements NeuroCalApi {
   @override
   Future<SessionsDay> logSession(SessionKind kind, {int? minutes}) async {
     await _wait();
-    _sessions.add((id: 'ses${_sessions.length + 1}', kind: kind, takenAt: DateTime.now(), minutes: minutes));
+    _sessions.add((
+      id: 'ses${_sessions.length + 1}',
+      kind: kind,
+      takenAt: DateTime.now(),
+      minutes: minutes,
+      endsAt: null,
+    ));
+    return sessions();
+  }
+
+  @override
+  Future<SessionsDay> startPeriod(SessionKind kind, {required DateTime startsAt, DateTime? endsAt}) async {
+    await _wait();
+    final end = endsAt ?? DateTime(9999);
+    final overlaps = _sessions.any(
+      (s) => s.kind == kind && s.takenAt.isBefore(end) && (s.endsAt == null || s.endsAt!.isAfter(startsAt)),
+    );
+    if (overlaps) {
+      throw ApiException(
+        400,
+        'Those dates overlap Quantum Upgrade you’ve already added. Change or remove that one first.',
+      );
+    }
+    _sessions.add((id: 'ses${_sessions.length + 1}', kind: kind, takenAt: startsAt, minutes: null, endsAt: endsAt));
+    return sessions();
+  }
+
+  @override
+  Future<SessionsDay> endSession(String id) async {
+    await _wait();
+    final i = _sessions.indexWhere((s) => s.id == id);
+    if (i < 0) throw ApiException(404, 'No such session.');
+    final s = _sessions[i];
+    _sessions[i] = (id: s.id, kind: s.kind, takenAt: s.takenAt, minutes: s.minutes, endsAt: DateTime.now());
     return sessions();
   }
 

@@ -1356,13 +1356,28 @@ export const SessionKind = z.enum(["sauna", "cold_plunge", "meditation", "breath
 
 export const LogSessionRequest = z.object({
   kind: SessionKind,
+  /** Sittings only (timing "minutes"). */
   minutes: z.number().int().min(1).max(600).optional(),
-  /** When it was; now when left out. Within the last two days. */
+  /** When it was; now when left out. A sitting: within the last two days. A period: when it starts, within the last year. */
   takenAt: IsoDateTime.optional(),
+  /** Periods only (timing "period"): when it ends; null or left out to run until stopped. A year at most. */
+  endsAt: IsoDateTime.nullable().optional(),
 });
 export type LogSessionRequest = z.infer<typeof LogSessionRequest>;
 
-export const Session = z.object({ id: Id, kind: SessionKind, takenAt: IsoDateTime, minutes: z.number().int().optional() });
+/** Stops a period: it ends at `endsAt`, now when left out. */
+export const EndSessionRequest = z.object({ endsAt: IsoDateTime.optional() });
+export type EndSessionRequest = z.infer<typeof EndSessionRequest>;
+
+export const Session = z.object({
+  id: Id,
+  kind: SessionKind,
+  /** When it was; for a period, when it started. */
+  takenAt: IsoDateTime,
+  minutes: z.number().int().optional(),
+  /** Periods only: when it ends or ended; null while it runs until stopped. */
+  endsAt: IsoDateTime.nullable().optional(),
+});
 
 /** One kind: what it's for, the evidence and what to expect; the same for everyone. */
 export const SessionKindInfo = z.object({
@@ -1372,16 +1387,23 @@ export const SessionKindInfo = z.object({
   evidence: z.enum(["strong", "some", "early", "none"]),
   expectation: z.string(),
   usualMinutes: z.number().int(),
+  /** "minutes": a sitting, logged when it happens. "period": a service that runs for weeks once started (a subscription). */
+  timing: z.enum(["minutes", "period"]),
+  /** For a period: the length offered first, in days. */
+  usualDays: z.number().int().optional(),
 });
 
 export const SessionsResponse = z.object({
   date: IsoDate,
-  /** Today's sessions, oldest first. */
+  /** Today's sessions, oldest first (periods are in `running`). */
   sessions: z.array(Session),
+  /** Periods running now or set to start later, oldest first. */
+  running: z.array(Session),
   /** Every kind, for the logging sheet. */
   kinds: z.array(SessionKindInfo),
   /**
-   * Each kind used in the last eight weeks, most recent first: the days after a session against the
+   * Each kind used in the last eight weeks (a period: 120 days), most recent first, with `sessions`
+   * the sessions logged or, for a period, the days it ran: the days after a session against the
    * days without, on the measure that fits ("before" is the days without, "since" the days with).
    */
   insights: z.array(z.object({ kind: SessionKind, sessions: z.number().int(), lastAt: IsoDateTime, experiment: SupplementExperiment })),
@@ -1953,6 +1975,7 @@ export const endpoints = {
   getSessions: { method: "GET", path: "/sessions", response: SessionsResponse },
   getLearn: { method: "GET", path: "/learn", response: LearnResponse },
   logSession: { method: "POST", path: "/sessions", body: LogSessionRequest, response: SessionsResponse },
+  endSession: { method: "POST", path: "/sessions/:id/end", body: EndSessionRequest, response: SessionsResponse },
   deleteSession: { method: "DELETE", path: "/sessions/:id" },
   getPerformance: { method: "GET", path: "/performance", response: PerformanceResponse },
   logPerformance: { method: "POST", path: "/performance", body: LogPerformanceRequest, response: PerformanceResponse },

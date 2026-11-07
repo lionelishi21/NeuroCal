@@ -366,6 +366,8 @@ export const sessions = pgTable(
     kind: text("kind").notNull(),
     takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
     minutes: smallint("minutes"),
+    /** Periods (a subscription that runs for weeks) only: when it ends; null while it runs until stopped. */
+    endsAt: timestamp("ends_at", { withTimezone: true }),
   },
   (t) => [index("sessions_user_taken_at_idx").on(t.userId, t.takenAt)],
 );

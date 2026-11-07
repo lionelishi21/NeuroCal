@@ -21,7 +21,16 @@ export interface SessionKindProfile {
   usualMinutes: number;
   /** Days from a session to the day its effect shows: 1 for sleep (the night after), else the same day. */
   lagDays: number;
+  /**
+   * "minutes": a sitting, logged when it happens. "period": a service that runs for weeks once
+   * started (a subscription), logged with a start and an end, or left running until stopped.
+   */
+  timing: Timing;
+  /** For a period: the length offered first, in days. */
+  usualDays?: number;
 }
+
+export type Timing = "minutes" | "period";
 
 export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
   sauna: {
@@ -31,6 +40,7 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Many people sleep more deeply the night after; regular use is linked to a healthier heart. Drink water and skip it after alcohol.",
     usualMinutes: 20,
     lagDays: 1,
+    timing: "minutes",
   },
   cold_plunge: {
     label: "Cold plunge",
@@ -39,6 +49,7 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "A sharp lift in alertness and mood for a few hours; longer-term effects are less clear. Start with 1 to 2 minutes, and not if you have a heart condition.",
     usualMinutes: 3,
     lagDays: 0,
+    timing: "minutes",
   },
   meditation: {
     label: "Meditation",
@@ -47,6 +58,7 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Lower stress and steadier attention with regular practice; ten minutes a day is enough to start.",
     usualMinutes: 10,
     lagDays: 0,
+    timing: "minutes",
   },
   breathwork: {
     label: "Breathwork",
@@ -55,6 +67,7 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Slow breathing (about six breaths a minute) calms you within minutes and can lower stress over weeks.",
     usualMinutes: 5,
     lagDays: 0,
+    timing: "minutes",
   },
   braintap: {
     label: "BrainTap",
@@ -63,16 +76,19 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Guided light-and-sound sessions for relaxing; small studies so far, so your own numbers matter most.",
     usualMinutes: 20,
     lagDays: 0,
+    timing: "minutes",
   },
-  // quantumupgrade.io: "frequencies" streamed from a phone app. Nothing independent to go on, so it is
-  // logged like the rest and judged only on this person's own days with and without it.
+  // quantumupgrade.io: a monthly subscription whose "frequencies" run all day once it's on. Nothing
+  // independent to go on, so it is judged only on this person's own days with and without it.
   quantum_upgrade: {
     label: "Quantum Upgrade",
     purpose: "energy",
     evidence: "none",
-    expectation: "A frequency service sold for energy and balance. There are no independent studies yet, so log the days you run it and NeuroCal compares them with the days you don't.",
+    expectation: "A monthly frequency subscription sold for energy and balance. There are no independent studies yet, so add the dates it runs and NeuroCal compares those days with the days it doesn't.",
     usualMinutes: 30,
     lagDays: 0,
+    timing: "period",
+    usualDays: 30,
   },
   blue_blocking: {
     label: "Blue-blocking glasses",
@@ -81,6 +97,7 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Worn for the last hour or two before bed, they keep screens and bright rooms from delaying your sleep. They halve the cost of late screens in your score.",
     usualMinutes: 120,
     lagDays: 1,
+    timing: "minutes",
   },
   red_light: {
     label: "Red light",
@@ -89,23 +106,34 @@ export const SESSION_KIND: Record<SessionKind, SessionKindProfile> = {
     expectation: "Dim red light in the evening doesn't hold back sleep the way white light does; claims beyond that are early.",
     usualMinutes: 15,
     lagDays: 1,
+    timing: "minutes",
   },
 };
 
 export interface Session {
   id: string;
   kind: SessionKind;
+  /** When it was; for a period, when it started. */
   takenAt: Date;
   minutes?: number;
+  /** Periods only: when it ends or ended; null while it runs until stopped. */
+  endsAt?: Date | null;
 }
 
 export const MAX_SESSION_MINUTES = 600;
+/** How far back a period can start, and how long one can be set to run. */
+export const MAX_PERIOD_BACK_DAYS = 365;
+export const MAX_PERIOD_DAYS = 366;
+export const isPeriod = (kind: SessionKind) => SESSION_KIND[kind].timing === "period";
+/** Kinds logged as periods. */
+export const PERIOD_KINDS = SESSION_KINDS.filter(isPeriod);
 
 const LABEL: Record<Measure, string> = { brain_speed: "Brain speed", sleep: "sleep score", stress: "stress score" };
 /** The smallest difference worth calling, as for supplements. */
 const MIN_CHANGE: Record<Measure, number> = { brain_speed: 3, sleep: 5, stress: 10 };
-/** How far back "days without" reaches. */
+/** How far back "days without" reaches: eight weeks, or longer for a period, which can fill eight weeks on its own. */
 export const COMPARE_DAYS = 56;
+export const PERIOD_COMPARE_DAYS = 120;
 
 const DAY_MS = 86_400_000;
 const dayIndex = (date: string) => Math.round(Date.parse(`${date}T00:00:00Z`) / DAY_MS);
@@ -124,6 +152,7 @@ const sd = (xs: number[]) => {
  */
 export function sessionExperimentOf(o: { kind: SessionKind; sessionDays: string[]; series: Map<string, number>; today: string }): Experiment {
   const k = SESSION_KIND[o.kind];
+  const period = k.timing === "period";
   const measure = measureFor(k.purpose)!;
   const label = LABEL[measure];
   const days = [...new Set(o.sessionDays)].sort();
@@ -131,14 +160,14 @@ export function sessionExperimentOf(o: { kind: SessionKind; sessionDays: string[
   const day = dayIndex(o.today) - dayIndex(first) + 1;
   // Each session's effect day: the day itself, or the next for sleep.
   const withDays = new Set(days.map((d) => dateOf(dayIndex(d) + k.lagDays)));
-  const from = dayIndex(o.today) - COMPARE_DAYS;
+  const from = dayIndex(o.today) - (period ? PERIOD_COMPARE_DAYS : COMPARE_DAYS);
   const inRange = [...o.series.entries()].filter(([d]) => dayIndex(d) > from && dayIndex(d) <= dayIndex(o.today));
   const withValues = inRange.filter(([d]) => withDays.has(d)).map(([, v]) => v);
   const withoutValues = inRange.filter(([d]) => !withDays.has(d)).map(([, v]) => v);
   const stat = (xs: number[]) => (xs.length ? { mean: Math.round(mean(xs) * 10) / 10, days: xs.length } : null);
   const base = { measure, day, onsetDays: 0, before: stat(withoutValues), since: stat(withValues), taken: null, askFeeling: false, feeling: null };
-  const after = k.lagDays ? `after a ${k.label.toLowerCase()} session` : `with a ${k.label.toLowerCase()} session`;
-  const name = k.label.toLowerCase();
+  const after = period ? `with ${k.label} running` : k.lagDays ? `after a ${k.label.toLowerCase()} session` : `with a ${k.label.toLowerCase()} session`;
+  const name = period ? k.label : k.label.toLowerCase();
   if (withValues.length < MIN_DAYS || withoutValues.length < MIN_DAYS) {
     const need = Math.max(0, MIN_DAYS - withValues.length);
     return {
@@ -148,7 +177,9 @@ export function sessionExperimentOf(o: { kind: SessionKind; sessionDays: string[
       summary:
         withValues.length < MIN_DAYS
           ? `${need} more ${need === 1 ? "day" : "days"} ${after}, with your ${label} logged, and NeuroCal can compare them with days without.`
-          : `NeuroCal needs a few more days without ${name} to compare with.`,
+          : period
+            ? `NeuroCal needs a few more days without ${name} to compare with: your days before it started count.`
+            : `NeuroCal needs a few more days without ${name} to compare with.`,
     };
   }
   const change = Math.round((mean(withValues) - mean(withoutValues)) * 10) / 10;
@@ -165,7 +196,20 @@ export function sessionExperimentOf(o: { kind: SessionKind; sessionDays: string[
       verdict === "helping"
         ? `Your ${label} is higher: ${compare}.`
         : verdict === "worse"
-          ? `Your ${label} is lower: ${compare}. Try a different time of day or a shorter session.`
+          ? `Your ${label} is lower: ${compare}.${period ? "" : " Try a different time of day or a shorter session."}`
           : `No clear difference in your ${label}: ${compare}.`,
   };
+}
+
+/**
+ * The local dates a period covers: from its start through its end, or through [today] while it runs.
+ * Days after today don't count yet. [dayOf] turns an instant into a local date.
+ */
+export function periodDays(s: Pick<Session, "takenAt" | "endsAt">, today: string, dayOf: (d: Date) => string): string[] {
+  const first = dayIndex(dayOf(s.takenAt));
+  const end = s.endsAt ? dayIndex(dayOf(s.endsAt)) : dayIndex(today);
+  const last = Math.min(end, dayIndex(today));
+  const out: string[] = [];
+  for (let i = first; i <= last; i++) out.push(dateOf(i));
+  return out;
 }

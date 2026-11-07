@@ -2336,20 +2336,42 @@ typedef SessionKindInfo = ({
   String evidence,
   String expectation,
   int usualMinutes,
+  // A service that runs for weeks once started (a subscription), logged with a start and an end
+  // rather than minutes ("period" timing in the contracts).
+  bool period,
+  int? usualDays,
 });
 
-/// One logged session.
-typedef LoggedSession = ({String id, SessionKind kind, DateTime takenAt, int? minutes});
+/// One logged session. For a period, [takenAt] is when it started and [endsAt] when it ends (null
+/// while it runs until stopped).
+typedef LoggedSession = ({String id, SessionKind kind, DateTime takenAt, int? minutes, DateTime? endsAt});
+
+LoggedSession _loggedSessionFromJson(SessionKind kind, Map<String, dynamic> s) => (
+  id: s['id'] as String,
+  kind: kind,
+  takenAt: DateTime.parse(s['takenAt'] as String).toLocal(),
+  minutes: (s['minutes'] as num?)?.toInt(),
+  endsAt: s['endsAt'] == null ? null : DateTime.parse(s['endsAt'] as String).toLocal(),
+);
 
 /// A kind used lately: the days after a session against the days without.
 typedef SessionInsight = ({SessionKind kind, int sessions, DateTime lastAt, SupplementExperiment experiment});
 
 /// Today's sessions, every kind, and what the ones used are doing (`SessionsResponse` in the contracts).
 class SessionsDay {
-  const SessionsDay({required this.date, this.sessions = const [], this.kinds = const [], this.insights = const []});
+  const SessionsDay({
+    required this.date,
+    this.sessions = const [],
+    this.running = const [],
+    this.kinds = const [],
+    this.insights = const [],
+  });
 
   final String date;
   final List<LoggedSession> sessions;
+
+  /// Periods running now or set to start later, oldest first.
+  final List<LoggedSession> running;
   final List<SessionKindInfo> kinds;
   final List<SessionInsight> insights;
 
@@ -2359,13 +2381,11 @@ class SessionsDay {
     date: j['date'] as String,
     sessions: [
       for (final s in j['sessions'] as List)
-        if (SessionKind.fromWire(s['kind']) case final kind?)
-          (
-            id: s['id'] as String,
-            kind: kind,
-            takenAt: DateTime.parse(s['takenAt'] as String).toLocal(),
-            minutes: (s['minutes'] as num?)?.toInt(),
-          ),
+        if (SessionKind.fromWire(s['kind']) case final kind?) _loggedSessionFromJson(kind, s as Map<String, dynamic>),
+    ],
+    running: [
+      for (final s in (j['running'] as List?) ?? const [])
+        if (SessionKind.fromWire(s['kind']) case final kind?) _loggedSessionFromJson(kind, s as Map<String, dynamic>),
     ],
     kinds: [
       for (final k in j['kinds'] as List)
@@ -2380,6 +2400,8 @@ class SessionsDay {
             evidence: k['evidence'] as String,
             expectation: k['expectation'] as String,
             usualMinutes: (k['usualMinutes'] as num).toInt(),
+            period: k['timing'] == 'period',
+            usualDays: (k['usualDays'] as num?)?.toInt(),
           ),
     ],
     insights: [

@@ -446,7 +446,14 @@ class _Practices extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         spacing: 2,
                         children: [
-                          Text('${insight.sessions} ${insight.sessions == 1 ? 'session' : 'sessions'} in 8 weeks'),
+                          Text(switch (d.running.where(
+                            (r) => r.kind == insight.kind && !r.takenAt.isAfter(DateTime.now()),
+                          )) {
+                            final r when r.isNotEmpty => periodLine(r.first, DateTime.now()),
+                            _ when d.info(insight.kind)?.period ?? false =>
+                              '${insight.sessions} ${insight.sessions == 1 ? 'day' : 'days'} with it lately',
+                            _ => '${insight.sessions} ${insight.sessions == 1 ? 'session' : 'sessions'} in 8 weeks',
+                          }),
                           ExperimentLine(insight.experiment),
                         ],
                       ),

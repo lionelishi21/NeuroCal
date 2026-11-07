@@ -465,6 +465,37 @@ describe("API routes", () => {
     expect((await call("DELETE", "/sessions/nope")).status).toBe(404);
   });
 
+  it("starts Quantum Upgrade as a period, keeps it running, and stops it", async () => {
+    // Clock: 2026-09-29 17:00 in Chicago. Started ten days ago, running until stopped.
+    const started = await call("POST", "/sessions", { kind: "quantum_upgrade", takenAt: "2026-09-19T15:00:00Z" });
+    expect(started.status).toBe(201);
+    const day = SessionsResponse.parse(started.body);
+    expect(day.kinds.find((k) => k.kind === "quantum_upgrade")).toMatchObject({ timing: "period", usualDays: 30 });
+    expect(day.kinds.find((k) => k.kind === "sauna")).toMatchObject({ timing: "minutes" });
+    expect(day.sessions).toEqual([]);
+    expect(day.running).toEqual([expect.objectContaining({ kind: "quantum_upgrade", takenAt: "2026-09-19T15:00:00.000Z", endsAt: null })]);
+    expect(day.insights).toEqual([expect.objectContaining({ kind: "quantum_upgrade", sessions: 11 })]);
+
+    // Minutes, overlapping dates and an end before the start are refused.
+    expect((await call("POST", "/sessions", { kind: "quantum_upgrade", minutes: 30 })).status).toBe(400);
+    expect((await call("POST", "/sessions", { kind: "quantum_upgrade", takenAt: "2026-09-25T15:00:00Z" })).status).toBe(400);
+    expect((await call("POST", "/sessions", { kind: "sauna", endsAt: null })).status).toBe(400);
+    const id = day.running[0]!.id;
+    expect((await call("POST", `/sessions/${id}/end`, { endsAt: "2026-09-01T00:00:00Z" })).status).toBe(400);
+
+    const stopped = SessionsResponse.parse((await call("POST", `/sessions/${id}/end`, {})).body);
+    expect(stopped.running).toEqual([]);
+    expect(stopped.insights).toEqual([expect.objectContaining({ kind: "quantum_upgrade", sessions: 11 })]);
+
+    // A month can't overlap the one just stopped; set after it, it runs ahead.
+    expect((await call("POST", "/sessions", { kind: "quantum_upgrade", takenAt: "2026-09-29T21:00:00Z", endsAt: "2026-10-29T21:00:00Z" })).status).toBe(400);
+    const month = SessionsResponse.parse((await call("POST", "/sessions", { kind: "quantum_upgrade", takenAt: "2026-09-29T22:00:00Z", endsAt: "2026-10-29T22:00:00Z" })).body);
+    expect(month.running).toEqual([expect.objectContaining({ endsAt: "2026-10-29T22:00:00.000Z" })]);
+    expect((await call("POST", "/sessions/nope/end", {})).status).toBe(404);
+    for (const s of month.running) expect((await call("DELETE", `/sessions/${s.id}`)).status).toBe(204);
+    expect((await call("DELETE", `/sessions/${id}`)).status).toBe(204);
+  });
+
   it("logs performance sessions with each activity's own result, and lists what goes with the best ones", async () => {
     const logged = await call("POST", "/performance", { activity: "gaming", minutes: 60, sharpness: 4, game: "Street Fighter 6", wins: 7, losses: 3 });
     expect(logged.status).toBe(201);

@@ -1,5 +1,5 @@
 import type { ShoppingListItem } from "../../domain/shoppingList";
-import type { Session } from "../../domain/session";
+import type { Session, SessionKind } from "../../domain/session";
 import type { PerformanceSession } from "../../domain/performance";
 import type { CoffeeCup } from "../../domain/coffee";
 import type { FastPlan } from "../../domain/fasting";
@@ -128,6 +128,10 @@ export interface ISessionRepository {
   add(userId: string, session: Omit<Session, "id">): Promise<Session>;
   /** Taken at or after `from` and before `to`, oldest first. */
   listBetween(userId: string, from: Date, to: Date): Promise<Session[]>;
+  /** Periods of these kinds that overlap [from, to): started before `to` and not ended by `from`. Oldest first. */
+  listPeriods(userId: string, kinds: readonly SessionKind[], from: Date, to: Date): Promise<Session[]>;
+  /** Sets when a period ends; false when there's no such session. */
+  setEnd(userId: string, id: string, endsAt: Date): Promise<boolean>;
   delete(userId: string, id: string): Promise<boolean>;
 }
 

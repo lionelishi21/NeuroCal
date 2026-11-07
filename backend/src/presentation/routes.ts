@@ -73,6 +73,7 @@ import {
   CoffeeDay,
   CoffeeProducts,
   LogSessionRequest,
+  EndSessionRequest,
   LogPerformanceRequest,
   PerformanceResponse,
   WeeklyReportResponse,
@@ -344,12 +345,19 @@ const toPerformance = (v: PerformanceView) => ({
   summaries: v.summaries,
 });
 
+const toSession = ({ endsAt, ...s }: SessionDayRecord["sessions"][number]) => ({
+  ...s,
+  takenAt: s.takenAt.toISOString(),
+  ...(endsAt === undefined ? {} : { endsAt: endsAt?.toISOString() ?? null }),
+});
+
 const toSessionDay = (d: SessionDayRecord) => ({
   date: d.date,
-  sessions: d.sessions.map((s) => ({ ...s, takenAt: s.takenAt.toISOString() })),
+  sessions: d.sessions.map(toSession),
+  running: d.running.map(toSession),
   kinds: SESSION_KINDS.map((kind) => {
-    const { label, purpose, evidence, expectation, usualMinutes } = SESSION_KIND[kind];
-    return { kind, label, purpose, evidence, expectation, usualMinutes };
+    const { label, purpose, evidence, expectation, usualMinutes, timing, usualDays } = SESSION_KIND[kind];
+    return { kind, label, purpose, evidence, expectation, usualMinutes, timing, ...(usualDays ? { usualDays } : {}) };
   }),
   insights: d.insights.map((i) => ({ ...i, lastAt: i.lastAt.toISOString() })),
 });
@@ -823,8 +831,17 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
           kind: body.kind,
           ...(body.minutes ? { minutes: body.minutes } : {}),
           ...(body.takenAt ? { takenAt: new Date(body.takenAt) } : {}),
+          ...(body.endsAt === undefined ? {} : { endsAt: body.endsAt === null ? null : new Date(body.endsAt) }),
         });
         return ok(SessionsResponse, toSessionDay(day), 201);
+      },
+    ],
+    [
+      "POST",
+      /^\/sessions\/([^/]+)\/end$/,
+      async (req, [id]) => {
+        const body = json(req, EndSessionRequest);
+        return ok(SessionsResponse, toSessionDay(await uc.sessions.end(req.userId, id!, body.endsAt ? new Date(body.endsAt) : undefined)));
       },
     ],
     [

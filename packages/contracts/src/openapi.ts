@@ -185,7 +185,12 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
   },
   logSession: {
     summary: "Log a session",
-    description: "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing.",
+    description: "A sauna, cold plunge, meditation, breathwork, BrainTap, Quantum Upgrade, blue-blocking glasses or red light. Adds no points, except that blue-blocking glasses worn in the evening halve the cost of late screens in the next day's evening timing. Quantum Upgrade is a period, not a sitting: it takes a start (takenAt) and an end (endsAt, or null to run until stopped) instead of minutes, and can't overlap another of the same kind.",
+  },
+  endSession: {
+    summary: "Stop a running period",
+    description: "Ends a period such as a Quantum Upgrade subscription now, or at endsAt. Its days up to the end still count as days with it.",
+    params: { id: "The session's id." },
   },
   deleteSession: { summary: "Remove a session", status: 204, params: { id: "The session's id." } },
   getPerformance: {

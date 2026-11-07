@@ -69,6 +69,13 @@ abstract interface class NeuroCalApi {
   /// Logs a session now; returns the day with it.
   Future<SessionsDay> logSession(SessionKind kind, {int? minutes});
 
+  /// Starts a period (a subscription such as Quantum Upgrade) at [startsAt], running to [endsAt] or,
+  /// when that's null, until stopped; returns the day with it.
+  Future<SessionsDay> startPeriod(SessionKind kind, {required DateTime startsAt, DateTime? endsAt});
+
+  /// Stops a running period now; returns the day without it.
+  Future<SessionsDay> endSession(String id);
+
   Future<void> deleteSession(String id);
 
   /// Performance sessions: the last two weeks, and what goes with the best ones.
@@ -508,6 +515,26 @@ class HttpNeuroCalApi implements NeuroCalApi {
       headers: await _headers(json: true),
       body: jsonEncode({'kind': kind.wire, 'minutes': ?minutes}),
     );
+    return SessionsDay.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<SessionsDay> startPeriod(SessionKind kind, {required DateTime startsAt, DateTime? endsAt}) async {
+    final res = await _client.post(
+      _uri('/sessions'),
+      headers: await _headers(json: true),
+      body: jsonEncode({
+        'kind': kind.wire,
+        'takenAt': startsAt.toUtc().toIso8601String(),
+        'endsAt': endsAt?.toUtc().toIso8601String(),
+      }),
+    );
+    return SessionsDay.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<SessionsDay> endSession(String id) async {
+    final res = await _client.post(_uri('/sessions/$id/end'), headers: await _headers(json: true), body: '{}');
     return SessionsDay.fromJson(_decode(res) as Map<String, dynamic>);
   }
 

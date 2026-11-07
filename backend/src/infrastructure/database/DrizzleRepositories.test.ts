@@ -3,6 +3,7 @@ import type { Database } from "./client";
 import {
   DrizzleFastPlanRepository,
   DrizzlePerformanceRepository,
+  DrizzleSessionRepository,
   DrizzleCheckInRepository,
   DrizzleFocusScoreRepository,
   DrizzleMealRepository,
@@ -260,6 +261,24 @@ describe("DrizzleFocusScoreRepository", () => {
     await repo.put({ ...score, score: 70 });
     expect(await repo.get(alice, "2026-09-29")).toEqual({ ...score, score: 70 });
     expect(await repo.get(bob, "2026-09-29")).toBeNull();
+  });
+});
+
+describe("DrizzleSessionRepository", () => {
+  it("finds periods that overlap a window, running or ended, and sets an end", async () => {
+    const repo = new DrizzleSessionRepository(db);
+    const t = (iso: string) => new Date(iso);
+    await repo.add(alice, { kind: "sauna", takenAt: t("2026-10-01T18:00:00Z"), minutes: 20 });
+    const old = await repo.add(alice, { kind: "quantum_upgrade", takenAt: t("2026-06-01T00:00:00Z"), endsAt: t("2026-07-01T00:00:00Z") });
+    const now = await repo.add(alice, { kind: "quantum_upgrade", takenAt: t("2026-09-01T00:00:00Z"), endsAt: null });
+    expect(now.endsAt).toBeNull();
+    const since = (from: string) => repo.listPeriods(alice, ["quantum_upgrade"], t(from), t("9999-01-01T00:00:00Z"));
+    expect((await since("2026-08-01T00:00:00Z")).map((s) => s.id)).toEqual([now.id]);
+    expect((await since("2026-06-15T00:00:00Z")).map((s) => s.id)).toEqual([old.id, now.id]);
+    expect(await repo.setEnd(alice, now.id, t("2026-10-01T00:00:00Z"))).toBe(true);
+    expect(await since("2026-10-02T00:00:00Z")).toEqual([]);
+    // Sittings keep no end.
+    expect((await repo.listBetween(alice, t("2026-10-01T00:00:00Z"), t("2026-10-02T00:00:00Z")))[0]).not.toHaveProperty("endsAt");
   });
 });
 
