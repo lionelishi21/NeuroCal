@@ -75,7 +75,8 @@ import type { IEatingOutRepository } from "../../application/interfaces/IEatingO
 import { pantryKey } from "../../domain/pantry";
 import type { WeightEntry } from "../../domain/weight";
 import type { IStackRepository, NewStackItem, StackItemPatch } from "../../application/interfaces/IStackRepository";
-import type { EndingTrial, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
+import type { EndingTrial, IFunnelRepository, ISubscriptionRepository } from "../../application/interfaces/ISubscriptions";
+import type { FunnelWeek } from "../../domain/funnel";
 import type { Database } from "./client";
 import {
   airQualityDays,
@@ -683,6 +684,8 @@ export class DrizzleSubscriptionRepository implements ISubscriptionRepository {
       ...(row.expiresAt ? { expiresAt: row.expiresAt } : {}),
       willRenew: row.willRenew,
       eventAt: row.eventAt,
+      ...(row.trialStartedAt ? { trialStartedAt: row.trialStartedAt } : {}),
+      ...(row.paidAt ? { paidAt: row.paidAt } : {}),
     };
   }
 
@@ -690,7 +693,15 @@ export class DrizzleSubscriptionRepository implements ISubscriptionRepository {
     // Store events can name ids that aren't ours (test events, deleted accounts): skip those.
     const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.id, userId));
     if (!user) return false;
-    const values = { status: s.status, productId: s.productId ?? null, expiresAt: s.expiresAt ?? null, willRenew: s.willRenew, eventAt: s.eventAt };
+    const values = {
+      status: s.status,
+      productId: s.productId ?? null,
+      expiresAt: s.expiresAt ?? null,
+      willRenew: s.willRenew,
+      eventAt: s.eventAt,
+      trialStartedAt: s.trialStartedAt ?? null,
+      paidAt: s.paidAt ?? null,
+    };
     await this.db
       .insert(subscriptions)
       .values({ userId, ...values })
@@ -1616,5 +1627,27 @@ export class DrizzleWhyCache implements IWhyCache {
       .insert(whyExplanations)
       .values({ userId, topic, date, ...entry })
       .onConflictDoUpdate({ target: [whyExplanations.userId, whyExplanations.topic, whyExplanations.date], set: { ...entry, createdAt: new Date() } });
+  }
+}
+
+export class DrizzleFunnelRepository implements IFunnelRepository {
+  constructor(private readonly db: Database) {}
+
+  async weeksSince(since: Date): Promise<FunnelWeek[]> {
+    const week = sql<string>`to_char(date_trunc('week', ${users.createdAt} at time zone 'UTC'), 'YYYY-MM-DD')`;
+    const rows = await this.db
+      .select({
+        weekStart: week,
+        signedUp: sql<number>`count(*)::int`,
+        onboarded: sql<number>`count(${profiles.userId})::int`,
+        subscribed: sql<number>`(count(*) filter (where ${subscriptions.trialStartedAt} is not null or ${subscriptions.paidAt} is not null))::int`,
+        paid: sql<number>`count(${subscriptions.paidAt})::int`,
+      })
+      .from(users)
+      .leftJoin(profiles, eq(profiles.userId, users.id))
+      .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
+      .where(and(isNull(users.deletedAt), gte(users.createdAt, since)))
+      .groupBy(week);
+    return rows;
   }
 }

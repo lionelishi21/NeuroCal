@@ -9,6 +9,7 @@ import { ACTIVITIES, ACTIVITY } from "../domain/performance";
 import {
   AdminProduct,
   AdminProductList,
+  AdminFunnel,
   AdminWaitlist,
   AnalyzeMealRequest,
   AnalyzeMealResponse,
@@ -179,6 +180,7 @@ import type { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import type { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import type { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import type { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
+import type { AdminFunnelUseCase } from "../application/use-cases/AdminFunnelUseCase";
 import type { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import type { IErrorReporter } from "../application/interfaces/IErrorReporter";
 import { DomainError, UpstreamError } from "../domain/errors";
@@ -266,6 +268,7 @@ export interface UseCases {
   joinWaitlist: JoinWaitlistUseCase;
   leaveWaitlist: LeaveWaitlistUseCase;
   adminWaitlist: AdminWaitlistUseCase;
+  adminFunnel: AdminFunnelUseCase;
 }
 
 class BadRequest extends Error {}
@@ -1122,6 +1125,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
         return { status: 204 };
       },
     ],
+    ["GET", /^\/admin\/funnel$/, async (req) => ok(AdminFunnel, await uc.adminFunnel.execute(admin(req)))],
     [
       "GET",
       /^\/admin\/waitlist$/,

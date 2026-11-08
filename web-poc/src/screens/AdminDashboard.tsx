@@ -1,25 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useAdminProducts, useAdminWaitlist } from "../api/queries";
+import {
+  useAdminFunnel,
+  useAdminProducts,
+  useAdminWaitlist,
+} from "../api/queries";
 import { AdminCard, AdminShell, Stat } from "../components/AdminShell";
 import { EmptyState, LoadFailed, LoadingLines } from "../components/ListStates";
+import { FunnelBars } from "./AdminFunnel";
 import { WaitlistTable } from "./AdminWaitlist";
 
 const cardLink =
   "text-sm font-bold text-synapse-ink no-underline underline-offset-4 hover:underline";
 
-/** Where admins land after signing in: the waitlist and the product catalog at a glance. */
+/** Where admins land after signing in: the waitlist, the funnel and the product catalog at a glance. */
 export function AdminDashboard() {
   const waitlist = useAdminWaitlist();
   const products = useAdminProducts();
+  const funnel = useAdminFunnel();
   const all = products.data?.products ?? [];
   const off = all.filter((p) => !p.enabled).length;
 
   return (
     <AdminShell
       title="Overview"
-      detail="The waitlist and the products NeuroCal suggests."
+      detail="The waitlist, the sign-up funnel and the products NeuroCal suggests."
     >
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -84,6 +90,34 @@ export function AdminDashboard() {
           </AdminCard>
 
           <div className="flex flex-col gap-6">
+            <AdminCard
+              title="Sign-up funnel"
+              action={
+                <Link href="/admin/funnel" className={cardLink}>
+                  By week
+                </Link>
+              }
+            >
+              {funnel.isPending && (
+                <LoadingLines label="Loading the funnel" lines={3} />
+              )}
+              {funnel.isError && (
+                <LoadFailed
+                  title="Couldn't load the funnel"
+                  onRetry={() => funnel.refetch()}
+                >
+                  Check your connection and try again.
+                </LoadFailed>
+              )}
+              {funnel.data &&
+                (funnel.data.total.signedUp ? (
+                  <FunnelBars counts={funnel.data.total} />
+                ) : (
+                  <EmptyState title="No sign-ups yet">
+                    Accounts created in the app show up here.
+                  </EmptyState>
+                ))}
+            </AdminCard>
             <AdminCard
               title="Products"
               action={

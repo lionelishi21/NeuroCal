@@ -26,11 +26,12 @@ import {
   DrizzleNotificationSettingsRepository,
   DrizzleStackRepository,
   DrizzleShoppingListRepository,
+  DrizzleFunnelRepository,
   DrizzleSubscriptionRepository,
   DrizzleWaitlistRepository,
   DrizzleWeightRepository,
 } from "./DrizzleRepositories";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createPgliteDatabase } from "./pglite";
 import { DrizzleGuideRepository, DrizzleProgramRepository } from "./DrizzleGuideRepositories";
 import { eatingOutFood } from "../../domain/eatingOut";
@@ -359,6 +360,28 @@ describe("DrizzleSubscriptionRepository", () => {
     expect(await repo.trialsEndingBetween(...window)).toEqual([{ userId: bob, email: "bob@example.com", endsAt, timeZone: "UTC" }]);
     await repo.markTrialReminded(bob, endsAt);
     expect(await repo.trialsEndingBetween(...window)).toEqual([]);
+  });
+});
+
+describe("DrizzleFunnelRepository", () => {
+  it("counts each week's sign-ups and how far they got, leaving out deleted accounts", async () => {
+    const accounts = new DrizzleUserRepository(db);
+    const [carol, dan, erin, finn] = await Promise.all(["carol", "dan", "erin", "finn"].map((n) => accounts.findOrCreateByAuthSubject(`sub-${n}`, `${n}@example.com`)));
+    const ids = [carol!, dan!, erin!, finn!];
+    await db.update(schema.users).set({ createdAt: new Date("2025-01-08T10:00:00Z") }).where(inArray(schema.users.id, ids));
+    await db.update(schema.users).set({ deletedAt: new Date("2025-02-01T00:00:00Z") }).where(eq(schema.users.id, finn!));
+    const profiles = new DrizzleProfileRepository(db);
+    await profiles.save(profile({ userId: carol! }));
+    await profiles.save(profile({ userId: dan! }));
+    const subs = new DrizzleSubscriptionRepository(db);
+    const at = new Date("2025-01-09T00:00:00Z");
+    await subs.save(carol!, { status: "active", willRenew: true, eventAt: at, trialStartedAt: at, paidAt: new Date("2025-01-23T00:00:00Z") });
+    await subs.save(dan!, { status: "trial", willRenew: true, eventAt: at, trialStartedAt: at });
+    expect((await subs.get(carol!))?.paidAt).toEqual(new Date("2025-01-23T00:00:00Z"));
+
+    const weeks = await new DrizzleFunnelRepository(db).weeksSince(new Date("2025-01-01T00:00:00Z"));
+    expect(weeks.find((w) => w.weekStart === "2025-01-06")).toEqual({ weekStart: "2025-01-06", signedUp: 3, onboarded: 2, subscribed: 2, paid: 1 });
+    expect(await new DrizzleFunnelRepository(db).weeksSince(new Date("2025-01-13T00:00:00Z"))).not.toContainEqual(expect.objectContaining({ weekStart: "2025-01-06" }));
   });
 });
 

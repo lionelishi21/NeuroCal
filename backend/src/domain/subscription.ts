@@ -22,6 +22,10 @@ export interface Subscription {
   willRenew: boolean;
   /** When the store event this came from happened; older events never overwrite newer ones. */
   eventAt: Date;
+  /** When the first free trial started, for the sign-up funnel. */
+  trialStartedAt?: Date;
+  /** When the first payment went through (a trial turning paid, or a purchase without one). */
+  paidAt?: Date;
 }
 
 export const NO_SUBSCRIPTION: Subscription = { status: "none", willRenew: false, eventAt: new Date(0) };
@@ -44,11 +48,36 @@ export interface StoreEvent {
   at: Date;
 }
 
+/**
+ * A state read straight from the store (no event), keeping the funnel dates already known and
+ * filling one in when the state shows a trial or payment we hadn't seen.
+ */
+export function withFunnelDates(current: Subscription, fresh: Subscription): Subscription {
+  const trialStartedAt = current.trialStartedAt ?? (fresh.status === "trial" ? fresh.eventAt : undefined);
+  const paidAt = current.paidAt ?? (fresh.status === "active" ? fresh.eventAt : undefined);
+  return { ...fresh, ...(trialStartedAt ? { trialStartedAt } : {}), ...(paidAt ? { paidAt } : {}) };
+}
+
+/** Events that start or continue paid access. */
+const PURCHASES = new Set(["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE", "NON_RENEWING_PURCHASE", "SUBSCRIPTION_EXTENDED"]);
+
 /** What an event changes, or null for events that don't change access (tests, transfers, unknown types). */
 export function applyEvent(current: Subscription, event: StoreEvent): Subscription | null {
   if (event.at < current.eventAt) return null;
-  const base = { ...(event.productId ? { productId: event.productId } : current.productId ? { productId: current.productId } : {}), eventAt: event.at };
   const paid = event.periodType === "TRIAL" ? "trial" : "active";
+  const firsts = {
+    ...(current.trialStartedAt ? { trialStartedAt: current.trialStartedAt } : {}),
+    ...(current.paidAt ? { paidAt: current.paidAt } : {}),
+  };
+  if (PURCHASES.has(event.type)) {
+    if (paid === "trial") firsts.trialStartedAt ??= event.at;
+    else firsts.paidAt ??= event.at;
+  }
+  const base = {
+    ...(event.productId ? { productId: event.productId } : current.productId ? { productId: current.productId } : {}),
+    eventAt: event.at,
+    ...firsts,
+  };
   switch (event.type) {
     case "INITIAL_PURCHASE":
     case "RENEWAL":

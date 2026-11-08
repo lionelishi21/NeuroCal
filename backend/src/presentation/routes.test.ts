@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
-import { WhyResponse, BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse, CookThisResponse } from "@neurocal/contracts";
+import { WhyResponse, BetterChoiceResponse, CoffeeDay, CoffeeProducts, LearnResponse, ShoppingList, SessionsResponse, PerformanceResponse, WeeklyReportResponse, AdminEatingOutList, BrainCheckHistory, FoodCatalog, FoodScanResponse, StackResponse, SupplementLabelResponse, TodayResponse, ExerciseDay, PantryRecipesResponse, PantryResponse, LevelResponse, ShoppingReviewResponse, KnowledgeSource, AdminKnowledge, AdminFunnel, AdminDevices, DeviceCandidate, HealthspanResponse, HealthMarkersResponse, GlucoseResponse, RecipeAnalysis, EnvironmentDay, MealPlanResponse, CookThisResponse } from "@neurocal/contracts";
 import { PRODUCTS, PROTOCOLS } from "../infrastructure/catalog/catalog";
 import { stubDishRecipes } from "../infrastructure/dev/StubProviders";
 import { FOODS } from "../infrastructure/catalog/foods";
@@ -173,6 +173,7 @@ beforeEach(async () => {
     email,
     webUrl: "https://neurocal.ai",
     subscriptions,
+    funnel: { weeksSince: async () => [{ weekStart: "2026-09-28", signedUp: 4, onboarded: 3, subscribed: 2, paid: 1 }] },
     stack: new InMemoryStack(),
     brainChecks: new InMemoryBrainChecks(),
     exercises: new InMemoryExercises(),
@@ -883,6 +884,15 @@ describe("API routes", () => {
     // The catalog fixtures have no air fryer enabled, so no device; the rule still found the reason.
     expect(body.devices.every((d) => d.because.includes("Chicken nuggets"))).toBe(true);
     expect((await call("POST", "/shopping/review", { text: "   " })).status).toBe(400);
+  });
+
+  it("admin funnel: twelve weeks for admins, refused for everyone else", async () => {
+    expect((await call("GET", "/admin/funnel")).status).toBe(403);
+    const res = await call("GET", "/admin/funnel", undefined, {}, true);
+    expect(res.status).toBe(200);
+    const funnel = AdminFunnel.parse(res.body);
+    expect(funnel.weeks).toHaveLength(12);
+    expect(funnel.total).toEqual({ signedUp: 4, onboarded: 3, subscribed: 2, paid: 1 });
   });
 
   it("admin knowledge: add a video with its transcript, then approve a technique into the catalog", async () => {

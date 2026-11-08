@@ -20,6 +20,7 @@ import {
   type ReviewDeviceRequest,
   AdminProduct,
   AdminProductList,
+  AdminFunnel,
   AdminWaitlist,
   AnalyzeMealResponse,
   type CreateAdminProductRequest,
@@ -59,6 +60,7 @@ export const keys = {
   protocols: ["recommendations", "protocols"] as const,
   adminProducts: ["admin", "products"] as const,
   adminWaitlist: ["admin", "waitlist"] as const,
+  adminFunnel: ["admin", "funnel"] as const,
   adminKnowledge: ["admin", "knowledge"] as const,
   adminDevices: ["admin", "devices"] as const,
   adminEatingOut: ["admin", "eating-out"] as const,
@@ -275,6 +277,10 @@ export function useUpdateProfile() {
 
 /** Every product, for the admin screen. Fails with 403 for anyone who isn't an admin, so it is never retried. */
 /** Every product, for admins; the API answers 403 to everyone else. Pass `false` to hold the request back. */
+export function useAdminFunnel() {
+  return useQuery({ queryKey: keys.adminFunnel, queryFn: () => request("/admin/funnel", AdminFunnel), retry: false });
+}
+
 export function useAdminWaitlist() {
   return useQuery({ queryKey: keys.adminWaitlist, queryFn: () => request("/admin/waitlist", AdminWaitlist), retry: false });
 }

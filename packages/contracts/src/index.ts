@@ -1778,6 +1778,32 @@ export const AdminWaitlist = z.object({
 });
 export type AdminWaitlist = z.infer<typeof AdminWaitlist>;
 
+const FunnelCounts = {
+  signedUp: z.number().int().nonnegative(),
+  /** Finished onboarding (has a profile). */
+  onboarded: z.number().int().nonnegative(),
+  /** Started a free trial, or bought without one. */
+  subscribed: z.number().int().nonnegative(),
+  /** Paid at least once. */
+  paid: z.number().int().nonnegative(),
+};
+
+/** One week's sign-ups and how far they got since. */
+export const AdminFunnelWeek = z.object({
+  /** The Monday the week starts on (UTC). */
+  weekStart: IsoDate,
+  ...FunnelCounts,
+});
+export type AdminFunnelWeek = z.infer<typeof AdminFunnelWeek>;
+
+/** The sign-up funnel for the last twelve weeks, for admins. */
+export const AdminFunnel = z.object({
+  /** Newest first, this week included; weeks without sign-ups are zeros. */
+  weeks: z.array(AdminFunnelWeek),
+  total: z.object(FunnelCounts),
+});
+export type AdminFunnel = z.infer<typeof AdminFunnel>;
+
 /** The caller's subscription (RevenueCat), and whether it gives access right now. */
 export const SubscriptionStatus = z.object({
   active: z.boolean(),
@@ -2067,6 +2093,7 @@ export const endpoints = {
   scanDevices: { method: "POST", path: "/admin/devices/scan", response: DeviceScanResponse },
   /** Admin only (403 otherwise): the waitlist at a glance. */
   getAdminWaitlist: { method: "GET", path: "/admin/waitlist", response: AdminWaitlist },
+  getAdminFunnel: { method: "GET", path: "/admin/funnel", response: AdminFunnel },
   getAdminEatingOut: { method: "GET", path: "/admin/eating-out", response: AdminEatingOutList },
   saveEatingOutItem: { method: "POST", path: "/admin/eating-out", body: SaveEatingOutItemRequest, response: CatalogFood },
   deleteEatingOutItem: { method: "DELETE", path: "/admin/eating-out/:id" },

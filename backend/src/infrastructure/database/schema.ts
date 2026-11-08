@@ -619,6 +619,9 @@ export const subscriptions = pgTable(
     eventAt: timestamp("event_at", { withTimezone: true }).notNull(),
     /** The trial end the reminder email was sent for, so each trial gets one. */
     trialRemindedFor: timestamp("trial_reminded_for", { withTimezone: true }),
+    /** The first trial and the first payment, for the admin sign-up funnel. */
+    trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [check("subscriptions_status_known", sql`${t.status} in ('trial', 'active', 'grace', 'expired', 'none')`)],

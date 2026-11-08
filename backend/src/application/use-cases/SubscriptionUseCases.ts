@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { ForbiddenError, PaymentRequiredError } from "../../domain/errors";
-import { NO_SUBSCRIPTION, type StoreEvent, type Subscription, applyEvent, hasAccess } from "../../domain/subscription";
+import { NO_SUBSCRIPTION, type StoreEvent, type Subscription, applyEvent, hasAccess, withFunnelDates } from "../../domain/subscription";
 import type { IClock } from "../interfaces/IClock";
 import type { ISubscriptionLookup, ISubscriptionRepository } from "../interfaces/ISubscriptions";
 
@@ -20,7 +20,8 @@ export class GetSubscriptionUseCase {
     const now = this.clock.now();
     let current = (await this.subscriptions.get(input.userId)) ?? NO_SUBSCRIPTION;
     if (!hasAccess(current, now) && this.lookup) {
-      const fresh = await this.lookup.lookup(input.userId).catch(() => null);
+      const read = await this.lookup.lookup(input.userId).catch(() => null);
+      const fresh = read && withFunnelDates(current, read);
       if (fresh && fresh.eventAt >= current.eventAt) {
         await this.subscriptions.save(input.userId, fresh);
         current = fresh;

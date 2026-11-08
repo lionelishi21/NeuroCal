@@ -52,7 +52,7 @@ import type { IMarkerRepository } from "../application/interfaces/IMarkers";
 import type { IGlucoseRepository } from "../application/interfaces/IGlucose";
 import { GlucoseUseCases } from "../application/use-cases/GlucoseUseCases";
 import type { IAiUsage } from "../application/interfaces/IAiUsage";
-import type { ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
+import type { IFunnelRepository, ISubscriptionLookup, ISubscriptionRepository } from "../application/interfaces/ISubscriptions";
 import type { ISupplementLabelReader } from "../application/interfaces/ISupplementLabelReader";
 import { AdminProductUseCases } from "../application/use-cases/AdminProductUseCases";
 import { AnalyzeMealPhotoUseCase } from "../application/use-cases/AnalyzeMealPhotoUseCase";
@@ -94,6 +94,7 @@ import { LogMealUseCase } from "../application/use-cases/LogMealUseCase";
 import { GetProfileUseCase, UpdateProfileUseCase } from "../application/use-cases/ProfileUseCases";
 import { RecommendRecipeUseCase } from "../application/use-cases/RecommendRecipeUseCase";
 import { RecordCheckInUseCase } from "../application/use-cases/RecordCheckInUseCase";
+import { AdminFunnelUseCase } from "../application/use-cases/AdminFunnelUseCase";
 import { AdminWaitlistUseCase, JoinWaitlistUseCase, LeaveWaitlistUseCase } from "../application/use-cases/WaitlistUseCases";
 import { SendNotificationsUseCase } from "../application/use-cases/SendNotificationsUseCase";
 import type { IPushSender } from "../application/interfaces/IPushSender";
@@ -129,6 +130,7 @@ export interface Ports {
   waitlist: IWaitlistRepository;
   weights: IWeightRepository;
   subscriptions: ISubscriptionRepository;
+  funnel: IFunnelRepository;
   stack: IStackRepository;
   brainChecks: IBrainCheckRepository;
   exercises: IExerciseRepository;
@@ -255,6 +257,7 @@ export function buildUseCases(p: Ports): UseCases {
     joinWaitlist: new JoinWaitlistUseCase(p.waitlist, p.email, p.clock, { webUrl: p.webUrl, newToken: () => randomUUID().replaceAll("-", "") }),
     leaveWaitlist: new LeaveWaitlistUseCase(p.waitlist),
     adminWaitlist: new AdminWaitlistUseCase(p.waitlist, p.clock),
+    adminFunnel: new AdminFunnelUseCase(p.funnel, p.clock),
     notificationSettings: new NotificationSettingsUseCases(p.notificationSettings, p.clock),
     guides,
   };

@@ -341,6 +341,10 @@ const operations: Record<keyof typeof endpoints, OperationDoc> = {
     summary: "Store screen-time samples",
     description: "Samples upsert on source and windowStart. Minutes can't exceed the window length.",
   },
+  getAdminFunnel: {
+    summary: "See the sign-up funnel by week",
+    description: "Admins only; anyone else gets 403. Each week counts the accounts created in it and how many of them have since finished onboarding, started a trial or bought, and paid. Deleted accounts are left out.",
+  },
   getAdminWaitlist: { summary: "See who is on the waitlist", description: "Admins only; anyone else gets 403. Counts leave out people who unsubscribed; entries are newest first, at most 500." },
   joinWaitlist: {
     summary: "Ask to be emailed when the app is ready",

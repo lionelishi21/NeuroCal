@@ -20,6 +20,16 @@ describe("subscriptions", () => {
 
     const expired = applyEvent(cancelled, event({ type: "EXPIRATION", at: t("2027-10-15") }))!;
     expect(hasAccess(expired, t("2027-10-15"))).toBe(false);
+    // The funnel keeps the first trial and the first payment, whatever comes after.
+    expect(expired).toMatchObject({ trialStartedAt: t("2026-10-01"), paidAt: t("2026-10-15") });
+    const again = applyEvent(expired, event({ type: "RENEWAL", periodType: "NORMAL", at: t("2028-01-01") }))!;
+    expect(again.paidAt).toEqual(t("2026-10-15"));
+  });
+
+  it("records a purchase without a trial as paid straight away", () => {
+    const monthly = applyEvent(NO_SUBSCRIPTION, event({ productId: "neurocal_pro_monthly", periodType: "NORMAL" }))!;
+    expect(monthly.paidAt).toEqual(t("2026-10-01"));
+    expect(monthly.trialStartedAt).toBeUndefined();
   });
 
   it("keeps access through a billing problem's grace period", () => {

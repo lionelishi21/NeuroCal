@@ -451,6 +451,24 @@ export function createHandlers(base = "/api", db = createDb(), latency = 350) {
       }
       return HttpResponse.json({ status: "joined" }, { status: 201 });
     }),
+    http.get(url("/admin/funnel"), async () => {
+      await delay(latency);
+      const now = new Date();
+      const monday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - ((now.getUTCDay() + 6) % 7) * DAY_MS;
+      // Sample cohorts: growing sign-ups, the newest two weeks still in their trials.
+      const weeks = Array.from({ length: 12 }, (_, i) => {
+        const signedUp = Math.max(0, 48 - i * 4 + ((i * 7) % 5));
+        const onboarded = Math.round(signedUp * 0.72);
+        const subscribed = Math.round(onboarded * 0.31);
+        const paid = i < 2 ? Math.round(subscribed * 0.1) : Math.round(subscribed * 0.46);
+        return { weekStart: new Date(monday - i * 7 * DAY_MS).toISOString().slice(0, 10), signedUp, onboarded, subscribed, paid };
+      });
+      const total = weeks.reduce(
+        (t, w) => ({ signedUp: t.signedUp + w.signedUp, onboarded: t.onboarded + w.onboarded, subscribed: t.subscribed + w.subscribed, paid: t.paid + w.paid }),
+        { signedUp: 0, onboarded: 0, subscribed: 0, paid: 0 },
+      );
+      return HttpResponse.json({ weeks, total });
+    }),
     http.get(url("/admin/waitlist"), async () => {
       await delay(latency);
       const active = waitlist.filter((e) => !e.unsubscribed);

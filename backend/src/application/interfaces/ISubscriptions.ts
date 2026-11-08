@@ -1,4 +1,5 @@
 import type { Subscription } from "../../domain/subscription";
+import type { FunnelWeek } from "../../domain/funnel";
 
 /** One subscription per user, as last reported by the store. */
 export interface ISubscriptionRepository {
@@ -22,4 +23,10 @@ export interface EndingTrial {
 /** Asks the subscription service directly, for when its webhook hasn't arrived yet (right after a purchase). */
 export interface ISubscriptionLookup {
   lookup(userId: string): Promise<Subscription | null>;
+}
+
+/** The sign-up funnel, counted from accounts, profiles and subscriptions. */
+export interface IFunnelRepository {
+  /** One row per week (Monday, UTC) with at least one sign-up since `since`; deleted accounts left out. */
+  weeksSince(since: Date): Promise<FunnelWeek[]>;
 }
