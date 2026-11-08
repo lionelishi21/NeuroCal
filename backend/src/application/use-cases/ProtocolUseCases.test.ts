@@ -34,6 +34,18 @@ describe("SyncCatalogUseCase", () => {
     expect(await sync.execute({ protocols: edited, products: partnered })).toEqual({ embedded: 1 });
     expect(catalog.products.get(PRODUCTS[0]!.id)?.item.affiliate).toBe(true);
   });
+
+  it("re-embeds everything a stand-in embedder stored once the real one runs", async () => {
+    const catalog = new InMemoryCatalog();
+    const all = PROTOCOLS.length + PRODUCTS.length;
+    const keyword = new SyncCatalogUseCase(catalog, new FakeEmbedder(), "keyword");
+    expect(await keyword.execute({ protocols: PROTOCOLS, products: PRODUCTS })).toEqual({ embedded: all });
+    expect(await keyword.execute({ protocols: PROTOCOLS, products: PRODUCTS })).toEqual({ embedded: 0 });
+
+    const real = new SyncCatalogUseCase(catalog, new FakeEmbedder());
+    expect(await real.execute({ protocols: PROTOCOLS, products: PRODUCTS })).toEqual({ embedded: all });
+    expect(await real.execute({ protocols: PROTOCOLS, products: PRODUCTS })).toEqual({ embedded: 0 });
+  });
 });
 
 describe("GetProtocolsUseCase", () => {

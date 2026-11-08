@@ -3,6 +3,7 @@ import { DrizzleGuideRepository, DrizzleProgramRepository } from "../infrastruct
 import { GUIDE_SEEDS } from "../infrastructure/catalog/guides";
 import { ClaudeFocusExplainer } from "../infrastructure/ai/ClaudeFocusExplainer";
 import { ClaudeWhyExplainer } from "../infrastructure/ai/ClaudeWhyExplainer";
+import { keywordEmbedder } from "../infrastructure/dev/KeywordEmbedder";
 import { OpenAiEmbeddingProvider } from "../infrastructure/ai/OpenAiEmbeddingProvider";
 import { ClaudeReasoningProvider } from "../infrastructure/ai/ClaudeReasoningProvider";
 import { ClaudePantryRecipeAssistant } from "../infrastructure/ai/ClaudePantryRecipeAssistant";
@@ -110,7 +111,8 @@ const useCases = buildUseCases({
     telemetry: new DrizzleTelemetryRepository(db),
     focusScores: new DrizzleFocusScoreRepository(db),
     catalog: new DrizzleCatalogRepository(db),
-    embedder: new OpenAiEmbeddingProvider({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
+    // Without an OpenAI key, keyword vectors, as the catalog sync stores then (presentation/catalogSync.ts).
+    embedder: config.openAiApiKey ? new OpenAiEmbeddingProvider({ apiKey: config.openAiApiKey }) : keywordEmbedder,
     storage: new S3ObjectStorage({ bucket: required("PHOTO_BUCKET", config.photoBucket) }),
     vision: new OpenAiVisionProvider({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey) }),
     dishRecipes: new OpenAiDishRecipeWriter({ apiKey: aiKey("OPENAI_API_KEY", config.openAiApiKey), ...(config.cookThisModel ? { model: config.cookThisModel } : {}) }),

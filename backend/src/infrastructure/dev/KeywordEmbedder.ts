@@ -1,8 +1,9 @@
 import { EMBEDDING_DIMENSIONS, type IEmbeddingProvider } from "../../application/interfaces/IEmbeddingProvider";
 
 /**
- * Keyless stand-in for text-embedding-3-small in local dev: a bag-of-words vector,
- * so texts that share words still land near each other. Never used in the Lambda.
+ * Keyless stand-in for text-embedding-3-small: a bag-of-words vector, so texts that share words
+ * still land near each other. Local dev uses it, and so does a deployed stage until its OpenAI key is
+ * added (the catalog sync tags what it stores, so the real embedder replaces it).
  */
 export const keywordEmbedder: IEmbeddingProvider = {
   async embed(texts) {
