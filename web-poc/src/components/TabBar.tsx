@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePath } from "../lib/path";
 
 const TABS = [
   { href: "/app", label: "Today", icon: "M4 11l8-6.5 8 6.5V20h-5v-5.5H9V20H4z", also: [] as string[] },
@@ -17,7 +17,7 @@ const TABS = [
 
 /** The four main screens, fixed to the bottom. Shown only on those screens. */
 export function TabBar() {
-  const path = usePathname() ?? "";
+  const path = usePath();
   const current = TABS.find((tab) => tab.href === path || (tab.also as readonly string[]).includes(path));
   if (!current) return null;
   return (

@@ -1,7 +1,8 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { usePath } from "../lib/path";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { setAuthHooks } from "../api/client";
 import { introSeen } from "../lib/intro";
@@ -98,7 +99,7 @@ export const PUBLIC_PATHS = ["/intro", "/sign-in", "/sign-up", "/lab", "/unsubsc
  */
 export function RequireAuth({ children, landing }: { children: ReactNode; landing?: ReactNode }) {
   const { status } = useAuth();
-  const pathname = usePathname() ?? "/";
+  const pathname = usePath();
   const router = useRouter();
   const isPublic = PUBLIC_PATHS.includes(pathname);
   const showsLanding = landing !== undefined && pathname === "/";

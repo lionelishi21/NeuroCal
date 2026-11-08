@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePath } from "../lib/path";
 import type { ReactNode } from "react";
 import { RequestFailed } from "../api/client";
 import { useAdminProducts } from "../api/queries";
@@ -15,7 +15,7 @@ import { PUBLIC_PATHS, useAuth } from "./AuthProvider";
  */
 export function AdminOnly({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  const isPublic = PUBLIC_PATHS.includes(usePathname() ?? "");
+  const isPublic = PUBLIC_PATHS.includes(usePath());
   const signedIn = auth.status === "signedIn";
   const admin = useAdminProducts(signedIn && !isPublic);
 

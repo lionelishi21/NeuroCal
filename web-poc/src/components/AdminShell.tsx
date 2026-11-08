@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePath } from "../lib/path";
 import type { ReactNode } from "react";
 import { useOptionalAuth } from "../auth/AuthProvider";
 import { LogoMark } from "./Logo";
@@ -32,7 +32,7 @@ export function AdminShell({
   detail?: ReactNode;
   children: ReactNode;
 }) {
-  const path = usePathname() ?? "";
+  const path = usePath();
   const auth = useOptionalAuth();
 
   return (
