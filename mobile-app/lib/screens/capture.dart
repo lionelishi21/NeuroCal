@@ -43,6 +43,7 @@ enum Capture {
   recipe('Work out a recipe', 'Calories per serving', Icons.calculate_outlined, CaptureGroup.food),
   supplement('Scan a supplement', 'Add it to your stack', Icons.document_scanner_outlined, CaptureGroup.food),
   sleep('Log sleep', 'Last night', Icons.bedtime_outlined, CaptureGroup.body),
+  nap('Log a nap', 'A doze in the day', Icons.snooze_rounded, CaptureGroup.body),
   exercise('Log exercise', 'Walk, run or calf pump', Icons.directions_run_rounded, CaptureGroup.body),
   weight('Log weight', 'A weigh-in', Icons.monitor_weight_outlined, CaptureGroup.body),
   screenTime('Log screen time', 'Late screens', Icons.phone_iphone_rounded, CaptureGroup.body),
@@ -64,7 +65,7 @@ enum Capture {
     coffee => (c.oil, c.glucoseSoft),
     supplement || exercise => (c.chlorophyll, c.chlorophyllSoft),
     checkIn || brain || performance => (c.synapseInk, c.synapseSoft),
-    sleep => (c.sleep, c.sleepSoft),
+    sleep || nap => (c.sleep, c.sleepSoft),
     screenTime || session => (c.ionInk, c.ionSoft),
     weight => (c.oil, c.glucoseSoft),
   };
@@ -234,6 +235,8 @@ Future<void> runCapture(BuildContext context, Capture capture, {required VoidCal
       if (context.mounted) await done(saved, 'Check-in saved');
     case Capture.sleep:
       await done(await showLogSleepSheet(context), 'Sleep logged');
+    case Capture.nap:
+      await done(await showLogNapSheet(context), 'Nap logged');
     case Capture.screenTime:
       await done(await showLogScreenTimeSheet(context), 'Screen time logged');
     case Capture.exercise:

@@ -19,6 +19,7 @@ export interface HistoryDay {
   /** The score's inputs, each 0–1 or null without data (not in the API response). */
   components: FocusComponents;
   sleepMinutes: number | null;
+  napMinutes: number | null;
   lastMealAt: string | null;
   bedtime: string | null;
   wakeTime: string | null;
@@ -60,10 +61,11 @@ export class GetHistoryUseCase {
     const repos = { meals: this.meals, checkIns: this.checkIns, telemetry: this.telemetry, exercises: this.exercises, environment: this.environment, coffee: this.coffee, sessions: this.sessions };
     return Promise.all(
       dates.map(async (date): Promise<HistoryDay> => {
-        const [meals, checkIns, focusInputs] = await Promise.all([
+        const [meals, checkIns, focusInputs, naps] = await Promise.all([
           this.meals.listForDay(profile.userId, { date, timeZone }),
           this.checkIns.listForDay(profile.userId, { date, timeZone }),
           loadFocusInputs(repos, profile, date),
+          this.telemetry.napsEndingOn(profile.userId, { date, timeZone }),
         ]);
         const last = meals.at(-1);
         const clock = (instant: Date | undefined) => {
@@ -83,6 +85,7 @@ export class GetHistoryUseCase {
           focusScore: focusScoreFrom(components),
           components,
           sleepMinutes: focusInputs.sleep.length ? Math.round(sleepMinutes(focusInputs.sleep)) : null,
+          napMinutes: naps.length ? Math.round(sleepMinutes(naps)) : null,
           lastMealAt: clock(last?.eatenAt),
           bedtime: clock(fellAsleep),
           wakeTime: clock(woke),

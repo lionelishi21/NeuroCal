@@ -37,6 +37,7 @@ describe("GetHistoryUseCase", () => {
       focusScore: 50, // only stress has data: two distinct negative flags → 0.5
       components: { sleep: null, timing: null, glycemic: null, stress: 0.5, movement: null, environment: null },
       sleepMinutes: null,
+      napMinutes: null,
       lastMealAt: "21:40",
       bedtime: null,
       wakeTime: null,
@@ -46,6 +47,18 @@ describe("GetHistoryUseCase", () => {
     // sleep 0.75, timing 1 − 40/120 − 0.5 × 45/120, glycemic 1, stress 0.5 → 100 × (0.3 + 0.096 + 0.2 + 0.1)
     expect(days[2]).toMatchObject({ focusScore: 68, sleepMinutes: 360, caloriesEaten: 0, lastMealAt: null, flags: [] });
     expect(days[2]).toMatchObject({ bedtime: "00:00", wakeTime: "06:00", lateScreenMinutes: 45 });
+  });
+
+  it("counts naps on their own, leaving the night's sleep and the Focus Score as they were", async () => {
+    const history = await setup();
+    const before = (await history.execute({ userId: "u1", days: 1 }))[0]!;
+    // Two 20-minute naps on the 29th (11:00 and 13:30 Chicago).
+    await (history as unknown as { telemetry: InMemoryTelemetry }).telemetry.upsertSleep("u1", [
+      { start: new Date("2026-09-29T16:00:00Z"), end: new Date("2026-09-29T16:20:00Z"), source: "manual", nap: true },
+      { start: new Date("2026-09-29T18:30:00Z"), end: new Date("2026-09-29T18:50:00Z"), source: "manual", nap: true },
+    ]);
+    const after = (await history.execute({ userId: "u1", days: 1 }))[0]!;
+    expect(after).toMatchObject({ napMinutes: 40, sleepMinutes: 360, wakeTime: "06:00", focusScore: before.focusScore });
   });
 
   it("rejects out-of-range day counts", async () => {

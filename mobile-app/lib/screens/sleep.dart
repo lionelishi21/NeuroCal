@@ -59,6 +59,8 @@ class _SleepScreenState extends State<SleepScreen> {
 
   void _logSleep() => _log(showLogSleepSheet, 'Sleep logged');
 
+  void _logNap() => _log(showLogNapSheet, 'Nap logged');
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -131,6 +133,7 @@ class _SleepScreenState extends State<SleepScreen> {
                     const BlockTitle('Every night'),
                     _NightTable(nights),
                   ],
+                  if (snapshot.hasData) ...[const BlockTitle('Naps'), _Naps(snapshot.data!.sublist(1), onLog: _logNap)],
                 ],
               );
             },
@@ -448,6 +451,80 @@ class _NightTable extends StatelessWidget {
                 ),
               ]),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Daytime naps over the nights shown: kept apart from night sleep, with a way to log one.
+class _Naps extends StatelessWidget {
+  const _Naps(this.days, {required this.onLog});
+
+  /// Oldest first.
+  final List<HistoryDay> days;
+  final VoidCallback onLog;
+
+  String _when(DateTime day) {
+    final today = DateTime.now();
+    final d = DateTime(day.year, day.month, day.day);
+    final diff = DateTime(today.year, today.month, today.day).difference(d).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '${const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1]} ${d.day}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final napped = [
+      for (final d in days.reversed)
+        if (d.napMinutes != null) d,
+    ];
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (napped.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Space.s4, 14, Space.s4, 0),
+              child: Text(
+                "No naps logged lately. Log one when you doze in the day; it won't count toward your night's sleep.",
+                style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft, height: 1.4),
+              ),
+            )
+          else
+            for (final (i, d) in napped.indexed)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: Space.s4, vertical: 12),
+                decoration: BoxDecoration(
+                  border: i == 0 ? null : Border(top: BorderSide(color: c.rule)),
+                ),
+                child: MergeSemantics(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _when(d.day),
+                          style: const TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Text(
+                        d.napMinutes! < 60 ? '${d.napMinutes} min' : slept(d.napMinutes!),
+                        style: TextStyle(fontSize: TextSize.md, fontWeight: FontWeight.w700, color: c.synapseInk),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.s3, Space.s2, Space.s3, Space.s3),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SoftButton(label: 'Log a nap', onPressed: onLog),
+            ),
+          ),
         ],
       ),
     );

@@ -144,6 +144,8 @@ export interface SleepSession {
   end: Date;
   source: TelemetrySource;
   deepMinutes?: number;
+  /** A daytime nap: kept out of the night's sleep (and so the Focus Score), shown on its own. */
+  nap?: boolean;
 }
 
 export interface ScreenTimeSample {

@@ -5,6 +5,8 @@ import type { ITelemetryRepository } from "../interfaces/IRepositories";
 
 const DAY_MS = 24 * 3_600_000;
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
+/** Longer than this is a sleep, not a nap. */
+export const MAX_NAP_MS = 4 * 3_600_000;
 
 /** Store sleep and screen-time data from any source (ARCHITECTURE §6.7). Idempotent. */
 export class IngestTelemetryUseCase {
@@ -19,6 +21,7 @@ export class IngestTelemetryUseCase {
       const length = s.end.getTime() - s.start.getTime();
       if (length <= 0) throw new InvalidError("Sleep must end after it starts.");
       if (length > DAY_MS) throw new InvalidError("A sleep session can't be longer than 24 hours.");
+      if (s.nap && length > MAX_NAP_MS) throw new InvalidError("A nap can't be longer than 4 hours. Log it as sleep instead.");
       if (s.end.getTime() - now > FUTURE_TOLERANCE_MS) throw new InvalidError("Sleep can't end in the future.");
       if (s.deepMinutes !== undefined && s.deepMinutes * 60_000 > length) {
         throw new InvalidError("Deep sleep can't be longer than the whole session.");

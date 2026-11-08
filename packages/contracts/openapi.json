@@ -6371,6 +6371,17 @@
               }
             ]
           },
+          "napMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "lastMealAt": {
             "anyOf": [
               {
@@ -6429,6 +6440,7 @@
           "proteinG",
           "focusScore",
           "sleepMinutes",
+          "napMinutes",
           "lastMealAt",
           "bedtime",
           "wakeTime",
@@ -8807,6 +8819,9 @@
           "deepMinutes": {
             "type": "integer",
             "minimum": 0
+          },
+          "nap": {
+            "type": "boolean"
           }
         },
         "required": [

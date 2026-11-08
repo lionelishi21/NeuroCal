@@ -124,6 +124,113 @@ class _LogSleepState extends State<_LogSleep> {
   }
 }
 
+/// Nap lengths offered, in minutes.
+const napLengths = [10, 20, 30, 45, 60, 90];
+
+/// A daytime nap: when it started (today, or yesterday if that time is still to come) and how long it lasted. Returns true when logged.
+Future<bool?> showLogNapSheet(BuildContext context) =>
+    showAppSheet<bool>(context, title: 'Log a nap', builder: (_) => const _LogNap());
+
+class _LogNap extends StatefulWidget {
+  const _LogNap();
+
+  @override
+  State<_LogNap> createState() => _LogNapState();
+}
+
+class _LogNapState extends State<_LogNap> {
+  var _minutes = 20;
+  late var _start = _defaultStart();
+  var _busy = false;
+  var _failed = false;
+
+  /// Just ended: now less the length, to the nearest 5 minutes.
+  TimeOfDay _defaultStart() {
+    final t = DateTime.now().subtract(Duration(minutes: _minutes));
+    final rounded = DateTime(t.year, t.month, t.day, t.hour, t.minute - t.minute % 5);
+    return TimeOfDay.fromDateTime(rounded);
+  }
+
+  Future<void> _pick() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _start,
+      helpText: 'Fell asleep',
+      builder: (context, child) =>
+          MediaQuery(data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true), child: child!),
+    );
+    if (picked != null) setState(() => _start = picked);
+  }
+
+  Future<void> _save(DateTime start, DateTime end) async {
+    setState(() {
+      _busy = true;
+      _failed = false;
+    });
+    try {
+      await AppScope.of(context).api.logNap(start, end);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final now = DateTime.now();
+    // A start later than now is from yesterday (a nap just before midnight, logged after it).
+    var start = DateTime(now.year, now.month, now.day, _start.hour, _start.minute);
+    if (start.isAfter(now)) start = start.subtract(const Duration(days: 1));
+    final end = start.add(Duration(minutes: _minutes));
+    final future = end.isAfter(now.add(const Duration(minutes: 5)));
+    Widget pill(int m) => ChoicePill(
+      label: m < 60 ? '$m min' : (m == 60 ? '1 h' : '${m ~/ 60} h ${m % 60} m'),
+      selected: _minutes == m,
+      onTap: () => setState(() => _minutes = m),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [
+        _TimeField(label: 'Fell asleep', value: _hhmm(_start), problem: future, onTap: _pick),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s2,
+          children: [
+            const Text(
+              'How long',
+              style: TextStyle(fontSize: TextSize.sm, fontWeight: FontWeight.w700),
+            ),
+            for (final row in [napLengths.sublist(0, 3), napLengths.sublist(3)])
+              Row(
+                spacing: Space.s2,
+                children: [for (final m in row) Expanded(child: pill(m))],
+              ),
+          ],
+        ),
+        if (future)
+          SheetNote(
+            lead: "That nap hasn't finished yet.",
+            detail: "It's ${_hhmm(TimeOfDay.fromDateTime(now))} now. Pick an earlier start or a shorter nap.",
+          )
+        else
+          Text(
+            "Woke at ${_hhmm(TimeOfDay.fromDateTime(end))}. Naps show on their own: they don't change last night's sleep or your Focus Score.",
+            style: TextStyle(fontSize: TextSize.sm, color: c.inkSoft, height: 1.4),
+          ),
+        if (_failed) const SheetNote(lead: "Couldn't save your nap.", detail: 'Check your connection and try again.'),
+        SheetAction(label: _busy ? 'Logging…' : 'Log nap', onPressed: _busy || future ? null : () => _save(start, end)),
+      ],
+    );
+  }
+}
+
 /// A big tappable time that opens the platform's time picker.
 class _TimeField extends StatelessWidget {
   const _TimeField({required this.label, required this.value, required this.onTap, this.problem = false});

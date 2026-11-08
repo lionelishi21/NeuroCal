@@ -256,6 +256,19 @@ void main() {
     expect(find.text('Screen time logged'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('90 min'), 300);
 
+    // A nap shows on its own and leaves the nights as they were.
+    await tester.scrollUntilVisible(find.text('Log a nap'), 300);
+    expect(find.textContaining('No naps logged lately'), findsOneWidget);
+    await tester.tap(find.text('Log a nap'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fell asleep'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Log nap'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nap logged'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Log a nap'), 300);
+    expect(find.descendant(of: find.widgetWithText(Row, 'Today'), matching: find.text('20 min')), findsWidgets);
+    expect(find.textContaining('No naps logged lately'), findsNothing);
+
     await tester.tap(find.widgetWithText(FilledButton, 'Log sleep'));
     await tester.pumpAndSettle();
     expect(find.text('Went to bed'), findsOneWidget);

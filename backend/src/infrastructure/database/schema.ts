@@ -184,6 +184,8 @@ export const sleepSessions = pgTable(
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     endAt: timestamp("end_at", { withTimezone: true }).notNull(),
     deepMinutes: integer("deep_minutes"),
+    /** A daytime nap, kept apart from the night's sleep. */
+    nap: boolean("nap").notNull().default(false),
     createdAt: timestamps.createdAt,
   },
   (t) => [

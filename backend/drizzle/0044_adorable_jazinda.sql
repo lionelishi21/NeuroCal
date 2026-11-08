@@ -1,0 +1,1 @@
+ALTER TABLE "sleep_sessions" ADD COLUMN "nap" boolean DEFAULT false NOT NULL;

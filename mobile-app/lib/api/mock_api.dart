@@ -2551,6 +2551,7 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
         proteinG: eaten.fold(0, (sum, m) => sum + m.items.fold(0, (s, i) => s + i.macros.proteinG)),
         focusScore: score.score,
         sleepMinutes: _lastNight?.minutes,
+        napMinutes: _naps[isoDate(today)],
         lastMealAt: eaten.isEmpty ? null : _hhmm(eaten.last.eatenAt),
         bedtime: _lastNight?.bed,
         wakeTime: _lastNight?.wake,
@@ -2627,6 +2628,16 @@ Sometimes it is, and some fatigue needs a doctor. Rule those out first. But for 
     await _wait();
     _lastNight = (bed: _hhmm(start), wake: _hhmm(end), minutes: end.difference(start).inMinutes);
     _sleepLogged = true;
+  }
+
+  /// Naps logged, by local date, in minutes (as the API's napMinutes).
+  final _naps = <String, int>{};
+
+  @override
+  Future<void> logNap(DateTime start, DateTime end) async {
+    await _wait();
+    final day = isoDate(end);
+    _naps[day] = (_naps[day] ?? 0) + end.difference(start).inMinutes;
   }
 
   /// Nights imported, for tests.

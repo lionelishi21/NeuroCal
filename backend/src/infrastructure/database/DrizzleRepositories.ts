@@ -449,13 +449,14 @@ export class DrizzleTelemetryRepository implements ITelemetryRepository {
             and(
               eq(sleepSessions.userId, userId),
               eq(sleepSessions.source, s.source),
+              eq(sleepSessions.nap, s.nap === true),
               lt(sleepSessions.startAt, s.end),
               gt(sleepSessions.endAt, s.start),
             ),
           );
         await tx
           .insert(sleepSessions)
-          .values({ userId, source: s.source, startAt: s.start, endAt: s.end, deepMinutes: s.deepMinutes ?? null });
+          .values({ userId, source: s.source, startAt: s.start, endAt: s.end, deepMinutes: s.deepMinutes ?? null, nap: s.nap === true });
       }
       return sessions.length;
     });
@@ -475,16 +476,25 @@ export class DrizzleTelemetryRepository implements ITelemetryRepository {
   }
 
   async sleepEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]> {
+    return this.sleepRows(userId, day, false);
+  }
+
+  async napsEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]> {
+    return this.sleepRows(userId, day, true);
+  }
+
+  private async sleepRows(userId: string, day: LocalDay, nap: boolean): Promise<SleepSession[]> {
     const rows = await this.db
       .select()
       .from(sleepSessions)
-      .where(and(eq(sleepSessions.userId, userId), onLocalDay(sleepSessions.endAt, day)))
+      .where(and(eq(sleepSessions.userId, userId), eq(sleepSessions.nap, nap), onLocalDay(sleepSessions.endAt, day)))
       .orderBy(asc(sleepSessions.startAt));
     return rows.map((r) => ({
       start: r.startAt,
       end: r.endAt,
       source: r.source as TelemetrySource,
       ...(r.deepMinutes === null ? {} : { deepMinutes: r.deepMinutes }),
+      ...(r.nap ? { nap: true } : {}),
     }));
   }
 

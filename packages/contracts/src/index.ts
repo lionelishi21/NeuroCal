@@ -262,6 +262,8 @@ export const SleepSession = z
     source: TelemetrySource,
     /** Minutes of deep sleep, when the source measures it. */
     deepMinutes: z.number().int().nonnegative().optional(),
+    /** A daytime nap (at most 4 hours): kept out of the night's sleep and the Focus Score. */
+    nap: z.boolean().optional(),
   })
   .refine((s) => Date.parse(s.end) > Date.parse(s.start), { message: "Sleep must end after it starts", path: ["end"] })
   .refine((s) => Date.parse(s.end) - Date.parse(s.start) <= 24 * 3_600_000, {
@@ -355,6 +357,8 @@ export const HistoryDay = z.object({
   focusScore: z.number().int().min(0).max(100).nullable(),
   /** Sleep that ended that morning, or null without data. */
   sleepMinutes: z.number().int().nonnegative().nullable(),
+  /** Minutes napped that day (not part of sleepMinutes), or null without naps. */
+  napMinutes: z.number().int().nonnegative().nullable(),
   /** Local time of the last meal ("21:40"), or null if nothing was logged. */
   lastMealAt: LocalTime.nullable(),
   /** Local time the sleep that ended that morning began, or null without data. */

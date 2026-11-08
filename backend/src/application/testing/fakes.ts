@@ -168,7 +168,7 @@ export class InMemoryTelemetry implements ITelemetryRepository {
   async upsertSleep(userId: string, sessions: SleepSession[]) {
     for (const s of sessions) {
       for (const [key, existing] of this.sleep) {
-        if (existing.userId === userId && existing.source === s.source && existing.start < s.end && existing.end > s.start) {
+        if (existing.userId === userId && existing.source === s.source && !existing.nap === !s.nap && existing.start < s.end && existing.end > s.start) {
           this.sleep.delete(key);
         }
       }
@@ -181,7 +181,10 @@ export class InMemoryTelemetry implements ITelemetryRepository {
     return samples.length;
   }
   async sleepEndingOn(userId: string, day: LocalDay) {
-    return [...this.sleep.values()].filter((s) => s.userId === userId && isOnLocalDay(s.end, day)).map(({ userId: _, ...s }) => s);
+    return [...this.sleep.values()].filter((s) => s.userId === userId && !s.nap && isOnLocalDay(s.end, day)).map(({ userId: _, ...s }) => s);
+  }
+  async napsEndingOn(userId: string, day: LocalDay) {
+    return [...this.sleep.values()].filter((s) => s.userId === userId && s.nap && isOnLocalDay(s.end, day)).map(({ userId: _, ...s }) => s);
   }
   async screenTimeStartingOn(userId: string, dates: string[], timeZone: string) {
     return [...this.screen.values()]

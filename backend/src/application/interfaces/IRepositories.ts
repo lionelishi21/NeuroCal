@@ -72,7 +72,10 @@ export interface ITelemetryRepository {
   upsertSleep(userId: string, sessions: SleepSession[]): Promise<number>;
   /** Idempotent on (source, windowStart). */
   upsertScreenTime(userId: string, samples: ScreenTimeSample[]): Promise<number>;
+  /** Night sleep that ended on the local day (naps left out). */
   sleepEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]>;
+  /** Daytime naps that ended on the local day. */
+  napsEndingOn(userId: string, day: LocalDay): Promise<SleepSession[]>;
   /** Samples whose window starts on any of the given local dates. */
   screenTimeStartingOn(userId: string, dates: string[], timeZone: string): Promise<ScreenTimeSample[]>;
 }

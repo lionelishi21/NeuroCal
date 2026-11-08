@@ -234,6 +234,17 @@ describe("DrizzleTelemetryRepository", () => {
     expect(await repo.sleepEndingOn(alice, day)).toEqual([corrected]);
   });
 
+  it("keeps naps apart from night sleep: neither replaces the other, each reads on its own", async () => {
+    const repo = new DrizzleTelemetryRepository(db);
+    const night = { start: new Date("2026-09-29T05:00:00Z"), end: new Date("2026-09-29T11:00:00Z"), source: "manual" as const };
+    // 05:45–06:05 Chicago overlaps the night's end: a nap logged then must not wipe the night.
+    const early = { start: new Date("2026-09-29T10:45:00Z"), end: new Date("2026-09-29T11:05:00Z"), source: "manual" as const, nap: true };
+    const afternoon = { start: new Date("2026-09-29T19:00:00Z"), end: new Date("2026-09-29T19:20:00Z"), source: "manual" as const, nap: true };
+    await repo.upsertSleep(alice, [night, early, afternoon]);
+    expect(await repo.sleepEndingOn(alice, day)).toEqual([night]);
+    expect(await repo.napsEndingOn(alice, day)).toEqual([early, afternoon]);
+  });
+
   it("reads screen time by local start date", async () => {
     const repo = new DrizzleTelemetryRepository(db);
     const sample = (iso: string) => ({

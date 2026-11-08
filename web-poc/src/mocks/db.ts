@@ -286,7 +286,7 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
     d.setDate(d.getDate() - 1);
     const yesterday = todayIso(d);
 
-    const nights = sleep.filter((s) => todayIso(new Date(s.end)) === date);
+    const nights = sleep.filter((s) => !s.nap && todayIso(new Date(s.end)) === date);
     // Overlapping sessions count once.
     let sleepMin = 0;
     let coveredUntil = -Infinity;
@@ -342,7 +342,10 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
       const state = bioState(date);
       const day = mealsOn(date);
       const last = day.at(-1);
-      const nights = sleep.filter((s) => todayIso(new Date(s.end)) === date);
+      const ended = sleep.filter((s) => todayIso(new Date(s.end)) === date);
+      const nights = ended.filter((s) => !s.nap);
+      const naps = ended.filter((s) => s.nap);
+      const napMinutes = naps.reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60_000, 0);
       const minutes = nights.reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60_000, 0);
       const clock = (ms: number | null) => {
         if (ms === null) return null;
@@ -359,6 +362,7 @@ export function createDb(options: { newUser?: boolean; withoutLastNight?: boolea
         proteinG: Math.round(state.macrosEaten.proteinG),
         focusScore: focusScore(date).score,
         sleepMinutes: nights.length ? Math.round(minutes) : null,
+        napMinutes: naps.length ? Math.round(napMinutes) : null,
         lastMealAt: clock(last ? Date.parse(last.eatenAt) : null),
         bedtime: clock(nights.length ? Math.min(...nights.map((s) => Date.parse(s.start))) : null),
         wakeTime: clock(nights.length ? Math.max(...nights.map((s) => Date.parse(s.end))) : null),

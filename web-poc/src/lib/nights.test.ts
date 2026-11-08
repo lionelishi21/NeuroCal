@@ -9,6 +9,7 @@ const day = (date: string, patch: Partial<HistoryDay> = {}): HistoryDay => ({
   proteinG: 100,
   focusScore: 70,
   sleepMinutes: null,
+  napMinutes: null,
   lastMealAt: null,
   bedtime: null,
   wakeTime: null,

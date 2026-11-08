@@ -74,7 +74,15 @@ export class WhyUseCases {
     const [weights, meals, sleep, sittings, periods, focus] = await Promise.all([
       this.weights.list(userId, addDays(today, -COACH_WEIGH_IN_DAYS + 1)),
       Promise.all(days(COACH_MEAL_DAYS).map(async (date) => ({ date, meals: await this.meals.listForDay(userId, { date, timeZone: tz }) }))),
-      Promise.all(days(COACH_SLEEP_NIGHTS).map(async (date) => ({ date, sessions: await this.telemetry.sleepEndingOn(userId, { date, timeZone: tz }) }))),
+      Promise.all(
+        days(COACH_SLEEP_NIGHTS).map(async (date) => {
+          const [sessions, naps] = await Promise.all([
+            this.telemetry.sleepEndingOn(userId, { date, timeZone: tz }),
+            this.telemetry.napsEndingOn(userId, { date, timeZone: tz }),
+          ]);
+          return { date, sessions, ...(naps.length ? { naps } : {}) };
+        }),
+      ),
       this.sessions.listBetween(userId, new Date(end.getTime() - 14 * DAY_MS), end),
       this.sessions.listPeriods(userId, PERIOD_KINDS, new Date(end.getTime() - 60 * DAY_MS), end),
       Promise.all([addDays(today, -1), today].map((date) => this.focusScores.get(userId, date))),

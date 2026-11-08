@@ -360,6 +360,7 @@ class HistoryDay {
     required this.proteinG,
     this.focusScore,
     this.sleepMinutes,
+    this.napMinutes,
     this.lastMealAt,
     this.bedtime,
     this.wakeTime,
@@ -376,6 +377,9 @@ class HistoryDay {
 
   /// Sleep that ended that morning.
   final int? sleepMinutes;
+
+  /// Minutes napped that day, kept apart from [sleepMinutes]; null without naps.
+  final int? napMinutes;
 
   /// Local "HH:MM" times.
   final String? lastMealAt;
@@ -396,6 +400,7 @@ class HistoryDay {
     proteinG: (j['proteinG'] as num).toDouble(),
     focusScore: (j['focusScore'] as num?)?.toInt(),
     sleepMinutes: (j['sleepMinutes'] as num?)?.toInt(),
+    napMinutes: (j['napMinutes'] as num?)?.toInt(),
     lastMealAt: j['lastMealAt'] as String?,
     bedtime: j['bedtime'] as String?,
     wakeTime: j['wakeTime'] as String?,

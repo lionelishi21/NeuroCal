@@ -1160,6 +1160,7 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
             end: new Date(s.end),
             source: s.source,
             ...(s.deepMinutes === undefined ? {} : { deepMinutes: s.deepMinutes }),
+            ...(s.nap ? { nap: true } : {}),
           })),
         });
         return ok(IngestResponse, { accepted });

@@ -41,6 +41,7 @@ describe("IngestTelemetryUseCase", () => {
     ["is longer than a day", { ...sleepNight, start: new Date("2026-09-27T00:00:00Z") }],
     ["ends in the future", { ...sleepNight, end: new Date("2026-09-29T20:00:00Z") }],
     ["has more deep sleep than sleep", { ...sleepNight, deepMinutes: 400 }],
+    ["is a nap longer than 4 hours", { ...sleepNight, nap: true }],
   ])("rejects sleep that %s", async (_, session) => {
     await expect(ingest.sleep({ userId: "u1", sessions: [session] })).rejects.toBeInstanceOf(InvalidError);
   });

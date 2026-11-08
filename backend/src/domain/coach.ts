@@ -25,8 +25,8 @@ export interface CoachData {
   weights: WeightEntry[];
   /** Meals by local date, most recent day last. */
   meals: { date: string; meals: Meal[] }[];
-  /** Sleep by the local date it ended, most recent last. */
-  sleep: { date: string; sessions: SleepSession[] }[];
+  /** Night sleep by the local date it ended, most recent last, with that day's naps. */
+  sleep: { date: string; sessions: SleepSession[]; naps?: SleepSession[] }[];
   /** Gadget and practice sessions lately (a sitting, or a period such as a subscription). */
   sessions: Session[];
   /** Focus Scores lately, oldest first. */
@@ -93,10 +93,11 @@ export function coachContext(d: CoachData): string {
     );
   }
 
-  lines.push("", `Sleep (last ${COACH_SLEEP_NIGHTS} nights, by the morning it ended):`);
+  lines.push("", `Sleep (last ${COACH_SLEEP_NIGHTS} nights, by the morning it ended; daytime naps that day listed apart):`);
   for (const night of d.sleep) {
     const minutes = night.sessions.reduce((a, s) => a + (s.end.getTime() - s.start.getTime()) / 60_000, 0);
-    lines.push(`${night.date}: ${night.sessions.length ? `${round1(minutes / 60)} h` : "not recorded"}`);
+    const naps = (night.naps ?? []).map((s) => `${clock(s.start, tz)} for ${Math.round((s.end.getTime() - s.start.getTime()) / 60_000)} min`);
+    lines.push(`${night.date}: ${night.sessions.length ? `${round1(minutes / 60)} h` : "not recorded"}${naps.length ? `; naps: ${naps.join(", ")}` : ""}`);
   }
 
   if (d.focus?.length) {
