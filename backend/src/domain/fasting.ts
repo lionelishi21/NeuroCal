@@ -21,6 +21,12 @@ export const FAST_SAFE_KCAL = 10;
 /** The longest fast the app lets anyone plan; longer ones are for a clinician to plan. */
 export const MAX_PLANNED_FAST_HOURS = 48;
 
+/**
+ * The longest fast someone can plan once they confirm they've checked with their doctor, when nothing
+ * in their profile calls for caution. Past MAX_PLANNED_FAST_HOURS the app reminds them about electrolytes.
+ */
+export const LONG_FAST_HOURS = 72;
+
 /** A fast someone chose to run until a time. `startedAt` is when they planned it. */
 export interface FastPlan {
   startedAt: Date;
@@ -35,6 +41,11 @@ export function plannedFastLimit(profile: Pick<Profile, "weightGoal" | "healthCo
   const limit = fastingLimit(conditionsOf(profile));
   if (limit === "none") return 0;
   return limit === CAUTIOUS_PROTOCOL || profile.weightGoal?.fastingCaution ? FAST_HOURS[CAUTIOUS_PROTOCOL] : MAX_PLANNED_FAST_HOURS;
+}
+
+/** The longest fast someone may plan after confirming they checked with their doctor; 0 when only the usual limit applies. */
+export function longFastLimit(profile: Pick<Profile, "weightGoal" | "healthConditions">): number {
+  return plannedFastLimit(profile) === MAX_PLANNED_FAST_HOURS ? LONG_FAST_HOURS : 0;
 }
 
 /** The plan while it still runs: before its end, with no meal eaten since it was made. */

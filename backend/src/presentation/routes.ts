@@ -906,7 +906,10 @@ export function createApi(uc: UseCases, errors?: IErrorReporter) {
     [
       "PUT",
       /^\/fasting\/plan$/,
-      async (req) => ok(FastingStatus, toFasting(await uc.getFasting.plan(req.userId, new Date(json(req, PlanFastRequest).until)))),
+      async (req) => {
+        const body = json(req, PlanFastRequest);
+        return ok(FastingStatus, toFasting(await uc.getFasting.plan(req.userId, new Date(body.until), body.longFast === true)));
+      },
     ],
     ["DELETE", /^\/fasting\/plan$/, async (req) => ok(FastingStatus, toFasting(await uc.getFasting.endPlan(req.userId)))],
     [

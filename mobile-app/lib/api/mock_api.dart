@@ -155,9 +155,9 @@ class MockNeuroCalApi implements NeuroCalApi {
   /// Times the fast from the sample meals, like the API (backend/src/domain/fasting.ts).
   ({DateTime startedAt, DateTime until})? _fastPlan;
 
-  /// Up to 48 hours from the last meal, like the API.
+  /// Up to 48 hours from the last meal, or 72 after a doctor check, like the API.
   @override
-  Future<FastingStatus> planFast(DateTime until) async {
+  Future<FastingStatus> planFast(DateTime until, {bool longFast = false}) async {
     await _wait();
     final now = DateTime.now();
     if (until.difference(now).inMinutes < 30) throw ApiException(400, 'Pick an end at least half an hour from now.');
@@ -165,9 +165,14 @@ class MockNeuroCalApi implements NeuroCalApi {
       for (final m in _meals)
         if (m.calories >= 10 && !m.eatenAt.isAfter(now)) m.eatenAt,
     ].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
-    final from = last != null && now.difference(last).inHours < 48 ? last : now;
-    if (until.difference(from).inMinutes > 48 * 60) {
-      throw ApiException(400, 'A planned fast can last up to 48 hours from your last meal. Pick an earlier time.');
+    final limit = longFast ? 72 : 48;
+    final from = last != null && now.difference(last).inHours < limit ? last : now;
+    final minutes = until.difference(from).inMinutes;
+    if (minutes > limit * 60) {
+      if (!longFast && minutes <= 72 * 60) {
+        throw ApiException(400, 'Fasts over 48 hours need you to confirm you’ve checked with your doctor.');
+      }
+      throw ApiException(400, 'A planned fast can last up to $limit hours from your last meal. Pick an earlier time.');
     }
     _fastPlan = (startedAt: now, until: until);
     return fasting();

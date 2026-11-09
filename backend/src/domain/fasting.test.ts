@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { activePlan, fastingState, fastingStreak, fastingProtocolOf, plannedFastLimit } from "./fasting";
+import { activePlan, fastingState, fastingStreak, fastingProtocolOf, plannedFastLimit, longFastLimit } from "./fasting";
 
 const at = (iso: string) => new Date(`${iso}Z`);
 const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -66,6 +66,12 @@ describe("planned fasts", () => {
     expect(plannedFastLimit({ healthConditions: ["glucose_lowering_meds"] })).toBe(12);
     expect(plannedFastLimit({ weightGoal: { startKg: 90, targetKg: 80, startedOn: "2026-10-01", pacePctPerWeek: 0.5, fastingCaution: true } })).toBe(12);
     expect(plannedFastLimit({ healthConditions: ["eating_disorder_history"] })).toBe(0);
+  });
+
+  it("offer up to 72 hours after a doctor check, only to people allowed the usual 48", () => {
+    expect(longFastLimit({})).toBe(72);
+    expect(longFastLimit({ healthConditions: ["glucose_lowering_meds"] })).toBe(0);
+    expect(longFastLimit({ healthConditions: ["eating_disorder_history"] })).toBe(0);
   });
 
   it("run until their end, or until a meal is eaten after they were made", () => {

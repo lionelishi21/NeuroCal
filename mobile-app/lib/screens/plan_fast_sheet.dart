@@ -7,7 +7,8 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 
 /// "Plan a fast": fast until a time, for a day without meals or a longer fast. The choices count from
-/// the last meal (or now) and stop at the limit the API allows. Returns the new status, or null.
+/// the last meal (or now) and stop at the limit the API allows: past the usual limit (48 hours), only
+/// once the person ticks that they've checked with their doctor. Returns the new status, or null.
 Future<FastingStatus?> showPlanFastSheet(BuildContext context, FastingStatus? status) =>
     showAppSheet<FastingStatus>(context, title: 'Plan a fast', builder: (_) => _PlanFast(status));
 
@@ -36,6 +37,7 @@ class _PlanFast extends StatefulWidget {
 class _PlanFastState extends State<_PlanFast> {
   DateTime? _until;
   var _busy = false;
+  var _doctorChecked = false;
   String? _problem;
 
   /// What the fast counts from, like the API: the last meal while it's within the limit, otherwise now.
@@ -45,10 +47,18 @@ class _PlanFastState extends State<_PlanFast> {
     return last != null && now.difference(last).inMinutes < _limit * 60 ? last : now;
   }
 
-  int get _limit => widget.status?.planLimitHours ?? 48;
+  /// The usual limit, and the one after a doctor check (0 when not offered).
+  int get _usual => widget.status?.planLimitHours ?? 48;
+  int get _long => widget.status?.longPlanLimitHours ?? 0;
+
+  /// The longest fast this sheet offers at all.
+  int get _limit => _long > _usual ? _long : _usual;
 
   bool _fits(DateTime until, DateTime now) =>
       until.difference(now).inMinutes >= 30 && until.difference(_from).inMinutes <= _limit * 60;
+
+  /// Longer than the usual limit: needs the doctor check.
+  bool _isLong(DateTime until) => until.difference(_from).inMinutes > _usual * 60;
 
   List<({String label, DateTime until})> _choices(DateTime now) {
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
@@ -57,20 +67,38 @@ class _PlanFastState extends State<_PlanFast> {
         (label: 'Until noon tomorrow', until: tomorrow.add(const Duration(hours: 12))),
         (label: '16 hours', until: _from.add(const Duration(hours: 16))),
         (label: '24 hours', until: _from.add(const Duration(hours: 24))),
+        (label: '48 hours', until: _from.add(const Duration(hours: 48))),
+        (label: '72 hours', until: _from.add(const Duration(hours: 72))),
       ])
         if (_fits(c.until, now)) c,
     ];
   }
 
+  /// A day (today up to the limit), then a time on it.
   Future<void> _pickTime() async {
     final now = DateTime.now();
-    final picked = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 12, minute: 0));
+    final today = DateTime(now.year, now.month, now.day);
+    final last = _from.add(Duration(hours: _limit));
+    final day = await showDatePicker(
+      context: context,
+      helpText: 'Fast until which day?',
+      initialDate: today.add(const Duration(days: 1)).isAfter(last) ? today : today.add(const Duration(days: 1)),
+      firstDate: today,
+      lastDate: DateTime(last.year, last.month, last.day),
+    );
+    if (day == null || !mounted) return;
+    final picked = await showTimePicker(
+      context: context,
+      helpText: 'Until what time?',
+      initialTime: const TimeOfDay(hour: 12, minute: 0),
+    );
     if (picked == null || !mounted) return;
-    var until = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
-    if (!until.isAfter(now)) until = until.add(const Duration(days: 1));
+    final until = DateTime(day.year, day.month, day.day, picked.hour, picked.minute);
     setState(() {
       _until = until;
-      _problem = _fits(until, now)
+      _problem = !until.isAfter(now.add(const Duration(minutes: 29)))
+          ? 'Pick an end at least half an hour from now.'
+          : _fits(until, now)
           ? null
           : 'That’s longer than $_limit hours from your last meal. Pick an earlier time.';
     });
@@ -84,7 +112,7 @@ class _PlanFastState extends State<_PlanFast> {
       _problem = null;
     });
     try {
-      final status = await AppScope.of(context).api.planFast(until);
+      final status = await AppScope.of(context).api.planFast(until, longFast: _isLong(until));
       if (mounted) Navigator.of(context).pop(status);
     } on ApiException catch (e) {
       if (mounted) setState(() => _problem = e.status == 400 ? e.message : 'Try again in a moment.');
@@ -139,20 +167,34 @@ class _PlanFastState extends State<_PlanFast> {
           onTap: _pickTime,
         ),
         Text(
-          'Water, black coffee and plain tea don’t break your fast. Up to $_limit hours from your last meal; check with your clinician before longer fasts.',
+          _long > _usual
+              ? 'Water, black coffee and plain tea don’t break your fast. Up to $_usual hours from your last meal, or $_long once you’ve checked with your doctor.'
+              : 'Water, black coffee and plain tea don’t break your fast. Up to $_usual hours from your last meal; check with your clinician before longer fasts.',
           style: TextStyle(fontSize: TextSize.xs, height: 1.4, color: c.inkSoft),
         ),
         if (until != null && until.difference(_from) > const Duration(hours: 24))
           const SheetNote(
             lead: 'Over 24 hours.',
-            detail:
-                'Check with your clinician first, keep drinking water, and stop if you feel dizzy, faint or unwell.',
+            detail: 'Check with your clinician first. Keep drinking water, take electrolytes (a pinch of salt, potassium, magnesium), and stop if you feel dizzy, faint or unwell. Break the fast with a small meal.',
             watch: true,
+          ),
+        if (until != null && _isLong(until))
+          CheckboxListTile(
+            value: _doctorChecked,
+            onChanged: (on) => setState(() => _doctorChecked = on == true),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'I’ve checked with my doctor that a fast over $_usual hours is safe for me',
+              style: const TextStyle(fontSize: TextSize.sm, height: 1.35),
+            ),
           ),
         if (_problem != null) SheetNote(lead: 'Can’t plan that.', detail: _problem!),
         SheetAction(
           label: _busy ? 'Starting…' : 'Start fasting',
-          onPressed: _busy || until == null || !_fits(until, now) ? null : _start,
+          onPressed: _busy || until == null || !_fits(until, now) || (_isLong(until) && !_doctorChecked)
+              ? null
+              : _start,
         ),
       ],
     );

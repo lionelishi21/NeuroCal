@@ -172,7 +172,8 @@ abstract interface class NeuroCalApi {
   Future<FastingStatus> fasting();
 
   /// Fast until [until], counted from the last meal; replaces a plan already running.
-  Future<FastingStatus> planFast(DateTime until);
+  /// [longFast]: the person confirmed they checked with their doctor, allowing up to longPlanLimitHours.
+  Future<FastingStatus> planFast(DateTime until, {bool longFast = false});
 
   /// Ends a planned fast early.
   Future<FastingStatus> endFast();
@@ -805,11 +806,11 @@ class HttpNeuroCalApi implements NeuroCalApi {
   Future<FastingStatus> fasting() async => FastingStatus.fromJson(await _get('/fasting') as Map<String, dynamic>);
 
   @override
-  Future<FastingStatus> planFast(DateTime until) async {
+  Future<FastingStatus> planFast(DateTime until, {bool longFast = false}) async {
     final res = await _client.put(
       _uri('/fasting/plan'),
       headers: await _headers(json: true),
-      body: jsonEncode({'until': isoWithOffset(until)}),
+      body: jsonEncode({'until': isoWithOffset(until), if (longFast) 'longFast': true}),
     );
     return FastingStatus.fromJson(_decode(res) as Map<String, dynamic>);
   }

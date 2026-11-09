@@ -9,6 +9,8 @@ import {
   fastingState,
   fastingStreak,
   plannedFastLimit,
+  longFastLimit,
+  MAX_PLANNED_FAST_HOURS,
 } from "../../domain/fasting";
 import { InvalidError, NotFoundError } from "../../domain/errors";
 import { localDateOf } from "../../domain/localDay";
@@ -31,6 +33,8 @@ export interface FastingStatus {
   plan?: FastPlan;
   /** The longest fast that can be planned, in hours from the last meal; 0 when none can. */
   planLimitHours: number;
+  /** Up to this many hours once the person confirms they checked with their doctor; 0 when not offered. */
+  longPlanLimitHours: number;
   /** The last meal (of FAST_SAFE_KCAL or more) in the last month; planned fasts count from it. */
   lastMealAt?: Date;
 }
@@ -59,7 +63,7 @@ export class GetFastingUseCase {
     const fastHours = protocol === "none" ? undefined : FAST_HOURS[protocol];
     const streakDays = fastHours ? fastingStreak(eaten, now, fastHours, (d) => localDateOf(d, profile.timeZone)) : 0;
     const lastMealAt = eaten.filter((m) => m <= now).at(-1);
-    const common = { planLimitHours, ...(lastMealAt ? { lastMealAt } : {}) };
+    const common = { planLimitHours, longPlanLimitHours: longFastLimit(profile), ...(lastMealAt ? { lastMealAt } : {}) };
 
     const plan = planLimitHours > 0 ? activePlan(await this.plans.get(input.userId), eaten, now) : null;
     if (plan) {
@@ -70,11 +74,17 @@ export class GetFastingUseCase {
     return { protocol, fastHours, state: fastingState(eaten, now, fastHours), streakDays, ...common };
   }
 
-  /** Fast until [until], counted from the last meal; replaces a plan already running. */
-  async plan(userId: string, until: Date): Promise<FastingStatus> {
+  /**
+   * Fast until [until], counted from the last meal; replaces a plan already running. `longFast` says the
+   * person confirmed they checked with their doctor, which allows up to LONG_FAST_HOURS when their
+   * profile allows the usual limit.
+   */
+  async plan(userId: string, until: Date, longFast = false): Promise<FastingStatus> {
     const profile = await this.profiles.get(userId);
     if (!profile) throw new NotFoundError("Set up your profile first.");
-    const limit = plannedFastLimit(profile);
+    const usual = plannedFastLimit(profile);
+    const long = longFastLimit(profile);
+    const limit = longFast && long > 0 ? long : usual;
     if (limit === 0) throw new InvalidError("Fasting isn't advised with the health conditions in your profile. Check with your clinician first.");
     const now = this.clock.now();
     if (until.getTime() - now.getTime() < MIN_PLAN_MS) throw new InvalidError("Pick an end at least half an hour from now.");
@@ -82,6 +92,9 @@ export class GetFastingUseCase {
     // Measured from the last meal while that is within the limit, otherwise from now.
     const from = last && now.getTime() - last.getTime() < limit * HOUR_MS ? last : now;
     if (until.getTime() - from.getTime() > limit * HOUR_MS) {
+      if (limit === usual && long > 0 && until.getTime() - from.getTime() <= long * HOUR_MS) {
+        throw new InvalidError(`Fasts over ${MAX_PLANNED_FAST_HOURS} hours need you to confirm you've checked with your doctor.`);
+      }
       throw new InvalidError(`A planned fast can last up to ${limit} hours from your last meal. Pick an earlier time.`);
     }
     await this.plans.set(userId, { startedAt: now, until });

@@ -390,7 +390,7 @@ describe("API routes", () => {
   });
 
   it("GET /fasting times the fast from logged meals, capped at 12 hours after the safety answer", async () => {
-    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0, planLimitHours: 48, lastMealAt: "2026-09-29T13:10:00.000Z" });
+    expect((await call("GET", "/fasting")).body).toEqual({ protocol: "none", state: { kind: "off" }, streakDays: 0, planLimitHours: 48, longPlanLimitHours: 72, lastMealAt: "2026-09-29T13:10:00.000Z" });
 
     // The day's only meal was at 13:10Z; the 8-hour window closed at 21:10Z and it's 22:00Z now.
     await profiles.save(profile({ bioProfile: { fasting: "16_8" } }));
@@ -400,6 +400,7 @@ describe("API routes", () => {
       state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T05:10:00.000Z" },
       streakDays: 0,
       planLimitHours: 48,
+      longPlanLimitHours: 72,
       lastMealAt: "2026-09-29T13:10:00.000Z",
     });
 
@@ -409,7 +410,7 @@ describe("API routes", () => {
         weightGoal: { startKg: 95, targetKg: 85, startedOn: "2026-09-01", pacePctPerWeek: 0.5, fastingCaution: true },
       }),
     );
-    expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12, planLimitHours: 12 });
+    expect((await call("GET", "/fasting")).body).toMatchObject({ protocol: "12_12", fastHours: 12, planLimitHours: 12, longPlanLimitHours: 0 });
   });
 
   it("logs coffee apart from meals: a Bulletproof cup keeps the fast but counts its calories; milk ends it; the curfew is marked", async () => {
@@ -562,7 +563,13 @@ describe("API routes", () => {
       state: { kind: "fasting", since: "2026-09-29T13:10:00.000Z", goalAt: "2026-09-30T17:00:00.000Z" },
       plan: { startedAt: "2026-09-29T22:00:00.000Z", until: "2026-09-30T17:00:00.000Z" },
     });
-    expect((await call("PUT", "/fasting/plan", { until: "2026-10-01T14:00:00.000Z" })).status).toBe(400); // 48h50m
+    const tooLong = await call("PUT", "/fasting/plan", { until: "2026-10-01T14:00:00.000Z" }); // 48h50m
+    expect(tooLong.status).toBe(400);
+    expect(JSON.stringify(tooLong.body)).toContain("checked with your doctor");
+    // Confirming they checked with their doctor allows up to 72 hours, and no more.
+    expect((await call("PUT", "/fasting/plan", { until: "2026-10-01T14:00:00.000Z", longFast: true })).body).toMatchObject({ plan: { until: "2026-10-01T14:00:00.000Z" } });
+    expect((await call("PUT", "/fasting/plan", { until: "2026-10-02T14:00:00.000Z", longFast: true })).status).toBe(400); // 72h50m
+    expect((await call("PUT", "/fasting/plan", { until: "2026-09-30T17:00:00.000Z" })).status).toBe(200);
     expect((await call("PUT", "/fasting/plan", { until: "2026-09-29T22:10:00.000Z" })).status).toBe(400); // too soon
 
     // Black coffee isn't a meal: the fast still runs from 13:10. Ending the plan removes it.

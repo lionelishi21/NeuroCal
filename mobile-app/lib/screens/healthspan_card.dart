@@ -180,7 +180,7 @@ Future<void> showWhyHealthspan(BuildContext context) => showAppSheet<void>(
         ),
         const GroupLabel('Longer fasts', top: Space.s2),
         para(
-          'A 3- or 4-day fast once or twice a year goes deeper. Plan one with your doctor first. NeuroCal plans fasts of up to 48 hours.',
+          'A 3- or 4-day fast once or twice a year goes deeper. Plan one with your doctor first. NeuroCal plans fasts of up to 72 hours once you’ve checked with your doctor.',
         ),
         const GroupLabel('Why not rapamycin?', top: Space.s2),
         para(

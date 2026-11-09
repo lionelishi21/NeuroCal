@@ -475,6 +475,8 @@ export const FastingStatus = z.object({
   plan: z.object({ startedAt: IsoDateTime, until: IsoDateTime }).optional(),
   /** The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out. */
   planLimitHours: z.number().int().nonnegative(),
+  /** Up to this many hours once the person confirms they checked with their doctor (`longFast`); 0 when not offered. */
+  longPlanLimitHours: z.number().int().nonnegative(),
   /** The last meal in the past month (drinks under 10 kcal don't count); planned fasts are counted from it. */
   lastMealAt: IsoDateTime.optional(),
 });
@@ -548,6 +550,8 @@ export type CoffeeProducts = z.infer<typeof CoffeeProducts>;
 export const PlanFastRequest = z.object({
   /** When the fast ends: at least half an hour ahead, within planLimitHours of the last meal. */
   until: IsoDateTime,
+  /** The person confirmed they checked with their doctor: allows up to longPlanLimitHours instead of planLimitHours. */
+  longFast: z.boolean().optional(),
 });
 export type PlanFastRequest = z.infer<typeof PlanFastRequest>;
 

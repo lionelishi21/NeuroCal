@@ -454,7 +454,7 @@
       "put": {
         "operationId": "planFast",
         "summary": "Plan a fast",
-        "description": "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (48, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
+        "description": "Fast until a time, for a day without meals or a longer fast. It counts from the last meal, must end at least half an hour ahead and last no more than planLimitHours (48, or 12 at the cautious protocol; none when pregnant or with an eating-disorder history). With longFast (the person confirmed they checked with their doctor) it may last up to longPlanLimitHours (72 when the usual limit is 48, otherwise 0). Logging a meal ends it; water, black coffee and plain tea (under 10 kcal) don't.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5580,6 +5580,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "longPlanLimitHours": {
+            "type": "integer",
+            "minimum": 0
+          },
           "lastMealAt": {
             "type": "string",
             "format": "date-time"
@@ -5589,7 +5593,8 @@
           "protocol",
           "state",
           "streakDays",
-          "planLimitHours"
+          "planLimitHours",
+          "longPlanLimitHours"
         ]
       },
       "Feeling": {
@@ -7708,6 +7713,9 @@
           "until": {
             "type": "string",
             "format": "date-time"
+          },
+          "longFast": {
+            "type": "boolean"
           }
         },
         "required": [

@@ -622,6 +622,8 @@ void main() {
     expect(tester.widget<FilledButton>(start).onPressed, isNull);
     await tester.tap(find.textContaining('16 hours'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(start);
+    await tester.pumpAndSettle();
     await tester.tap(start);
     await tester.pumpAndSettle();
     // Today swaps the calories card for the fast's (the "Fasting until" toast is gone by the time it settles).
@@ -639,6 +641,28 @@ void main() {
     await tapCentered(tester, find.text('End my fast'));
     expect(find.text('Fast ended'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('kcal left'), -300);
+  });
+
+  testWidgets('a 72-hour fast needs the doctor check first', (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await tapCentered(tester, find.text('Fasting today? Plan a fast'));
+    expect(find.textContaining('or 72 once you’ve checked with your doctor'), findsOneWidget);
+    final start = find.widgetWithText(FilledButton, 'Start fasting');
+    await tester.scrollUntilVisible(find.textContaining('72 hours'), 100, scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.textContaining('72 hours'));
+    await tester.pumpAndSettle();
+    final check = find.byType(CheckboxListTile);
+    await tester.scrollUntilVisible(check, 100, scrollable: find.byType(Scrollable).last);
+    expect(tester.widget<FilledButton>(start).onPressed, isNull);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(start).onPressed, isNotNull);
+    await tester.ensureVisible(start);
+    await tester.pumpAndSettle();
+    await tester.tap(start);
+    await tester.pumpAndSettle();
+    expect(find.text('Planned fast'), findsOneWidget);
   });
 
   testWidgets('environment: set the town for air quality and tick the day’s check', (tester) async {

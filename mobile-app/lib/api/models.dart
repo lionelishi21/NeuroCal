@@ -1312,6 +1312,7 @@ class FastingStatus {
     this.streakDays = 0,
     this.planUntil,
     this.planLimitHours = 48,
+    this.longPlanLimitHours = 72,
     this.lastMealAt,
   });
 
@@ -1335,6 +1336,9 @@ class FastingStatus {
   /// The longest fast that can be planned, in hours from the last meal; 0 when health conditions rule it out.
   final int planLimitHours;
 
+  /// Up to this many hours once the person confirms they checked with their doctor; 0 when not offered.
+  final int longPlanLimitHours;
+
   /// The last meal in the past month (drinks under 10 kcal don't count); planned fasts count from it.
   final DateTime? lastMealAt;
 
@@ -1355,6 +1359,7 @@ class FastingStatus {
       streakDays: (j['streakDays'] as num).toInt(),
       planUntil: plan == null ? null : DateTime.parse(plan['until'] as String).toLocal(),
       planLimitHours: (j['planLimitHours'] as num?)?.toInt() ?? 0,
+      longPlanLimitHours: (j['longPlanLimitHours'] as num?)?.toInt() ?? 0,
       lastMealAt: j['lastMealAt'] == null ? null : DateTime.parse(j['lastMealAt'] as String).toLocal(),
     );
   }

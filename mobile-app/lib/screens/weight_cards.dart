@@ -16,6 +16,10 @@ String _hm(Duration d) {
   return '${m ~/ 60} h ${(m % 60).toString().padLeft(2, '0')} m';
 }
 
+/// A fast that has run a full day or more: the electrolyte reminder shows from then.
+bool _pastADay(FastingStatus s, DateTime now) =>
+    s.kind == FastingKind.fasting && s.since != null && now.difference(s.since!) >= const Duration(hours: 24);
+
 String _clock(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
 /// The fasting timer: how long since the last meal against the goal (the protocol's, or a planned
@@ -161,7 +165,9 @@ class _FastingCardState extends State<FastingCard> {
               [
                 if (s.streakDays > 0) '${s.streakDays} ${s.streakDays == 1 ? 'day' : 'days'} in a row.',
                 // The first days are the hardest: hunger at your usual meal times is mostly habit.
-                if (s.kind == FastingKind.fasting && s.streakDays < 3) 'Hungry at your usual meal time? That habit hunger usually passes in 20–30 minutes. Water, tea or black coffee help.',
+                if (s.kind == FastingKind.fasting && s.streakDays < 3 && !_pastADay(s, now)) 'Hungry at your usual meal time? That habit hunger usually passes in 20–30 minutes. Water, tea or black coffee help.',
+                // Past a day, sodium, potassium and magnesium run low: the main risk of a long fast.
+                if (_pastADay(s, now)) 'Past a day: take electrolytes. A pinch of salt in your water, plus potassium and magnesium. Stop and eat if you feel dizzy, faint or unwell.',
               ].join(' '),
               style: TextStyle(fontSize: TextSize.xxs, height: 1.4, color: c.inkSoft),
             ),

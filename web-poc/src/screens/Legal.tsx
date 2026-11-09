@@ -229,8 +229,9 @@ export function Terms() {
                 unwell.
               </p>
               <p className="m-0">
-                Planned fasts are limited to 48 hours from your last meal, less with some health conditions. Fasts over 24 hours are for healthy adults only;
-                drink water throughout and stop if you feel dizzy, faint or unwell.
+                Planned fasts are limited to 48 hours from your last meal, or 72 hours once you confirm you&rsquo;ve checked with your doctor, and less or not
+                at all with some health conditions. Fasts over 24 hours are for healthy adults only; drink water and take electrolytes throughout, and stop if
+                you feel dizzy, faint or unwell.
               </p>
               <p className="m-0">
                 Nutrition figures, photo readings and label readings are estimates and can be wrong. A label reading, including whether a coffee says it&rsquo;s
