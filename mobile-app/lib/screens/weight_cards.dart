@@ -9,6 +9,7 @@ import '../theme/tokens.dart';
 import '../weight_units.dart';
 import '../widgets/share_card.dart';
 import '../widgets/ui.dart';
+import '../widgets/water_glass.dart';
 import 'plan_fast_sheet.dart' show fastEnd;
 
 String _hm(Duration d) {
@@ -234,7 +235,7 @@ class _WaterCountState extends State<WaterCount> {
     return Row(
       spacing: Space.s2,
       children: [
-        Icon(Icons.water_drop_rounded, size: 20, color: c.ionInk),
+        WaterGlass(fill: _glasses / 8, color: c.ionInk),
         Expanded(
           child: Semantics(
             liveRegion: true,

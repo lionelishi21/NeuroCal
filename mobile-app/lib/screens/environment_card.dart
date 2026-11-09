@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/sheet.dart';
 import '../widgets/toast.dart';
 import '../widgets/ui.dart';
+import '../widgets/water_glass.dart';
 
 /// Today's environment (docs/NCBM.md §3): the air where you live, four taps for the daily check
 /// (morning daylight, a dark and a quiet bedroom, filtered water) and water drunk against the day's
@@ -343,7 +344,7 @@ class _WaterBlock extends StatelessWidget {
                   child: Row(
                     spacing: Space.s2,
                     children: [
-                      Icon(Icons.water_drop_rounded, size: 20, color: c.ionInk),
+                      WaterGlass(fill: ml / targetMl, color: reached ? c.chlorophyll : c.ionInk),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
