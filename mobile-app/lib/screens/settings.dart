@@ -38,10 +38,12 @@ class SettingsScreen extends StatelessWidget {
       if (profile.diet != null) ('Diet', dietLabels[profile.diet] ?? profile.diet!),
       ('Goals', profile.goals.isEmpty ? 'None chosen' : profile.goals.map((g) => goalLabels[g] ?? g).join(', ')),
     ];
+    // The list scrolls under the phone's navigation bar but ends clear of it.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s4, Space.s6),
+        padding: EdgeInsets.fromLTRB(Space.s4, Space.s4, Space.s4, Space.s6 + bottomInset),
         children: [
           Padding(
             padding: const EdgeInsets.only(left: Space.s1),
